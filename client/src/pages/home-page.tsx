@@ -13,7 +13,7 @@ import Footer from '@/components/layout/footer';
 import { ChevronDown, Clock, DollarSign, Shield, Users, BarChart, HeadphonesIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
-import { InsurancePartnersSection } from '@/components/insurance-partners';
+import { InsurancePartnersSection } from '@/components/insurance-partners-fixed';
 
 export default function HomePage() {
   const { user } = useAuth();
