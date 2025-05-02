@@ -50,6 +50,8 @@ export default function DashboardPage() {
         return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em análise</Badge>;
       case 'rejected':
         return <Badge variant="outline" className="bg-red-100 text-red-800">Não convertido</Badge>;
+      case 'validated':
+        return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
       default:
         return <Badge variant="outline">Desconhecido</Badge>;
     }

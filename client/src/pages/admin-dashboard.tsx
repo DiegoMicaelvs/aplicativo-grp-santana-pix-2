@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   Table, 
@@ -206,7 +206,7 @@ export default function AdminDashboard() {
   
   // Watch for status changes to apply default commission value when 'validated'
   const status = form.watch('status');
-  React.useEffect(() => {
+  useEffect(() => {
     if (status === 'validated') {
       form.setValue('commission', 3.00);
     }
@@ -593,7 +593,7 @@ export default function AdminDashboard() {
                           />
                         </FormControl>
                         <FormDescription>
-                          Valor da comissão a ser paga ao indicador (apenas se convertido)
+                          Valor da comissão a ser paga ao indicador (para status convertido ou validado)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

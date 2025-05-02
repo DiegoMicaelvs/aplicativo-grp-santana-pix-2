@@ -58,6 +58,8 @@ const getStatusBadge = (status: ReferralStatus) => {
       return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em análise</Badge>;
     case 'rejected':
       return <Badge variant="outline" className="bg-red-100 text-red-800">Não convertido</Badge>;
+    case 'validated':
+      return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
     default:
       return <Badge variant="outline">Desconhecido</Badge>;
   }
@@ -148,6 +150,7 @@ export default function ReferralsPage() {
                       <SelectItem value="processing">Em análise</SelectItem>
                       <SelectItem value="converted">Convertido</SelectItem>
                       <SelectItem value="rejected">Não convertido</SelectItem>
+                      <SelectItem value="validated">Validado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -310,7 +313,7 @@ export default function ReferralsPage() {
                     </div>
                   )}
                   
-                  {selectedReferral.status === 'converted' && (
+                  {(selectedReferral.status === 'converted' || selectedReferral.status === 'validated') && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Comissão</h4>
                       <p className="mt-1 text-lg font-medium text-green-600">
