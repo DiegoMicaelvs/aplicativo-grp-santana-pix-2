@@ -87,6 +87,8 @@ const getStatusBadge = (status: ReferralStatus) => {
       return <Badge variant="outline" className="bg-red-100 text-red-800">Não convertido</Badge>;
     case 'validated':
       return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
+    case 'paid':
+      return <Badge variant="outline" className="bg-emerald-100 text-emerald-800">Pago</Badge>;
     default:
       return <Badge variant="outline">Desconhecido</Badge>;
   }
@@ -119,12 +121,13 @@ const formatCurrency = (value: number | string | null | undefined) => {
 
 // Status update form schema
 const updateReferralSchema = z.object({
-  status: z.enum(["pending", "processing", "converted", "rejected", "validated"]),
+  status: z.enum(["pending", "processing", "converted", "rejected", "validated", "paid"]),
   commission: z.preprocess(
     (val) => (val === "" ? undefined : Number(val)),
     z.number().optional()
   ),
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  paidAt: z.date().optional()
 });
 
 type UpdateReferralFormValues = z.infer<typeof updateReferralSchema>;
@@ -205,10 +208,13 @@ export default function AdminDashboard() {
   };
   
   // Watch for status changes to apply default commission value when 'validated'
+  // or to set the payment date when status is 'paid'
   const status = form.watch('status');
   useEffect(() => {
     if (status === 'validated') {
       form.setValue('commission', 3.00);
+    } else if (status === 'paid') {
+      form.setValue('paidAt', new Date());
     }
   }, [status, form]);
   
@@ -353,6 +359,7 @@ export default function AdminDashboard() {
                             <SelectItem value="converted">Convertido</SelectItem>
                             <SelectItem value="rejected">Não convertido</SelectItem>
                             <SelectItem value="validated">Validado</SelectItem>
+                            <SelectItem value="paid">Pago</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -569,6 +576,7 @@ export default function AdminDashboard() {
                             <SelectItem value="converted">Convertido</SelectItem>
                             <SelectItem value="rejected">Não convertido</SelectItem>
                             <SelectItem value="validated">Validado</SelectItem>
+                            <SelectItem value="paid">Pago</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -587,18 +595,47 @@ export default function AdminDashboard() {
                             type="number" 
                             step="0.01"
                             placeholder="0.00" 
-                            disabled={!['converted', 'validated'].includes(form.watch('status'))}
+                            disabled={!['converted', 'validated', 'paid'].includes(form.watch('status'))}
                             {...field}
                             value={field.value === undefined ? '' : field.value}
                           />
                         </FormControl>
                         <FormDescription>
-                          Valor da comissão a ser paga ao indicador (para status convertido ou validado)
+                          Valor da comissão a ser paga ao indicador (para status convertido, validado ou pago)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  
+                  {/* Campo de data de pagamento (apenas para status 'paid') */}
+                  {form.watch('status') === 'paid' && (
+                    <FormField
+                      control={form.control}
+                      name="paidAt"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Data de Pagamento</FormLabel>
+                          <FormControl>
+                            <div className="grid gap-2">
+                              <Input
+                                type="date"
+                                value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                                onChange={(e) => {
+                                  const date = e.target.value ? new Date(e.target.value) : new Date();
+                                  field.onChange(date);
+                                }}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Data em que o pagamento foi realizado
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   
                   <FormField
                     control={form.control}
