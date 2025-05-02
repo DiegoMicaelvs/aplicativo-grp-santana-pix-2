@@ -2,6 +2,7 @@ import { db } from "./index";
 import * as schema from "@shared/schema";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { eq } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
 
@@ -15,31 +16,35 @@ async function seed() {
   try {
     console.log("Starting database seed...");
     
-    // Create admin user
+    // Verificar e recriar o usuário admin com senha hash conhecida
     const adminExists = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.username, "admin@gruposantana.com")
+      where: eq(schema.users.username, "admin@gruposantana.com")
     });
     
-    if (!adminExists) {
-      const adminPassword = await hashPassword("admin123");
-      await db.insert(schema.users).values({
-        username: "admin@gruposantana.com",
-        password: adminPassword,
-        firstName: "Administrador",
-        lastName: "Sistema",
-        phone: "11999999999",
-        cpf: "12345678900",
-        birthdate: "1980-01-01",
-        role: "admin"
-      });
-      console.log("Admin user created");
-    } else {
-      console.log("Admin user already exists");
+    if (adminExists) {
+      await db.delete(schema.users).where(eq(schema.users.id, adminExists.id));
+      console.log("Admin user removed");
     }
+    
+    // Garantir que o hash da senha seja sempre o mesmo para facilitar login
+    const adminPassword = await hashPassword("admin123");
+    
+    // Criar usuário admin com a nova senha
+    await db.insert(schema.users).values({
+      username: "admin@gruposantana.com",
+      password: adminPassword,
+      firstName: "Administrador",
+      lastName: "Sistema",
+      phone: "11999999999",
+      cpf: "12345678900",
+      birthdate: "1980-01-01",
+      role: "admin"
+    });
+    console.log("Admin user created with password 'admin123'");
     
     // Create example referrer
     const referrerExists = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.username, "joao@example.com")
+      where: eq(schema.users.username, "joao@example.com")
     });
     
     if (!referrerExists) {
