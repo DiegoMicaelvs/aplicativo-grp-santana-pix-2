@@ -55,7 +55,7 @@ export default function HomePage() {
                   <span className="block">Com o Grupo Santana</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Indique pessoas com veículos sem seguro e receba comissões. Um programa exclusivo do Grupo Santana para quem quer ganhar dinheiro extra ajudando amigos a protegerem seus veículos.
+                  Indique pessoas com veículos sem seguro e ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>, mesmo que não fechem contrato! Ao indicar 3 pessoas, ganhe um <span className="font-semibold text-primary-700">bônus de R$10,00</span>.
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
@@ -133,10 +133,10 @@ export default function HomePage() {
                   <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary text-white">
                     <span className="text-xl font-bold">3</span>
                   </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Receba comissões</p>
+                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Receba sua recompensa</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Quando sua indicação contratar um seguro com o Grupo Santana, você recebe sua comissão diretamente na sua conta bancária.
+                  Ganhe R$3,00 por cada indicação <span className="font-semibold">validada</span> (dados corretos), mesmo que não fechem contrato. E ao indicar 3 pessoas, receba um bônus adicional de R$10,00!
                 </dd>
               </div>
             </dl>
@@ -153,7 +153,7 @@ export default function HomePage() {
               Por que se tornar um indicador?
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
-              Além de ajudar pessoas a protegerem seus veículos, você ganha dinheiro real por cada indicação bem-sucedida.
+              Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span> e um <span className="font-semibold text-primary-700">bônus de R$10,00</span> a cada 3 indicações. Basta que as informações sejam corretas!
             </p>
           </div>
 
@@ -172,7 +172,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Ganhe até R$ 500 por indicação que se transformar em cliente. As comissões são pagas diretamente na sua conta.
+                      Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>, independente de fechamento. Ao indicar 3 pessoas válidas, receba um <span className="font-semibold text-primary-700">bônus de R$10,00</span>. Comissões extras para vendas concretizadas.
                     </p>
                   </div>
                 </CardContent>
@@ -332,7 +332,7 @@ export default function HomePage() {
                   Como funciona o pagamento das comissões?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  As comissões são calculadas com base no valor do seguro contratado pela pessoa indicada. Normalmente, o pagamento é realizado até o 15º dia do mês seguinte à contratação do seguro, diretamente na conta bancária informada no seu cadastro.
+                  Você ganha <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span> (número existente, pessoa existente e placa correta), mesmo que a pessoa não contrate o seguro. Ao indicar 3 pessoas válidas, você recebe um <span className="font-semibold text-primary-700">bônus adicional de R$10,00</span>. Se a indicação contratar o seguro, você também recebe uma comissão adicional. Os pagamentos são realizados até o 15º dia do mês seguinte.
                 </AccordionContent>
               </AccordionItem>
               
