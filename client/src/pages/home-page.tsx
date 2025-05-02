@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Link } from 'wouter';
+import { useRef, useEffect } from 'react';
+import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -15,9 +15,21 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function HomePage() {
   const { user } = useAuth();
+  const [location] = useLocation();
   const comoFuncionaRef = useRef<HTMLDivElement>(null);
   const vantagensRef = useRef<HTMLDivElement>(null);
   const faqRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    // Scroll to the appropriate section based on the hash in the URL
+    if (location === '/#como-funciona' && comoFuncionaRef.current) {
+      comoFuncionaRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else if (location === '/#vantagens' && vantagensRef.current) {
+      vantagensRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else if (location === '/#faq' && faqRef.current) {
+      faqRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen flex flex-col">

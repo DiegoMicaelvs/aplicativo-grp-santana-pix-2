@@ -69,13 +69,28 @@ export default function Header() {
                   </SheetDescription>
                 </SheetHeader>
                 <div className="py-4 flex flex-col gap-2">
-                  <Link href="/como-funciona" onClick={() => setIsOpen(false)}>
+                  <Link href="/#como-funciona" onClick={() => {
+                    setIsOpen(false);
+                    if (location === '/') {
+                      document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}>
                     <Button variant="ghost" className="w-full justify-start">Como Funciona</Button>
                   </Link>
-                  <Link href="/vantagens" onClick={() => setIsOpen(false)}>
+                  <Link href="/#vantagens" onClick={() => {
+                    setIsOpen(false);
+                    if (location === '/') {
+                      document.getElementById('vantagens')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}>
                     <Button variant="ghost" className="w-full justify-start">Vantagens</Button>
                   </Link>
-                  <Link href="/faq" onClick={() => setIsOpen(false)}>
+                  <Link href="/#faq" onClick={() => {
+                    setIsOpen(false);
+                    if (location === '/') {
+                      document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}>
                     <Button variant="ghost" className="w-full justify-start">Perguntas Frequentes</Button>
                   </Link>
                   
@@ -121,13 +136,28 @@ export default function Header() {
           ) : (
             <>
               <nav className="hidden md:flex space-x-10">
-                <Link href="/#como-funciona" className={`text-base font-medium ${isActive("/#como-funciona")} hover:text-gray-900`}>
+                <Link href="/#como-funciona" className={`text-base font-medium ${isActive("/#como-funciona")} hover:text-gray-900`} onClick={(e) => {
+                  if (location === '/') {
+                    e.preventDefault();
+                    document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}>
                   Como Funciona
                 </Link>
-                <Link href="/#vantagens" className={`text-base font-medium ${isActive("/#vantagens")} hover:text-gray-900`}>
+                <Link href="/#vantagens" className={`text-base font-medium ${isActive("/#vantagens")} hover:text-gray-900`} onClick={(e) => {
+                  if (location === '/') {
+                    e.preventDefault();
+                    document.getElementById('vantagens')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}>
                   Vantagens
                 </Link>
-                <Link href="/#faq" className={`text-base font-medium ${isActive("/#faq")} hover:text-gray-900`}>
+                <Link href="/#faq" className={`text-base font-medium ${isActive("/#faq")} hover:text-gray-900`} onClick={(e) => {
+                  if (location === '/') {
+                    e.preventDefault();
+                    document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}>
                   Perguntas Frequentes
                 </Link>
                 
