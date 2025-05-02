@@ -21,8 +21,8 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Referral statuses: pending, processing, converted, rejected, validated
-export type ReferralStatus = "pending" | "processing" | "converted" | "rejected" | "validated";
+// Referral statuses: pending, processing, converted, rejected, validated, paid
+export type ReferralStatus = "pending" | "processing" | "converted" | "rejected" | "validated" | "paid";
 
 // Referrals table
 export const referrals = pgTable("referrals", {
@@ -85,9 +85,10 @@ export const createReferralSchema = createInsertSchema(referrals, {
 }).omit({ id: true, userId: true, status: true, commission: true, paidAt: true, createdAt: true, updatedAt: true, notes: true });
 
 export const updateReferralStatusSchema = z.object({
-  status: z.enum(["pending", "processing", "converted", "rejected", "validated"]),
+  status: z.enum(["pending", "processing", "converted", "rejected", "validated", "paid"]),
   commission: z.number().optional(),
   notes: z.string().optional(),
+  paidAt: z.date().optional(),
 });
 
 // Login data type
