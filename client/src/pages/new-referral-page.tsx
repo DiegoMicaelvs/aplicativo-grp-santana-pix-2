@@ -36,9 +36,7 @@ const referralSchema = z.object({
   lastName: z.string().min(1, "Sobrenome é obrigatório"),
   email: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
   phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
-  vehicleMake: z.string().min(1, "Marca do veículo é obrigatória"),
-  vehicleModel: z.string().min(1, "Modelo do veículo é obrigatório"),
-  vehicleYear: z.string().min(4, "Ano do veículo inválido").max(4, "Ano do veículo inválido"),
+  licensePlate: z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
   comments: z.string().optional(),
 });
 
@@ -56,9 +54,7 @@ export default function NewReferralPage() {
       lastName: "",
       email: "",
       phone: "",
-      vehicleMake: "",
-      vehicleModel: "",
-      vehicleYear: "",
+      licensePlate: "",
       comments: "",
     },
   });
@@ -209,44 +205,19 @@ export default function NewReferralPage() {
                   
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Dados do Veículo</h3>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4">
                       <FormField
                         control={form.control}
-                        name="vehicleMake"
+                        name="licensePlate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Marca</FormLabel>
+                            <FormLabel>Placa do Veículo</FormLabel>
                             <FormControl>
-                              <Input placeholder="Ex: Honda" {...field} />
+                              <Input placeholder="Ex: ABC1234" {...field} />
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="vehicleModel"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Modelo</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: Civic" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="vehicleYear"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Ano</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: 2021" {...field} />
-                            </FormControl>
+                            <FormDescription>
+                              Informe a placa no formato antigo (ABC1234) ou no novo formato (ABC1D23).
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}

@@ -68,9 +68,7 @@ async function seed() {
           lastName: "Costa",
           email: "maria@example.com",
           phone: "11977777777",
-          vehicleMake: "Honda",
-          vehicleModel: "Civic",
-          vehicleYear: "2019",
+          licensePlate: "ABC1234",
           status: "converted",
           commission: 450.00,
           paidAt: new Date(2023, 3, 15), // April 15, 2023
@@ -82,9 +80,7 @@ async function seed() {
           lastName: "Ribeiro",
           email: "paulo@example.com",
           phone: "11966666666",
-          vehicleMake: "Jeep",
-          vehicleModel: "Compass",
-          vehicleYear: "2022",
+          licensePlate: "DEF5678",
           status: "rejected",
           notes: "Cliente já possui seguro",
           createdAt: new Date(2023, 3, 5) // April 5, 2023
@@ -95,9 +91,7 @@ async function seed() {
           lastName: "Almeida",
           email: "roberto@example.com",
           phone: "11955555555",
-          vehicleMake: "Volkswagen",
-          vehicleModel: "Golf",
-          vehicleYear: "2021",
+          licensePlate: "GHI9J12",
           status: "processing",
           createdAt: new Date(2023, 3, 8) // April 8, 2023
         },
@@ -107,9 +101,7 @@ async function seed() {
           lastName: "Santos",
           email: "ana@example.com",
           phone: "11944444444",
-          vehicleMake: "Toyota",
-          vehicleModel: "Corolla",
-          vehicleYear: "2020",
+          licensePlate: "KLM3456",
           status: "pending",
           createdAt: new Date(2023, 3, 10) // April 10, 2023
         }

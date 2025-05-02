@@ -32,9 +32,7 @@ export const referrals = pgTable("referrals", {
   lastName: text("last_name").notNull(),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
-  vehicleMake: text("vehicle_make").notNull(),
-  vehicleModel: text("vehicle_model").notNull(),
-  vehicleYear: text("vehicle_year").notNull(),
+  licensePlate: text("license_plate").notNull(),
   comments: text("comments"),
   status: text("status").default("pending").notNull().$type<ReferralStatus>(),
   commission: decimal("commission", { precision: 10, scale: 2 }),
@@ -83,9 +81,7 @@ export const createReferralSchema = createInsertSchema(referrals, {
   lastName: (schema) => schema.min(1, "Sobrenome é obrigatório"),
   email: (schema) => schema.email("Email inválido").min(1, "Email é obrigatório"),
   phone: (schema) => schema.min(10, "Telefone inválido").max(15, "Telefone inválido"),
-  vehicleMake: (schema) => schema.min(1, "Marca do veículo é obrigatória"),
-  vehicleModel: (schema) => schema.min(1, "Modelo do veículo é obrigatório"),
-  vehicleYear: (schema) => schema.min(4, "Ano do veículo inválido").max(4, "Ano do veículo inválido"),
+  licensePlate: (schema) => schema.min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
 }).omit({ id: true, userId: true, status: true, commission: true, paidAt: true, createdAt: true, updatedAt: true, notes: true });
 
 export const updateReferralStatusSchema = z.object({
