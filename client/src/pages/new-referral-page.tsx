@@ -28,6 +28,7 @@ import { Check, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { PromotionalAlert } from "@/components/promotional-alert";
 import { CreateReferral } from "@shared/schema";
 
 // Define validation schema
@@ -128,6 +129,7 @@ export default function NewReferralPage() {
       
       <div className="flex-grow bg-gray-50 py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PromotionalAlert />
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl font-heading">Nova Indicação</CardTitle>

@@ -17,6 +17,7 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
 import { Referral, ReferralStatus } from "@shared/schema";
+import { PromotionalAlert } from "@/components/promotional-alert";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -101,6 +102,7 @@ export default function DashboardPage() {
           <main>
             <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
               <div className="px-4 py-8 sm:px-0">
+                <PromotionalAlert />
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {/* Total Referrals Card */}
