@@ -100,7 +100,15 @@ const formatDate = (dateStr: string | Date | null | undefined) => {
 // Format currency to Brazilian Real
 const formatCurrency = (value: number | string | null | undefined) => {
   if (value === null || value === undefined) return '-';
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  let numValue: number;
+  
+  try {
+    numValue = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(numValue)) return '-';
+  } catch (e) {
+    return '-';
+  }
+  
   return numValue.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -206,7 +214,10 @@ export default function AdminDashboard() {
   const totalReferrals = referrals?.length || 0;
   const convertedReferrals = referrals?.filter(r => r.status === 'converted').length || 0;
   const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals * 100).toFixed(1) : "0";
-  const totalCommissions = referrals?.reduce((sum, r) => sum + (r.commission ? Number(r.commission) : 0), 0) || 0;
+  const totalCommissions = referrals?.reduce((sum, r) => {
+    const commission = r.commission ? (typeof r.commission === 'string' ? parseFloat(r.commission) : r.commission) : 0;
+    return sum + commission;
+  }, 0) || 0;
   
   if (!user || user.role !== "admin") {
     return (

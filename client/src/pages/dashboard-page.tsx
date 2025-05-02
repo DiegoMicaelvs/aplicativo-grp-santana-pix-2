@@ -29,7 +29,10 @@ export default function DashboardPage() {
   // Calculate statistics
   const totalReferrals = referrals?.length || 0;
   const convertedReferrals = referrals?.filter(r => r.status === 'converted').length || 0;
-  const totalEarnings = referrals?.reduce((sum, r) => sum + (r.commission || 0), 0) || 0;
+  const totalEarnings = referrals?.reduce((sum, r) => {
+    const commission = r.commission ? (typeof r.commission === 'string' ? parseFloat(r.commission) : r.commission) : 0;
+    return sum + commission;
+  }, 0) || 0;
   
   // Get recent referrals (up to 5)
   const recentReferrals = referrals?.sort((a, b) => 
@@ -61,7 +64,15 @@ export default function DashboardPage() {
   // Format currency to Brazilian Real
   const formatCurrency = (value: number | string | null | undefined) => {
     if (value === null || value === undefined) return '-';
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    let numValue: number;
+    
+    try {
+      numValue = typeof value === 'string' ? parseFloat(value) : value;
+      if (isNaN(numValue)) return '-';
+    } catch (e) {
+      return '-';
+    }
+    
     return numValue.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
