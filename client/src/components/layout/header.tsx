@@ -85,6 +85,14 @@ export default function Header() {
                   }}>
                     <Button variant="ghost" className="w-full justify-start">Vantagens</Button>
                   </Link>
+                  <Link href="/#parceiros" onClick={() => {
+                    setIsOpen(false);
+                    if (location === '/') {
+                      document.getElementById('parceiros')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}>
+                    <Button variant="ghost" className="w-full justify-start">Parceiros</Button>
+                  </Link>
                   <Link href="/#faq" onClick={() => {
                     setIsOpen(false);
                     if (location === '/') {

@@ -1,62 +1,73 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ShieldCheck, Shield, CreditCard, Car, Building, Umbrella, Landmark, Wallet,
+  BriefcaseBusiness, CircleDollarSign, LineChart, Lock, Map, Banknote, Layers
+} from "lucide-react";
 
 // Lista de seguradoras parceiras com logos
 const insurancePartners = [
-  { name: "Porto Seguro", color: "#00a1fc" },
-  { name: "Azul Seguros", color: "#0047ba" },
-  { name: "Itaú", color: "#ec7000" },
-  { name: "Mapfre", color: "#f01716" },
-  { name: "Banco do Brasil", color: "#ffe11f" },
-  { name: "Bradesco", color: "#cc092f" },
-  { name: "HDI", color: "#009a4e" },
-  { name: "Aliro", color: "#0077c8" },
-  { name: "Liberty", color: "#142e65" },
-  { name: "Tokio Marine", color: "#008c6e" },
-  { name: "Allianz", color: "#003781" },
-  { name: "Sompo", color: "#d40000" },
-  { name: "Suhai", color: "#004128" },
-  { name: "Zurich", color: "#001769" },
-  { name: "Lions Mutual", color: "#ff8000" },
-  { name: "KONG", color: "#000000" },
-  { name: "APVS Brasil", color: "#001c59" },
-  { name: "BP Seguradora", color: "#0f1941" },
-  { name: "GOL Plus", color: "#003366" },
+  { name: "Porto Seguro", color: "#00a1fc", icon: Building },
+  { name: "Azul Seguros", color: "#0047ba", icon: Shield },
+  { name: "Itaú", color: "#ec7000", icon: Wallet },
+  { name: "Mapfre", color: "#f01716", icon: ShieldCheck },
+  { name: "Banco do Brasil", color: "#ffe11f", icon: Landmark },
+  { name: "Bradesco", color: "#cc092f", icon: BriefcaseBusiness },
+  { name: "HDI", color: "#009a4e", icon: Umbrella },
+  { name: "Aliro", color: "#0077c8", icon: Shield },
+  { name: "Liberty", color: "#142e65", icon: ShieldCheck },
+  { name: "Tokio Marine", color: "#008c6e", icon: Building },
+  { name: "Allianz", color: "#003781", icon: Lock },
+  { name: "Sompo", color: "#d40000", icon: ShieldCheck },
+  { name: "Suhai", color: "#004128", icon: Car },
+  { name: "Zurich", color: "#001769", icon: Map },
+  { name: "Lions Mutual", color: "#ff8000", icon: CircleDollarSign },
+  { name: "KONG", color: "#000000", icon: Layers },
+  { name: "APVS Brasil", color: "#001c59", icon: CreditCard },
+  { name: "BP Seguradora", color: "#0f1941", icon: Shield },
+  { name: "GOL Plus", color: "#003366", icon: ShieldCheck },
 ];
 
 // Lista de produtos oferecidos
 const insuranceProducts = [
-  { name: "Seguro Auto", description: "Proteção completa para seu veículo com coberturas personalizadas" },
-  { name: "Seguro de Responsabilidade Civil", description: "Cobertura para danos causados a terceiros" },
-  { name: "Assistência 24h", description: "Suporte completo para emergências com seu veículo" },
-  { name: "Proteção contra Roubo e Furto", description: "Cobertura específica para casos de roubo ou furto do veículo" },
-  { name: "Seguro para Vidros", description: "Proteção para vidros, faróis, lanternas e retrovisores" },
-  { name: "Cobertura para Eventos Naturais", description: "Proteção contra danos causados por granizo, enchentes e outros eventos" },
-  { name: "Carro Reserva", description: "Veículo substituto em caso de sinistro" },
-  { name: "Proteção a Passageiros", description: "Cobertura para danos corporais aos ocupantes do veículo" },
+  { name: "Seguro Auto", description: "Proteção completa para seu veículo com coberturas personalizadas", icon: Car },
+  { name: "Seguro de Responsabilidade Civil", description: "Cobertura para danos causados a terceiros", icon: Shield },
+  { name: "Assistência 24h", description: "Suporte completo para emergências com seu veículo", icon: ShieldCheck },
+  { name: "Proteção contra Roubo e Furto", description: "Cobertura específica para casos de roubo ou furto do veículo", icon: Lock },
+  { name: "Seguro para Vidros", description: "Proteção para vidros, faróis, lanternas e retrovisores", icon: Layers },
+  { name: "Cobertura para Eventos Naturais", description: "Proteção contra danos causados por granizo, enchentes e outros eventos", icon: Umbrella },
+  { name: "Carro Reserva", description: "Veículo substituto em caso de sinistro", icon: Car },
+  { name: "Proteção a Passageiros", description: "Cobertura para danos corporais aos ocupantes do veículo", icon: CreditCard },
 ];
 
 export function InsurancePartnersSection() {
   return (
     <div className="py-12 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 font-heading mb-4">Nossas Parceiras</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Trabalhamos com as melhores seguradoras do mercado para oferecer as melhores opções para nossos clientes
+        <div className="lg:text-center mb-12">
+          <h2 className="text-base text-primary font-semibold tracking-wide uppercase font-heading">Parcerias</h2>
+          <p className="mt-2 text-3xl leading-8 font-bold tracking-tight text-gray-900 sm:text-4xl font-heading">
+            Seguradoras Parceiras
+          </p>
+          <p className="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
+            Trabalhamos com as melhores seguradoras do mercado para oferecer as opções mais vantajosas para seus indicados
           </p>
         </div>
         
         {/* Logos das seguradoras */}
-        <div className="flex flex-wrap justify-center gap-6 mb-16">
-          {insurancePartners.map((partner) => (
-            <div 
-              key={partner.name} 
-              className="flex items-center justify-center bg-white p-4 rounded-lg shadow-sm h-20 w-40"
-              title={partner.name}
-            >
-              <span className="text-lg font-semibold" style={{ color: partner.color }}>{partner.name}</span>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-16">
+          {insurancePartners.map((partner) => {
+            const Icon = partner.icon;
+            return (
+              <div 
+                key={partner.name} 
+                className="flex flex-col items-center justify-center bg-white p-4 rounded-lg shadow hover:shadow-md transition-all duration-200 h-28"
+                title={partner.name}
+              >
+                <Icon style={{ color: partner.color }} className="h-8 w-8 mb-2" />
+                <span className="text-sm font-semibold text-center" style={{ color: partner.color }}>{partner.name}</span>
+              </div>
+            );
+          })}
         </div>
         
         {/* Produtos oferecidos */}
@@ -65,18 +76,26 @@ export function InsurancePartnersSection() {
             O que oferecemos para suas indicações
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {insuranceProducts.map((product) => (
-              <Card key={product.name} className="h-full">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-gray-600">
-                    {product.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
+            {insuranceProducts.map((product) => {
+              const Icon = product.icon;
+              return (
+                <Card key={product.name} className="h-full hover:shadow-md transition-all duration-200">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center mb-2">
+                      <div className="flex-shrink-0 mr-3 p-2 rounded-full bg-primary-100">
+                        <Icon className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <CardTitle className="text-lg">{product.name}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-gray-600">
+                      {product.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </div>
