@@ -20,6 +20,7 @@ export default function HomePage() {
   const [location] = useLocation();
   const comoFuncionaRef = useRef<HTMLDivElement>(null);
   const vantagensRef = useRef<HTMLDivElement>(null);
+  const parceirosRef = useRef<HTMLDivElement>(null);
   const faqRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -28,6 +29,8 @@ export default function HomePage() {
       comoFuncionaRef.current.scrollIntoView({ behavior: 'smooth' });
     } else if (location === '/#vantagens' && vantagensRef.current) {
       vantagensRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else if (location === '/#parceiros' && parceirosRef.current) {
+      parceirosRef.current.scrollIntoView({ behavior: 'smooth' });
     } else if (location === '/#faq' && faqRef.current) {
       faqRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -304,6 +307,11 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Parceiros Section */}
+      <div id="parceiros" ref={parceirosRef}>
+        <InsurancePartnersSection />
       </div>
       
       {/* FAQ Section */}

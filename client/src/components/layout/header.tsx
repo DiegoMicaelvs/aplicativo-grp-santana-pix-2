@@ -152,6 +152,14 @@ export default function Header() {
                 }}>
                   Vantagens
                 </Link>
+                <Link href="/#parceiros" className={`text-base font-medium ${isActive("/#parceiros")} hover:text-gray-900`} onClick={(e) => {
+                  if (location === '/') {
+                    e.preventDefault();
+                    document.getElementById('parceiros')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}>
+                  Parceiros
+                </Link>
                 <Link href="/#faq" className={`text-base font-medium ${isActive("/#faq")} hover:text-gray-900`} onClick={(e) => {
                   if (location === '/') {
                     e.preventDefault();
