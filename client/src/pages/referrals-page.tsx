@@ -178,7 +178,7 @@ export default function ReferralsPage() {
                               {referral.firstName} {referral.lastName}
                             </TableCell>
                             <TableCell>
-                              {referral.vehicleMake} {referral.vehicleModel} ({referral.vehicleYear})
+                              Placa: {referral.licensePlate}
                             </TableCell>
                             <TableCell>{formatDate(referral.createdAt)}</TableCell>
                             <TableCell>{getStatusBadge(referral.status)}</TableCell>
@@ -298,9 +298,7 @@ export default function ReferralsPage() {
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Dados do Veículo</h4>
                     <div className="mt-1 space-y-1">
-                      <p><span className="font-medium">Marca:</span> {selectedReferral.vehicleMake}</p>
-                      <p><span className="font-medium">Modelo:</span> {selectedReferral.vehicleModel}</p>
-                      <p><span className="font-medium">Ano:</span> {selectedReferral.vehicleYear}</p>
+                      <p><span className="font-medium">Placa:</span> {selectedReferral.licensePlate}</p>
                     </div>
                   </div>
                   

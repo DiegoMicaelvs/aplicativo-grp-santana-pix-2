@@ -179,8 +179,7 @@ export default function DashboardPage() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <div className="text-sm text-gray-900">{referral.vehicleMake} {referral.vehicleModel}</div>
-                                <div className="text-sm text-gray-500">{referral.vehicleYear}</div>
+                                <div className="text-sm text-gray-900">Placa: {referral.licensePlate}</div>
                               </TableCell>
                               <TableCell>
                                 <div className="text-sm text-gray-900">{formatDate(referral.createdAt)}</div>
