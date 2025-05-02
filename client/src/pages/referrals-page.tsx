@@ -60,6 +60,8 @@ const getStatusBadge = (status: ReferralStatus) => {
       return <Badge variant="outline" className="bg-red-100 text-red-800">Não convertido</Badge>;
     case 'validated':
       return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
+    case 'paid':
+      return <Badge variant="outline" className="bg-emerald-100 text-emerald-800">Pago</Badge>;
     default:
       return <Badge variant="outline">Desconhecido</Badge>;
   }
@@ -151,6 +153,7 @@ export default function ReferralsPage() {
                       <SelectItem value="converted">Convertido</SelectItem>
                       <SelectItem value="rejected">Não convertido</SelectItem>
                       <SelectItem value="validated">Validado</SelectItem>
+                      <SelectItem value="paid">Pago</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -313,13 +316,13 @@ export default function ReferralsPage() {
                     </div>
                   )}
                   
-                  {(selectedReferral.status === 'converted' || selectedReferral.status === 'validated') && (
+                  {(selectedReferral.status === 'converted' || selectedReferral.status === 'validated' || selectedReferral.status === 'paid') && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Comissão</h4>
                       <p className="mt-1 text-lg font-medium text-green-600">
                         {formatCurrency(selectedReferral.commission)}
                       </p>
-                      {selectedReferral.paidAt && (
+                      {selectedReferral.status === 'paid' && selectedReferral.paidAt && (
                         <p className="text-sm text-gray-500">
                           Pago em {formatDate(selectedReferral.paidAt)}
                         </p>
