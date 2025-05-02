@@ -282,7 +282,7 @@ export default function HomePage() {
             </div>
             <div className="ml-3 inline-flex rounded-md shadow">
               <Link href={user ? "/dashboard" : "/auth"}>
-                <Button size="lg" variant="default" className="bg-primary-600 hover:bg-primary-500">
+                <Button size="lg" variant="default" className="bg-primary-600 hover:bg-primary-500 text-black">
                   {user ? "Acessar Dashboard" : "Já sou indicador"}
                 </Button>
               </Link>
