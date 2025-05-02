@@ -85,6 +85,8 @@ const getStatusBadge = (status: ReferralStatus) => {
       return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em análise</Badge>;
     case 'rejected':
       return <Badge variant="outline" className="bg-red-100 text-red-800">Não convertido</Badge>;
+    case 'validated':
+      return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
     default:
       return <Badge variant="outline">Desconhecido</Badge>;
   }
@@ -117,7 +119,7 @@ const formatCurrency = (value: number | string | null | undefined) => {
 
 // Status update form schema
 const updateReferralSchema = z.object({
-  status: z.enum(["pending", "processing", "converted", "rejected"]),
+  status: z.enum(["pending", "processing", "converted", "rejected", "validated"]),
   commission: z.preprocess(
     (val) => (val === "" ? undefined : Number(val)),
     z.number().optional()
@@ -201,6 +203,14 @@ export default function AdminDashboard() {
     });
     setDialogOpen(true);
   };
+  
+  // Watch for status changes to apply default commission value when 'validated'
+  const status = form.watch('status');
+  React.useEffect(() => {
+    if (status === 'validated') {
+      form.setValue('commission', 3.00);
+    }
+  }, [status, form]);
   
   // Handle updating referral status
   const onSubmitStatusUpdate = (data: UpdateReferralFormValues) => {
@@ -342,6 +352,7 @@ export default function AdminDashboard() {
                             <SelectItem value="processing">Em análise</SelectItem>
                             <SelectItem value="converted">Convertido</SelectItem>
                             <SelectItem value="rejected">Não convertido</SelectItem>
+                            <SelectItem value="validated">Validado</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -557,6 +568,7 @@ export default function AdminDashboard() {
                             <SelectItem value="processing">Em análise</SelectItem>
                             <SelectItem value="converted">Convertido</SelectItem>
                             <SelectItem value="rejected">Não convertido</SelectItem>
+                            <SelectItem value="validated">Validado</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -575,7 +587,7 @@ export default function AdminDashboard() {
                             type="number" 
                             step="0.01"
                             placeholder="0.00" 
-                            disabled={form.watch('status') !== 'converted'}
+                            disabled={!['converted', 'validated'].includes(form.watch('status'))}
                             {...field}
                             value={field.value === undefined ? '' : field.value}
                           />
