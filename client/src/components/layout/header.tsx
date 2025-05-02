@@ -47,9 +47,9 @@ export default function Header() {
         <div className="flex justify-between items-center py-4 md:justify-start md:space-x-10">
           <div className="flex justify-start lg:w-0 lg:flex-1">
             <Link href="/" className="flex items-center">
-              <span className="sr-only">Proteção que Paga</span>
-              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">P</div>
-              <span className="text-xl font-heading font-bold text-gray-900 ml-2">Proteção que Paga</span>
+              <span className="sr-only">Indique e Ganhe</span>
+              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">I</div>
+              <span className="text-xl font-heading font-bold text-gray-900 ml-2">Indique e Ganhe</span>
             </Link>
           </div>
 
@@ -63,7 +63,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                  <SheetTitle className="font-heading">Proteção que Paga</SheetTitle>
+                  <SheetTitle className="font-heading">Indique e Ganhe</SheetTitle>
                   <SheetDescription>
                     Indique amigos com veículos sem seguro e ganhe comissões
                   </SheetDescription>

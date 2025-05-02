@@ -486,11 +486,11 @@ export default function AuthPage() {
             <div className="flex flex-col justify-center items-center px-8">
               <div className="max-w-lg">
                 <h2 className="text-3xl font-extrabold text-gray-900 font-heading mb-6">
-                  Junte-se ao programa Proteção que Paga
+                  Junte-se ao programa Indique e Ganhe
                 </h2>
                 <div className="prose prose-blue">
                   <p className="text-xl text-gray-600">
-                    Com a Proteção que Paga, você pode transformar suas conexões em oportunidades lucrativas.
+                    Com o Indique e Ganhe, você pode transformar suas conexões em oportunidades lucrativas.
                   </p>
                   
                   <h3 className="text-xl font-medium text-gray-900 mt-8 mb-4">Por que participar?</h3>
