@@ -76,7 +76,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseInt(id), 
         validatedData.status, 
         validatedData.commission,
-        validatedData.notes
+        validatedData.notes,
+        validatedData.paidAt
       );
       
       return res.json(updatedReferral);

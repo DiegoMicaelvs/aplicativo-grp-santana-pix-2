@@ -25,7 +25,8 @@ export interface IStorage {
     id: number, 
     status: ReferralStatus, 
     commission?: number,
-    notes?: string
+    notes?: string,
+    paidAt?: Date
   ): Promise<any>;
   
   // Session store
@@ -148,7 +149,8 @@ class DatabaseStorage implements IStorage {
     id: number, 
     status: ReferralStatus, 
     commission?: number,
-    notes?: string
+    notes?: string,
+    paidAt?: Date
   ) {
     // Update data object
     const updateData: any = { 
@@ -166,9 +168,9 @@ class DatabaseStorage implements IStorage {
       updateData.notes = notes;
     }
     
-    // Set paidAt date if status is converted
-    if (status === 'converted') {
-      updateData.paidAt = new Date();
+    // Set paidAt date if status is 'paid' and no specific date is provided
+    if (status === 'paid') {
+      updateData.paidAt = paidAt || new Date();
     }
     
     const [updatedReferral] = await db
