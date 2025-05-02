@@ -19,6 +19,7 @@ const traditionalInsurers = [
   { name: "Sompo", color: "#d40000", icon: ShieldCheck },
   { name: "Suhai", color: "#004128", icon: Car },
   { name: "Zurich", color: "#001769", icon: Map },
+  { name: "Aliro", color: "#0077c8", icon: Shield },
 ];
 
 // Lista de empresas de proteção patrimonial mutualistas
@@ -28,7 +29,6 @@ const mutualistCompanies = [
   { name: "APVS Brasil", color: "#001c59", icon: CreditCard },
   { name: "BP Seguradora", color: "#0f1941", icon: Shield },
   { name: "GOL Plus", color: "#003366", icon: ShieldCheck },
-  { name: "Aliro", color: "#0077c8", icon: Shield },
 ];
 
 // Lista de produtos oferecidos
