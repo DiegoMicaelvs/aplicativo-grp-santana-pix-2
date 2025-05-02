@@ -64,15 +64,16 @@ const getStatusBadge = (status: ReferralStatus) => {
 };
 
 // Format date to Brazilian format
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
+const formatDate = (dateStr: string | Date) => {
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
   return date.toLocaleDateString('pt-BR');
 };
 
 // Format currency to Brazilian Real
-const formatCurrency = (value: number | null | undefined) => {
+const formatCurrency = (value: number | string | null | undefined) => {
   if (value === null || value === undefined) return '-';
-  return value.toLocaleString('pt-BR', {
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  return numValue.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   });

@@ -86,16 +86,17 @@ const getStatusBadge = (status: ReferralStatus) => {
 };
 
 // Format date to Brazilian format
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | Date | null | undefined) => {
   if (!dateStr) return "-";
-  const date = new Date(dateStr);
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
   return date.toLocaleDateString('pt-BR');
 };
 
 // Format currency to Brazilian Real
-const formatCurrency = (value: number | null | undefined) => {
+const formatCurrency = (value: number | string | null | undefined) => {
   if (value === null || value === undefined) return '-';
-  return value.toLocaleString('pt-BR', {
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  return numValue.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   });
@@ -362,7 +363,7 @@ export default function AdminDashboard() {
                                     {referral.firstName} {referral.lastName}
                                   </TableCell>
                                   <TableCell>
-                                    {referral.vehicleMake} {referral.vehicleModel} ({referral.vehicleYear})
+                                    Placa: {referral.licensePlate}
                                   </TableCell>
                                   <TableCell>{formatDate(referral.createdAt)}</TableCell>
                                   <TableCell>{getStatusBadge(referral.status)}</TableCell>
@@ -512,7 +513,7 @@ export default function AdminDashboard() {
                   {selectedReferral && (
                     <span>
                       Indicação de {selectedReferral.firstName} {selectedReferral.lastName} - 
-                      {selectedReferral.vehicleMake} {selectedReferral.vehicleModel}
+                      Placa: {selectedReferral.licensePlate}
                     </span>
                   )}
                 </DialogDescription>
