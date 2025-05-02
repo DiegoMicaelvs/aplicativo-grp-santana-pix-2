@@ -21,8 +21,8 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Referral statuses: pending, processing, converted, rejected
-export type ReferralStatus = "pending" | "processing" | "converted" | "rejected";
+// Referral statuses: pending, processing, converted, rejected, validated
+export type ReferralStatus = "pending" | "processing" | "converted" | "rejected" | "validated";
 
 // Referrals table
 export const referrals = pgTable("referrals", {
@@ -85,7 +85,7 @@ export const createReferralSchema = createInsertSchema(referrals, {
 }).omit({ id: true, userId: true, status: true, commission: true, paidAt: true, createdAt: true, updatedAt: true, notes: true });
 
 export const updateReferralStatusSchema = z.object({
-  status: z.enum(["pending", "processing", "converted", "rejected"]),
+  status: z.enum(["pending", "processing", "converted", "rejected", "validated"]),
   commission: z.number().optional(),
   notes: z.string().optional(),
 });
