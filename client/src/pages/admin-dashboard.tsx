@@ -51,8 +51,13 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { Users, ClipboardList, DollarSign, CheckCircle, XCircle, Clock, Loader2, Filter } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Referral, ReferralStatus, User } from "@shared/schema";
+import { Referral as BaseReferral, ReferralStatus, User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Interface estendida para incluir a relação com o usuário
+interface Referral extends BaseReferral {
+  user?: Pick<User, 'id' | 'firstName' | 'lastName' | 'username'>;
+}
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
