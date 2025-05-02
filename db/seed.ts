@@ -70,9 +70,10 @@ async function seed() {
           phone: "11977777777",
           licensePlate: "ABC1234",
           status: "converted",
-          commission: 450.00,
+          commission: "450.00",
           paidAt: new Date(2023, 3, 15), // April 15, 2023
-          createdAt: new Date(2023, 3, 12) // April 12, 2023
+          createdAt: new Date(2023, 3, 12), // April 12, 2023
+          updatedAt: new Date(2023, 3, 12)
         },
         {
           userId: referrer.id,
@@ -83,7 +84,8 @@ async function seed() {
           licensePlate: "DEF5678",
           status: "rejected",
           notes: "Cliente já possui seguro",
-          createdAt: new Date(2023, 3, 5) // April 5, 2023
+          createdAt: new Date(2023, 3, 5), // April 5, 2023
+          updatedAt: new Date(2023, 3, 5)
         },
         {
           userId: referrer.id,
@@ -93,7 +95,8 @@ async function seed() {
           phone: "11955555555",
           licensePlate: "GHI9J12",
           status: "processing",
-          createdAt: new Date(2023, 3, 8) // April 8, 2023
+          createdAt: new Date(2023, 3, 8), // April 8, 2023
+          updatedAt: new Date(2023, 3, 8)
         },
         {
           userId: referrer.id,
@@ -103,7 +106,8 @@ async function seed() {
           phone: "11944444444",
           licensePlate: "KLM3456",
           status: "pending",
-          createdAt: new Date(2023, 3, 10) // April 10, 2023
+          createdAt: new Date(2023, 3, 10), // April 10, 2023
+          updatedAt: new Date(2023, 3, 10)
         }
       ]);
       
