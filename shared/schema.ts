@@ -88,7 +88,10 @@ export const updateReferralStatusSchema = z.object({
   status: z.enum(["pending", "processing", "converted", "rejected", "validated", "paid"]),
   commission: z.number().optional(),
   notes: z.string().optional(),
-  paidAt: z.date().optional(),
+  paidAt: z.union([
+    z.date(),
+    z.string().transform((str) => new Date(str))
+  ]).optional(),
 });
 
 // Login data type

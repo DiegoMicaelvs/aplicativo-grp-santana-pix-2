@@ -622,8 +622,14 @@ export default function AdminDashboard() {
                                 type="date"
                                 value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
                                 onChange={(e) => {
-                                  const date = e.target.value ? new Date(e.target.value) : new Date();
-                                  field.onChange(date);
+                                  if (e.target.value) {
+                                    // Garantir que a data está definida corretamente
+                                    const dateString = e.target.value + 'T12:00:00Z';
+                                    const date = new Date(dateString);
+                                    field.onChange(date);
+                                  } else {
+                                    field.onChange(undefined);
+                                  }
                                 }}
                               />
                             </div>
