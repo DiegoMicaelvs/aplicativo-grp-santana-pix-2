@@ -379,7 +379,6 @@ export default function AdminDashboard() {
                                 <TableHead>ID</TableHead>
                                 <TableHead>Indicador</TableHead>
                                 <TableHead>Indicação</TableHead>
-                                <TableHead>Observações</TableHead>
                                 <TableHead>Data</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Comissão</TableHead>
@@ -405,11 +404,6 @@ export default function AdminDashboard() {
                                     <div className="text-xs text-gray-500 mt-1">
                                       <div>Tel: {referral.phone}</div>
                                       <div>Placa: {referral.licensePlate}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="max-w-xs truncate">
-                                      {referral.comments || <span className="text-gray-400 italic">Sem observações</span>}
                                     </div>
                                   </TableCell>
                                   <TableCell>{formatDate(referral.createdAt)}</TableCell>
@@ -564,16 +558,7 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </DialogDescription>
-                
-                {/* Observações do indicador */}
-                {selectedReferral && selectedReferral.comments && (
-                  <div className="mt-2 p-3 rounded-md bg-blue-50 border border-blue-100">
-                    <h4 className="text-sm font-medium text-blue-700">Observações do Indicador:</h4>
-                    <p className="mt-1 text-sm text-blue-600">
-                      {selectedReferral.comments}
-                    </p>
-                  </div>
-                )}
+
               </DialogHeader>
               
               <Form {...form}>
