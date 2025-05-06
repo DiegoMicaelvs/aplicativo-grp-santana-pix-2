@@ -60,6 +60,11 @@ export default function Footer() {
         <p className="mt-8 text-center text-base text-gray-400">
           &copy; {new Date().getFullYear()} Grupo Santana. Todos os direitos reservados.
         </p>
+        <p className="mt-2 text-center text-xs text-gray-500">
+          <span title="Código de assinatura único para identificação e proteção contra plágio">
+            INDIQUE-GS25-{new Date().getFullYear()}-9D7F4B2E835CAC1170
+          </span>
+        </p>
       </div>
     </footer>
   );

@@ -1,3 +1,18 @@
+/**
+ * Indique e Ganhe - Grupo Santana
+ * ----------------------------------------------------------------------------
+ * @application Indique e Ganhe
+ * @client Grupo Santana
+ * @version 1.0.0
+ * @signature GS25-9D7F4B2E835CAC1170-AUTHCODE-PROTECTED
+ * @copyright Todas as funcionalidades e o código-fonte desta aplicação são
+ * propriedade exclusiva do Grupo Santana e estão protegidos por leis de
+ * propriedade intelectual. Qualquer reprodução, modificação ou uso não
+ * autorizado deste software constitui violação dos direitos autorais.
+ * @date Maio 2025
+ * ----------------------------------------------------------------------------
+ */
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
