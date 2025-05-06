@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart, Clock, DollarSign, Users } from "lucide-react";
+import { BarChart, Clock, DollarSign, TrendingUp, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -29,7 +29,8 @@ export default function DashboardPage() {
 
   // Calculate statistics
   const totalReferrals = referrals?.length || 0;
-  const convertedReferrals = referrals?.filter(r => r.status === 'converted').length || 0;
+  const convertedReferrals = referrals?.filter(r => ['converted', 'validated', 'paid'].includes(r.status)).length || 0;
+  const conversionRate = totalReferrals > 0 ? Math.round((convertedReferrals / totalReferrals) * 100) : 0;
   const totalEarnings = referrals?.reduce((sum, r) => {
     const commission = r.commission ? (typeof r.commission === 'string' ? parseFloat(r.commission) : r.commission) : 0;
     return sum + commission;
@@ -104,7 +105,7 @@ export default function DashboardPage() {
               <div className="px-4 py-8 sm:px-0">
                 <PromotionalAlert />
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   {/* Total Referrals Card */}
                   <Card>
                     <CardContent className="p-6">
@@ -141,6 +142,26 @@ export default function DashboardPage() {
                         <Link href="/referrals?status=converted">
                           <Button variant="link" className="text-primary p-0">Ver detalhes</Button>
                         </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Conversion Rate Card */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                          <TrendingUp className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="ml-5 w-0 flex-1">
+                          <div className="text-sm font-medium text-gray-500 truncate">Taxa de Conversão</div>
+                          <div className="text-lg font-medium text-gray-900">{conversionRate}%</div>
+                        </div>
+                      </div>
+                      <div className="mt-6">
+                        <div className="text-xs text-gray-500">
+                          Percentual de indicações convertidas
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
