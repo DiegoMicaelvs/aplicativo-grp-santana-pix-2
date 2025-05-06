@@ -29,7 +29,7 @@ export default function DashboardPage() {
 
   // Calculate statistics
   const totalReferrals = referrals?.length || 0;
-  const convertedReferrals = referrals?.filter(r => ['converted', 'validated', 'paid'].includes(r.status)).length || 0;
+  const convertedReferrals = referrals?.filter(r => r.status === 'converted').length || 0;
   const conversionRate = totalReferrals > 0 ? Math.round((convertedReferrals / totalReferrals) * 100) : 0;
   const totalEarnings = referrals?.reduce((sum, r) => {
     const commission = r.commission ? (typeof r.commission === 'string' ? parseFloat(r.commission) : r.commission) : 0;
@@ -160,7 +160,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="mt-6">
                         <div className="text-xs text-gray-500">
-                          Percentual de indicações convertidas
+                          Percentual de indicações convertidas em vendas
                         </div>
                       </div>
                     </CardContent>
