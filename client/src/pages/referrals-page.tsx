@@ -172,6 +172,7 @@ export default function ReferralsPage() {
                         <TableRow>
                           <TableHead>Nome</TableHead>
                           <TableHead>Veículo</TableHead>
+                          <TableHead>Observações</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Comissão</TableHead>
@@ -182,10 +183,23 @@ export default function ReferralsPage() {
                         {paginatedReferrals.map((referral) => (
                           <TableRow key={referral.id}>
                             <TableCell className="font-medium">
-                              {referral.firstName} {referral.lastName}
+                              <div>
+                                {referral.firstName} {referral.lastName}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {referral.email}
+                              </div>
                             </TableCell>
                             <TableCell>
-                              Placa: {referral.licensePlate}
+                              <div>Placa: {referral.licensePlate}</div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Tel: {referral.phone}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-xs truncate">
+                                {referral.comments || <span className="text-gray-400 italic">Sem observações</span>}
+                              </div>
                             </TableCell>
                             <TableCell>{formatDate(referral.createdAt)}</TableCell>
                             <TableCell>{getStatusBadge(referral.status)}</TableCell>
@@ -293,6 +307,14 @@ export default function ReferralsPage() {
                     </div>
                   </div>
                   
+                  {/* Comentários com destaque */}
+                  <div className={`p-3 rounded-md ${selectedReferral.comments ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50 border border-gray-100'}`}>
+                    <h4 className="text-sm font-medium text-gray-700">Observações do Indicador</h4>
+                    <p className="mt-1">
+                      {selectedReferral.comments || <span className="text-gray-400 italic">Nenhuma observação fornecida</span>}
+                    </p>
+                  </div>
+                  
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Dados do Indicado</h4>
                     <div className="mt-1 space-y-1">
@@ -308,13 +330,6 @@ export default function ReferralsPage() {
                       <p><span className="font-medium">Placa:</span> {selectedReferral.licensePlate}</p>
                     </div>
                   </div>
-                  
-                  {selectedReferral.comments && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500">Comentários</h4>
-                      <p className="mt-1">{selectedReferral.comments}</p>
-                    </div>
-                  )}
                   
                   {(selectedReferral.status === 'converted' || selectedReferral.status === 'validated' || selectedReferral.status === 'paid') && (
                     <div>
