@@ -60,7 +60,7 @@ export default function HomePage() {
                   <span className="block">Com o Grupo Santana</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Indique pessoas com veículos sem seguro e ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>, mesmo que não fechem contrato! A cada 3 indicações, o valor total de <span className="font-semibold text-primary-700">R$9,00 é arredondado para R$10,00</span>.
+                  Transforme seu networking em renda extra! Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada proprietário de veículo</span> que você indicar, com dados válidos. A cada 3 indicações, receba <span className="font-semibold text-primary-700">R$10,00</span> em vez de R$9,00.
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
@@ -104,7 +104,7 @@ export default function HomePage() {
               Três passos simples para começar a ganhar
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
-              O processo é rápido e descomplicado. Você pode começar a indicar e ganhar hoje mesmo!
+              Sem burocracia, sem complicação. Comece a gerar renda extra hoje mesmo!
             </p>
           </div>
 
@@ -130,7 +130,7 @@ export default function HomePage() {
                   <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Indique pessoas</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Indique amigos, familiares ou conhecidos que possuam veículos sem seguro. Você só precisa dos dados básicos deles e do veículo.
+                  Compartilhe oportunidades com proprietários de veículos sem seguro. Basta informar os dados básicos e a placa do veículo.
                 </dd>
               </div>
 
@@ -142,7 +142,7 @@ export default function HomePage() {
                   <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Receba sua recompensa</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Ganhe R$3,00 por cada indicação <span className="font-semibold">validada</span> (dados corretos), mesmo que não fechem contrato. A cada 3 indicações, arredondaremos o total de R$9,00 para R$10,00!
+                  Ganhe R$3,00 por indicação com dados válidos, recebendo R$10,00 a cada 3 indicações. Você recebe mesmo se não fecharem contrato!
                 </dd>
               </div>
             </dl>
@@ -159,7 +159,7 @@ export default function HomePage() {
               Por que se tornar um indicador?
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
-              Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>. A cada 3 indicações, arredondaremos o total de <span className="font-semibold text-primary-700">R$9,00 para R$10,00</span>. Basta que as informações sejam corretas!
+              Transforme seus contatos em oportunidades e renda extra com o Grupo Santana!
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>, independente de fechamento. A cada 3 indicações, arredondaremos o total de <span className="font-semibold text-primary-700">R$9,00 para R$10,00</span>. Comissões extras para vendas concretizadas.
+                      R$3,00 por indicação com dados válidos mais bônus para vendas fechadas. Ganhe R$10,00 a cada 3 indicações válidas e aumente sua renda sem complicações.
                     </p>
                   </div>
                 </CardContent>
@@ -197,7 +197,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Trabalhe no seu próprio tempo. Indique quando e onde quiser, sem compromisso de horário ou metas obrigatórias.
+                      Faça indicações quando e onde quiser. Sem metas obrigatórias, sem horário fixo – a flexibilidade que você precisa.
                     </p>
                   </div>
                 </CardContent>
