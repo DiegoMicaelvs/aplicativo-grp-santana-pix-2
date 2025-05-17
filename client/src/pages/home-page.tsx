@@ -60,7 +60,7 @@ export default function HomePage() {
                   <span className="block">Com o Grupo Santana</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Indique pessoas com veículos sem seguro e ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>, mesmo que não fechem contrato! Ao indicar 3 pessoas, ganhe um <span className="font-semibold text-primary-700">bônus de R$10,00</span>.
+                  Indique pessoas com veículos sem seguro e ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>, mesmo que não fechem contrato! A cada 3 indicações, o valor total de <span className="font-semibold text-primary-700">R$9,00 é arredondado para R$10,00</span>.
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
@@ -230,12 +230,12 @@ export default function HomePage() {
                       <BarChart className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Programa de Bonificação</h3>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">Sistema de Arredondamento</h3>
                     </div>
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Quanto mais indicações você fizer, maiores serão seus bônus. Temos um sistema de níveis com recompensas crescentes.
+                      A cada 3 indicações validadas, o valor total de R$9,00 é arredondado para R$10,00. Quanto mais indicações você fizer, mais vezes se beneficiará deste arredondamento.
                     </p>
                   </div>
                 </CardContent>
