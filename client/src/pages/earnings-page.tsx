@@ -192,7 +192,7 @@ export default function EarningsPage() {
                           Você recebe <strong>{formatCurrency(3)}</strong> para cada indicação validada.
                         </p>
                         <p className="mt-2">
-                          <strong>Bônus especial:</strong> A cada 3 indicações validadas, você recebe um bônus adicional de <strong>{formatCurrency(10)}</strong>!
+                          <strong>Arredondamento especial:</strong> A cada 3 indicações validadas, o valor total de <strong>{formatCurrency(9)}</strong> é arredondado para <strong>{formatCurrency(10)}</strong>!
                         </p>
                         <p className="mt-2 text-xs text-blue-600">
                           * Promoção válida até agosto de 2025. Valor regular após esse período: {formatCurrency(1.5)} por indicação validada.
