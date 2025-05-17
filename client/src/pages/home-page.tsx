@@ -142,7 +142,7 @@ export default function HomePage() {
                   <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Receba sua recompensa</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Ganhe R$3,00 por cada indicação <span className="font-semibold">validada</span> (dados corretos), mesmo que não fechem contrato. E ao indicar 3 pessoas, receba um bônus adicional de R$10,00!
+                  Ganhe R$3,00 por cada indicação <span className="font-semibold">validada</span> (dados corretos), mesmo que não fechem contrato. A cada 3 indicações, arredondaremos o total de R$9,00 para R$10,00!
                 </dd>
               </div>
             </dl>
@@ -159,7 +159,7 @@ export default function HomePage() {
               Por que se tornar um indicador?
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
-              Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span> e um <span className="font-semibold text-primary-700">bônus de R$10,00</span> a cada 3 indicações. Basta que as informações sejam corretas!
+              Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>. A cada 3 indicações, arredondaremos o total de <span className="font-semibold text-primary-700">R$9,00 para R$10,00</span>. Basta que as informações sejam corretas!
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>, independente de fechamento. Ao indicar 3 pessoas válidas, receba um <span className="font-semibold text-primary-700">bônus de R$10,00</span>. Comissões extras para vendas concretizadas.
+                      Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span>, independente de fechamento. A cada 3 indicações, arredondaremos o total de <span className="font-semibold text-primary-700">R$9,00 para R$10,00</span>. Comissões extras para vendas concretizadas.
                     </p>
                   </div>
                 </CardContent>
@@ -343,7 +343,7 @@ export default function HomePage() {
                   Como funciona o pagamento das comissões?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Você ganha <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span> (número existente, pessoa existente e placa correta), mesmo que a pessoa não contrate o seguro. Ao indicar 3 pessoas válidas, você recebe um <span className="font-semibold text-primary-700">bônus adicional de R$10,00</span>. Se a indicação contratar o seguro, você também recebe uma comissão adicional. Os pagamentos são realizados até o 15º dia do mês seguinte.
+                  Você ganha <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span> (número existente, pessoa existente e placa correta), mesmo que a pessoa não contrate o seguro. A cada 3 indicações, o valor total de <span className="font-semibold text-primary-700">R$9,00 é arredondado para R$10,00</span>. Se a indicação contratar o seguro, você também recebe uma comissão adicional. Os pagamentos são realizados até o 15º dia do mês seguinte.
                 </AccordionContent>
               </AccordionItem>
               
