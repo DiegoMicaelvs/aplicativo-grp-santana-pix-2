@@ -216,7 +216,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Você está indicando seguros do Grupo Santana, uma empresa com mais de 20 anos de mercado e excelentes avaliações.
+                      Grupo Santana: 20+ anos no mercado, avaliações excelentes. Ofereça aos seus contatos uma proteção confiável e ganhe por isso.
                     </p>
                   </div>
                 </CardContent>
@@ -235,7 +235,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      A cada 3 indicações validadas, o valor total de R$9,00 é arredondado para R$10,00. Quanto mais indicações você fizer, mais vezes se beneficiará deste arredondamento.
+                      Transparência e generosidade: R$10,00 a cada 3 indicações. Quanto mais você indica, mais oportunidades para beneficiar-se deste arredondamento.
                     </p>
                   </div>
                 </CardContent>
@@ -254,7 +254,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Nossa equipe está sempre disponível para ajudar em qualquer dúvida. Você nunca estará sozinho nessa jornada.
+                      Equipe especializada à sua disposição. Dúvidas, orientações ou assistência - estamos sempre prontos para ajudar no seu sucesso.
                     </p>
                   </div>
                 </CardContent>
@@ -273,7 +273,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Você está ajudando pessoas a protegerem seu patrimônio e suas famílias, criando uma rede de segurança na sua comunidade.
+                      Ao indicar, você proporciona segurança e tranquilidade para seus contatos enquanto constrói uma fonte de renda socialmente positiva.
                     </p>
                   </div>
                 </CardContent>
@@ -334,7 +334,7 @@ export default function HomePage() {
                   Quem pode se tornar um indicador?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Qualquer pessoa maior de 18 anos, com CPF válido e dados bancários próprios pode se cadastrar como indicador. Não é necessário ter experiência prévia no setor de seguros.
+                  Maiores de 18 anos com CPF e conta bancária próprios. Sem necessidade de experiência em seguros - apenas sua rede de contatos já é suficiente para começar.
                 </AccordionContent>
               </AccordionItem>
               
@@ -343,7 +343,7 @@ export default function HomePage() {
                   Como funciona o pagamento das comissões?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Você ganha <span className="font-semibold text-primary-700">R$3,00 por cada indicação validada</span> (número existente, pessoa existente e placa correta), mesmo que a pessoa não contrate o seguro. A cada 3 indicações, o valor total de <span className="font-semibold text-primary-700">R$9,00 é arredondado para R$10,00</span>. Se a indicação contratar o seguro, você também recebe uma comissão adicional. Os pagamentos são realizados até o 15º dia do mês seguinte.
+                  Receba <span className="font-semibold text-primary-700">R$3,00 por indicação com dados válidos</span> (nome, telefone e placa corretos). A cada três indicações, <span className="font-semibold text-primary-700">ganha R$10,00</span> em vez de R$9,00. Vendas concretizadas geram comissão extra. Pagamentos até o dia 15 do mês seguinte.
                 </AccordionContent>
               </AccordionItem>
               
@@ -352,7 +352,7 @@ export default function HomePage() {
                   Quais dados preciso para fazer uma indicação?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Você precisará do nome completo, telefone e e-mail da pessoa indicada, além de informações básicas sobre o veículo (marca, modelo, ano). Não é necessário ter informações detalhadas, nossa equipe entrará em contato com a pessoa para completar o processo.
+                  Apenas nome, telefone, e-mail e placa do veículo. Nossa equipe de consultores se encarrega do resto, contatando seu indicado e coletando as informações detalhadas necessárias.
                 </AccordionContent>
               </AccordionItem>
               
@@ -361,7 +361,7 @@ export default function HomePage() {
                   Existe um limite de indicações que posso fazer?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Não há limite para o número de indicações que você pode fazer. Quanto mais pessoas você indicar, maiores serão suas chances de ganhar comissões e atingir níveis mais altos no nosso programa de bonificação.
+                  Nenhum limite! Cada indicação = mais ganhos. Quanto mais pessoas você indicar, mais vezes receberá o benefício do arredondamento para R$10,00 e maiores serão seus rendimentos mensais.
                 </AccordionContent>
               </AccordionItem>
               
@@ -370,7 +370,7 @@ export default function HomePage() {
                   Como sei se minha indicação virou cliente?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Você pode acompanhar o status de todas as suas indicações em tempo real através do seu painel de controle no site ou aplicativo. Além disso, você receberá notificações por e-mail e SMS sempre que houver atualizações importantes sobre suas indicações.
+                  Acesse seu painel de controle exclusivo e visualize o status de todas suas indicações em tempo real. Receba também alertas por e-mail sobre mudanças de status, pagamentos e outras atualizações importantes.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
