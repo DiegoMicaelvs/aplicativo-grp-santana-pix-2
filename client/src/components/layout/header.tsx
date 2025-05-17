@@ -221,18 +221,18 @@ export default function Header() {
                     </div>
                   </div>
                 ) : (
-                  <>
+                  <div className="flex items-center space-x-4">
                     <Link href="/auth">
                       <Button variant="ghost" className="text-base font-medium text-gray-600 hover:text-gray-900">
                         Entrar
                       </Button>
                     </Link>
                     <Link href="/auth">
-                      <Button className="ml-8">
+                      <Button>
                         Cadastre-se
                       </Button>
                     </Link>
-                  </>
+                  </div>
                 )}
               </div>
             </>
