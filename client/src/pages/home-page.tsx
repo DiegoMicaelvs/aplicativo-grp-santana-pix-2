@@ -87,7 +87,7 @@ export default function HomePage() {
         </div>
         <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <img
-            className="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
+            className="h-56 w-full object-contain sm:h-72 md:h-96 lg:w-full lg:h-full"
             src="/images/indique-ganhe-hero.png"
             alt="Pessoa ganhando R$3 por indicação no smartphone"
           />
