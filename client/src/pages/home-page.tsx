@@ -216,7 +216,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Grupo Santana: 20+ anos no mercado, avaliações excelentes. Ofereça aos seus contatos uma proteção confiável e ganhe por isso.
+                      Mais de 10 anos no mercado, avaliações excelentes. Ofereça aos seus contatos uma proteção confiável e ganhe por isso.
                     </p>
                   </div>
                 </CardContent>
