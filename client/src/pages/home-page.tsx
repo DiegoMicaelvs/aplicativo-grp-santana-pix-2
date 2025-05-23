@@ -197,7 +197,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Faça indicações quando e onde quiser. Sem metas obrigatórias, sem horário fixo – a flexibilidade que você precisa.
+                      Faça você mesmo seu horário, sem cobranças e sem carga horária de trabalho. Cadastrou, ganhou!
                     </p>
                   </div>
                 </CardContent>
