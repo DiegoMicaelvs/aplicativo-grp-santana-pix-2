@@ -130,7 +130,7 @@ export default function HomePage() {
                   <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Indique pessoas</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Compartilhe oportunidades com proprietários de veículos sem seguro. Basta informar os dados básicos e a placa do veículo.
+                  Comece com familiares, amigos, círculo religioso, faculdade ou colegas de curso. Basta informar os dados básicos e a placa do veículo.
                 </dd>
               </div>
 
