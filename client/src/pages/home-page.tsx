@@ -60,7 +60,7 @@ export default function HomePage() {
                   <span className="block">Com o Grupo Santana</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Transforme seu networking em renda extra! Ganhe <span className="font-semibold text-primary-700">R$3,00 por cada proprietário de veículo</span> que você indicar, com dados válidos. A cada 3 indicações, receba <span className="font-semibold text-primary-700">R$10,00</span> em vez de R$9,00.
+                  Transforme seu networking em renda extra! Ganhe <span className="font-semibold text-primary-700">3 reais a cada cadastro</span> de amigos na plataforma, simples assim, não precisa vender nada apenas cadastrar. A cada 3 cadastros, ganhe mais <span className="font-semibold text-primary-700">1 real de bônus</span>.
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
