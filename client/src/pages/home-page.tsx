@@ -178,7 +178,7 @@ export default function HomePage() {
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      R$3,00 por indicação com dados válidos mais bônus para vendas fechadas. Ganhe R$10,00 a cada 3 indicações válidas e aumente sua renda sem complicações.
+                      Cadastro fácil e que pode render mais de R$2.500 por mês sem vender nada. A renda extra que pode virar a renda principal.
                     </p>
                   </div>
                 </CardContent>
