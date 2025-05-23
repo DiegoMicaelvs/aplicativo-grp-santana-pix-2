@@ -1,24 +1,24 @@
 # Derivação Autorizada - Sistema "Indique e Ganhe"
 
-O Grupo Santana, CNPJ XX.XXX.XXX/0001-XX, titular dos direitos autorais do software "Indique e Ganhe", declara que este é uma obra original, desenvolvida internamente, sem derivação de outros softwares ou dependência de licenças restritivas de terceiros.
+O Grupo Santana, CNPJ XX.XXX.XXX/0001-XX, titular dos direitos autorais do software "Indique e Ganhe", declara que este é obra original, desenvolvida internamente, sem derivação de outros softwares.
 
-O software foi criado para facilitar o processo de indicação de proprietários de veículos sem seguro, permitindo que pessoas se cadastrem como indicadores e recebam comissões por referências válidas.
+**PROTEÇÃO CONTRA CÓPIA E REPRODUÇÃO**
+Este software é propriedade exclusiva do Grupo Santana, protegido pela Lei 9.610/98 e Lei 9.609/98. É proibida qualquer cópia, reprodução, modificação ou uso não autorizado do código-fonte. O sistema incorpora verificação de integridade para detectar cópias não autorizadas. Infrações estão sujeitas às penalidades legais.
 
-O programa utiliza tecnologias de código aberto com licenças permissivas que autorizam uso comercial:
-- React.js, Node.js, Express.js (MIT License)
+O programa utiliza tecnologias com licenças permissivas:
+- React.js, Node.js, Express.js (MIT)
 - PostgreSQL (PostgreSQL License)
-- TailwindCSS, Drizzle ORM (MIT License)
+- TailwindCSS, Drizzle ORM (MIT)
 
-Todas as bibliotecas são integradas ao código original conforme os termos das licenças correspondentes, sem restrições que comprometam os direitos sobre o software desenvolvido.
+A implementação contém código proprietário para:
+- Algoritmos exclusivos de comissões (protegidos)
+- Interface e fluxos de negócio proprietários
+- Sistema de indicação e validação
+- Integração e persistência de dados
 
-A implementação contém código original para:
-- Gerenciamento de indicações e usuários
-- Lógica específica para cálculo de comissões
-- Interface personalizada
-- Fluxos de aprovação administrativa
-- Integração de componentes
+O código-fonte é confidencial e seu acesso ou implementação similar constitui violação de direitos autorais. O uso de bibliotecas abertas não transfere quaisquer direitos sobre o software como obra finalizada.
 
-Atestamos que o Grupo Santana é o único detentor dos direitos sobre o software, estando autorizado a registrá-lo perante o INPI sem impedimentos derivados de direitos de terceiros.
+Atestamos que o Grupo Santana é o único detentor dos direitos sobre o software, registrando-o no INPI para proteção legal contra uso indevido.
 
 **Assinatura**: GS25-9D7F4B2E835CAC1170-AUTHCODE-PROTECTED
 **Data**: 23/05/2025
