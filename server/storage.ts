@@ -255,7 +255,10 @@ class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(referrals.userId, userId),
-          eq(referrals.status, 'rejected')
+          or(
+            eq(referrals.status, 'rejected'),
+            eq(referrals.status, 'falso')
+          )
         )
       );
     

@@ -80,8 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.paidAt
       );
 
-      // Auto-check for fraud when a referral is rejected
-      if (validatedData.status === 'rejected') {
+      // Auto-check for fraud when a referral is rejected or marked as false
+      if (validatedData.status === 'rejected' || validatedData.status === 'falso') {
         const referral = await storage.getReferralById(parseInt(id));
         if (referral) {
           const wasBanned = await storage.autoCheckForFraud(referral.userId);
