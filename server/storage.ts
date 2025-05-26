@@ -1,5 +1,5 @@
 import { db } from "@db";
-import { eq, desc, asc, or, count } from "drizzle-orm";
+import { eq, desc, asc, or, count, and } from "drizzle-orm";
 import { users, referrals, bannedUsers } from "@shared/schema";
 import { InsertUser, CreateReferral, ReferralStatus, BanUser, BannedUser } from "@shared/schema";
 import session from "express-session";

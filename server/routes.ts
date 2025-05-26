@@ -79,6 +79,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.notes,
         validatedData.paidAt
       );
+
+      // Auto-check for fraud when a referral is rejected
+      if (validatedData.status === 'rejected') {
+        const referral = await storage.getReferralById(parseInt(id));
+        if (referral) {
+          const wasBanned = await storage.autoCheckForFraud(referral.userId);
+          if (wasBanned) {
+            console.log(`[COMPLIANCE] Usuário ${referral.userId} foi banido automaticamente por atividade fraudulenta`);
+          }
+        }
+      }
       
       return res.json(updatedReferral);
     } catch (error) {
@@ -113,6 +124,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking duplicates:", error);
       return res.status(500).json({ error: "Erro ao verificar duplicatas" });
+    }
+  });
+
+  // Compliance endpoints for banned users management
+  app.get("/api/admin/banned-users", async (req, res) => {
+    if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+    
+    try {
+      const bannedUsers = await storage.getAllBannedUsers();
+      res.json(bannedUsers);
+    } catch (error) {
+      console.error("Error fetching banned users:", error);
+      res.status(500).json({ error: "Erro ao buscar usuários banidos" });
+    }
+  });
+
+  app.post("/api/admin/ban-user", async (req, res) => {
+    if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+    
+    try {
+      const banData = {
+        ...req.body,
+        bannedBy: req.user.id
+      };
+      
+      const bannedUser = await storage.banUser(banData);
+      res.status(201).json(bannedUser);
+    } catch (error) {
+      console.error("Error banning user:", error);
+      res.status(500).json({ error: "Erro ao banir usuário" });
+    }
+  });
+
+  app.get("/api/admin/fraud-check/:userId", async (req, res) => {
+    if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+    
+    try {
+      const userId = parseInt(req.params.userId);
+      const falseCount = await storage.getFalseReferralsCount(userId);
+      const wasBanned = await storage.autoCheckForFraud(userId);
+      
+      res.json({ 
+        falseReferralsCount: falseCount,
+        wasBanned,
+        message: wasBanned ? "Usuário foi banido automaticamente" : `Usuário possui ${falseCount} indicações rejeitadas`
+      });
+    } catch (error) {
+      console.error("Error checking fraud:", error);
+      res.status(500).json({ error: "Erro ao verificar fraude" });
     }
   });
 
