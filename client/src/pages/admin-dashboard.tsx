@@ -89,6 +89,8 @@ const getStatusBadge = (status: ReferralStatus) => {
       return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
     case 'paid':
       return <Badge variant="outline" className="bg-emerald-100 text-emerald-800">Pago</Badge>;
+    case 'falso':
+      return <Badge variant="outline" className="bg-orange-100 text-orange-800">🚫 Falso</Badge>;
     default:
       return <Badge variant="outline">Desconhecido</Badge>;
   }
@@ -360,6 +362,7 @@ export default function AdminDashboard() {
                             <SelectItem value="rejected">Não convertido</SelectItem>
                             <SelectItem value="validated">Validado</SelectItem>
                             <SelectItem value="paid">Pago</SelectItem>
+                            <SelectItem value="falso">🚫 Falso</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -585,6 +588,7 @@ export default function AdminDashboard() {
                             <SelectItem value="rejected">Não convertido</SelectItem>
                             <SelectItem value="validated">Validado</SelectItem>
                             <SelectItem value="paid">Pago</SelectItem>
+                            <SelectItem value="falso">🚫 Falso</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
