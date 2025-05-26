@@ -316,6 +316,15 @@ export default function NewReferralPage() {
                   />
                   
                   <div className="flex items-center justify-end space-x-4">
+                    {duplicateInfo && duplicateInfo.length > 0 && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setDuplicateInfo(null)}
+                      >
+                        Editar dados
+                      </Button>
+                    )}
                     <Button 
                       type="button" 
                       variant="outline" 
@@ -325,9 +334,14 @@ export default function NewReferralPage() {
                     </Button>
                     <Button 
                       type="submit" 
-                      disabled={mutation.isPending}
+                      disabled={mutation.isPending || checkDuplicateMutation.isPending || (duplicateInfo && duplicateInfo.length > 0)}
                     >
-                      {mutation.isPending ? (
+                      {checkDuplicateMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verificando...
+                        </>
+                      ) : mutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
                           Enviando...
