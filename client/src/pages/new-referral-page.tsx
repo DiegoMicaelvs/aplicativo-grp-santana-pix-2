@@ -22,9 +22,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, AlertTriangle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +48,7 @@ export default function NewReferralPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<any>(null);
   
   const form = useForm<ReferralFormValues>({
     resolver: zodResolver(referralSchema),
@@ -57,6 +59,30 @@ export default function NewReferralPage() {
       phone: "",
       licensePlate: "",
       comments: "",
+    },
+  });
+
+  // Mutation para verificar duplicatas
+  const checkDuplicateMutation = useMutation({
+    mutationFn: async (data: { phone: string, licensePlate: string }) => {
+      const res = await apiRequest("POST", "/api/referrals/check-duplicate", data);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      if (data.isDuplicate) {
+        setDuplicateInfo(data.existingReferrals);
+      } else {
+        setDuplicateInfo(null);
+        // Se não há duplicatas, proceder com o cadastro
+        mutation.mutate(form.getValues());
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao verificar duplicatas",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
   
@@ -83,7 +109,21 @@ export default function NewReferralPage() {
   });
   
   const onSubmit = (data: ReferralFormValues) => {
-    mutation.mutate(data);
+    // Primeiro verifica se há duplicatas
+    checkDuplicateMutation.mutate({
+      phone: data.phone,
+      licensePlate: data.licensePlate
+    });
+  };
+
+  const handleForceSave = () => {
+    // Força o salvamento mesmo com duplicatas (apenas para demonstração)
+    setDuplicateInfo(null);
+    toast({
+      title: "Atenção",
+      description: "Esta funcionalidade está restrita para evitar fraudes.",
+      variant: "destructive",
+    });
   };
   
   // If form was submitted, show success state
@@ -138,6 +178,37 @@ export default function NewReferralPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Alerta de duplicatas */}
+              {duplicateInfo && duplicateInfo.length > 0 && (
+                <Alert className="mb-6 border-red-200 bg-red-50">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    <div className="font-semibold mb-2">⚠️ Cadastro já existe!</div>
+                    {duplicateInfo.map((duplicate: any, index: number) => (
+                      <div key={index} className="mb-2">
+                        {duplicate.phone === form.getValues().phone && (
+                          <p className="text-sm">
+                            O telefone <strong>{duplicate.phone}</strong> já foi cadastrado por{" "}
+                            <strong>{duplicate.user.firstName} {duplicate.user.lastName}</strong> 
+                            ({duplicate.user.username})
+                          </p>
+                        )}
+                        {duplicate.licensePlate === form.getValues().licensePlate && (
+                          <p className="text-sm">
+                            A placa <strong>{duplicate.licensePlate}</strong> já foi cadastrada por{" "}
+                            <strong>{duplicate.user.firstName} {duplicate.user.lastName}</strong> 
+                            ({duplicate.user.username})
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                    <p className="text-sm mt-3 font-medium">
+                      Para evitar fraudes, não é possível cadastrar a mesma pessoa ou veículo duas vezes.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div>
