@@ -54,6 +54,21 @@ export const referralsRelations = relations(referrals, ({ one }) => ({
   }),
 }));
 
+// Tabela de compliance para usuários banidos
+export const bannedUsers = pgTable("banned_users", {
+  id: serial("id").primaryKey(),
+  cpf: text("cpf").notNull().unique(),
+  reason: text("reason").notNull(), // "fraudulent_referrals", "multiple_accounts", etc.
+  bannedAt: timestamp("banned_at").defaultNow().notNull(),
+  bannedBy: integer("banned_by").references(() => users.id), // Admin que aplicou o banimento
+  falseReferralsCount: integer("false_referrals_count").default(0),
+  notes: text("notes"), // Observações do admin
+});
+
+export const bannedUsersRelations = relations(bannedUsers, ({ one }) => ({
+  bannedByUser: one(users, { fields: [bannedUsers.bannedBy], references: [users.id] }),
+}));
+
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users, {
   firstName: (schema) => schema.min(1, "Nome é obrigatório"),
@@ -100,6 +115,14 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Senha é obrigatória"),
 });
 
+// Schema para banimento de usuários
+export const banUserSchema = z.object({
+  cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
+  reason: z.string().min(1, "Motivo é obrigatório"),
+  notes: z.string().optional(),
+  falseReferralsCount: z.number().default(0),
+});
+
 // Types for use in the application
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -107,3 +130,5 @@ export type CreateReferral = z.infer<typeof createReferralSchema>;
 export type Referral = typeof referrals.$inferSelect;
 export type UpdateReferralStatus = z.infer<typeof updateReferralStatusSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
+export type BanUser = z.infer<typeof banUserSchema>;
+export type BannedUser = typeof bannedUsers.$inferSelect;
