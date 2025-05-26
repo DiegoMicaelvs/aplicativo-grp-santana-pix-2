@@ -108,6 +108,15 @@ export function setupAuth(app: Express) {
       if (existingUser) {
         return res.status(400).json({ message: "Este email já está cadastrado" });
       }
+
+      // Check if CPF is banned
+      const bannedUser = await storage.checkBannedCpf(userData.cpf);
+      if (bannedUser) {
+        return res.status(403).json({ 
+          message: "Este CPF está bloqueado por atividade fraudulenta. Entre em contato com o suporte.",
+          reason: bannedUser.reason 
+        });
+      }
       
       // Check age requirement
       const birthDate = new Date(userData.birthdate);

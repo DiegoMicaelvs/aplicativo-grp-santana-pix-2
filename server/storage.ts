@@ -1,7 +1,7 @@
 import { db } from "@db";
-import { eq, desc, asc, or } from "drizzle-orm";
-import { users, referrals } from "@shared/schema";
-import { InsertUser, CreateReferral, ReferralStatus } from "@shared/schema";
+import { eq, desc, asc, or, count } from "drizzle-orm";
+import { users, referrals, bannedUsers } from "@shared/schema";
+import { InsertUser, CreateReferral, ReferralStatus, BanUser, BannedUser } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "@db";
@@ -29,6 +29,13 @@ export interface IStorage {
     notes?: string,
     paidAt?: Date
   ): Promise<any>;
+  
+  // Compliance methods
+  checkBannedCpf(cpf: string): Promise<BannedUser | null>;
+  banUser(banData: BanUser & { bannedBy: number }): Promise<BannedUser>;
+  getFalseReferralsCount(userId: number): Promise<number>;
+  autoCheckForFraud(userId: number): Promise<boolean>; // Returns true if user was banned
+  getAllBannedUsers(): Promise<BannedUser[]>;
   
   // Session store
   sessionStore: session.Store;
@@ -212,6 +219,86 @@ class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedReferral;
+  }
+
+  // Compliance methods for fraud detection and prevention
+  async checkBannedCpf(cpf: string): Promise<BannedUser | null> {
+    const banned = await db.query.bannedUsers.findFirst({
+      where: eq(bannedUsers.cpf, cpf),
+      with: {
+        bannedByUser: true
+      }
+    });
+    
+    return banned || null;
+  }
+
+  async banUser(banData: BanUser & { bannedBy: number }): Promise<BannedUser> {
+    const [bannedUser] = await db
+      .insert(bannedUsers)
+      .values({
+        cpf: banData.cpf,
+        reason: banData.reason,
+        notes: banData.notes,
+        falseReferralsCount: banData.falseReferralsCount,
+        bannedBy: banData.bannedBy
+      })
+      .returning();
+    
+    return bannedUser;
+  }
+
+  async getFalseReferralsCount(userId: number): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(referrals)
+      .where(
+        and(
+          eq(referrals.userId, userId),
+          eq(referrals.status, 'rejected')
+        )
+      );
+    
+    return result[0]?.count || 0;
+  }
+
+  async autoCheckForFraud(userId: number): Promise<boolean> {
+    // Get user data to extract CPF
+    const user = await this.getUserById(userId);
+    if (!user) return false;
+
+    // Check if user is already banned
+    const alreadyBanned = await this.checkBannedCpf(user.cpf);
+    if (alreadyBanned) return true;
+
+    // Count false/rejected referrals
+    const falseCount = await this.getFalseReferralsCount(userId);
+    
+    // Auto-ban if user has 30 or more false referrals
+    if (falseCount >= 30) {
+      await this.banUser({
+        cpf: user.cpf,
+        reason: 'fraudulent_referrals',
+        notes: `Banimento automático: ${falseCount} indicações rejeitadas/falsas`,
+        falseReferralsCount: falseCount,
+        bannedBy: 1 // Sistema automático (admin ID 1)
+      });
+      
+      return true; // User was banned
+    }
+    
+    return false; // User was not banned
+  }
+
+  async getAllBannedUsers(): Promise<BannedUser[]> {
+    const banned = await db.query.bannedUsers.findMany({
+      orderBy: desc(bannedUsers.bannedAt),
+      with: {
+        bannedByUser: true
+      }
+    });
+    
+    return banned;
   }
 }
 
