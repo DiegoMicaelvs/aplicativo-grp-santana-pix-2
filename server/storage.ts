@@ -1,5 +1,5 @@
 import { db } from "@db";
-import { eq, desc, asc } from "drizzle-orm";
+import { eq, desc, asc, or } from "drizzle-orm";
 import { users, referrals } from "@shared/schema";
 import { InsertUser, CreateReferral, ReferralStatus } from "@shared/schema";
 import session from "express-session";
@@ -21,6 +21,7 @@ export interface IStorage {
   getReferralById(id: number): Promise<any>;
   getReferralsByUserId(userId: number): Promise<any[]>;
   getAllReferrals(): Promise<any[]>;
+  checkDuplicateReferral(phone?: string, licensePlate?: string): Promise<any[]>;
   updateReferralStatus(
     id: number, 
     status: ReferralStatus, 
@@ -143,6 +144,37 @@ class DatabaseStorage implements IStorage {
     });
     
     return allReferrals;
+  }
+  
+  async checkDuplicateReferral(phone?: string, licensePlate?: string) {
+    const conditions = [];
+    
+    if (phone) {
+      conditions.push(eq(referrals.phone, phone));
+    }
+    
+    if (licensePlate) {
+      conditions.push(eq(referrals.licensePlate, licensePlate));
+    }
+    
+    if (conditions.length === 0) {
+      return [];
+    }
+    
+    const duplicates = await db.query.referrals.findMany({
+      where: or(...conditions),
+      with: {
+        user: {
+          columns: {
+            firstName: true,
+            lastName: true,
+            username: true
+          }
+        }
+      }
+    });
+    
+    return duplicates;
   }
   
   async updateReferralStatus(

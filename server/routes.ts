@@ -87,6 +87,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check for duplicate referrals
+  app.post("/api/referrals/check-duplicate", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const { phone, licensePlate } = req.body;
+      
+      if (!phone && !licensePlate) {
+        return res.status(400).json({ error: "Telefone ou placa deve ser fornecido" });
+      }
+
+      const duplicates = await storage.checkDuplicateReferral(phone, licensePlate);
+      
+      if (duplicates.length > 0) {
+        return res.json({ 
+          isDuplicate: true, 
+          existingReferrals: duplicates 
+        });
+      }
+
+      return res.json({ isDuplicate: false });
+    } catch (error) {
+      console.error("Error checking duplicates:", error);
+      return res.status(500).json({ error: "Erro ao verificar duplicatas" });
+    }
+  });
+
   // Get all users for admin
   app.get("/api/admin/users", async (req, res) => {
     if (!req.isAuthenticated() || req.user.role !== "admin") {
