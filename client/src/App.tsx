@@ -9,6 +9,7 @@ import DashboardPage from "@/pages/dashboard-page";
 import NewReferralPage from "@/pages/new-referral-page";
 import ReferralsPage from "@/pages/referrals-page";
 import EarningsPage from "@/pages/earnings-page";
+import WithdrawalPage from "@/pages/withdrawal-page";
 import AdminDashboard from "@/pages/admin-dashboard-new";
 import AdminAnalysts from "@/pages/admin-analysts";
 import AdminProfiles from "@/pages/admin-profiles";
@@ -37,6 +38,8 @@ function Router() {
       <ProtectedRoute path="/new-referral" component={NewReferralPage} />
       <ProtectedRoute path="/nova-indicacao" component={NewReferralPage} />
       <ProtectedRoute path="/earnings" component={EarningsPage} />
+      <ProtectedRoute path="/withdrawals" component={WithdrawalPage} />
+      <ProtectedRoute path="/saques" component={WithdrawalPage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/analysts" component={AdminAnalysts} />
       <AdminRoute path="/admin/profiles" component={AdminProfiles} />

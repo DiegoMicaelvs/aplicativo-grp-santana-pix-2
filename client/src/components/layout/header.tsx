@@ -117,9 +117,20 @@ export default function Header() {
                       <Link href="/new-referral" onClick={() => setIsOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">Nova Indicação</Button>
                       </Link>
+                      <Link href="/earnings" onClick={() => setIsOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start">Meus Ganhos</Button>
+                      </Link>
+                      <Link href="/withdrawals" onClick={() => setIsOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start">Saques</Button>
+                      </Link>
                       {user.role === 'admin' && (
                         <Link href="/admin" onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start">Painel Admin</Button>
+                        </Link>
+                      )}
+                      {user.role === 'promotor' && (
+                        <Link href="/team" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">Minha Equipe</Button>
                         </Link>
                       )}
                       <div className="border-t border-gray-200 mt-2 pt-2">
@@ -201,9 +212,20 @@ export default function Header() {
                       <Link href="/new-referral">
                         <DropdownMenuItem>Nova Indicação</DropdownMenuItem>
                       </Link>
+                      <Link href="/earnings">
+                        <DropdownMenuItem>Meus Ganhos</DropdownMenuItem>
+                      </Link>
+                      <Link href="/withdrawals">
+                        <DropdownMenuItem>Saques</DropdownMenuItem>
+                      </Link>
                       {user.role === 'admin' && (
                         <Link href="/admin">
                           <DropdownMenuItem>Painel Admin</DropdownMenuItem>
+                        </Link>
+                      )}
+                      {user.role === 'promotor' && (
+                        <Link href="/team">
+                          <DropdownMenuItem>Minha Equipe</DropdownMenuItem>
                         </Link>
                       )}
                       <DropdownMenuSeparator />

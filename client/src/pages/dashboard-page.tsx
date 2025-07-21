@@ -120,7 +120,7 @@ export default function DashboardPage() {
               <div className="px-4 py-8 sm:px-0">
                 <PromotionalAlert />
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
                   {/* Total Referrals Card */}
                   <Card>
                     <CardContent className="p-6">
@@ -181,16 +181,36 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
+                  {/* Current Balance Card */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 bg-green-600 rounded-md p-3">
+                          <DollarSign className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="ml-5 w-0 flex-1">
+                          <div className="text-sm font-medium text-gray-500 truncate">Saldo Disponível</div>
+                          <div className="text-lg font-medium text-gray-900">{formatCurrency(user?.balance || 0)}</div>
+                        </div>
+                      </div>
+                      <div className="mt-6">
+                        <Link href="/withdrawals">
+                          <Button variant="link" className="text-primary p-0">Solicitar saque</Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Total Earnings Card */}
                   <Card>
                     <CardContent className="p-6">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                          <DollarSign className="h-6 w-6 text-white" />
+                          <TrendingUp className="h-6 w-6 text-white" />
                         </div>
                         <div className="ml-5 w-0 flex-1">
                           <div className="text-sm font-medium text-gray-500 truncate">Total de Ganhos</div>
-                          <div className="text-lg font-medium text-gray-900">{formatCurrency(totalEarnings)}</div>
+                          <div className="text-lg font-medium text-gray-900">{formatCurrency(user?.totalEarnings || 0)}</div>
                         </div>
                       </div>
                       <div className="mt-6">

@@ -300,6 +300,7 @@ export const createCompanySchema = createInsertSchema(companies, {
 export const createWithdrawalRequestSchema = z.object({
   amount: z.coerce.number().positive("Valor deve ser maior que zero"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
+  cpfKey: z.string().min(11, "CPF é obrigatório").max(14, "CPF inválido"),
 });
 
 export const createSupportTicketSchema = z.object({
