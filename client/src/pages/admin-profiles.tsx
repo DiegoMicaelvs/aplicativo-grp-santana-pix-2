@@ -158,6 +158,10 @@ export default function AdminProfiles() {
       if (!data.password) {
         throw new Error('Senha é obrigatória para criar usuário');
       }
+      // Ensure username matches email for consistency
+      if (!data.username) {
+        data.username = data.email;
+      }
       return apiRequest('POST', '/api/admin/users', data);
     },
     onSuccess: () => {
@@ -408,7 +412,27 @@ export default function AdminProfiles() {
               </Select>
             </div>
 
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <Dialog open={createDialogOpen} onOpenChange={(open) => {
+              setCreateDialogOpen(open);
+              if (open) {
+                // Reset form when opening create dialog
+                form.reset({
+                  fullName: "",
+                  username: "",
+                  email: "",
+                  cpf: "",
+                  phone: "",
+                  address: "",
+                  shirtSize: "M",
+                  pixKey: "",
+                  role: "indicador",
+                  isActive: true,
+                  permissions: [],
+                  password: "",
+                });
+                setSelectedUser(null);
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -418,6 +442,9 @@ export default function AdminProfiles() {
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Usuário</DialogTitle>
+                  <DialogDescription>
+                    Preencha os dados abaixo para criar um novo usuário no sistema.
+                  </DialogDescription>
                 </DialogHeader>
                 <UserProfileForm
                   form={form}
@@ -847,12 +874,29 @@ function UserProfileForm({
             </div>
             
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Email de Login</Label>
+              <Input
+                id="username"
+                type="email"
+                {...form.register("username")}
+                placeholder="email@exemplo.com"
+              />
+              {form.formState.errors.username && (
+                <p className="text-sm text-destructive mt-1">
+                  {form.formState.errors.username.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="email">Email de Contato</Label>
               <Input
                 id="email"
                 type="email"
                 {...form.register("email")}
-                placeholder="email@exemplo.com"
+                placeholder="contato@exemplo.com"
               />
               {form.formState.errors.email && (
                 <p className="text-sm text-destructive mt-1">
@@ -860,9 +904,7 @@ function UserProfileForm({
                 </p>
               )}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+            
             <div>
               <Label htmlFor="cpf">CPF</Label>
               <Input
@@ -876,7 +918,9 @@ function UserProfileForm({
                 </p>
               )}
             </div>
-            
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="phone">Telefone</Label>
               <Input
@@ -890,21 +934,23 @@ function UserProfileForm({
                 </p>
               )}
             </div>
+            
+            <div>
+              <Label htmlFor="address">Endereço</Label>
+              <Input
+                id="address"
+                {...form.register("address")}
+                placeholder="Endereço completo"
+              />
+              {form.formState.errors.address && (
+                <p className="text-sm text-destructive mt-1">
+                  {form.formState.errors.address.message}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="address">Endereço</Label>
-            <Input
-              id="address"
-              {...form.register("address")}
-              placeholder="Endereço completo"
-            />
-            {form.formState.errors.address && (
-              <p className="text-sm text-destructive mt-1">
-                {form.formState.errors.address.message}
-              </p>
-            )}
-          </div>
+
 
           <div className="grid grid-cols-2 gap-4">
             <div>
