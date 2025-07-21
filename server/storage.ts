@@ -236,19 +236,23 @@ class DatabaseStorage implements IStorage {
   }
 
   async resetUserPassword(userId: number) {
-    // Generate a new temporary password
-    const newPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Generate a new temporary password (shorter, more user-friendly)
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const newPassword = Array.from({length: 10}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     
-    // In production, this should be hashed
+    // Import the hashPassword function from auth module
+    const { hashPassword } = await import('./auth');
+    const hashedPassword = await hashPassword(newPassword);
+    
     const [updatedUser] = await db.update(users)
       .set({ 
-        password: newPassword,
+        password: hashedPassword,
         updatedAt: new Date()
       })
       .where(eq(users.id, userId))
       .returning();
     
-    return newPassword;
+    return newPassword; // Return the plain text password for display
   }
   
   // Referral methods

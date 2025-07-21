@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -214,11 +215,14 @@ export default function AdminProfiles() {
 
   // Reset password mutation
   const resetPasswordMutation = useMutation({
-    mutationFn: async (userId: number) => {
-      return apiRequest('POST', `/api/admin/users/${userId}/reset-password`);
+    mutationFn: async (userData: {userId: number, userName: string}) => {
+      const response = await apiRequest('POST', `/api/admin/users/${userData.userId}/reset-password`);
+      return { ...response, userName: userData.userName };
     },
     onSuccess: (data: any) => {
+      console.log('Password reset response:', data);
       setNewPassword(data.newPassword);
+      setSelectedUserForPassword({ fullName: data.userName } as User);
       setPasswordDialogOpen(true);
       toast({
         title: "Senha redefinida",
@@ -463,7 +467,6 @@ export default function AdminProfiles() {
                                   variant="outline"
                                   size="sm"
                                   disabled={resetPasswordMutation.isPending}
-                                  onClick={() => setSelectedUserForPassword(user)}
                                 >
                                   <Shield className="h-4 w-4 mr-1" />
                                   Redefinir Senha
@@ -481,7 +484,7 @@ export default function AdminProfiles() {
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => resetPasswordMutation.mutate(user.id)}
+                                    onClick={() => resetPasswordMutation.mutate({userId: user.id, userName: user.fullName})}
                                     disabled={resetPasswordMutation.isPending}
                                     className="bg-red-600 hover:bg-red-700"
                                   >
@@ -517,6 +520,9 @@ export default function AdminProfiles() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Nova Senha Gerada</DialogTitle>
+            <DialogDescription>
+              Uma nova senha temporária foi gerada com sucesso. Compartilhe esta senha com o usuário.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center">
