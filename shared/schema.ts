@@ -282,6 +282,7 @@ export const createReferralSchema = createInsertSchema(referrals, {
   fullName: (schema) => schema.min(1, "Nome completo é obrigatório"),
   phone: (schema) => schema.min(10, "Telefone inválido").max(15, "Telefone inválido"),
   licensePlate: (schema) => schema.min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
+  companyId: z.coerce.number().positive("Empresa é obrigatória"),
 }).omit({ id: true, userId: true, createdBy: true, promoterId: true, status: true, commissionIndicator: true, commissionPromoter: true, createdAt: true, updatedAt: true, notes: true, statusHistory: true });
 
 // Audit log schema
