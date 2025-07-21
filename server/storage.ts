@@ -154,7 +154,7 @@ class DatabaseStorage implements IStorage {
       
       return user;
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('[STORAGE] Erro ao criar usuário:', error);
       throw error;
     }
   }

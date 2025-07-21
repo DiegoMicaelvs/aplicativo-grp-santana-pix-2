@@ -116,12 +116,15 @@ export function setupAuth(app: Express) {
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(userData.username);
       if (existingUser) {
+        // Log para auditoria de tentativas de registro duplicado
+        console.log(`[REGISTRO] Tentativa de cadastro duplicado - Email já existe: ${userData.username}`);
         return res.status(400).json({ message: "Este email já está cadastrado" });
       }
       
       // Check if CPF already exists
       const existingCpf = await storage.getUserByCpf(userData.cpf);
       if (existingCpf) {
+        console.log(`[REGISTRO] Tentativa de cadastro duplicado - CPF já existe: ${userData.cpf}`);
         return res.status(400).json({ message: "Este CPF já está cadastrado" });
       }
       
@@ -137,9 +140,12 @@ export function setupAuth(app: Express) {
         promoterId: userData.promoterId || undefined
       });
       
+      console.log(`[REGISTRO] Novo usuário cadastrado com sucesso: ${newUser.username} (ID: ${newUser.id})`);
+      
       // Log the user in
       req.login(newUser, (err) => {
         if (err) {
+          console.error("[REGISTRO] Erro ao fazer login automático:", err);
           return next(err);
         }
         
@@ -147,9 +153,10 @@ export function setupAuth(app: Express) {
         return res.status(201).json(userWithoutPassword);
       });
     } catch (error: any) {
-      console.error("Registration error:", error);
+      console.error(`[REGISTRO] Erro ao processar cadastro:`, error.message);
       
       if (error.name === 'ZodError') {
+        console.error(`[REGISTRO] Dados inválidos:`, error.errors);
         const friendlyErrors = error.errors.map((err: any) => {
           const field = err.path.join('.');
           switch (field) {
