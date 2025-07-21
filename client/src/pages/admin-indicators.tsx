@@ -252,7 +252,11 @@ export default function AdminIndicatorsPage() {
                       {user.createdAt ? format(new Date(user.createdAt), "dd/MM/yyyy", { locale: ptBR }) : "-"}
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => window.open(`/admin/user-details/${user.id}`, '_blank')}
+                      >
                         <Eye className="h-4 w-4 mr-1" />
                         Detalhes
                       </Button>

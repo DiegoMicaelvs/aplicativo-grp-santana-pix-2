@@ -16,6 +16,7 @@ import AdminAuditLog from "@/pages/admin-audit-log";
 import AdminWithdrawals from "@/pages/admin-withdrawals";
 import AdminIndicators from "@/pages/admin-indicators";
 import AdminReferralsDetailed from "@/pages/admin-referrals-detailed";
+import AdminUserDetails from "@/pages/admin-user-details";
 import AdminPayments from "@/pages/admin-payments";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminSupportTickets from "@/pages/admin-support-tickets";
@@ -43,6 +44,7 @@ function Router() {
       <AdminRoute path="/admin/withdrawals" component={AdminWithdrawals} />
       <AdminRoute path="/admin/indicators" component={AdminIndicators} />
       <AdminRoute path="/admin/referrals-detailed" component={AdminReferralsDetailed} />
+      <AdminRoute path="/admin/user-details/:id" component={AdminUserDetails} />
       <AdminRoute path="/admin/payments" component={AdminPayments} />
       <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
       <AdminRoute path="/admin/support-tickets" component={AdminSupportTickets} />
