@@ -534,12 +534,13 @@ class DatabaseStorage implements IStorage {
   }
   
   // Support ticket methods
-  async createSupportTicket(ticket: CreateSupportTicket & { userId: number }) {
+  async createSupportTicket(userId: number, ticketData: CreateSupportTicket) {
     const ticketNumber = await this.generateTicketNumber();
     
     const [supportTicket] = await db.insert(supportTickets)
       .values({
-        ...ticket,
+        ...ticketData,
+        userId,
         ticketNumber
       })
       .returning();
@@ -547,7 +548,7 @@ class DatabaseStorage implements IStorage {
     return supportTicket;
   }
   
-  async getSupportTicketsByUserId(userId: number) {
+  async getUserSupportTickets(userId: number) {
     return await db.query.supportTickets.findMany({
       where: eq(supportTickets.userId, userId),
       with: {

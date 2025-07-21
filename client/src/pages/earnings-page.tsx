@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/hooks/use-auth";
 import { Referral, ReferralStatus } from "@shared/schema";
 
@@ -78,10 +79,15 @@ export default function EarningsPage() {
         <div className="py-10">
           <header>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <h1 className="text-3xl font-bold leading-tight text-gray-900 font-heading">Histórico de Ganhos</h1>
-              <p className="mt-2 text-gray-600">
-                Acompanhe todas as suas comissões de indicações.
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold leading-tight text-gray-900 font-heading">Histórico de Ganhos</h1>
+                  <p className="mt-2 text-gray-600">
+                    Acompanhe todas as suas comissões de indicações.
+                  </p>
+                </div>
+                <BackButton to="/dashboard" />
+              </div>
             </div>
           </header>
           

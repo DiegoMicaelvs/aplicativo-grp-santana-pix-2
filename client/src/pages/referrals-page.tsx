@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/pagination";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { BackButton } from "@/components/ui/back-button";
 import { Eye, FilterIcon, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { 
@@ -123,7 +124,8 @@ export default function ReferralsPage() {
               <h1 className="text-3xl font-bold text-gray-900 font-heading">Minhas Indicações</h1>
               <p className="mt-1 text-gray-600">Gerencie e acompanhe todas as suas indicações</p>
             </div>
-            <div className="mt-4 sm:mt-0">
+            <div className="mt-4 sm:mt-0 flex items-center gap-3">
+              <BackButton to="/dashboard" />
               <Link href="/new-referral">
                 <Button>Nova Indicação</Button>
               </Link>

@@ -38,6 +38,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { PromotionalAlert } from "@/components/promotional-alert";
+import { BackButton } from "@/components/ui/back-button";
 import { CreateReferral, Company } from "@shared/schema";
 
 // Define validation schema matching the exact fields requested
@@ -183,10 +184,15 @@ export default function NewReferralPage() {
           <PromotionalAlert />
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl font-heading">Nova Indicação</CardTitle>
-              <CardDescription>
-                Indique alguém que precise de seguro para seu veículo e ganhe comissão quando a indicação virar cliente.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl font-heading">Nova Indicação</CardTitle>
+                  <CardDescription>
+                    Indique alguém que precise de seguro para seu veículo e ganhe comissão quando a indicação virar cliente.
+                  </CardDescription>
+                </div>
+                <BackButton to="/dashboard" />
+              </div>
             </CardHeader>
             <CardContent>
               {/* Alerta de duplicatas */}

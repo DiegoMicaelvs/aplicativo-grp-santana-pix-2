@@ -1,41 +1,32 @@
-import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
 interface BackButtonProps {
-  fallbackPath?: string;
+  to?: string;
+  children?: React.ReactNode;
   className?: string;
-  variant?: "default" | "outline" | "ghost" | "link" | "destructive" | "secondary";
-  size?: "default" | "sm" | "lg" | "icon";
 }
 
-export function BackButton({ 
-  fallbackPath = "/admin", 
-  className = "", 
-  variant = "outline",
-  size = "default"
-}: BackButtonProps) {
-  const [, setLocation] = useLocation();
+export function BackButton({ to, children = "Voltar", className }: BackButtonProps) {
+  const [, navigate] = useLocation();
 
   const handleBack = () => {
-    // Try to go back in browser history
-    if (window.history.length > 1) {
-      window.history.back();
+    if (to) {
+      navigate(to);
     } else {
-      // Fallback to a specific path if no history
-      setLocation(fallbackPath);
+      window.history.back();
     }
   };
 
   return (
     <Button
+      variant="outline"
       onClick={handleBack}
-      variant={variant}
-      size={size}
-      className={`${className}`}
+      className={`flex items-center gap-2 ${className}`}
     >
-      <ArrowLeft className="h-4 w-4 mr-2" />
-      Voltar
+      <ArrowLeft className="h-4 w-4" />
+      {children}
     </Button>
   );
 }
