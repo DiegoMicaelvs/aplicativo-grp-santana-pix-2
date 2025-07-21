@@ -13,7 +13,7 @@ import Footer from '@/components/layout/footer';
 import { ChevronDown, Clock, DollarSign, Shield, Users, BarChart, HeadphonesIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
-import { InsurancePartnersSection } from '@/components/insurance-partners-fixed';
+
 
 import diegomicael58_3D_animated_childrens_storybook_style_top_down__bf4c1a1e_e808_4db2_a50f_ca7a494f0767_0 from "@assets/diegomicael58_3D_animated_childrens_storybook_style_top-down__bf4c1a1e-e808-4db2-a50f-ca7a494f0767_0.png";
 
@@ -22,7 +22,7 @@ export default function HomePage() {
   const [location] = useLocation();
   const comoFuncionaRef = useRef<HTMLDivElement>(null);
   const vantagensRef = useRef<HTMLDivElement>(null);
-  const parceirosRef = useRef<HTMLDivElement>(null);
+
   const faqRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -31,8 +31,6 @@ export default function HomePage() {
       comoFuncionaRef.current.scrollIntoView({ behavior: 'smooth' });
     } else if (location === '/#vantagens' && vantagensRef.current) {
       vantagensRef.current.scrollIntoView({ behavior: 'smooth' });
-    } else if (location === '/#parceiros' && parceirosRef.current) {
-      parceirosRef.current.scrollIntoView({ behavior: 'smooth' });
     } else if (location === '/#faq' && faqRef.current) {
       faqRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -318,10 +316,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-      {/* Parceiros Section */}
-      <div id="parceiros" ref={parceirosRef}>
-        <InsurancePartnersSection />
-      </div>
+
       {/* FAQ Section */}
       <div className="bg-white py-12" id="faq" ref={faqRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
