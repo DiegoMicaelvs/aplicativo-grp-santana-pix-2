@@ -46,7 +46,7 @@ const referralSchema = z.object({
   phone: z.string().min(10, "Número é obrigatório").max(15, "Número inválido"),
   licensePlate: z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
   hasInsurance: z.boolean(),
-  companyId: z.coerce.number().min(1, "Selecione uma empresa"),
+  companyId: z.string().min(1, "Selecione uma empresa").transform(val => Number(val)),
 });
 
 type ReferralFormValues = z.infer<typeof referralSchema>;
@@ -64,7 +64,7 @@ export default function NewReferralPage() {
       phone: "",
       licensePlate: "",
       hasInsurance: false,
-      companyId: 0,
+      companyId: "",
     },
   });
 
@@ -317,8 +317,8 @@ export default function NewReferralPage() {
                         <FormItem className="mb-4">
                           <FormLabel>Empresa</FormLabel>
                           <Select 
-                            onValueChange={(value) => field.onChange(Number(value))}
-                            value={field.value ? field.value.toString() : ""}
+                            onValueChange={field.onChange}
+                            value={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -327,7 +327,7 @@ export default function NewReferralPage() {
                             </FormControl>
                             <SelectContent>
                               {isLoadingCompanies ? (
-                                <SelectItem value="" disabled>Carregando empresas...</SelectItem>
+                                <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
                               ) : companies && companies.length > 0 ? (
                                 companies.map((company) => (
                                   <SelectItem key={company.id} value={company.id.toString()}>
@@ -335,7 +335,7 @@ export default function NewReferralPage() {
                                   </SelectItem>
                                 ))
                               ) : (
-                                <SelectItem value="" disabled>Nenhuma empresa disponível</SelectItem>
+                                <SelectItem value="none" disabled>Nenhuma empresa disponível</SelectItem>
                               )}
                             </SelectContent>
                           </Select>
