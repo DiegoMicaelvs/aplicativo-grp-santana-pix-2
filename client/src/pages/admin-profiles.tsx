@@ -695,33 +695,35 @@ export default function AdminProfiles() {
               <Trash2 className="h-5 w-5 mr-2" />
               Confirmar Exclusão Permanente
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>
-                Você está prestes a deletar permanentemente o usuário <strong>{selectedUserForDeletion?.fullName}</strong>.
-              </p>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-800 font-medium">
-                  ⚠️ Esta ação é irreversível e irá:
+            <AlertDialogDescription>
+              <div className="space-y-3">
+                <p>
+                  Você está prestes a deletar permanentemente o usuário <strong>{selectedUserForDeletion?.fullName}</strong>.
                 </p>
-                <ul className="text-sm text-red-700 mt-2 space-y-1 ml-4">
-                  <li>• Deletar todos os dados do usuário</li>
-                  <li>• Remover todas as indicações feitas por ele</li>
-                  <li>• Remover histórico de tickets de suporte</li>
-                  <li>• Limpar registros de auditoria</li>
-                </ul>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="masterPassword" className="text-sm font-medium">
-                  Digite a senha mestre do desenvolvedor para confirmar:
-                </Label>
-                <Input
-                  id="masterPassword"
-                  type="password"
-                  value={masterPassword}
-                  onChange={(e) => setMasterPassword(e.target.value)}
-                  placeholder="Senha mestre do desenvolvedor"
-                  className="border-red-300 focus:border-red-500"
-                />
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="text-sm text-red-800 font-medium">
+                    ⚠️ Esta ação é irreversível e irá:
+                  </div>
+                  <ul className="text-sm text-red-700 mt-2 space-y-1 ml-4 list-disc">
+                    <li>Deletar todos os dados do usuário</li>
+                    <li>Remover todas as indicações feitas por ele</li>
+                    <li>Remover histórico de tickets de suporte</li>
+                    <li>Limpar registros de auditoria</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="masterPassword" className="text-sm font-medium">
+                    Digite a senha mestre do desenvolvedor para confirmar:
+                  </Label>
+                  <Input
+                    id="masterPassword"
+                    type="password"
+                    value={masterPassword}
+                    onChange={(e) => setMasterPassword(e.target.value)}
+                    placeholder="Senha mestre do desenvolvedor"
+                    className="border-red-300 focus:border-red-500"
+                  />
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>

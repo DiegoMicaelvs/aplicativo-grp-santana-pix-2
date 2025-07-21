@@ -797,8 +797,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { masterPassword } = req.body;
       
+      console.log('Delete user request:', { id, masterPassword: masterPassword ? '***' : 'undefined', body: req.body });
+      
       // Validate master password
       const DEVELOPER_MASTER_PASSWORD = "Diego91425751";
+      if (!masterPassword) {
+        return res.status(400).json({ error: "Senha mestre é obrigatória" });
+      }
+      
       if (masterPassword !== DEVELOPER_MASTER_PASSWORD) {
         return res.status(403).json({ error: "Senha mestre incorreta" });
       }
