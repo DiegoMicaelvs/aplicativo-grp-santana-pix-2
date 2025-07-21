@@ -9,11 +9,15 @@ import DashboardPage from "@/pages/dashboard-page";
 import NewReferralPage from "@/pages/new-referral-page";
 import ReferralsPage from "@/pages/referrals-page";
 import EarningsPage from "@/pages/earnings-page";
-import AdminDashboard from "@/pages/admin-dashboard";
+import AdminDashboard from "@/pages/admin-dashboard-new";
 import AdminAnalysts from "@/pages/admin-analysts";
 import AdminProfiles from "@/pages/admin-profiles";
 import AdminAuditLog from "@/pages/admin-audit-log";
 import AdminWithdrawals from "@/pages/admin-withdrawals";
+import AdminIndicators from "@/pages/admin-indicators";
+import AdminReferralsDetailed from "@/pages/admin-referrals-detailed";
+import AdminPayments from "@/pages/admin-payments";
+import AdminAnalytics from "@/pages/admin-analytics";
 import PromoterDashboard from "@/pages/promoter-dashboard";
 import TeamDashboard from "@/pages/team-dashboard";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -34,8 +38,13 @@ function Router() {
       <AdminRoute path="/admin/profiles" component={AdminProfiles} />
       <AdminRoute path="/admin/audit-log" component={AdminAuditLog} />
       <AdminRoute path="/admin/withdrawals" component={AdminWithdrawals} />
+      <AdminRoute path="/admin/indicators" component={AdminIndicators} />
+      <AdminRoute path="/admin/referrals-detailed" component={AdminReferralsDetailed} />
+      <AdminRoute path="/admin/payments" component={AdminPayments} />
+      <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
       <PromoterRoute path="/team" component={TeamDashboard} />
+      <Route path="/team-dashboard" component={TeamDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
