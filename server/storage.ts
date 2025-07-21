@@ -270,15 +270,20 @@ class DatabaseStorage implements IStorage {
       })
       .returning();
     
-    // Log audit trail
-    await this.logUserAction({
-      userId: referralData.createdBy,
-      action: 'create',
-      entityType: 'referral',
-      entityId: referral.id,
-      newValues: referral,
-      details: `Nova indicação criada: ${referralData.fullName}`
-    });
+    // Log audit trail (with error handling)
+    try {
+      await this.logUserAction({
+        userId: referralData.createdBy,
+        action: 'create',
+        entityType: 'referral',
+        entityId: referral.id,
+        newValues: referral,
+        details: `Nova indicação criada: ${referralData.fullName}`
+      });
+    } catch (error) {
+      console.warn('Failed to log user action:', error);
+      // Don't fail the referral creation if audit logging fails
+    }
     
     return referral;
   }
