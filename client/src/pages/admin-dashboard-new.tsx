@@ -15,7 +15,8 @@ import {
   Eye,
   UserCheck,
   ClipboardList,
-  Wallet
+  Wallet,
+  HelpCircle
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -118,9 +119,9 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* 9 Control Tabs */}
+      {/* 10 Control Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="indicators">Indicadores</TabsTrigger>
           <TabsTrigger value="referrals">Indicações</TabsTrigger>
@@ -130,6 +131,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="audit">Auditoria</TabsTrigger>
           <TabsTrigger value="team">Equipes</TabsTrigger>
           <TabsTrigger value="profiles">Perfis</TabsTrigger>
+          <TabsTrigger value="support">Suporte</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Overview */}
@@ -263,6 +265,26 @@ export default function AdminDashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold text-teal-600">{stats.totalPromoters}</div>
                   <p className="text-sm text-gray-600">promotores ativos</p>
+                </CardContent>
+              </Link>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Link href="/admin/support-tickets">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5 text-pink-600" />
+                    Tickets de Suporte
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie solicitações de suporte dos usuários
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-pink-600">
+                    <HelpCircle className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm text-gray-600">sistema de suporte</p>
                 </CardContent>
               </Link>
             </Card>

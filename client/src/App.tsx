@@ -18,10 +18,12 @@ import AdminIndicators from "@/pages/admin-indicators";
 import AdminReferralsDetailed from "@/pages/admin-referrals-detailed";
 import AdminPayments from "@/pages/admin-payments";
 import AdminAnalytics from "@/pages/admin-analytics";
+import AdminSupportTickets from "@/pages/admin-support-tickets";
 import PromoterDashboard from "@/pages/promoter-dashboard";
 import TeamDashboard from "@/pages/team-dashboard";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AdminRoute, PromoterRoute } from "./lib/protected-route";
+import { SupportButton } from "@/components/ui/support-button";
 
 function Router() {
   return (
@@ -42,6 +44,7 @@ function Router() {
       <AdminRoute path="/admin/referrals-detailed" component={AdminReferralsDetailed} />
       <AdminRoute path="/admin/payments" component={AdminPayments} />
       <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
+      <AdminRoute path="/admin/support-tickets" component={AdminSupportTickets} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
       <PromoterRoute path="/team" component={TeamDashboard} />
       <Route path="/team-dashboard" component={TeamDashboard} />
@@ -54,6 +57,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
+      <SupportButton />
       <Toaster />
     </QueryClientProvider>
   );

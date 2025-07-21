@@ -119,6 +119,8 @@ export const cashFlow = pgTable("cash_flow", {
 
 // Support tickets
 export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export type TicketPriority = "low" | "medium" | "high" | "urgent";
+export type TicketCategory = "bug" | "feature" | "question" | "other";
 
 export const supportTickets = pgTable("support_tickets", {
   id: serial("id").primaryKey(),
@@ -126,6 +128,8 @@ export const supportTickets = pgTable("support_tickets", {
   userId: integer("user_id").references(() => users.id).notNull(),
   subject: text("subject").notNull(),
   description: text("description").notNull(),
+  priority: text("priority").default("medium").notNull().$type<TicketPriority>(),
+  category: text("category").default("question").notNull().$type<TicketCategory>(),
   status: text("status").default("open").notNull().$type<TicketStatus>(),
   attachments: jsonb("attachments").$type<string[]>(), // URLs dos arquivos anexados
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -138,7 +142,8 @@ export const ticketResponses = pgTable("ticket_responses", {
   ticketId: integer("ticket_id").references(() => supportTickets.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
   message: text("message").notNull(),
-  isInternal: boolean("is_internal").default(false).notNull(), // Notas internas da equipe
+  isAdminResponse: boolean("is_admin_response").default(false).notNull(), // Se é resposta de admin
+  attachments: jsonb("attachments").$type<string[]>(), // URLs dos arquivos anexados
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -271,16 +276,21 @@ export const createWithdrawalRequestSchema = z.object({
 });
 
 export const createSupportTicketSchema = z.object({
-  subject: z.string().min(1, "Assunto é obrigatório"),
+  subject: z.string().min(5, "Assunto deve ter pelo menos 5 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
+  priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  category: z.enum(["bug", "feature", "question", "other"]).default("question"),
   attachments: z.array(z.string()).optional(),
 });
 
 export const createTicketResponseSchema = z.object({
-  ticketId: z.number(),
-  userId: z.number(),
   message: z.string().min(1, "Mensagem é obrigatória"),
-  isInternal: z.boolean().optional(),
+  isAdminResponse: z.boolean().default(false),
+  attachments: z.array(z.string()).optional(),
+});
+
+export const updateTicketStatusSchema = z.object({
+  status: z.enum(["open", "in_progress", "resolved", "closed"]),
 });
 
 export const createCashFlowSchema = z.object({

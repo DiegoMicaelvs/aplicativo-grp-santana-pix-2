@@ -684,17 +684,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update ticket status
-  app.patch("/api/admin/tickets/:id", requireAdmin, async (req, res) => {
+  // === SUPPORT TICKET ROUTES ===
+
+  // Create new support ticket
+  app.post("/api/support/tickets", requireAuth, async (req, res) => {
+    try {
+      const { createSupportTicketSchema } = await import("@shared/schema.ts");
+      const validatedData = createSupportTicketSchema.parse(req.body);
+      
+      const ticket = await storage.createSupportTicket(req.user!.id, validatedData);
+      return res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Error creating support ticket:", error);
+      return res.status(500).json({ error: "Erro ao criar ticket de suporte" });
+    }
+  });
+
+  // Get user's own tickets
+  app.get("/api/support/my-tickets", requireAuth, async (req, res) => {
+    try {
+      const tickets = await storage.getUserSupportTickets(req.user!.id);
+      return res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching user tickets:", error);
+      return res.status(500).json({ error: "Erro ao buscar tickets" });
+    }
+  });
+
+  // Upload file for support ticket
+  app.post("/api/support/upload", requireAuth, async (req, res) => {
+    try {
+      // In a real application, you would handle file upload to a service like AWS S3
+      // For now, we'll simulate file upload and return a mock URL
+      const { file } = req.body;
+      const mockUrl = `/uploads/support/${Date.now()}-${Math.random()}.jpg`;
+      return res.json({ url: mockUrl });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      return res.status(500).json({ error: "Erro ao fazer upload do arquivo" });
+    }
+  });
+
+  // Admin: Get all support tickets
+  app.get("/api/admin/support-tickets", requireAdmin, async (req, res) => {
+    try {
+      const tickets = await storage.getAllSupportTickets();
+      return res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching support tickets:", error);
+      return res.status(500).json({ error: "Erro ao buscar tickets de suporte" });
+    }
+  });
+
+  // Admin: Update ticket status
+  app.patch("/api/admin/support-tickets/:id/status", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      const { updateTicketStatusSchema } = await import("@shared/schema.ts");
+      const { status } = updateTicketStatusSchema.parse(req.body);
       
-      const updated = await storage.updateTicketStatus(parseInt(id), status);
+      const updated = await storage.updateSupportTicketStatus(parseInt(id), status);
       return res.json(updated);
     } catch (error) {
-      console.error("Error updating ticket:", error);
-      return res.status(500).json({ error: "Erro ao atualizar ticket" });
+      console.error("Error updating ticket status:", error);
+      return res.status(500).json({ error: "Erro ao atualizar status do ticket" });
+    }
+  });
+
+  // Admin: Add response to ticket
+  app.post("/api/admin/support-tickets/:id/responses", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { createTicketResponseSchema } = await import("@shared/schema.ts");
+      const validatedData = createTicketResponseSchema.parse(req.body);
+      
+      const response = await storage.addTicketResponse(parseInt(id), req.user!.id, validatedData);
+      return res.status(201).json(response);
+    } catch (error) {
+      console.error("Error adding ticket response:", error);
+      return res.status(500).json({ error: "Erro ao adicionar resposta ao ticket" });
     }
   });
 
