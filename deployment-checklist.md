@@ -23,9 +23,9 @@
 - [x] Termos de uso atualizados
 
 ### 4. Administrador Kong Pix
-- [ ] Criar admin@kongpix.com.br
-- [ ] Senha temporária: KongPix@2025!
-- [ ] Forçar mudança de senha no primeiro login
+- [x] Criar admin@kongpix.com.br
+- [x] Senha temporária: admin123
+- [x] Forçar mudança de senha no primeiro login
 
 ## 📋 Tarefas Pendentes para Deploy
 
@@ -51,8 +51,14 @@
 ## 🔒 Informações Sensíveis
 
 ### Credenciais Temporárias:
-- **Admin Kong Pix**: admin@kongpix.com.br / KongPix@2025!
+- **Admin Kong Pix**: admin@kongpix.com.br / admin123
 - **Senha Master Atual**: Diego91425751 (MUDAR IMEDIATAMENTE!)
+
+### ⚠️ Problema de Login em Produção:
+Se o login não funcionar no link publicado (https://indique.replit.app):
+1. Limpe os cookies/cache do navegador ou use aba anônima
+2. Configure a variável SESSION_SECRET no Replit
+3. Verifique o arquivo test-login-production.md para mais detalhes
 
 ### Dados do Sistema:
 - Total de usuários: 2 (1 admin antigo + 1 admin Kong Pix)

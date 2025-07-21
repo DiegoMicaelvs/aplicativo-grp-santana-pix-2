@@ -52,14 +52,15 @@ export async function comparePasswords(
 export function setupAuth(app: Express) {
   // Session configuration
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID || crypto.randomBytes(32).toString("hex"),
+    secret: process.env.SESSION_SECRET || process.env.REPL_ID || crypto.randomBytes(32).toString("hex"),
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
+    name: 'kong.sid', // Nome consistente da sessão
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // False para funcionar tanto em HTTP quanto HTTPS
       sameSite: "lax"
     }
   };
