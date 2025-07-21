@@ -58,10 +58,7 @@ export function ReferralConversationComponent({ referralId, userRole }: Referral
   });
 
   const createConversationMutation = useMutation({
-    mutationFn: (data: ConversationFormValues) => apiRequest(`/api/referrals/${referralId}/conversations`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    mutationFn: (data: ConversationFormValues) => apiRequest("POST", `/api/referrals/${referralId}/conversations`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/referrals", referralId, "conversations"] });
       form.reset();

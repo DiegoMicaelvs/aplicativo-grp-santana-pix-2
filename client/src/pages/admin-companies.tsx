@@ -45,10 +45,7 @@ export default function AdminCompaniesPage() {
   });
 
   const createCompanyMutation = useMutation({
-    mutationFn: (data: CompanyFormValues) => apiRequest("/api/admin/companies", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    mutationFn: (data: CompanyFormValues) => apiRequest("POST", "/api/admin/companies", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
       setDialogOpen(false);
@@ -70,10 +67,7 @@ export default function AdminCompaniesPage() {
 
   const updateCompanyMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CompanyFormValues }) => 
-      apiRequest(`/api/admin/companies/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("PUT", `/api/admin/companies/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
       setDialogOpen(false);

@@ -95,7 +95,7 @@ export interface IStorage {
   getCurrentBalance(): Promise<number>;
   
   // Support ticket methods
-  createSupportTicket(ticket: CreateSupportTicket & { userId: number }): Promise<any>;
+  createSupportTicket(userId: number, ticketData: CreateSupportTicket): Promise<any>;
   getSupportTicketsByUserId(userId: number): Promise<any[]>;
   getAllSupportTickets(): Promise<any[]>;
   getSupportTicketById(id: number): Promise<any>;
@@ -143,11 +143,12 @@ class DatabaseStorage implements IStorage {
   // User methods
   async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number }) {
     try {
+      const { role, analystLevel, ...restUserData } = userData;
       const [user] = await db.insert(users)
         .values({
-          ...userData,
-          role: (userData.role || "indicador") as any,
-          analystLevel: userData.analystLevel as any
+          ...restUserData,
+          role: (role || "indicador"),
+          analystLevel: analystLevel || null
         })
         .returning();
       
