@@ -43,6 +43,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -441,14 +452,49 @@ export default function AdminProfiles() {
                               </DialogContent>
                             </Dialog>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => resetPasswordMutation.mutate(user.id)}
-                              disabled={resetPasswordMutation.isPending}
-                            >
-                              <Shield className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={resetPasswordMutation.isPending}
+                                >
+                                  <Shield className="h-4 w-4 mr-1" />
+                                  Redefinir Senha
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Redefinir Senha do Usuário</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza de que deseja redefinir a senha do usuário <strong>{user.fullName}</strong>?
+                                    <br /><br />
+                                    Uma nova senha temporária será gerada automaticamente e enviada para o usuário.
+                                    O usuário deverá alterar a senha no primeiro acesso.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => resetPasswordMutation.mutate(user.id)}
+                                    disabled={resetPasswordMutation.isPending}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    {resetPasswordMutation.isPending ? (
+                                      <>
+                                        <Settings className="h-4 w-4 mr-2 animate-spin" />
+                                        Redefinindo...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Shield className="h-4 w-4 mr-2" />
+                                        Redefinir Senha
+                                      </>
+                                    )}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>
