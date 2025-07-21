@@ -60,8 +60,9 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: false, // False para funcionar tanto em HTTP quanto HTTPS
-      sameSite: "lax"
+      secure: process.env.NODE_ENV === "production", // Secure apenas em produção
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // None em produção
+      path: "/" // Cookie válido em todo o site
     }
   };
 

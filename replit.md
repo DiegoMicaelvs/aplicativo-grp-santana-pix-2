@@ -114,6 +114,17 @@ The application follows a modern full-stack architecture with:
 
 The system is designed for deployment on platforms that support Node.js applications with PostgreSQL databases, with specific scripts for session table creation and database seeding for initial setup.
 
+## Known Issues and Solutions
+
+### Login Issues in Production (Replit Deploy)
+- **Problem**: Login works in preview but fails on deployed URL (https://indique.replit.app)
+- **Cause**: Cookie/session configuration differences between local and production environments
+- **Solution**: 
+  1. Set `NODE_ENV=production` in Replit Secrets
+  2. Set `SESSION_SECRET=(random secure value)` in Replit Secrets
+  3. Clear all browser data for the site or use incognito mode
+  4. See `fix-production-login.md` for detailed troubleshooting steps
+
 ## Recent Updates (July 2025)
 
 ### Automatic Commission Reversal System (July 2025)

@@ -20,15 +20,15 @@ import { setupSecurity } from "./security";
 
 const app = express();
 
-// Configurar CORS para permitir requisições do domínio Replit
+// Configurar CORS mais permissivo para Replit
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && (origin.includes('replit.app') || origin.includes('localhost'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  }
+  // Permitir qualquer origem temporariamente para debug
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
   
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
