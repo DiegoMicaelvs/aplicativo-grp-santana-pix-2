@@ -10,8 +10,10 @@ import NewReferralPage from "@/pages/new-referral-page";
 import ReferralsPage from "@/pages/referrals-page";
 import EarningsPage from "@/pages/earnings-page";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminAnalysts from "@/pages/admin-analysts";
+import PromoterDashboard from "@/pages/promoter-dashboard";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AdminRoute } from "./lib/protected-route";
+import { AdminRoute, PromoterRoute } from "./lib/protected-route";
 
 function Router() {
   return (
@@ -23,6 +25,8 @@ function Router() {
       <ProtectedRoute path="/new-referral" component={NewReferralPage} />
       <ProtectedRoute path="/earnings" component={EarningsPage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
+      <AdminRoute path="/admin/analysts" component={AdminAnalysts} />
+      <PromoterRoute path="/promoter" component={PromoterDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -34,7 +34,9 @@ export interface IStorage {
   getAllUsers(): Promise<any[]>;
   getUsersByRole(role: string): Promise<any[]>;
   getUsersByCreator(creatorId: number): Promise<any[]>;
+  getIndicadoresByPromoter(promoterId: number): Promise<any[]>;
   updateUserBalance(userId: number, amount: number): Promise<void>;
+  updateUserPermissions(userId: number, permissions: string[], analystLevel?: number): Promise<any>;
   
   // Referral methods
   createReferral(referral: CreateReferral & { userId: number }): Promise<any>;
@@ -86,9 +88,13 @@ class DatabaseStorage implements IStorage {
   }
   
   // User methods
-  async createUser(userData: InsertUser & { createdBy?: number }) {
+  async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number }) {
     const [user] = await db.insert(users)
-      .values(userData)
+      .values({
+        ...userData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
       .returning();
     
     return user;
@@ -132,6 +138,13 @@ class DatabaseStorage implements IStorage {
     });
   }
   
+  async getIndicadoresByPromoter(promoterId: number) {
+    return await db.query.users.findMany({
+      where: eq(users.promoterId, promoterId),
+      orderBy: desc(users.createdAt)
+    });
+  }
+  
   async updateUserBalance(userId: number, amount: number) {
     await db.update(users)
       .set({ 
@@ -140,6 +153,24 @@ class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(users.id, userId));
+  }
+  
+  async updateUserPermissions(userId: number, permissions: string[], analystLevel?: number) {
+    const updateData: any = {
+      permissions,
+      updatedAt: new Date()
+    };
+    
+    if (analystLevel !== undefined) {
+      updateData.analystLevel = analystLevel;
+    }
+    
+    const [updatedUser] = await db.update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
   }
   
   // Referral methods
@@ -238,23 +269,23 @@ class DatabaseStorage implements IStorage {
     if (referral.status === 'validated') {
       indicatorCommission = 3; // R$3 por cadastro validado
       
-      // Se o usuário foi criado por um promotor, ele ganha R$1
-      if (user.createdBy) {
-        const creator = await this.getUserById(user.createdBy);
-        if (creator && creator.role === 'promotor') {
+      // Se o indicador tem um promotor, ele ganha R$1
+      if (user.promoterId) {
+        const promoter = await this.getUserById(user.promoterId);
+        if (promoter && promoter.role === 'promotor') {
           promoterCommission = 1;
-          await this.updateUserBalance(creator.id, promoterCommission);
+          await this.updateUserBalance(promoter.id, promoterCommission);
         }
       }
     } else if (referral.status === 'converted') {
       indicatorCommission = 50; // R$50 por conversão
       
-      // Se o usuário foi criado por um promotor, ele ganha R$10
-      if (user.createdBy) {
-        const creator = await this.getUserById(user.createdBy);
-        if (creator && creator.role === 'promotor') {
+      // Se o indicador tem um promotor, ele ganha R$10
+      if (user.promoterId) {
+        const promoter = await this.getUserById(user.promoterId);
+        if (promoter && promoter.role === 'promotor') {
           promoterCommission = 10;
-          await this.updateUserBalance(creator.id, promoterCommission);
+          await this.updateUserBalance(promoter.id, promoterCommission);
         }
       }
     }

@@ -7,6 +7,15 @@ import { z } from "zod";
 export type UserRole = "indicador" | "promotor" | "admin" | "analista";
 export type AnalystLevel = 1 | 2 | 3;
 
+// Analyst permissions
+export type AnalystPermission = 
+  | "view_referrals" 
+  | "edit_referral_status" 
+  | "view_users" 
+  | "manage_withdrawals" 
+  | "view_reports" 
+  | "manage_companies";
+
 // User types
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -21,8 +30,9 @@ export const users = pgTable("users", {
   pixKey: text("pix_key").notNull(),
   role: text("role").default("indicador").notNull().$type<UserRole>(),
   analystLevel: integer("analyst_level").$type<AnalystLevel>(), // Apenas para analistas
-  permissions: jsonb("permissions").$type<string[]>(), // Permissões específicas para analistas
+  permissions: jsonb("permissions").$type<AnalystPermission[]>(), // Permissões específicas para analistas
   createdBy: integer("created_by"), // Quem cadastrou este usuário
+  promoterId: integer("promoter_id"), // ID do promotor que cadastrou este indicador
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0.00").notNull(), // Saldo disponível
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00").notNull(), // Total ganho
   isActive: boolean("is_active").default(true).notNull(),
@@ -39,7 +49,7 @@ export const companies = pgTable("companies", {
 });
 
 // Referral statuses
-export type ReferralStatus = "pending" | "validated" | "converted" | "rejected" | "paid";
+export type ReferralStatus = "pending" | "analyzing" | "validated" | "converted" | "rejected" | "paid";
 
 // Referrals table
 export const referrals = pgTable("referrals", {
@@ -118,6 +128,13 @@ export const usersRelations = relations(users, ({ many, one }) => ({
     fields: [users.createdBy],
     references: [users.id],
     relationName: "createdByRelation"
+  }),
+  // Promoter relationships
+  indicadores: many(users, { relationName: "promoterRelation" }), // Indicadores sob este promotor
+  promoter: one(users, {
+    fields: [users.promoterId],
+    references: [users.id],
+    relationName: "promoterRelation"
   }),
   withdrawalRequests: many(withdrawalRequests),
   supportTickets: many(supportTickets),
@@ -200,7 +217,7 @@ export const createReferralSchema = createInsertSchema(referrals, {
 }).omit({ id: true, userId: true, status: true, commissionIndicator: true, commissionPromoter: true, createdAt: true, updatedAt: true, notes: true });
 
 export const updateReferralStatusSchema = z.object({
-  status: z.enum(["pending", "validated", "converted", "rejected", "paid"]),
+  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid"]),
   notes: z.string().optional(),
 });
 
@@ -232,6 +249,31 @@ export const createCashFlowSchema = z.object({
   relatedWithdrawalId: z.number().optional(),
 });
 
+// Schema para criar indicador (usado por promotores)
+export const createIndicadorSchema = insertUserSchema.extend({
+  role: z.literal("indicador"),
+  promoterId: z.number().optional(), // Será preenchido automaticamente pelo promotor logado
+});
+
+// Schema para configurar permissões de analista
+export const updateAnalystPermissionsSchema = z.object({
+  analystLevel: z.coerce.number().int().min(1).max(3),
+  permissions: z.array(z.enum([
+    "view_referrals", 
+    "edit_referral_status", 
+    "view_users", 
+    "manage_withdrawals", 
+    "view_reports", 
+    "manage_companies"
+  ]))
+});
+
+// Schema para atualizar status de indicação com comissões
+export const updateReferralWithCommissionSchema = z.object({
+  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid"]),
+  notes: z.string().optional(),
+});
+
 // Login data type
 export const loginSchema = z.object({
   username: z.string().min(1, "Email é obrigatório"),
@@ -244,6 +286,7 @@ export type User = typeof users.$inferSelect;
 export type CreateReferral = z.infer<typeof createReferralSchema>;
 export type Referral = typeof referrals.$inferSelect;
 export type UpdateReferralStatus = z.infer<typeof updateReferralStatusSchema>;
+export type UpdateReferralWithCommission = z.infer<typeof updateReferralWithCommissionSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type Company = typeof companies.$inferSelect;
 export type CreateCompany = z.infer<typeof createCompanySchema>;
@@ -255,3 +298,5 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type CreateSupportTicket = z.infer<typeof createSupportTicketSchema>;
 export type TicketResponse = typeof ticketResponses.$inferSelect;
 export type CreateTicketResponse = z.infer<typeof createTicketResponseSchema>;
+export type CreateIndicador = z.infer<typeof createIndicadorSchema>;
+export type UpdateAnalystPermissions = z.infer<typeof updateAnalystPermissionsSchema>;

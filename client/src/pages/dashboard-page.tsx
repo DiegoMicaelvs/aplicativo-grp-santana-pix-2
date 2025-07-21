@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Clock, DollarSign, TrendingUp, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,21 @@ import { PromotionalAlert } from "@/components/promotional-alert";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
+
+  // Redirect users to their specific dashboards based on role
+  useEffect(() => {
+    if (user) {
+      if (user.role === "admin") {
+        setLocation("/admin");
+        return;
+      } else if (user.role === "promotor") {
+        setLocation("/promoter");
+        return;
+      }
+      // indicador and analista users stay on main dashboard
+    }
+  }, [user, setLocation]);
   
   // Fetch referrals for the current user
   const { data: referrals, isLoading: isLoadingReferrals } = useQuery<Referral[]>({
@@ -32,7 +47,7 @@ export default function DashboardPage() {
   const convertedReferrals = referrals?.filter(r => r.status === 'converted').length || 0;
   const conversionRate = totalReferrals > 0 ? Math.round((convertedReferrals / totalReferrals) * 100) : 0;
   const totalEarnings = referrals?.reduce((sum, r) => {
-    const commission = r.commission ? (typeof r.commission === 'string' ? parseFloat(r.commission) : r.commission) : 0;
+    const commission = r.commissionIndicator ? parseFloat(r.commissionIndicator) : 0;
     return sum + commission;
   }, 0) || 0;
   
@@ -48,7 +63,7 @@ export default function DashboardPage() {
         return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
       case 'converted':
         return <Badge variant="outline" className="bg-green-100 text-green-800">Convertido</Badge>;
-      case 'processing':
+      case 'analyzing':
         return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em análise</Badge>;
       case 'rejected':
         return <Badge variant="outline" className="bg-red-100 text-red-800">Não convertido</Badge>;
@@ -95,7 +110,7 @@ export default function DashboardPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <h1 className="text-3xl font-bold leading-tight text-gray-900 font-heading">Dashboard</h1>
               <p className="mt-2 text-gray-600">
-                Bem-vindo, {user?.firstName}! Veja o resumo da sua atividade como indicador.
+                Bem-vindo, {user?.fullName}! Veja o resumo da sua atividade como indicador.
               </p>
             </div>
           </header>
@@ -210,11 +225,11 @@ export default function DashboardPage() {
                               <TableCell>
                                 <div className="flex items-center">
                                   <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold">
-                                    {referral.firstName.charAt(0)}{referral.lastName.charAt(0)}
+                                    {referral.fullName.charAt(0)}{referral.fullName.split(' ').length > 1 ? referral.fullName.split(' ')[1].charAt(0) : ''}
                                   </div>
                                   <div className="ml-4">
-                                    <div className="text-sm font-medium text-gray-900">{referral.firstName} {referral.lastName}</div>
-                                    <div className="text-sm text-gray-500">{referral.email}</div>
+                                    <div className="text-sm font-medium text-gray-900">{referral.fullName}</div>
+                                    <div className="text-sm text-gray-500">{referral.phone}</div>
                                   </div>
                                 </div>
                               </TableCell>
@@ -228,8 +243,8 @@ export default function DashboardPage() {
                                 {getStatusBadge(referral.status)}
                               </TableCell>
                               <TableCell>
-                                {referral.commission 
-                                  ? formatCurrency(referral.commission) 
+                                {referral.commissionIndicator 
+                                  ? formatCurrency(referral.commissionIndicator) 
                                   : referral.status === 'rejected' 
                                     ? '-' 
                                     : 'Pendente'}

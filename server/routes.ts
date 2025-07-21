@@ -4,12 +4,16 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { 
   updateReferralStatusSchema,
+  updateReferralWithCommissionSchema,
   createReferralSchema,
   createCompanySchema,
   createWithdrawalRequestSchema,
   createSupportTicketSchema,
   createTicketResponseSchema,
-  createCashFlowSchema
+  createCashFlowSchema,
+  createIndicadorSchema,
+  updateAnalystPermissionsSchema,
+  type AnalystPermission
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -48,6 +52,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  // Middleware to check analyst permissions
+  const requireAnalystPermission = (permission: AnalystPermission) => {
+    return (req: any, res: any, next: any) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Não autorizado" });
+      }
+      
+      // Admin has all permissions
+      if (req.user.role === "admin") {
+        return next();
+      }
+      
+      // Check analyst permissions
+      if (req.user.role === "analista") {
+        const userPermissions = req.user.permissions || [];
+        if (userPermissions.includes(permission)) {
+          return next();
+        }
+      }
+      
+      return res.status(403).json({ error: "Permissão insuficiente" });
+    };
+  };
+
   // === USER ROUTES ===
   
   // Get current user info
@@ -81,21 +109,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new user (for promoters)
-  app.post("/api/users", requirePromoter, async (req, res) => {
+  // Create new indicador (for promoters)
+  app.post("/api/users/indicador", requirePromoter, async (req, res) => {
     try {
+      const validatedData = createIndicadorSchema.parse(req.body);
       const userData = {
-        ...req.body,
+        ...validatedData,
         createdBy: req.user!.id,
-        role: "indicador" // Promoters can only create indicators
+        promoterId: req.user!.id, // Link indicador to promoter
+        role: "indicador" as const
       };
       
       const user = await storage.createUser(userData);
       const { password, ...userWithoutPassword } = user;
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
-      console.error("Error creating user:", error);
-      return res.status(500).json({ error: "Erro ao criar usuário" });
+      console.error("Error creating indicador:", error);
+      return res.status(400).json({ error: "Erro ao criar indicador" });
+    }
+  });
+
+  // Get indicadores under a promoter
+  app.get("/api/users/indicadores", requirePromoter, async (req, res) => {
+    try {
+      const indicadores = await storage.getIndicadoresByPromoter(req.user!.id);
+      return res.json(indicadores.map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      }));
+    } catch (error) {
+      console.error("Error fetching indicadores:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicadores" });
     }
   });
 
@@ -309,6 +353,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === PROMOTER ROUTES ===
+  
+  // Create indicador (only promoters)
+  app.post("/api/users/indicador", requirePromoter, async (req, res) => {
+    try {
+      const validatedData = createIndicadorSchema.parse(req.body);
+      
+      // Add promoter relationship
+      const userData = {
+        ...validatedData,
+        promoterId: req.user!.id,
+        createdBy: req.user!.id
+      };
+      
+      const newUser = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = newUser;
+      
+      return res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating indicador:", error);
+      return res.status(500).json({ error: "Erro ao criar indicador" });
+    }
+  });
+
+  // Get indicadores under this promoter
+  app.get("/api/users/indicadores", requirePromoter, async (req, res) => {
+    try {
+      const indicadores = await storage.getIndicadoresByPromoter(req.user!.id);
+      return res.json(indicadores.map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      }));
+    } catch (error) {
+      console.error("Error fetching indicadores:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicadores" });
+    }
+  });
+
   // === ADMIN ROUTES ===
   
   // Get all users
@@ -424,6 +506,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching tickets:", error);
       return res.status(500).json({ error: "Erro ao buscar tickets" });
+    }
+  });
+
+  // Update analyst permissions
+  app.patch("/api/admin/users/:id/permissions", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = updateAnalystPermissionsSchema.parse(req.body);
+      
+      const updatedUser = await storage.updateUserPermissions(
+        parseInt(id),
+        validatedData.permissions,
+        validatedData.analystLevel
+      );
+      
+      const { password, ...userWithoutPassword } = updatedUser;
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user permissions:", error);
+      return res.status(500).json({ error: "Erro ao atualizar permissões" });
+    }
+  });
+
+  // Get all analysts for permission management
+  app.get("/api/admin/analysts", requireAdmin, async (req, res) => {
+    try {
+      const analysts = await storage.getUsersByRole("analista");
+      return res.json(analysts.map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      }));
+    } catch (error) {
+      console.error("Error fetching analysts:", error);
+      return res.status(500).json({ error: "Erro ao buscar analistas" });
     }
   });
 
