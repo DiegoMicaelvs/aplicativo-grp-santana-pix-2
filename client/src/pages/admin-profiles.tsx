@@ -117,6 +117,9 @@ export default function AdminProfiles() {
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<User | null>(null);
   const [customPasswordDialogOpen, setCustomPasswordDialogOpen] = useState(false);
   const [customPassword, setCustomPassword] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUserForDeletion, setSelectedUserForDeletion] = useState<User | null>(null);
+  const [masterPassword, setMasterPassword] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -240,6 +243,32 @@ export default function AdminProfiles() {
     onError: (error: any) => {
       toast({
         title: "Erro ao redefinir senha",
+        description: error.message || "Ocorreu um erro inesperado.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation with master password
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userData: {userId: number, masterPassword: string}) => {
+      return apiRequest('DELETE', `/api/admin/users/${userData.userId}/delete`, {
+        masterPassword: userData.masterPassword
+      });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setDeleteDialogOpen(false);
+      setMasterPassword("");
+      setSelectedUserForDeletion(null);
+      toast({
+        title: "Usuário deletado",
+        description: `${data.deletedUser} foi removido permanentemente do sistema.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao deletar usuário",
         description: error.message || "Ocorreu um erro inesperado.",
         variant: "destructive",
       });
@@ -481,6 +510,21 @@ export default function AdminProfiles() {
                               <Shield className="h-4 w-4 mr-1" />
                               Redefinir Senha
                             </Button>
+
+                            {/* Delete User Button - Only show for non-admin users */}
+                            {user.role !== 'admin' && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={deleteUserMutation.isPending}
+                                onClick={() => {
+                                  setSelectedUserForDeletion(user);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -642,6 +686,82 @@ export default function AdminProfiles() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete User Dialog with Master Password */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center text-destructive">
+              <Trash2 className="h-5 w-5 mr-2" />
+              Confirmar Exclusão Permanente
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Você está prestes a deletar permanentemente o usuário <strong>{selectedUserForDeletion?.fullName}</strong>.
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800 font-medium">
+                  ⚠️ Esta ação é irreversível e irá:
+                </p>
+                <ul className="text-sm text-red-700 mt-2 space-y-1 ml-4">
+                  <li>• Deletar todos os dados do usuário</li>
+                  <li>• Remover todas as indicações feitas por ele</li>
+                  <li>• Remover histórico de tickets de suporte</li>
+                  <li>• Limpar registros de auditoria</li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="masterPassword" className="text-sm font-medium">
+                  Digite a senha mestre do desenvolvedor para confirmar:
+                </Label>
+                <Input
+                  id="masterPassword"
+                  type="password"
+                  value={masterPassword}
+                  onChange={(e) => setMasterPassword(e.target.value)}
+                  placeholder="Senha mestre do desenvolvedor"
+                  className="border-red-300 focus:border-red-500"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setMasterPassword("");
+                setSelectedUserForDeletion(null);
+              }}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={!masterPassword || deleteUserMutation.isPending}
+              onClick={() => {
+                if (selectedUserForDeletion && masterPassword) {
+                  deleteUserMutation.mutate({
+                    userId: selectedUserForDeletion.id,
+                    masterPassword: masterPassword
+                  });
+                }
+              }}
+            >
+              {deleteUserMutation.isPending ? (
+                <>
+                  <Settings className="h-4 w-4 mr-2 animate-spin" />
+                  Deletando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Deletar Permanentemente
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <Footer />
     </div>

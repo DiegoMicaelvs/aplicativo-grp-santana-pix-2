@@ -43,6 +43,7 @@ export interface IStorage {
   updateUserProfile(userId: number, updates: any): Promise<any>;
   updateUserStatus(userId: number, isActive: boolean): Promise<any>;
   resetUserPassword(userId: number): Promise<string>;
+  deleteUser(userId: number): Promise<void>;
   
   // Referral methods
   createReferral(referral: CreateReferral & { userId: number }): Promise<any>;
@@ -255,6 +256,58 @@ class DatabaseStorage implements IStorage {
       .returning();
     
     return newPassword; // Return the plain text password for display
+  }
+
+  async deleteUser(userId: number) {
+    // Begin transaction to delete user and related data safely
+    await db.transaction(async (tx) => {
+      // First, delete related data in the correct order (respecting foreign key constraints)
+      
+      // Delete support ticket responses
+      await tx.delete(ticketResponses)
+        .where(eq(ticketResponses.userId, userId));
+      
+      // Delete support tickets
+      await tx.delete(supportTickets)
+        .where(eq(supportTickets.userId, userId));
+      
+      // Delete referral conversations
+      await tx.delete(referralConversations)
+        .where(eq(referralConversations.userId, userId));
+      
+      // Delete audit logs
+      await tx.delete(auditLog)
+        .where(eq(auditLog.userId, userId));
+      
+      // Delete cash flow entries (created by user)
+      await tx.delete(cashFlow)
+        .where(eq(cashFlow.createdBy, userId));
+      
+      // Delete withdrawal requests
+      await tx.delete(withdrawalRequests)
+        .where(eq(withdrawalRequests.userId, userId));
+      
+      // Delete referrals (both created by user and assigned to user)
+      await tx.delete(referrals)
+        .where(or(
+          eq(referrals.userId, userId),
+          eq(referrals.createdBy, userId)
+        ));
+      
+      // Update any users that have this user as promoter (set to null)
+      await tx.update(users)
+        .set({ promoterId: null })
+        .where(eq(users.promoterId, userId));
+      
+      // Update any users that were created by this user (set to null)
+      await tx.update(users)
+        .set({ createdBy: null })
+        .where(eq(users.createdBy, userId));
+      
+      // Finally, delete the user
+      await tx.delete(users)
+        .where(eq(users.id, userId));
+    });
   }
   
   // Referral methods

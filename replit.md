@@ -149,3 +149,12 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Registration Compliance:** Updated registration form with mandatory terms acceptance and embedded policy links
 - **LGPD Compliance:** Full privacy policy content includes LGPD compliance terms and user rights information
 - **User Consent:** Clear "Li e aceito os termos" (I have read and accept the terms) checkbox with linked policy dialogs
+
+### Secure User Deletion System (July 2025)
+- **Master Password Protection:** User deletion requires developer master password "Diego91425751" for security
+- **Comprehensive Data Cleanup:** Deletes all related user data including referrals, tickets, audit logs, and cash flow entries
+- **Admin Protection:** Prevents deletion of admin users to maintain system integrity
+- **Transaction Safety:** Uses database transactions to ensure data consistency during deletion process
+- **Audit Trail:** Logs all deletion attempts with complete user information for security tracking
+- **UI Integration:** Alert dialog with clear warnings about permanent data loss and master password requirement
+- **Relationship Management:** Safely handles foreign key relationships by updating dependent records before deletion

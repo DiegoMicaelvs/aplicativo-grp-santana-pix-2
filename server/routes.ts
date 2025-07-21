@@ -791,6 +791,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete user with developer master password
+  app.delete("/api/admin/users/:id/delete", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { masterPassword } = req.body;
+      
+      // Validate master password
+      const DEVELOPER_MASTER_PASSWORD = "Diego91425751";
+      if (masterPassword !== DEVELOPER_MASTER_PASSWORD) {
+        return res.status(403).json({ error: "Senha mestre incorreta" });
+      }
+      
+      // Check if user exists
+      const userToDelete = await storage.getUserById(parseInt(id));
+      if (!userToDelete) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+      
+      // Prevent deletion of admins
+      if (userToDelete.role === 'admin') {
+        return res.status(403).json({ error: "Não é permitido excluir usuários administradores" });
+      }
+      
+      // Delete the user
+      await storage.deleteUser(parseInt(id));
+      
+      // Log audit trail
+      try {
+        await storage.logUserAction({
+          userId: req.user!.id,
+          action: 'delete',
+          entityType: 'user',
+          entityId: parseInt(id),
+          oldValues: userToDelete,
+          details: `Usuário ${userToDelete.fullName} (${userToDelete.username}) foi deletado permanentemente`
+        });
+      } catch (error) {
+        console.warn('Failed to log user deletion:', error);
+      }
+      
+      return res.json({ 
+        message: "Usuário deletado com sucesso",
+        deletedUser: userToDelete.fullName
+      });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return res.status(500).json({ error: "Erro ao deletar usuário" });
+    }
+  });
+
   // === SUPPORT TICKET ROUTES ===
 
   // Create new support ticket
