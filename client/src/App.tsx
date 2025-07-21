@@ -19,6 +19,7 @@ import AdminReferralsDetailed from "@/pages/admin-referrals-detailed";
 import AdminPayments from "@/pages/admin-payments";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminSupportTickets from "@/pages/admin-support-tickets";
+import AdminCompanies from "@/pages/admin-companies";
 import PromoterDashboard from "@/pages/promoter-dashboard";
 import TeamDashboard from "@/pages/team-dashboard";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -45,6 +46,7 @@ function Router() {
       <AdminRoute path="/admin/payments" component={AdminPayments} />
       <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
       <AdminRoute path="/admin/support-tickets" component={AdminSupportTickets} />
+      <AdminRoute path="/admin/companies" component={AdminCompanies} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
       <PromoterRoute path="/team" component={TeamDashboard} />
       <Route path="/team-dashboard" component={TeamDashboard} />

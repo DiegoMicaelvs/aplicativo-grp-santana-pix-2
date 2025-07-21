@@ -204,10 +204,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === COMPANY ROUTES ===
   
-  // Get all companies
+  // Get active companies (for user forms)
   app.get("/api/companies", requireAuth, async (req, res) => {
     try {
-      const companies = await storage.getAllCompanies();
+      const companies = await storage.getActiveCompanies();
       return res.json(companies);
     } catch (error) {
       console.error("Error fetching companies:", error);
@@ -224,6 +224,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating company:", error);
       return res.status(500).json({ error: "Erro ao criar empresa" });
+    }
+  });
+
+  // === ADMIN COMPANY ROUTES ===
+  
+  // Get all companies (admin only)
+  app.get("/api/admin/companies", requireAdmin, async (req, res) => {
+    try {
+      const companies = await storage.getAllCompanies();
+      return res.json(companies);
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+      return res.status(500).json({ error: "Erro ao buscar empresas" });
+    }
+  });
+
+  // Create new company (admin only)
+  app.post("/api/admin/companies", requireAdmin, async (req, res) => {
+    try {
+      const { name, isActive = true } = req.body;
+      const company = await storage.createCompany(name, isActive);
+      return res.status(201).json(company);
+    } catch (error) {
+      console.error("Error creating company:", error);
+      return res.status(500).json({ error: "Erro ao criar empresa" });
+    }
+  });
+
+  // Update company (admin only)
+  app.put("/api/admin/companies/:id", requireAdmin, async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.id);
+      const { name, isActive } = req.body;
+      const company = await storage.updateCompany(companyId, { name, isActive });
+      return res.json(company);
+    } catch (error) {
+      console.error("Error updating company:", error);
+      return res.status(500).json({ error: "Erro ao atualizar empresa" });
     }
   });
 

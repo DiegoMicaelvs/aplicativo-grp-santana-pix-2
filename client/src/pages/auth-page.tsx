@@ -28,6 +28,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { PrivacyPolicyDialog } from "@/components/ui/privacy-policy-dialog";
@@ -55,6 +56,9 @@ const registerSchema = z.object({
   address: z.string().min(5, "Endereço é obrigatório"),
   shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
+  role: z.enum(["indicador", "promotor"], {
+    required_error: "Selecione o tipo de cadastro",
+  }),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string().min(1, "Confirme sua senha"),
   terms: z.boolean().refine((val) => val === true, {
@@ -104,6 +108,7 @@ export default function AuthPage() {
       address: "",
       shirtSize: "",
       pixKey: "",
+      role: "indicador" as const,
       password: "",
       confirmPassword: "",
       terms: false,
@@ -304,6 +309,56 @@ export default function AuthPage() {
                           />
                         </div>
                         
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <FormField
+                            control={registerForm.control}
+                            name="role"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Tipo de Cadastro</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione o tipo" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="indicador">Indicador</SelectItem>
+                                    <SelectItem value="promotor">Promotor</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={registerForm.control}
+                            name="shirtSize"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Tamanho da Camisa</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione o tamanho" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="PP">PP</SelectItem>
+                                    <SelectItem value="P">P</SelectItem>
+                                    <SelectItem value="M">M</SelectItem>
+                                    <SelectItem value="G">G</SelectItem>
+                                    <SelectItem value="GG">GG</SelectItem>
+                                    <SelectItem value="XGG">XGG</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
                         <FormField
                           control={registerForm.control}
                           name="address"
@@ -318,46 +373,19 @@ export default function AuthPage() {
                           )}
                         />
                         
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <FormField
-                            control={registerForm.control}
-                            name="shirtSize"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Tamanho da Camisa</FormLabel>
-                                <FormControl>
-                                  <select 
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    {...field}
-                                  >
-                                    <option value="">Selecione</option>
-                                    <option value="PP">PP</option>
-                                    <option value="P">P</option>
-                                    <option value="M">M</option>
-                                    <option value="G">G</option>
-                                    <option value="GG">GG</option>
-                                    <option value="XG">XG</option>
-                                  </select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={registerForm.control}
-                            name="pixKey"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Chave PIX</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="CPF, email ou telefone" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                        <FormField
+                          control={registerForm.control}
+                          name="pixKey"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Chave PIX</FormLabel>
+                              <FormControl>
+                                <Input placeholder="CPF, email ou telefone" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                         
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <FormField

@@ -16,7 +16,8 @@ import {
   UserCheck,
   ClipboardList,
   Wallet,
-  HelpCircle
+  HelpCircle,
+  Building2
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -265,6 +266,26 @@ export default function AdminDashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold text-teal-600">{stats.totalPromoters}</div>
                   <p className="text-sm text-gray-600">promotores ativos</p>
+                </CardContent>
+              </Link>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Link href="/admin/companies">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-cyan-600" />
+                    Gestão de Empresas
+                  </CardTitle>
+                  <CardDescription>
+                    Configure empresas do programa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-cyan-600">
+                    <Building2 className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm text-gray-600">empresas ativas</p>
                 </CardContent>
               </Link>
             </Card>
