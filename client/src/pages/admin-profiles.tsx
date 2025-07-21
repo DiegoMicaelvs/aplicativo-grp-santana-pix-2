@@ -154,6 +154,10 @@ export default function AdminProfiles() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: async (data: ProfileFormValues) => {
+      // Ensure password is provided for new users
+      if (!data.password) {
+        throw new Error('Senha é obrigatória para criar usuário');
+      }
       return apiRequest('POST', '/api/admin/users', data);
     },
     onSuccess: () => {
@@ -163,7 +167,20 @@ export default function AdminProfiles() {
         description: "O perfil foi criado com sucesso.",
       });
       setCreateDialogOpen(false);
-      form.reset();
+      form.reset({
+        fullName: "",
+        username: "",
+        email: "",
+        cpf: "",
+        phone: "",
+        address: "",
+        shirtSize: "M",
+        pixKey: "",
+        role: "indicador",
+        isActive: true,
+        permissions: [],
+        password: "",
+      });
     },
     onError: (error: any) => {
       toast({
@@ -314,7 +331,15 @@ export default function AdminProfiles() {
       }
       updateUserMutation.mutate({ id: selectedUser.id, updates });
     } else {
-      // Create new user
+      // Create new user - validate password is provided
+      if (!data.password || data.password.length < 6) {
+        toast({
+          title: "Erro de validação",
+          description: "Senha é obrigatória e deve ter pelo menos 6 caracteres para criar um usuário.",
+          variant: "destructive",
+        });
+        return;
+      }
       createUserMutation.mutate(data);
     }
   };
