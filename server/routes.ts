@@ -426,10 +426,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = createSupportTicketSchema.parse(req.body);
       
-      const ticket = await storage.createSupportTicket({
-        ...validatedData,
-        userId: req.user!.id
-      });
+      const ticket = await storage.createSupportTicket(
+        req.user!.id,
+        validatedData
+      );
       
       return res.status(201).json(ticket);
     } catch (error) {
