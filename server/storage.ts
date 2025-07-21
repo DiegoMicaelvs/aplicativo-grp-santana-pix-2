@@ -736,53 +736,15 @@ class DatabaseStorage implements IStorage {
   }
 
   async getUserSupportTickets(userId: number) {
-    const { supportTickets, ticketResponses } = await import("@shared/schema.ts");
+    const { supportTickets } = await import("@shared/schema.ts");
     
-    return await db.query.supportTickets.findMany({
-      where: eq(supportTickets.userId, userId),
-      orderBy: [desc(supportTickets.createdAt)],
-      with: {
-        responses: {
-          with: {
-            user: {
-              columns: {
-                fullName: true,
-                username: true
-              }
-            }
-          },
-          orderBy: [asc(ticketResponses.createdAt)]
-        }
-      }
-    });
+    return await db.select().from(supportTickets).where(eq(supportTickets.userId, userId));
   }
 
   async getAllSupportTickets() {
-    const { supportTickets, ticketResponses } = await import("@shared/schema.ts");
+    const { supportTickets } = await import("@shared/schema.ts");
     
-    return await db.query.supportTickets.findMany({
-      orderBy: [desc(supportTickets.createdAt)],
-      with: {
-        user: {
-          columns: {
-            id: true,
-            fullName: true,
-            username: true
-          }
-        },
-        responses: {
-          with: {
-            user: {
-              columns: {
-                fullName: true,
-                username: true
-              }
-            }
-          },
-          orderBy: [asc(ticketResponses.createdAt)]
-        }
-      }
-    });
+    return await db.select().from(supportTickets);
   }
 
   async updateSupportTicketStatus(ticketId: number, status: string) {

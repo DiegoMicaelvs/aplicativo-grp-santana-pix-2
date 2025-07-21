@@ -113,3 +113,15 @@ The application follows a modern full-stack architecture with:
 - `documentacao/`: Project documentation and legal files
 
 The system is designed for deployment on platforms that support Node.js applications with PostgreSQL databases, with specific scripts for session table creation and database seeding for initial setup.
+
+## Recent Updates (July 2025)
+
+### Support Ticket System Implementation
+- **Comprehensive Support Infrastructure:** Added complete support ticket system with file attachments and admin management interface
+- **User Interface:** Floating support button appears on all pages for easy ticket creation
+- **Ticket Management:** Automatic numbering system (YYYYMMDD-XXXX format), priority levels, category classification
+- **File Attachments:** Support for up to 3 files per ticket (5MB each), handling images, PDFs, and text files
+- **Admin Interface:** Complete admin panel for ticket management with filtering, status tracking, and response system
+- **Database Integration:** New support_tickets and ticket_responses tables with proper relations
+- **Status Workflow:** Open → In Progress → Resolved → Closed status progression
+- **User Experience:** "My Tickets" view for users to track their support requests
