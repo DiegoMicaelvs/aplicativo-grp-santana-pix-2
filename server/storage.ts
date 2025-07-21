@@ -37,6 +37,9 @@ export interface IStorage {
   getIndicadoresByPromoter(promoterId: number): Promise<any[]>;
   updateUserBalance(userId: number, amount: number): Promise<void>;
   updateUserPermissions(userId: number, permissions: string[], analystLevel?: number): Promise<any>;
+  updateUserProfile(userId: number, updates: any): Promise<any>;
+  updateUserStatus(userId: number, isActive: boolean): Promise<any>;
+  resetUserPassword(userId: number): Promise<string>;
   
   // Referral methods
   createReferral(referral: CreateReferral & { userId: number }): Promise<any>;
@@ -92,8 +95,6 @@ class DatabaseStorage implements IStorage {
     const [user] = await db.insert(users)
       .values({
         ...userData,
-        createdAt: new Date(),
-        updatedAt: new Date()
       })
       .returning();
     
@@ -126,7 +127,7 @@ class DatabaseStorage implements IStorage {
   
   async getUsersByRole(role: string) {
     return await db.query.users.findMany({
-      where: eq(users.role, role),
+      where: eq(users.role, role as any),
       orderBy: desc(users.createdAt)
     });
   }
@@ -171,6 +172,54 @@ class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedUser;
+  }
+
+  async updateUserProfile(userId: number, updates: any) {
+    const updateData = {
+      ...updates,
+      updatedAt: new Date()
+    };
+
+    // Remove fields that shouldn't be updated directly
+    delete updateData.id;
+    delete updateData.createdAt;
+    delete updateData.balance;
+    delete updateData.totalEarnings;
+
+    const [updatedUser] = await db.update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
+
+  async updateUserStatus(userId: number, isActive: boolean) {
+    const [updatedUser] = await db.update(users)
+      .set({ 
+        isActive,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
+
+  async resetUserPassword(userId: number) {
+    // Generate a new temporary password
+    const newPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    
+    // In production, this should be hashed
+    const [updatedUser] = await db.update(users)
+      .set({ 
+        password: newPassword,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return newPassword;
   }
   
   // Referral methods

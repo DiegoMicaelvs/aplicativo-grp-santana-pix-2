@@ -543,6 +543,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all promoters
+  app.get("/api/admin/promoters", requireAdmin, async (req, res) => {
+    try {
+      const promoters = await storage.getUsersByRole("promotor");
+      return res.json(promoters.map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      }));
+    } catch (error) {
+      console.error("Error fetching promoters:", error);
+      return res.status(500).json({ error: "Erro ao buscar promotores" });
+    }
+  });
+
+  // Create new user (admin only)
+  app.post("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      const userData = {
+        ...req.body,
+        createdBy: req.user!.id
+      };
+      
+      const newUser = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = newUser;
+      
+      return res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      return res.status(500).json({ error: "Erro ao criar usuário" });
+    }
+  });
+
+  // Update user profile (admin only)
+  app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const updatedUser = await storage.updateUserProfile(parseInt(id), updates);
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return res.status(500).json({ error: "Erro ao atualizar usuário" });
+    }
+  });
+
+  // Toggle user active status
+  app.patch("/api/admin/users/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      
+      const updatedUser = await storage.updateUserStatus(parseInt(id), isActive);
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      return res.status(500).json({ error: "Erro ao atualizar status do usuário" });
+    }
+  });
+
+  // Reset user password
+  app.post("/api/admin/users/:id/reset-password", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const newPassword = await storage.resetUserPassword(parseInt(id));
+      
+      return res.json({ 
+        message: "Senha redefinida com sucesso",
+        newPassword // In production, this should be sent via email
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      return res.status(500).json({ error: "Erro ao redefinir senha" });
+    }
+  });
+
   // Update ticket status
   app.patch("/api/admin/tickets/:id", requireAdmin, async (req, res) => {
     try {

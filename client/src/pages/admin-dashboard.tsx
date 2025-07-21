@@ -258,8 +258,28 @@ export default function AdminDashboard() {
       
       <div className="bg-gray-100 flex-grow py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900 font-heading">Painel Administrativo</h1>
-          <p className="mt-1 text-gray-600">Gerenciamento de indicadores e indicações</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 font-heading">Painel Administrativo</h1>
+              <p className="mt-1 text-gray-600">Gerenciamento de indicadores e indicações</p>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/admin/profiles'}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Gerenciar Perfis
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/admin/analysts'}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Gerenciar Analistas
+              </Button>
+            </div>
+          </div>
           
           {/* Dashboard Cards */}
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

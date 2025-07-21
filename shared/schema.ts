@@ -238,6 +238,7 @@ export const createSupportTicketSchema = z.object({
 
 export const createTicketResponseSchema = z.object({
   ticketId: z.number(),
+  userId: z.number(),
   message: z.string().min(1, "Mensagem é obrigatória"),
   isInternal: z.boolean().optional(),
 });
