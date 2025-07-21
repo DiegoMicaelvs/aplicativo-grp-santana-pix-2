@@ -344,11 +344,26 @@ class DatabaseStorage implements IStorage {
     });
   }
   
-  async updateReferralStatus(id: number, status: ReferralStatus, notes?: string) {
+  async updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number) {
+    const referral = await this.getReferralById(id);
+    if (!referral) {
+      throw new Error("Referral not found");
+    }
+    
+    // Add to status history
+    const currentHistory = referral.statusHistory || [];
+    const newHistoryEntry = {
+      status,
+      changedBy: adminUserId || 0,
+      changedAt: new Date().toISOString(),
+      notes: notes || ''
+    };
+    
     const [updatedReferral] = await db.update(referrals)
       .set({ 
         status, 
         notes,
+        statusHistory: [...currentHistory, newHistoryEntry],
         updatedAt: new Date()
       })
       .where(eq(referrals.id, id))
@@ -357,6 +372,24 @@ class DatabaseStorage implements IStorage {
     // Calculate commissions if status is validated or converted
     if (status === 'validated' || status === 'converted') {
       await this.calculateCommissions(id);
+    }
+    
+    // Log audit trail (with error handling)
+    if (adminUserId) {
+      try {
+        await this.logUserAction({
+          userId: adminUserId,
+          action: 'update',
+          entityType: 'referral',
+          entityId: id,
+          oldValues: { status: referral.status },
+          newValues: { status },
+          details: `Status alterado para ${status}${notes ? `: ${notes}` : ''}`
+        });
+      } catch (error) {
+        console.warn('Failed to log status update:', error);
+        // Don't fail the status update if audit logging fails
+      }
     }
     
     return updatedReferral;

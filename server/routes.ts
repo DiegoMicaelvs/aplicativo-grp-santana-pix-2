@@ -524,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update referral status
-  app.patch("/api/admin/referrals/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/referrals/:id/status", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = updateReferralStatusSchema.parse(req.body);
@@ -532,7 +532,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedReferral = await storage.updateReferralStatus(
         parseInt(id),
         validatedData.status,
-        validatedData.notes
+        validatedData.notes,
+        req.user!.id
       );
       
       return res.json(updatedReferral);
