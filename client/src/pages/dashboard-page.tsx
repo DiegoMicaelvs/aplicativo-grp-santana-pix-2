@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Clock, DollarSign, TrendingUp, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,10 +20,85 @@ import { useAuth } from "@/hooks/use-auth";
 import { Referral, ReferralStatus } from "@shared/schema";
 import { PromotionalAlert } from "@/components/promotional-alert";
 import { Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+
+// Validation schema for indicator registration
+const indicatorSchema = z.object({
+  fullName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  cpf: z.string().min(11, "CPF deve ter 11 dígitos").max(14, "CPF inválido"),
+  email: z.string().email("Email inválido"),
+  phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
+  address: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
+  shirtSize: z.enum(["PP", "P", "M", "G", "GG", "XG"], {
+    required_error: "Selecione um tamanho",
+  }),
+  pixKey: z.string().min(5, "Chave PIX é obrigatória"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
+
+type IndicatorFormData = z.infer<typeof indicatorSchema>;
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isIndicatorDialogOpen, setIsIndicatorDialogOpen] = useState(false);
+
+  // Form for creating indicators
+  const indicatorForm = useForm<IndicatorFormData>({
+    resolver: zodResolver(indicatorSchema),
+    defaultValues: {
+      fullName: "",
+      cpf: "",
+      email: "",
+      phone: "",
+      address: "",
+      shirtSize: "M",
+      pixKey: "",
+      password: "",
+    },
+  });
+
+  const createIndicatorMutation = useMutation({
+    mutationFn: async (data: IndicatorFormData) => {
+      const payload = {
+        ...data,
+        username: data.email, // Use email as username
+        role: "indicador" as const,
+      };
+      return await apiRequest('/api/admin/users', 'POST', payload);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso!",
+        description: "Indicador cadastrado com sucesso.",
+      });
+      indicatorForm.reset();
+      setIsIndicatorDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/promoter/indicators'] });
+    },
+    onError: (error: any) => {
+      console.error('Error creating indicator:', error);
+      toast({
+        title: "Erro",
+        description: error?.message || "Erro ao cadastrar indicador.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmitIndicator = (data: IndicatorFormData) => {
+    createIndicatorMutation.mutate(data);
+  };
 
   // Redirect users to their specific dashboards based on role (but allow promotor to use main dashboard too)
   useEffect(() => {
@@ -302,12 +378,174 @@ export default function DashboardPage() {
                           <Link href="/promoter-dashboard">
                             <Button variant="outline">Dashboard Promotor</Button>
                           </Link>
-                          <Link href="/register-indicator">
-                            <Button variant="outline">
-                              <Plus className="h-4 w-4 mr-2" />
-                              Cadastrar Indicador
-                            </Button>
-                          </Link>
+                          <Dialog open={isIndicatorDialogOpen} onOpenChange={setIsIndicatorDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Cadastrar Indicador
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Cadastrar Novo Indicador</DialogTitle>
+                                <DialogDescription>
+                                  Cadastre um novo indicador em sua rede. Você receberá R$ 1,00 por cada indicação registrada e R$ 10,00 por cada venda fechada.
+                                </DialogDescription>
+                              </DialogHeader>
+                              
+                              <Form {...indicatorForm}>
+                                <form onSubmit={indicatorForm.handleSubmit(onSubmitIndicator)} className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                      control={indicatorForm.control}
+                                      name="fullName"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Nome Completo</FormLabel>
+                                          <FormControl>
+                                            <Input placeholder="Digite o nome completo" {...field} />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+
+                                    <FormField
+                                      control={indicatorForm.control}
+                                      name="cpf"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>CPF</FormLabel>
+                                          <FormControl>
+                                            <Input placeholder="000.000.000-00" {...field} />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                      control={indicatorForm.control}
+                                      name="email"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Email</FormLabel>
+                                          <FormControl>
+                                            <Input type="email" placeholder="email@exemplo.com" {...field} />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+
+                                    <FormField
+                                      control={indicatorForm.control}
+                                      name="phone"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Telefone</FormLabel>
+                                          <FormControl>
+                                            <Input placeholder="(11) 99999-9999" {...field} />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+
+                                  <FormField
+                                    control={indicatorForm.control}
+                                    name="address"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Endereço</FormLabel>
+                                        <FormControl>
+                                          <Input placeholder="Rua, número, bairro, cidade" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                      control={indicatorForm.control}
+                                      name="shirtSize"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Tamanho da Camisa</FormLabel>
+                                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Selecione o tamanho" />
+                                              </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                              <SelectItem value="PP">PP</SelectItem>
+                                              <SelectItem value="P">P</SelectItem>
+                                              <SelectItem value="M">M</SelectItem>
+                                              <SelectItem value="G">G</SelectItem>
+                                              <SelectItem value="GG">GG</SelectItem>
+                                              <SelectItem value="XG">XG</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+
+                                    <FormField
+                                      control={indicatorForm.control}
+                                      name="pixKey"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Chave PIX</FormLabel>
+                                          <FormControl>
+                                            <Input placeholder="CPF, email, telefone ou chave aleatória" {...field} />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+
+                                  <FormField
+                                    control={indicatorForm.control}
+                                    name="password"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Senha</FormLabel>
+                                        <FormControl>
+                                          <Input type="password" placeholder="Senha de acesso (mín. 6 caracteres)" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  <div className="flex gap-4">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => setIsIndicatorDialogOpen(false)}
+                                      className="flex-1"
+                                    >
+                                      Cancelar
+                                    </Button>
+                                    <Button
+                                      type="submit"
+                                      disabled={createIndicatorMutation.isPending}
+                                      className="flex-1"
+                                    >
+                                      {createIndicatorMutation.isPending ? "Cadastrando..." : "Cadastrar Indicador"}
+                                    </Button>
+                                  </div>
+                                </form>
+                              </Form>
+                            </DialogContent>
+                          </Dialog>
                         </>
                       )}
                     </div>
