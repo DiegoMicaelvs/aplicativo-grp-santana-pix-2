@@ -70,6 +70,9 @@ const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
+}).refine((data) => data.username === data.email, {
+  message: "Os emails devem ser iguais",
+  path: ["email"],
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -122,8 +125,13 @@ export default function AuthPage() {
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     // Remove confirmPassword, terms, over18 as they're not part of the API
-    const { confirmPassword, terms, over18, email, ...registerData } = data;
-    registerMutation.mutate(registerData as any);
+    const { confirmPassword, terms, over18, ...registerData } = data;
+    // Ensure email field is properly set to the username field since both should match
+    const finalData = {
+      ...registerData,
+      email: data.username, // Use username as email since they should be the same
+    };
+    registerMutation.mutate(finalData as any);
   };
 
   return (
