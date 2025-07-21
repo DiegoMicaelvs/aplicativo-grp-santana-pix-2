@@ -368,7 +368,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const withdrawal = await storage.createWithdrawalRequest({
         ...validatedData,
-        userId: req.user!.id
+        userId: req.user!.id,
+        requestType: user.role === 'promotor' ? 'promotor' : 'indicador'
       });
       
       return res.status(201).json(withdrawal);
@@ -383,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's tickets
   app.get("/api/tickets", requireAuth, async (req, res) => {
     try {
-      const tickets = await storage.getSupportTicketsByUserId(req.user!.id);
+      const tickets = await storage.getSupportTicketById(req.user!.id);
       return res.json(tickets);
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -448,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ticketId,
         userId: req.user!.id,
         message: req.body.message,
-        isInternal: req.body.isInternal || false
+        isAdminResponse: req.user!.role === 'admin'
       });
       
       return res.status(201).json(response);
@@ -906,7 +907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { updateTicketStatusSchema } = await import("@shared/schema.ts");
       const { status } = updateTicketStatusSchema.parse(req.body);
       
-      const updated = await storage.updateSupportTicketStatus(parseInt(id), status);
+      const updated = await storage.updateTicketStatus(parseInt(id), status);
       return res.json(updated);
     } catch (error) {
       console.error("Error updating ticket status:", error);
@@ -921,7 +922,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { createTicketResponseSchema } = await import("@shared/schema.ts");
       const validatedData = createTicketResponseSchema.parse(req.body);
       
-      const response = await storage.addTicketResponse(parseInt(id), req.user!.id, validatedData);
+      const response = await storage.createTicketResponse({
+        ticketId: parseInt(id),
+        userId: req.user!.id,
+        message: validatedData.message,
+        isAdminResponse: true
+      });
       return res.status(201).json(response);
     } catch (error) {
       console.error("Error adding ticket response:", error);

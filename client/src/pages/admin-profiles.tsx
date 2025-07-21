@@ -695,11 +695,11 @@ export default function AdminProfiles() {
               <Trash2 className="h-5 w-5 mr-2" />
               Confirmar Exclusão Permanente
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>
+                <div>
                   Você está prestes a deletar permanentemente o usuário <strong>{selectedUserForDeletion?.fullName}</strong>.
-                </p>
+                </div>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="text-sm text-red-800 font-medium">
                     ⚠️ Esta ação é irreversível e irá:
