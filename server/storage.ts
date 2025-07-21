@@ -9,6 +9,7 @@ import {
   supportTickets,
   ticketResponses,
   auditLog,
+  referralConversations,
   type InsertUser, 
   type CreateReferral, 
   type ReferralStatus,
@@ -17,7 +18,8 @@ import {
   type CreateWithdrawalRequest,
   type CreateSupportTicket,
   type CreateTicketResponse,
-  type CreateCashFlow
+  type CreateCashFlow,
+  type CreateReferralConversation
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -691,6 +693,43 @@ class DatabaseStorage implements IStorage {
     });
   }
   
+  // Referral conversation methods
+  async createReferralConversation(conversationData: CreateReferralConversation & { referralId: number; userId: number }) {
+    const [conversation] = await db.insert(referralConversations)
+      .values(conversationData)
+      .returning();
+    
+    // Log audit trail
+    await this.logUserAction({
+      userId: conversationData.userId,
+      action: 'create',
+      entityType: 'referral_conversation',
+      entityId: conversation.id,
+      newValues: conversation,
+      details: `Nova mensagem na indicação #${conversationData.referralId}: ${conversationData.messageType}`
+    });
+    
+    return conversation;
+  }
+
+  async getReferralConversations(referralId: number, userRole: string) {
+    // Filter internal messages based on user role
+    const whereConditions = [eq(referralConversations.referralId, referralId)];
+    
+    // Only admins and analysts can see internal messages
+    if (userRole !== 'admin' && userRole !== 'analista') {
+      whereConditions.push(eq(referralConversations.isInternal, false));
+    }
+    
+    return await db.query.referralConversations.findMany({
+      where: and(...whereConditions),
+      with: {
+        user: true
+      },
+      orderBy: asc(referralConversations.createdAt)
+    });
+  }
+
   // Team-based access methods
   async getReferralsByTeam(promoterId: number) {
     return await db.query.referrals.findMany({

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@/hooks/use-user";
 import { 
   Table, 
   TableBody, 
@@ -36,6 +37,7 @@ import {
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { BackButton } from "@/components/ui/back-button";
+import { ReferralConversationComponent } from "@/components/ui/referral-conversation";
 import { Eye, FilterIcon, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { 
@@ -281,7 +283,7 @@ export default function ReferralsPage() {
           
           {/* Referral Details Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-heading">Detalhes da Indicação</DialogTitle>
                 <DialogDescription>
@@ -290,8 +292,8 @@ export default function ReferralsPage() {
               </DialogHeader>
               
               {selectedReferral && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Status</h4>
                       <div className="mt-1">{getStatusBadge(selectedReferral.status)}</div>
@@ -310,19 +312,21 @@ export default function ReferralsPage() {
                     </div>
                   )}
                   
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">Dados do Indicado</h4>
-                    <div className="mt-1 space-y-1">
-                      <p><span className="font-medium">Nome:</span> {selectedReferral.firstName} {selectedReferral.lastName}</p>
-                      <p><span className="font-medium">Email:</span> {selectedReferral.email}</p>
-                      <p><span className="font-medium">Telefone:</span> {selectedReferral.phone}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Dados do Indicado</h4>
+                      <div className="mt-1 space-y-1">
+                        <p><span className="font-medium">Nome:</span> {selectedReferral.firstName} {selectedReferral.lastName}</p>
+                        <p><span className="font-medium">Email:</span> {selectedReferral.email}</p>
+                        <p><span className="font-medium">Telefone:</span> {selectedReferral.phone}</p>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">Dados do Veículo</h4>
-                    <div className="mt-1 space-y-1">
-                      <p><span className="font-medium">Placa:</span> {selectedReferral.licensePlate}</p>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Dados do Veículo</h4>
+                      <div className="mt-1 space-y-1">
+                        <p><span className="font-medium">Placa:</span> {selectedReferral.licensePlate}</p>
+                      </div>
                     </div>
                   </div>
                   
@@ -346,10 +350,16 @@ export default function ReferralsPage() {
                       <p className="mt-1 text-sm text-gray-600">{selectedReferral.notes}</p>
                     </div>
                   )}
+                  
+                  {/* Conversation Component */}
+                  <ReferralConversationComponent 
+                    referralId={selectedReferral.id} 
+                    userRole={user?.role || "indicador"}
+                  />
                 </div>
               )}
               
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4 border-t">
                 <Button onClick={() => setDialogOpen(false)}>Fechar</Button>
               </div>
             </DialogContent>

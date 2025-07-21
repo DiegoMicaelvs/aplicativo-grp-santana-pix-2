@@ -13,6 +13,7 @@ import {
   createCashFlowSchema,
   createIndicadorSchema,
   updateAnalystPermissionsSchema,
+  createReferralConversationSchema,
   type AnalystPermission
 } from "@shared/schema";
 
@@ -199,6 +200,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking duplicates:", error);
       return res.status(500).json({ error: "Erro ao verificar duplicatas" });
+    }
+  });
+
+  // === REFERRAL CONVERSATION ROUTES ===
+  
+  // Get conversations for a referral
+  app.get("/api/referrals/:id/conversations", requireAuth, async (req, res) => {
+    try {
+      const referralId = parseInt(req.params.id);
+      const referral = await storage.getReferralById(referralId);
+      
+      if (!referral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Check if user has access to this referral
+      const canAccess = req.user!.role === "admin" || 
+                       req.user!.role === "analista" ||
+                       referral.userId === req.user!.id ||
+                       (req.user!.role === "promotor" && referral.promoterId === req.user!.id);
+      
+      if (!canAccess) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      
+      const conversations = await storage.getReferralConversations(referralId, req.user!.role);
+      return res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      return res.status(500).json({ error: "Erro ao buscar conversas" });
+    }
+  });
+
+  // Add conversation message to referral
+  app.post("/api/referrals/:id/conversations", requireAuth, async (req, res) => {
+    try {
+      const referralId = parseInt(req.params.id);
+      const validatedData = createReferralConversationSchema.parse(req.body);
+      
+      const referral = await storage.getReferralById(referralId);
+      
+      if (!referral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Check if user has access to this referral
+      const canAccess = req.user!.role === "admin" || 
+                       req.user!.role === "analista" ||
+                       referral.userId === req.user!.id ||
+                       (req.user!.role === "promotor" && referral.promoterId === req.user!.id);
+      
+      if (!canAccess) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      
+      const conversation = await storage.createReferralConversation({
+        ...validatedData,
+        referralId,
+        userId: req.user!.id
+      });
+      
+      return res.status(201).json(conversation);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      return res.status(500).json({ error: "Erro ao criar conversa" });
     }
   });
 

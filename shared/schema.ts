@@ -117,6 +117,20 @@ export const cashFlow = pgTable("cash_flow", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Referral conversation system for tracking history and analyst observations
+export type ConversationMessageType = "comment" | "status_change" | "validation" | "system";
+
+export const referralConversations = pgTable("referral_conversations", {
+  id: serial("id").primaryKey(),
+  referralId: integer("referral_id").references(() => referrals.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(), // Quem escreveu a mensagem
+  message: text("message").notNull(),
+  messageType: text("message_type").default("comment").notNull().$type<ConversationMessageType>(),
+  isInternal: boolean("is_internal").default(false).notNull(), // Visível apenas para analistas/admins
+  metadata: jsonb("metadata").$type<{oldStatus?: string, newStatus?: string, validationScore?: number}>(), // Dados extras sobre mudanças
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Support tickets
 export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
 export type TicketPriority = "low" | "medium" | "high" | "urgent";
@@ -168,7 +182,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   ticketResponses: many(ticketResponses),
 }));
 
-export const referralsRelations = relations(referrals, ({ one }) => ({
+export const referralsRelations = relations(referrals, ({ one, many }) => ({
   user: one(users, {
     fields: [referrals.userId],
     references: [users.id],
@@ -184,6 +198,18 @@ export const referralsRelations = relations(referrals, ({ one }) => ({
   company: one(companies, {
     fields: [referrals.companyId],
     references: [companies.id],
+  }),
+  conversations: many(referralConversations),
+}));
+
+export const referralConversationsRelations = relations(referralConversations, ({ one }) => ({
+  referral: one(referrals, {
+    fields: [referralConversations.referralId],
+    references: [referrals.id],
+  }),
+  user: one(users, {
+    fields: [referralConversations.userId],
+    references: [users.id],
   }),
 }));
 
@@ -306,6 +332,18 @@ export const createIndicadorSchema = insertUserSchema.extend({
   promoterId: z.number().optional(), // Será preenchido automaticamente pelo promotor logado
 });
 
+// Schema para conversas de indicações
+export const createReferralConversationSchema = z.object({
+  message: z.string().min(1, "Mensagem é obrigatória"),
+  messageType: z.enum(["comment", "status_change", "validation", "system"]).default("comment"),
+  isInternal: z.boolean().default(false),
+  metadata: z.object({
+    oldStatus: z.string().optional(),
+    newStatus: z.string().optional(),
+    validationScore: z.number().optional(),
+  }).optional(),
+});
+
 // Schema para configurar permissões de analista
 export const updateAnalystPermissionsSchema = z.object({
   analystLevel: z.coerce.number().int().min(1).max(3),
@@ -351,3 +389,5 @@ export type TicketResponse = typeof ticketResponses.$inferSelect;
 export type CreateTicketResponse = z.infer<typeof createTicketResponseSchema>;
 export type CreateIndicador = z.infer<typeof createIndicadorSchema>;
 export type UpdateAnalystPermissions = z.infer<typeof updateAnalystPermissionsSchema>;
+export type ReferralConversation = typeof referralConversations.$inferSelect;
+export type CreateReferralConversation = z.infer<typeof createReferralConversationSchema>;
