@@ -838,9 +838,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Delete user request:', { id, masterPassword: masterPassword ? '***' : 'undefined', body: req.body });
       
       // Validate master password
-      const DEVELOPER_MASTER_PASSWORD = "Diego91425751";
+      const DEVELOPER_MASTER_PASSWORD = process.env.DEVELOPER_MASTER_PASSWORD;
       if (!masterPassword) {
         return res.status(400).json({ error: "Senha mestre é obrigatória" });
+      }
+      
+      if (!DEVELOPER_MASTER_PASSWORD) {
+        console.error("DEVELOPER_MASTER_PASSWORD environment variable not set");
+        return res.status(500).json({ error: "Configuração do servidor incompleta" });
       }
       
       if (masterPassword !== DEVELOPER_MASTER_PASSWORD) {
