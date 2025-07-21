@@ -168,3 +168,21 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Role Configuration:** Support for all user roles with appropriate permission settings
 - **Form Reset:** Proper form reset after successful user creation
 - **API Integration:** Confirmed working with backend API (successfully created multiple test users)
+
+### Indicador Assignment System (July 2025)
+- **Complete Assignment Interface:** Admin interface for assigning indicadores to promotores with modal dialog and visual feedback
+- **Promoter Responsibility Column:** Added "Promotor Responsável" column in admin indicators table showing current assignments
+- **Assignment/Unassignment API:** Full CRUD functionality for promoter assignments with automatic audit trail logging
+- **Visual Status Indicators:** Clear visual distinction between assigned and unassigned indicadores in admin interface
+- **Assignment Modal:** Interactive modal with promoter selection dropdown and assignment confirmation system
+- **Database Integration:** Backend storage methods for indicator-promoter relationships with proper foreign key handling
+
+### Landing Page Content Redesign (July 2025)
+- **Authentic Content Integration:** Replaced AI-generated content with authentic program materials provided by client
+- **Natural Language Approach:** Updated hero section with "Cadastrou, Validou é PIX! Simples assim" messaging
+- **Realistic Program Details:** Integrated actual statistics (600+ active indicators, 13k daily registrations)
+- **Authentic FAQ Section:** Replaced generic questions with real client FAQs including payment timing and program flexibility
+- **Updated Value Propositions:** Focused on core benefits like immediate payment without sales requirement and kit provision
+- **Process Clarity:** Updated 4-step process flow matching actual program operations
+- **Target Audience Focus:** Emphasized content for frentistas, lava-jatos, despachantes, and panfleteiros
+- **Earnings Transparency:** Highlighted R$5,000+ monthly earnings cases and R$1,980 potential with 30 daily cadastros

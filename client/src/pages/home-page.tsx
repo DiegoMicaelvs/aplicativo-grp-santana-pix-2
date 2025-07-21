@@ -56,11 +56,11 @@ export default function HomePage() {
             <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
               <div className="sm:text-center lg:text-left">
                 <h1 className="text-4xl tracking-tight font-bold text-gray-900 sm:text-5xl md:text-6xl font-heading">
-                  <span className="block text-primary">Indique e Ganhe</span>
-                  <span className="block">Com o Grupo Santana</span>
+                  <span className="block text-primary">Cadastrou, Validou é PIX!</span>
+                  <span className="block">Simples assim.</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Transforme seu networking em renda extra! Ganhe <span className="font-semibold text-primary-700">3 reais a cada cadastro</span> de amigos na plataforma, simples assim, não precisa vender nada apenas cadastrar. A cada 3 cadastros, ganhe mais <span className="font-semibold text-primary-700">1 real de bônus</span>.
+                  Chega de programas de indicação que só pagam se a empresa vender! Aqui você ganha <span className="font-semibold text-primary-700">R$3 por cada cadastro validado</span>, mesmo que a venda ainda nem tenha acontecido. Se o nosso time converter em venda, você ainda recebe <span className="font-semibold text-primary-700">R$50 de bônus!</span>
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
@@ -101,24 +101,24 @@ export default function HomePage() {
           <div className="lg:text-center">
             <h2 className="text-base text-primary font-semibold tracking-wide uppercase font-heading">Como Funciona</h2>
             <p className="mt-2 text-3xl leading-8 font-bold tracking-tight text-gray-900 sm:text-4xl font-heading">
-              Três passos simples para começar a ganhar
+              Você não precisa vender nada
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
-              Sem burocracia, sem complicação. Comece a gerar renda extra hoje mesmo!
+              Só precisa indicar motoristas, preencher corretamente os dados e pronto! Somos mais de 600 indicadores ativos, com uma média de 13 mil cadastros por dia.
             </p>
           </div>
 
           <div className="mt-10">
-            <dl className="space-y-10 md:space-y-0 md:grid md:grid-cols-3 md:gap-x-8 md:gap-y-10">
+            <dl className="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
               <div className="relative">
                 <dt>
                   <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary text-white">
                     <span className="text-xl font-bold">1</span>
                   </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Cadastre-se</p>
+                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Cadastre-se no site ou app</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Faça seu cadastro gratuito como indicador. É rápido e você só precisa ter mais de 18 anos e informar seus dados básicos.
+                  Basta ser maior de 18 anos. O cadastro é 100% gratuito para você.
                 </dd>
               </div>
 
@@ -127,10 +127,10 @@ export default function HomePage() {
                   <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary text-white">
                     <span className="text-xl font-bold">2</span>
                   </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Indique pessoas</p>
+                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Receba seu kit</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Comece com familiares, amigos, círculo religioso, faculdade ou colegas de curso. Basta informar os dados básicos e a placa do veículo.
+                  Com crachá, camiseta e contrato para trabalhar com segurança e credibilidade.
                 </dd>
               </div>
 
@@ -139,10 +139,22 @@ export default function HomePage() {
                   <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary text-white">
                     <span className="text-xl font-bold">3</span>
                   </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Receba sua recompensa</p>
+                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Indique motoristas</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Ganhe R$3,00 por indicação com dados válidos, recebendo R$10,00 a cada 3 indicações. Você recebe mesmo se não fecharem contrato!
+                  Pelo seu link ou com apoio do nosso sistema. Validamos os dados e confirmamos se estão corretos e prontos para contato.
+                </dd>
+              </div>
+
+              <div className="relative">
+                <dt>
+                  <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary text-white">
+                    <span className="text-xl font-bold">4</span>
+                  </div>
+                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">PIX automático de R$3</p>
+                </dt>
+                <dd className="mt-2 ml-16 text-base text-gray-600">
+                  Por cadastro validado. Se nosso time comercial fechar a venda, você ganha mais R$50 de bônus!
                 </dd>
               </div>
             </dl>
@@ -156,10 +168,10 @@ export default function HomePage() {
           <div className="lg:text-center">
             <h2 className="text-base text-primary font-semibold tracking-wide uppercase font-heading">Vantagens</h2>
             <p className="mt-2 text-3xl leading-8 font-bold tracking-tight text-gray-900 sm:text-4xl font-heading">
-              Por que se tornar um indicador?
+              Renda extra real e imediata
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
-              Transforme seus contatos em oportunidades e renda extra com o Grupo Santana!
+              Temos casos de pessoas que faturaram mais de R$5.000 em um único mês. Foco em quem tem contato com motoristas: frentistas, lava-jatos, despachantes, panfleteiros - vocês têm ouro nas mãos!
             </p>
           </div>
 
@@ -173,12 +185,12 @@ export default function HomePage() {
                       <DollarSign className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Comissões Atrativas</h3>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">Renda extra real e imediata</h3>
                     </div>
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Cadastro fácil e que pode render mais de R$2.500 por mês sem vender nada. A renda extra que pode virar a renda principal.
+                      Receba por cada cadastro validado, mesmo sem venda.
                     </p>
                   </div>
                 </CardContent>
@@ -189,15 +201,15 @@ export default function HomePage() {
                 <CardContent className="p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                      <Clock className="h-6 w-6 text-white" />
+                      <Shield className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Horário Flexível</h3>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">Sem experiência, sem venda, sem complicação</h3>
                     </div>
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Faça você mesmo seu horário, sem cobranças e sem carga horária de trabalho. Cadastrou, ganhou!
+                      Basta indicar, validar e pronto: o Pix cai!
                     </p>
                   </div>
                 </CardContent>
@@ -208,15 +220,15 @@ export default function HomePage() {
                 <CardContent className="p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                      <Shield className="h-6 w-6 text-white" />
+                      <Users className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Credibilidade</h3>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">Kit credencial incluso</h3>
                     </div>
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Mais de 10 anos no mercado, avaliações excelentes. Ofereça aos seus contatos uma proteção confiável e ganhe por isso.
+                      Receba crachá, camiseta e contrato para trabalhar com segurança e credibilidade.
                     </p>
                   </div>
                 </CardContent>
@@ -227,15 +239,15 @@ export default function HomePage() {
                 <CardContent className="p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                      <BarChart className="h-6 w-6 text-white" />
+                      <HeadphonesIcon className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Sistema de Arredondamento</h3>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">Apoio completo e treinamento</h3>
                     </div>
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Transparência e generosidade: R$10,00 a cada 3 indicações. Quanto mais você indica, mais oportunidades para beneficiar-se deste arredondamento.
+                      Nosso time te dá todo o suporte para você se destacar.
                     </p>
                   </div>
                 </CardContent>
@@ -246,15 +258,15 @@ export default function HomePage() {
                 <CardContent className="p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                      <HeadphonesIcon className="h-6 w-6 text-white" />
+                      <Clock className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Suporte Constante</h3>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">Flexibilidade total</h3>
                     </div>
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Equipe especializada à sua disposição. Dúvidas, orientações ou assistência - estamos sempre prontos para ajudar no seu sucesso.
+                      Trabalhe nas horas vagas, nas ruas, em casa ou onde quiser.
                     </p>
                   </div>
                 </CardContent>
@@ -265,15 +277,15 @@ export default function HomePage() {
                 <CardContent className="p-6">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                      <Users className="h-6 w-6 text-white" />
+                      <BarChart className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Impacto Social</h3>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">Foco em quem tem contato com motoristas</h3>
                     </div>
                   </div>
                   <div className="mt-4">
                     <p className="text-base text-gray-600">
-                      Ao indicar, você proporciona segurança e tranquilidade para seus contatos enquanto constrói uma fonte de renda socialmente positiva.
+                      Frentistas, lava-jatos, despachantes, panfleteiros: vocês têm ouro nas mãos!
                     </p>
                   </div>
                 </CardContent>
@@ -288,7 +300,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-heading">
             <span className="block">Pronto para começar?</span>
-            <span className="block text-primary-100">Junte-se a milhares de indicadores.</span>
+            <span className="block text-primary-100">Junte-se a mais de 600 indicadores ativos.</span>
           </h2>
           <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
             <div className="inline-flex rounded-md shadow">
@@ -331,46 +343,55 @@ export default function HomePage() {
             <Accordion type="single" collapsible className="space-y-6">
               <AccordionItem value="item-1" className="border px-4 rounded-lg">
                 <AccordionTrigger className="text-lg font-medium text-gray-900">
-                  Quem pode se tornar um indicador?
+                  Preciso vender algo?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Maiores de 18 anos com CPF e conta bancária próprios. Sem necessidade de experiência em seguros - apenas sua rede de contatos já é suficiente para começar.
+                  Não! O seu papel é cadastrar. A venda é por nossa conta.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-2" className="border px-4 rounded-lg">
                 <AccordionTrigger className="text-lg font-medium text-gray-900">
-                  Como funciona o pagamento das comissões?
+                  Quando recebo o PIX?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Receba <span className="font-semibold text-primary-700">R$3,00 por indicação com dados válidos</span> (nome, telefone e placa corretos). A cada três indicações, <span className="font-semibold text-primary-700">ganha R$10,00</span> em vez de R$9,00. Vendas concretizadas geram comissão extra. Pagamentos até o dia 15 do mês seguinte.
+                  Após a validação do cadastro. Os pagamentos são rápidos e transparentes.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-3" className="border px-4 rounded-lg">
                 <AccordionTrigger className="text-lg font-medium text-gray-900">
-                  Quais dados preciso para fazer uma indicação?
+                  Quantos cadastros posso fazer por dia?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Apenas nome, telefone, e-mail e placa do veículo. Nossa equipe de consultores se encarrega do resto, contatando seu indicado e coletando as informações detalhadas necessárias.
+                  Quantos quiser! Mas com apenas 30 cadastros diários, você já garante R$1.980 por mês.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-4" className="border px-4 rounded-lg">
                 <AccordionTrigger className="text-lg font-medium text-gray-900">
-                  Existe um limite de indicações que posso fazer?
+                  Posso trabalhar de qualquer lugar?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Nenhum limite! Cada indicação = mais ganhos. Quanto mais pessoas você indicar, mais vezes receberá o benefício do arredondamento para R$10,00 e maiores serão seus rendimentos mensais.
+                  Sim! Você escolhe onde e quando indicar. Ideal para quem já tem contato com motoristas.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="item-5" className="border px-4 rounded-lg">
                 <AccordionTrigger className="text-lg font-medium text-gray-900">
-                  Como sei se minha indicação virou cliente?
+                  E se eu quiser parar?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Acesse seu painel de controle exclusivo e visualize o status de todas suas indicações em tempo real. Receba também alertas por e-mail sobre mudanças de status, pagamentos e outras atualizações importantes.
+                  Sem problemas! Você é livre para entrar e sair quando quiser. Aqui não tem fidelidade forçada.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="item-6" className="border px-4 rounded-lg">
+                <AccordionTrigger className="text-lg font-medium text-gray-900">
+                  Tem algum custo para participar?
+                </AccordionTrigger>
+                <AccordionContent className="text-base text-gray-600">
+                  Nenhum. O programa é 100% gratuito para você.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
