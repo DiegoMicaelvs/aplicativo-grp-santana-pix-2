@@ -111,6 +111,9 @@ export default function AdminProfiles() {
   const [activeTab, setActiveTab] = useState("users");
   const [roleFilter, setRoleFilter] = useState<string>("all_roles");
   const [statusFilter, setStatusFilter] = useState<string>("all_status");
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [selectedUserForPassword, setSelectedUserForPassword] = useState<User | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -214,10 +217,12 @@ export default function AdminProfiles() {
     mutationFn: async (userId: number) => {
       return apiRequest('POST', `/api/admin/users/${userId}/reset-password`);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      setNewPassword(data.newPassword);
+      setPasswordDialogOpen(true);
       toast({
         title: "Senha redefinida",
-        description: "Uma nova senha foi enviada para o email do usuário.",
+        description: "Nova senha gerada com sucesso.",
       });
     },
     onError: (error: any) => {
@@ -458,6 +463,7 @@ export default function AdminProfiles() {
                                   variant="outline"
                                   size="sm"
                                   disabled={resetPasswordMutation.isPending}
+                                  onClick={() => setSelectedUserForPassword(user)}
                                 >
                                   <Shield className="h-4 w-4 mr-1" />
                                   Redefinir Senha
@@ -469,8 +475,7 @@ export default function AdminProfiles() {
                                   <AlertDialogDescription>
                                     Tem certeza de que deseja redefinir a senha do usuário <strong>{user.fullName}</strong>?
                                     <br /><br />
-                                    Uma nova senha temporária será gerada automaticamente e enviada para o usuário.
-                                    O usuário deverá alterar a senha no primeiro acesso.
+                                    Uma nova senha temporária será gerada automaticamente e exibida no painel para que você possa informar ao usuário.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -506,6 +511,54 @@ export default function AdminProfiles() {
           </Card>
         </div>
       </main>
+      
+      {/* Password Display Dialog */}
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nova Senha Gerada</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">
+                A nova senha temporária para <strong>{selectedUserForPassword?.fullName}</strong> é:
+              </p>
+              <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <code className="text-lg font-mono font-bold text-gray-900 select-all">
+                  {newPassword}
+                </code>
+              </div>
+              <p className="text-xs text-gray-500 mt-4">
+                Clique na senha acima para selecioná-la e copiar. 
+                <br />
+                O usuário deve alterar esta senha no primeiro acesso.
+              </p>
+            </div>
+            <div className="flex justify-center space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(newPassword);
+                  toast({
+                    title: "Senha copiada",
+                    description: "A senha foi copiada para a área de transferência.",
+                  });
+                }}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Copiar Senha
+              </Button>
+              <Button onClick={() => {
+                setPasswordDialogOpen(false);
+                setNewPassword("");
+                setSelectedUserForPassword(null);
+              }}>
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
