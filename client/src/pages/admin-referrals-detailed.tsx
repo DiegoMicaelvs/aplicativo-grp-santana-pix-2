@@ -267,10 +267,10 @@ export default function AdminReferralsDetailedPage() {
               <TableBody>
                 {filteredReferrals.map((referral) => (
                   <TableRow key={referral.id}>
-                    <TableCell className="font-medium">{referral.customerName}</TableCell>
-                    <TableCell>{referral.customerPhone}</TableCell>
-                    <TableCell>{referral.vehicleBrand} {referral.vehicleModel}</TableCell>
-                    <TableCell className="font-mono">{referral.vehiclePlate}</TableCell>
+                    <TableCell className="font-medium">{referral.fullName}</TableCell>
+                    <TableCell>{referral.phone}</TableCell>
+                    <TableCell>-</TableCell>
+                    <TableCell className="font-mono">{referral.licensePlate}</TableCell>
                     <TableCell>{getUserName(referral.userId)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(referral.status)}>
@@ -313,16 +313,16 @@ export default function AdminReferralsDetailedPage() {
                               <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <strong>Cliente:</strong> {selectedReferral.customerName}
+                                    <strong>Cliente:</strong> {selectedReferral.fullName}
                                   </div>
                                   <div>
-                                    <strong>Telefone:</strong> {selectedReferral.customerPhone}
+                                    <strong>Telefone:</strong> {selectedReferral.phone}
                                   </div>
                                   <div>
-                                    <strong>Veículo:</strong> {selectedReferral.vehicleBrand} {selectedReferral.vehicleModel}
+                                    <strong>Veículo:</strong> -
                                   </div>
                                   <div>
-                                    <strong>Placa:</strong> {selectedReferral.vehiclePlate}
+                                    <strong>Placa:</strong> {selectedReferral.licensePlate}
                                   </div>
                                   <div>
                                     <strong>Indicador:</strong> {getUserName(selectedReferral.userId)}
