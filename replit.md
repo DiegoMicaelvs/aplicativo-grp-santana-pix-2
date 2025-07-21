@@ -132,3 +132,11 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **User Experience:** Added to key pages (New Referral, Earnings, Referrals) for better navigation flow
 - **Visual Design:** Uses arrow icon with outline button style for clear navigation indication
 - **Integration:** Placed strategically in page headers alongside main content for easy access
+
+### Privacy Policy and Terms Implementation
+- **Legal Compliance:** Added comprehensive privacy policy and terms of consent for the "Indique e Ganhe" program
+- **Dialog Component:** Created `PrivacyPolicyDialog` component with full terms content and scrollable interface
+- **Footer Integration:** Added clickable privacy policy and terms links in the footer with modal dialogs
+- **Registration Compliance:** Updated registration form with mandatory terms acceptance and embedded policy links
+- **LGPD Compliance:** Full privacy policy content includes LGPD compliance terms and user rights information
+- **User Consent:** Clear "Li e aceito os termos" (I have read and accept the terms) checkbox with linked policy dialogs

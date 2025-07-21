@@ -1,4 +1,6 @@
 import { Link } from "wouter";
+import { PrivacyPolicyDialog } from "@/components/ui/privacy-policy-dialog";
+import { Button } from "@/components/ui/button";
 
 export default function Footer() {
   return (
@@ -18,15 +20,19 @@ export default function Footer() {
           </div>
 
           <div className="px-5 py-2">
-            <Link href="/termos" className="text-base text-gray-300 hover:text-white">
-              Termos de Serviço
-            </Link>
+            <PrivacyPolicyDialog title="Termos de Serviço">
+              <Button variant="link" className="text-base text-gray-300 hover:text-white p-0 h-auto font-normal">
+                Termos de Serviço
+              </Button>
+            </PrivacyPolicyDialog>
           </div>
 
           <div className="px-5 py-2">
-            <Link href="/privacidade" className="text-base text-gray-300 hover:text-white">
-              Políticas de Privacidade
-            </Link>
+            <PrivacyPolicyDialog title="Política de Privacidade">
+              <Button variant="link" className="text-base text-gray-300 hover:text-white p-0 h-auto font-normal">
+                Política de Privacidade
+              </Button>
+            </PrivacyPolicyDialog>
           </div>
 
           <div className="px-5 py-2">

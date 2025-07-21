@@ -30,6 +30,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { PrivacyPolicyDialog } from "@/components/ui/privacy-policy-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { AlertCircle, Loader2 } from "lucide-react";
 import {
@@ -402,9 +403,21 @@ export default function AuthPage() {
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel>Aceito os termos e condições</FormLabel>
+                                <FormLabel>Li e aceito os termos</FormLabel>
                                 <FormDescription>
-                                  Concordo com a <a href="#" className="text-primary hover:text-primary-600">Política de Privacidade</a> e os <a href="#" className="text-primary hover:text-primary-600">Termos de Serviço</a> do programa.
+                                  Concordo com a{" "}
+                                  <PrivacyPolicyDialog title="Política de Privacidade">
+                                    <Button variant="link" className="text-primary hover:text-primary-600 p-0 h-auto font-normal text-sm underline">
+                                      Política de Privacidade
+                                    </Button>
+                                  </PrivacyPolicyDialog>
+                                  {" "}e os{" "}
+                                  <PrivacyPolicyDialog title="Termo de Consentimento e Política de Privacidade">
+                                    <Button variant="link" className="text-primary hover:text-primary-600 p-0 h-auto font-normal text-sm underline">
+                                      Termos de Consentimento
+                                    </Button>
+                                  </PrivacyPolicyDialog>
+                                  {" "}do programa "Indique e Ganhe".
                                 </FormDescription>
                                 <FormMessage />
                               </div>
