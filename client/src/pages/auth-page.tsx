@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { PrivacyPolicyDialog } from "@/components/ui/privacy-policy-dialog";
+import { ClearSessionButton } from "@/components/clear-session-button";
 import { useAuth } from "@/hooks/use-auth";
 import { AlertCircle, Loader2 } from "lucide-react";
 import {
@@ -561,6 +562,14 @@ export default function AuthPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Clear Session Button - only show if there are login issues */}
+        <div className="max-w-md mx-auto mt-4 text-center">
+          <p className="text-xs text-gray-500 mb-2">
+            Problemas para fazer login após redeploy?
+          </p>
+          <ClearSessionButton />
         </div>
       </div>
       
