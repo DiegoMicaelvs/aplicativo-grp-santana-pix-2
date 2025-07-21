@@ -47,27 +47,15 @@ const loginSchema = z.object({
 // Registration schema
 const registerSchema = z.object({
   username: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
-  firstName: z.string().min(1, "Nome é obrigatório"),
-  lastName: z.string().min(1, "Sobrenome é obrigatório"),
+  email: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
+  fullName: z.string().min(1, "Nome completo é obrigatório"),
   cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
   phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
-  birthdate: z.string().refine((date) => {
-    const today = new Date();
-    const birthDate = new Date(date);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    
-    return age >= 18;
-  }, "Você deve ter pelo menos 18 anos para se cadastrar"),
+  address: z.string().min(5, "Endereço é obrigatório"),
+  shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
+  pixKey: z.string().min(3, "Chave PIX é obrigatória"),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string().min(1, "Confirme sua senha"),
-  bank: z.string().optional(),
-  agency: z.string().optional(),
-  account: z.string().optional(),
   terms: z.boolean().refine((val) => val === true, {
     message: "Você deve aceitar os termos e condições",
   }),
@@ -108,16 +96,15 @@ export default function AuthPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
-      firstName: "",
-      lastName: "",
+      email: "",
+      fullName: "",
       cpf: "",
       phone: "",
-      birthdate: "",
+      address: "",
+      shirtSize: "",
+      pixKey: "",
       password: "",
       confirmPassword: "",
-      bank: "",
-      agency: "",
-      account: "",
       terms: false,
       over18: false,
     },
@@ -128,8 +115,8 @@ export default function AuthPage() {
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
-    // Remove confirmPassword as it's not part of the API
-    const { confirmPassword, ...registerData } = data;
+    // Remove confirmPassword, terms, over18 as they're not part of the API
+    const { confirmPassword, terms, over18, email, ...registerData } = data;
     registerMutation.mutate(registerData as any);
   };
 
@@ -242,15 +229,29 @@ export default function AuthPage() {
                   <TabsContent value="register">
                     <Form {...registerForm}>
                       <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                        <FormField
+                          control={registerForm.control}
+                          name="fullName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nome Completo</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Seu nome completo" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <FormField
                             control={registerForm.control}
-                            name="firstName"
+                            name="username"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Nome</FormLabel>
+                                <FormLabel>Email</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Seu nome" {...field} />
+                                  <Input placeholder="seuemail@exemplo.com" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -259,32 +260,18 @@ export default function AuthPage() {
                           
                           <FormField
                             control={registerForm.control}
-                            name="lastName"
+                            name="email"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Sobrenome</FormLabel>
+                                <FormLabel>Confirmar Email</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Seu sobrenome" {...field} />
+                                  <Input placeholder="seuemail@exemplo.com" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
                         </div>
-                        
-                        <FormField
-                          control={registerForm.control}
-                          name="username"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email</FormLabel>
-                              <FormControl>
-                                <Input placeholder="seuemail@exemplo.com" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                         
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <FormField
@@ -318,18 +305,58 @@ export default function AuthPage() {
                         
                         <FormField
                           control={registerForm.control}
-                          name="birthdate"
+                          name="address"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Data de Nascimento</FormLabel>
+                              <FormLabel>Endereço</FormLabel>
                               <FormControl>
-                                <Input type="date" max={new Date().toISOString().split("T")[0]} {...field} />
+                                <Input placeholder="Rua, número, bairro, cidade" {...field} />
                               </FormControl>
-                              <FormDescription>Você deve ter pelo menos 18 anos para se cadastrar</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
+                        
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <FormField
+                            control={registerForm.control}
+                            name="shirtSize"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Tamanho da Camisa</FormLabel>
+                                <FormControl>
+                                  <select 
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    {...field}
+                                  >
+                                    <option value="">Selecione</option>
+                                    <option value="PP">PP</option>
+                                    <option value="P">P</option>
+                                    <option value="M">M</option>
+                                    <option value="G">G</option>
+                                    <option value="GG">GG</option>
+                                    <option value="XG">XG</option>
+                                  </select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={registerForm.control}
+                            name="pixKey"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Chave PIX</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="CPF, email ou telefone" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                         
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <FormField
@@ -361,52 +388,7 @@ export default function AuthPage() {
                           />
                         </div>
                         
-                        <div>
-                          <FormLabel>Dados Bancários (para receber suas comissões)</FormLabel>
-                          <div className="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                            <FormField
-                              control={registerForm.control}
-                              name="bank"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs text-gray-500">Banco</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={registerForm.control}
-                              name="agency"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs text-gray-500">Agência</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={registerForm.control}
-                              name="account"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs text-gray-500">Conta</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        </div>
+
                         
                         <FormField
                           control={registerForm.control}

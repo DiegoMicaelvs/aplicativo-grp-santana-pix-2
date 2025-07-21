@@ -1,7 +1,23 @@
 import { db } from "@db";
-import { eq, desc, asc, or, count, and } from "drizzle-orm";
-import { users, referrals, bannedUsers } from "@shared/schema";
-import { InsertUser, CreateReferral, ReferralStatus, BanUser, BannedUser } from "@shared/schema";
+import { eq, desc, asc, or, count, and, sql } from "drizzle-orm";
+import { 
+  users, 
+  referrals, 
+  companies,
+  withdrawalRequests,
+  cashFlow,
+  supportTickets,
+  ticketResponses,
+  type InsertUser, 
+  type CreateReferral, 
+  type ReferralStatus,
+  type WithdrawalStatus,
+  type Company,
+  type CreateWithdrawalRequest,
+  type CreateSupportTicket,
+  type CreateTicketResponse,
+  type CreateCashFlow
+} from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "@db";
@@ -11,31 +27,48 @@ const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User methods
-  createUser(user: InsertUser): Promise<any>;
+  createUser(user: InsertUser & { createdBy?: number }): Promise<any>;
   getUserById(id: number): Promise<any>;
   getUserByUsername(username: string): Promise<any>;
+  getUserByCpf(cpf: string): Promise<any>;
   getAllUsers(): Promise<any[]>;
+  getUsersByRole(role: string): Promise<any[]>;
+  getUsersByCreator(creatorId: number): Promise<any[]>;
+  updateUserBalance(userId: number, amount: number): Promise<void>;
   
   // Referral methods
   createReferral(referral: CreateReferral & { userId: number }): Promise<any>;
   getReferralById(id: number): Promise<any>;
   getReferralsByUserId(userId: number): Promise<any[]>;
   getAllReferrals(): Promise<any[]>;
+  getReferralsByStatus(status: ReferralStatus): Promise<any[]>;
   checkDuplicateReferral(phone?: string, licensePlate?: string): Promise<any[]>;
-  updateReferralStatus(
-    id: number, 
-    status: ReferralStatus, 
-    commission?: number,
-    notes?: string,
-    paidAt?: Date
-  ): Promise<any>;
+  updateReferralStatus(id: number, status: ReferralStatus, notes?: string): Promise<any>;
+  calculateCommissions(referralId: number): Promise<void>;
   
-  // Compliance methods
-  checkBannedCpf(cpf: string): Promise<BannedUser | null>;
-  banUser(banData: BanUser & { bannedBy: number }): Promise<BannedUser>;
-  getFalseReferralsCount(userId: number): Promise<number>;
-  autoCheckForFraud(userId: number): Promise<boolean>; // Returns true if user was banned
-  getAllBannedUsers(): Promise<BannedUser[]>;
+  // Company methods
+  getAllCompanies(): Promise<Company[]>;
+  createCompany(name: string): Promise<Company>;
+  
+  // Withdrawal methods
+  createWithdrawalRequest(request: CreateWithdrawalRequest & { userId: number }): Promise<any>;
+  getWithdrawalRequestsByUserId(userId: number): Promise<any[]>;
+  getAllWithdrawalRequests(): Promise<any[]>;
+  updateWithdrawalStatus(id: number, status: WithdrawalStatus, processedBy: number, notes?: string): Promise<any>;
+  
+  // Cash flow methods
+  createCashFlowEntry(entry: CreateCashFlow & { createdBy: number }): Promise<any>;
+  getCashFlowEntries(): Promise<any[]>;
+  getCurrentBalance(): Promise<number>;
+  
+  // Support ticket methods
+  createSupportTicket(ticket: CreateSupportTicket & { userId: number }): Promise<any>;
+  getSupportTicketsByUserId(userId: number): Promise<any[]>;
+  getAllSupportTickets(): Promise<any[]>;
+  getSupportTicketById(id: number): Promise<any>;
+  updateTicketStatus(id: number, status: string): Promise<any>;
+  createTicketResponse(response: CreateTicketResponse): Promise<any>;
+  generateTicketNumber(): Promise<string>;
   
   // Session store
   sessionStore: session.Store;
@@ -52,54 +85,64 @@ class DatabaseStorage implements IStorage {
     });
   }
   
-  async createUser(userData: InsertUser) {
+  // User methods
+  async createUser(userData: InsertUser & { createdBy?: number }) {
     const [user] = await db.insert(users)
       .values(userData)
-      .returning({
-        id: users.id,
-        username: users.username,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        phone: users.phone,
-        cpf: users.cpf,
-        birthdate: users.birthdate,
-        bank: users.bank,
-        agency: users.agency,
-        account: users.account,
-        role: users.role,
-        createdAt: users.createdAt
-      });
+      .returning();
     
     return user;
   }
   
   async getUserById(id: number) {
-    const user = await db.query.users.findFirst({
+    return await db.query.users.findFirst({
       where: eq(users.id, id)
     });
-    
-    return user;
   }
   
   async getUserByUsername(username: string) {
-    const user = await db.query.users.findFirst({
+    return await db.query.users.findFirst({
       where: eq(users.username, username)
     });
-    
-    return user;
+  }
+  
+  async getUserByCpf(cpf: string) {
+    return await db.query.users.findFirst({
+      where: eq(users.cpf, cpf)
+    });
   }
   
   async getAllUsers() {
-    const allUsers = await db.query.users.findMany({
-      orderBy: [asc(users.id)]
+    return await db.query.users.findMany({
+      orderBy: desc(users.createdAt)
     });
-    
-    return allUsers.map(user => ({
-      ...user,
-      password: undefined // Don't send passwords to client
-    }));
   }
   
+  async getUsersByRole(role: string) {
+    return await db.query.users.findMany({
+      where: eq(users.role, role),
+      orderBy: desc(users.createdAt)
+    });
+  }
+  
+  async getUsersByCreator(creatorId: number) {
+    return await db.query.users.findMany({
+      where: eq(users.createdBy, creatorId),
+      orderBy: desc(users.createdAt)
+    });
+  }
+  
+  async updateUserBalance(userId: number, amount: number) {
+    await db.update(users)
+      .set({ 
+        balance: sql`balance + ${amount}`,
+        totalEarnings: sql`total_earnings + ${amount}`,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+  
+  // Referral methods
   async createReferral(referralData: CreateReferral & { userId: number }) {
     const [referral] = await db.insert(referrals)
       .values(referralData)
@@ -109,199 +152,332 @@ class DatabaseStorage implements IStorage {
   }
   
   async getReferralById(id: number) {
-    const referral = await db.query.referrals.findFirst({
+    return await db.query.referrals.findFirst({
       where: eq(referrals.id, id),
       with: {
-        user: true
+        user: true,
+        company: true
       }
     });
-    
-    if (referral) {
-      // Remove user password from response
-      const { user, ...rest } = referral;
-      const { password, ...userWithoutPassword } = user;
-      return { ...rest, user: userWithoutPassword };
-    }
-    
-    return null;
   }
   
   async getReferralsByUserId(userId: number) {
-    const userReferrals = await db.query.referrals.findMany({
+    return await db.query.referrals.findMany({
       where: eq(referrals.userId, userId),
-      orderBy: [desc(referrals.createdAt)]
+      with: {
+        company: true
+      },
+      orderBy: desc(referrals.createdAt)
     });
-    
-    return userReferrals;
   }
   
   async getAllReferrals() {
-    const allReferrals = await db.query.referrals.findMany({
-      orderBy: [desc(referrals.createdAt)],
+    return await db.query.referrals.findMany({
       with: {
-        user: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            username: true
-          }
-        }
-      }
+        user: true,
+        company: true
+      },
+      orderBy: desc(referrals.createdAt)
     });
-    
-    return allReferrals;
+  }
+  
+  async getReferralsByStatus(status: ReferralStatus) {
+    return await db.query.referrals.findMany({
+      where: eq(referrals.status, status),
+      with: {
+        user: true,
+        company: true
+      },
+      orderBy: desc(referrals.createdAt)
+    });
   }
   
   async checkDuplicateReferral(phone?: string, licensePlate?: string) {
     const conditions = [];
+    if (phone) conditions.push(eq(referrals.phone, phone));
+    if (licensePlate) conditions.push(eq(referrals.licensePlate, licensePlate));
     
-    if (phone) {
-      conditions.push(eq(referrals.phone, phone));
-    }
+    if (conditions.length === 0) return [];
     
-    if (licensePlate) {
-      conditions.push(eq(referrals.licensePlate, licensePlate));
-    }
-    
-    if (conditions.length === 0) {
-      return [];
-    }
-    
-    const duplicates = await db.query.referrals.findMany({
+    return await db.query.referrals.findMany({
       where: or(...conditions),
       with: {
-        user: {
-          columns: {
-            firstName: true,
-            lastName: true,
-            username: true
+        user: true
+      }
+    });
+  }
+  
+  async updateReferralStatus(id: number, status: ReferralStatus, notes?: string) {
+    const [updatedReferral] = await db.update(referrals)
+      .set({ 
+        status, 
+        notes,
+        updatedAt: new Date()
+      })
+      .where(eq(referrals.id, id))
+      .returning();
+    
+    // Calculate commissions if status is validated or converted
+    if (status === 'validated' || status === 'converted') {
+      await this.calculateCommissions(id);
+    }
+    
+    return updatedReferral;
+  }
+  
+  async calculateCommissions(referralId: number) {
+    const referral = await this.getReferralById(referralId);
+    if (!referral) return;
+    
+    const user = await this.getUserById(referral.userId);
+    if (!user) return;
+    
+    let indicatorCommission = 0;
+    let promoterCommission = 0;
+    
+    if (referral.status === 'validated') {
+      indicatorCommission = 3; // R$3 por cadastro validado
+      
+      // Se o usuário foi criado por um promotor, ele ganha R$1
+      if (user.createdBy) {
+        const creator = await this.getUserById(user.createdBy);
+        if (creator && creator.role === 'promotor') {
+          promoterCommission = 1;
+          await this.updateUserBalance(creator.id, promoterCommission);
+        }
+      }
+    } else if (referral.status === 'converted') {
+      indicatorCommission = 50; // R$50 por conversão
+      
+      // Se o usuário foi criado por um promotor, ele ganha R$10
+      if (user.createdBy) {
+        const creator = await this.getUserById(user.createdBy);
+        if (creator && creator.role === 'promotor') {
+          promoterCommission = 10;
+          await this.updateUserBalance(creator.id, promoterCommission);
+        }
+      }
+    }
+    
+    // Atualizar saldo do indicador
+    if (indicatorCommission > 0) {
+      await this.updateUserBalance(user.id, indicatorCommission);
+    }
+    
+    // Atualizar comissões na indicação
+    await db.update(referrals)
+      .set({
+        commissionIndicator: indicatorCommission.toString(),
+        commissionPromoter: promoterCommission.toString()
+      })
+      .where(eq(referrals.id, referralId));
+  }
+  
+  // Company methods
+  async getAllCompanies() {
+    return await db.query.companies.findMany({
+      where: eq(companies.isActive, true),
+      orderBy: asc(companies.name)
+    });
+  }
+  
+  async createCompany(name: string) {
+    const [company] = await db.insert(companies)
+      .values({ name })
+      .returning();
+    
+    return company;
+  }
+  
+  // Withdrawal methods
+  async createWithdrawalRequest(request: CreateWithdrawalRequest & { userId: number }) {
+    const [withdrawal] = await db.insert(withdrawalRequests)
+      .values(request)
+      .returning();
+    
+    return withdrawal;
+  }
+  
+  async getWithdrawalRequestsByUserId(userId: number) {
+    return await db.query.withdrawalRequests.findMany({
+      where: eq(withdrawalRequests.userId, userId),
+      orderBy: desc(withdrawalRequests.requestedAt)
+    });
+  }
+  
+  async getAllWithdrawalRequests() {
+    return await db.query.withdrawalRequests.findMany({
+      with: {
+        user: true,
+        processedByUser: true
+      },
+      orderBy: desc(withdrawalRequests.requestedAt)
+    });
+  }
+  
+  async updateWithdrawalStatus(id: number, status: WithdrawalStatus, processedBy: number, notes?: string) {
+    const [updated] = await db.update(withdrawalRequests)
+      .set({
+        status,
+        processedBy,
+        processedAt: new Date(),
+        notes
+      })
+      .where(eq(withdrawalRequests.id, id))
+      .returning();
+    
+    // Se o pagamento foi realizado, atualizar o saldo do usuário
+    if (status === 'paid' && updated) {
+      const amount = parseFloat(updated.amount);
+      await this.updateUserBalance(updated.userId, -amount);
+      
+      // Criar entrada no fluxo de caixa
+      const currentBalance = await this.getCurrentBalance();
+      await this.createCashFlowEntry({
+        type: 'outflow',
+        amount,
+        description: `Pagamento de saque #${id}`,
+        relatedWithdrawalId: id,
+        createdBy: processedBy
+      });
+    }
+    
+    return updated;
+  }
+  
+  // Cash flow methods
+  async createCashFlowEntry(entry: CreateCashFlow & { createdBy: number }) {
+    const currentBalance = await this.getCurrentBalance();
+    const newBalance = entry.type === 'inflow' 
+      ? currentBalance + entry.amount 
+      : currentBalance - entry.amount;
+    
+    const [cashFlowEntry] = await db.insert(cashFlow)
+      .values({
+        ...entry,
+        balance: newBalance.toString()
+      })
+      .returning();
+    
+    return cashFlowEntry;
+  }
+  
+  async getCashFlowEntries() {
+    return await db.query.cashFlow.findMany({
+      with: {
+        createdByUser: true,
+        withdrawal: true
+      },
+      orderBy: desc(cashFlow.createdAt)
+    });
+  }
+  
+  async getCurrentBalance() {
+    const lastEntry = await db.query.cashFlow.findFirst({
+      orderBy: desc(cashFlow.createdAt)
+    });
+    
+    return lastEntry ? parseFloat(lastEntry.balance) : 0;
+  }
+  
+  // Support ticket methods
+  async createSupportTicket(ticket: CreateSupportTicket & { userId: number }) {
+    const ticketNumber = await this.generateTicketNumber();
+    
+    const [supportTicket] = await db.insert(supportTickets)
+      .values({
+        ...ticket,
+        ticketNumber
+      })
+      .returning();
+    
+    return supportTicket;
+  }
+  
+  async getSupportTicketsByUserId(userId: number) {
+    return await db.query.supportTickets.findMany({
+      where: eq(supportTickets.userId, userId),
+      with: {
+        responses: {
+          with: {
+            user: true
+          }
+        }
+      },
+      orderBy: desc(supportTickets.createdAt)
+    });
+  }
+  
+  async getAllSupportTickets() {
+    return await db.query.supportTickets.findMany({
+      with: {
+        user: true,
+        responses: {
+          with: {
+            user: true
+          }
+        }
+      },
+      orderBy: desc(supportTickets.createdAt)
+    });
+  }
+  
+  async getSupportTicketById(id: number) {
+    return await db.query.supportTickets.findFirst({
+      where: eq(supportTickets.id, id),
+      with: {
+        user: true,
+        responses: {
+          with: {
+            user: true
           }
         }
       }
     });
-    
-    return duplicates;
   }
   
-  async updateReferralStatus(
-    id: number, 
-    status: ReferralStatus, 
-    commission?: number,
-    notes?: string,
-    paidAt?: Date
-  ) {
-    // Update data object
-    const updateData: any = { 
-      status,
-      updatedAt: new Date()
-    };
-    
-    // Add commission if provided
-    if (commission !== undefined) {
-      updateData.commission = commission;
-    }
-    
-    // Add notes if provided
-    if (notes !== undefined) {
-      updateData.notes = notes;
-    }
-    
-    // Set paidAt date if status is 'paid' and no specific date is provided
-    if (status === 'paid') {
-      updateData.paidAt = paidAt || new Date();
-    }
-    
-    const [updatedReferral] = await db
-      .update(referrals)
-      .set(updateData)
-      .where(eq(referrals.id, id))
-      .returning();
-    
-    return updatedReferral;
-  }
-
-  // Compliance methods for fraud detection and prevention
-  async checkBannedCpf(cpf: string): Promise<BannedUser | null> {
-    const banned = await db.query.bannedUsers.findFirst({
-      where: eq(bannedUsers.cpf, cpf),
-      with: {
-        bannedByUser: true
-      }
-    });
-    
-    return banned || null;
-  }
-
-  async banUser(banData: BanUser & { bannedBy: number }): Promise<BannedUser> {
-    const [bannedUser] = await db
-      .insert(bannedUsers)
-      .values({
-        cpf: banData.cpf,
-        reason: banData.reason,
-        notes: banData.notes,
-        falseReferralsCount: banData.falseReferralsCount,
-        bannedBy: banData.bannedBy
+  async updateTicketStatus(id: number, status: string) {
+    const [updated] = await db.update(supportTickets)
+      .set({
+        status,
+        updatedAt: new Date()
       })
+      .where(eq(supportTickets.id, id))
       .returning();
     
-    return bannedUser;
+    return updated;
   }
-
-  async getFalseReferralsCount(userId: number): Promise<number> {
-    const result = await db
-      .select({ count: count() })
-      .from(referrals)
-      .where(
-        and(
-          eq(referrals.userId, userId),
-          or(
-            eq(referrals.status, 'rejected'),
-            eq(referrals.status, 'falso')
-          )
-        )
-      );
+  
+  async createTicketResponse(response: CreateTicketResponse) {
+    const [ticketResponse] = await db.insert(ticketResponses)
+      .values(response)
+      .returning();
     
-    return result[0]?.count || 0;
+    // Atualizar data de atualização do ticket
+    await db.update(supportTickets)
+      .set({ updatedAt: new Date() })
+      .where(eq(supportTickets.id, response.ticketId));
+    
+    return ticketResponse;
   }
-
-  async autoCheckForFraud(userId: number): Promise<boolean> {
-    // Get user data to extract CPF
-    const user = await this.getUserById(userId);
-    if (!user) return false;
-
-    // Check if user is already banned
-    const alreadyBanned = await this.checkBannedCpf(user.cpf);
-    if (alreadyBanned) return true;
-
-    // Count false/rejected referrals
-    const falseCount = await this.getFalseReferralsCount(userId);
+  
+  async generateTicketNumber() {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
     
-    // Auto-ban if user has 30 or more false referrals
-    if (falseCount >= 30) {
-      await this.banUser({
-        cpf: user.cpf,
-        reason: 'fraudulent_referrals',
-        notes: `Banimento automático: ${falseCount} indicações rejeitadas/falsas`,
-        falseReferralsCount: falseCount,
-        bannedBy: 1 // Sistema automático (admin ID 1)
-      });
-      
-      return true; // User was banned
-    }
+    // Contar tickets criados hoje
+    const todayStart = new Date(today.setHours(0, 0, 0, 0));
+    const todayEnd = new Date(today.setHours(23, 59, 59, 999));
     
-    return false; // User was not banned
-  }
-
-  async getAllBannedUsers(): Promise<BannedUser[]> {
-    const banned = await db.query.bannedUsers.findMany({
-      orderBy: desc(bannedUsers.bannedAt),
-      with: {
-        bannedByUser: true
-      }
+    const todayTickets = await db.query.supportTickets.findMany({
+      where: and(
+        sql`${supportTickets.createdAt} >= ${todayStart}`,
+        sql`${supportTickets.createdAt} <= ${todayEnd}`
+      )
     });
     
-    return banned;
+    const sequenceNumber = (todayTickets.length + 1).toString().padStart(4, '0');
+    return `${dateStr}-${sequenceNumber}`;
   }
 }
 

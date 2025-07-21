@@ -34,7 +34,11 @@ export default function Header() {
   // Get user initials for avatar
   const getUserInitials = () => {
     if (!user) return "?";
-    return `${user.firstName?.charAt(0) || ""}${user.lastName?.charAt(0) || ""}`;
+    const names = user.fullName?.split(' ') || [];
+    if (names.length >= 2) {
+      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`;
+    }
+    return user.fullName?.charAt(0) || "?";
   };
   
   const isActive = (path: string) => {
