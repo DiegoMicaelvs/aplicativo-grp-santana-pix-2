@@ -504,6 +504,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: "Erro ao buscar indicadores" });
     }
   });
+  
+  // Get all referrals from promoter's team
+  app.get("/api/promoter/team-referrals", requirePromoter, async (req, res) => {
+    try {
+      const indicadores = await storage.getIndicadoresByPromoter(req.user!.id);
+      const indicadorIds = indicadores.map(i => i.id);
+      
+      if (indicadorIds.length === 0) {
+        return res.json([]);
+      }
+      
+      const teamReferrals = await storage.getReferralsByUsers(indicadorIds);
+      return res.json(teamReferrals);
+    } catch (error) {
+      console.error("Error fetching team referrals:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicações da equipe" });
+    }
+  });
 
   // === ADMIN ROUTES ===
   
@@ -695,8 +713,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const updates = req.body;
+      const userId = parseInt(id);
       
-      const updatedUser = await storage.updateUserProfile(parseInt(id), updates);
+      // Check if promoterId is being updated
+      if (updates.promoterId !== undefined) {
+        const currentUser = await storage.getUserById(userId);
+        
+        // If promoterId is changing, update all referrals to the new promoter
+        if (currentUser && currentUser.promoterId !== updates.promoterId) {
+          await storage.transferReferralsToPromoter(userId, updates.promoterId);
+        }
+      }
+      
+      const updatedUser = await storage.updateUserProfile(userId, updates);
       const { password, ...userWithoutPassword } = updatedUser;
       
       return res.json(userWithoutPassword);

@@ -72,10 +72,11 @@ export interface IStorage {
   createReferral(referral: CreateReferral & { userId: number }): Promise<any>;
   getReferralById(id: number): Promise<any>;
   getReferralsByUserId(userId: number): Promise<any[]>;
+  getReferralsByUsers(userIds: number[]): Promise<any[]>;
   getAllReferrals(): Promise<any[]>;
   getReferralsByStatus(status: ReferralStatus): Promise<any[]>;
   checkDuplicateReferral(phone?: string, licensePlate?: string): Promise<any[]>;
-  updateReferralStatus(id: number, status: ReferralStatus, notes?: string): Promise<any>;
+  updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number): Promise<any>;
   calculateCommissions(referralId: number): Promise<void>;
   
   // Company methods
@@ -113,6 +114,9 @@ export interface IStorage {
     userAgent?: string;
     details?: string;
   }): Promise<void>;
+  
+  // Promoter management methods
+  transferReferralsToPromoter(indicadorId: number, promoterId: number | null): Promise<void>;
   getAuditLog(filters?: { userId?: number; entityType?: string; fromDate?: Date; toDate?: Date }): Promise<any[]>;
   
   // Team-based access methods
@@ -384,6 +388,19 @@ class DatabaseStorage implements IStorage {
     return await db.query.referrals.findMany({
       where: eq(referrals.userId, userId),
       with: {
+        company: true
+      },
+      orderBy: desc(referrals.createdAt)
+    });
+  }
+  
+  async getReferralsByUsers(userIds: number[]) {
+    if (userIds.length === 0) return [];
+    
+    return await db.query.referrals.findMany({
+      where: or(...userIds.map(id => eq(referrals.userId, id))),
+      with: {
+        user: true,
         company: true
       },
       orderBy: desc(referrals.createdAt)
@@ -811,6 +828,23 @@ class DatabaseStorage implements IStorage {
     
     const sequenceNumber = (todayTickets.length + 1).toString().padStart(4, '0');
     return `${dateStr}-${sequenceNumber}`;
+  }
+  
+  async transferReferralsToPromoter(indicadorId: number, promoterId: number | null) {
+    try {
+      // Update all referrals from this indicador to have the new promoterId
+      await db.update(referrals)
+        .set({ 
+          promoterId: promoterId,
+          updatedAt: new Date()
+        })
+        .where(eq(referrals.userId, indicadorId));
+        
+      console.log(`Transferred all referrals from indicador ${indicadorId} to promoter ${promoterId}`);
+    } catch (error) {
+      console.error('Error transferring referrals:', error);
+      throw error;
+    }
   }
 
   // Audit trail methods
