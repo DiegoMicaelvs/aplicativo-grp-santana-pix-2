@@ -60,7 +60,7 @@ export default function HomePage() {
                   <span className="block">Simples assim.</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Chega de programas de indicação que só pagam se a empresa vender! Aqui você ganha <span className="font-semibold text-primary-700">R$3 por cada cadastro validado</span>, mesmo que a venda ainda nem tenha acontecido. Se o nosso time converter em venda, você ainda recebe <span className="font-semibold text-primary-700">R$50 de bônus!</span>
+                  Chega de programas de indicação que só pagam se a empresa vender! Aqui você ganha <span className="font-semibold text-primary">R$3 por cada cadastro validado</span>, mesmo que a venda ainda nem tenha acontecido. Se o nosso time converter em venda, você ainda recebe <span className="font-semibold text-primary">R$50 de bônus!</span>
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
@@ -74,7 +74,7 @@ export default function HomePage() {
                     <Button
                       variant="outline"
                       size="lg"
-                      className="w-full text-primary-700 bg-primary-100 hover:bg-primary-200 border-primary-100"
+                      className="w-full"
                       onClick={() => comoFuncionaRef.current?.scrollIntoView({ behavior: 'smooth' })}
                     >
                       Como Funciona
@@ -305,14 +305,14 @@ export default function HomePage() {
           <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
             <div className="inline-flex rounded-md shadow">
               <Link href={user ? "/dashboard" : "/auth"}>
-                <Button size="lg" variant="default" className="bg-white text-primary-700 hover:bg-gray-100">
+                <Button size="lg" variant="secondary">
                   Cadastre-se agora
                 </Button>
               </Link>
             </div>
             <div className="ml-3 inline-flex rounded-md shadow">
               <Link href={user ? "/dashboard" : "/auth"}>
-                <Button size="lg" variant="default" className="bg-primary-600 hover:bg-primary-500 text-black">
+                <Button size="lg" variant="default">
                   {user ? "Acessar Dashboard" : "Já sou indicador"}
                 </Button>
               </Link>

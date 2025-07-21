@@ -1,12 +1,12 @@
 /**
- * Indique e Ganhe - Grupo Santana
+ * Indique e Ganhe - Kong Pix
  * ----------------------------------------------------------------------------
  * @application Indique e Ganhe
- * @client Grupo Santana
+ * @client Kong Pix
  * @version 1.0.0
- * @signature GS25-9D7F4B2E835CAC1170-AUTHCODE-PROTECTED
+ * @signature KP25-9D7F4B2E835CAC1170-AUTHCODE-PROTECTED
  * @copyright Todas as funcionalidades e o código-fonte desta aplicação são
- * propriedade exclusiva do Grupo Santana e estão protegidos por leis de
+ * propriedade exclusiva da Kong Pix e estão protegidos por leis de
  * propriedade intelectual. Qualquer reprodução, modificação ou uso não
  * autorizado deste software constitui violação dos direitos autorais.
  * @date Maio 2025
