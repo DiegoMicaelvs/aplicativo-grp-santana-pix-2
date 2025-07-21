@@ -263,6 +263,18 @@ class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
+  async assignIndicatorToPromoter(userId: number, promoterId: number | null) {
+    const [updatedUser] = await db.update(users)
+      .set({ 
+        promoterId,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
+
   async resetUserPassword(userId: number, customPassword?: string) {
     // Use custom password if provided, otherwise generate one
     const newPassword = customPassword || Array.from({length: 10}, () => 

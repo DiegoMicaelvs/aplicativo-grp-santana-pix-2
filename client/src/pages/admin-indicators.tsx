@@ -1,20 +1,29 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, Search, Filter, Users, DollarSign, TrendingUp } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Eye, Search, Filter, Users, DollarSign, TrendingUp, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BackButton } from "@/components/ui/back-button";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AdminIndicatorsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all_roles");
   const [statusFilter, setStatusFilter] = useState<string>("all_statuses");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [selectedPromoterId, setSelectedPromoterId] = useState<string>("");
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["/api/admin/users"]
@@ -24,8 +33,12 @@ export default function AdminIndicatorsPage() {
     queryKey: ["/api/admin/referrals"]
   });
 
+  const { data: promoters = [] } = useQuery({
+    queryKey: ["/api/admin/promoters"]
+  });
+
   // Filter indicators based on search and filters
-  const filteredIndicators = users.filter(user => {
+  const filteredIndicators = (users as any[]).filter((user: any) => {
     const matchesSearch = user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.cpf?.includes(searchTerm);
@@ -37,32 +50,85 @@ export default function AdminIndicatorsPage() {
 
   // Calculate statistics
   const stats = {
-    totalIndicators: users.filter(u => u.role === "indicador").length,
-    activeIndicators: users.filter(u => u.role === "indicador" && u.status === "active").length,
-    totalReferrals: referrals.length,
-    totalCommissions: referrals.reduce((sum, r) => sum + (parseFloat(r.commissionIndicator) || 0), 0)
+    totalIndicators: (users as any[]).filter((u: any) => u.role === "indicador").length,
+    activeIndicators: (users as any[]).filter((u: any) => u.role === "indicador" && u.status === "active").length,
+    totalReferrals: (referrals as any[]).length,
+    totalCommissions: (referrals as any[]).reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0)
   };
 
   // Get referrals count for each indicator
   const getReferralsCount = (userId: number) => {
-    return referrals.filter(r => r.userId === userId).length;
+    return (referrals as any[]).filter((r: any) => r.userId === userId).length;
   };
 
   // Get total earnings for each indicator
   const getTotalEarnings = (userId: number) => {
-    return referrals
-      .filter(r => r.userId === userId && r.status === "validated")
-      .reduce((sum, r) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
+    return (referrals as any[])
+      .filter((r: any) => r.userId === userId && r.status === "validated")
+      .reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
   };
 
   // Get who registered each indicator
   const getRegisteredBy = (userId: number) => {
-    const user = users.find(u => u.id === userId);
+    const user = (users as any[]).find((u: any) => u.id === userId);
     if (user?.createdBy) {
-      const creator = users.find(u => u.id === user.createdBy);
+      const creator = (users as any[]).find((u: any) => u.id === user.createdBy);
       return creator?.fullName || "Sistema";
     }
     return "Auto-cadastro";
+  };
+
+  // Assignment mutation
+  const assignIndicatorMutation = useMutation({
+    mutationFn: async ({ userId, promoterId }: { userId: number; promoterId: number | null }) => {
+      const response = await fetch(`/api/admin/users/${userId}/assign-promoter`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ promoterId })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao atribuir promotor');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Sucesso",
+        description: "Indicador atribuído com sucesso!"
+      });
+      setIsAssignDialogOpen(false);
+      setSelectedUser(null);
+      setSelectedPromoterId("");
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Erro ao atribuir indicador. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleAssignIndicator = () => {
+    if (!selectedUser) return;
+    
+    const promoterId = selectedPromoterId === "unassign" ? null : parseInt(selectedPromoterId);
+    assignIndicatorMutation.mutate({ 
+      userId: selectedUser.id, 
+      promoterId 
+    });
+  };
+
+  // Get promoter name
+  const getPromoterName = (promoterId: number | null) => {
+    if (!promoterId) return "Não atribuído";
+    const promoter = (promoters as any[]).find((p: any) => p.id === promoterId);
+    return promoter?.fullName || "Promotor não encontrado";
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -207,7 +273,7 @@ export default function AdminIndicatorsPage() {
         <CardHeader>
           <CardTitle>Lista de Indicadores</CardTitle>
           <CardDescription>
-            {filteredIndicators.length} de {users.length} indicadores encontrados
+            {filteredIndicators.length} de {(users as any[]).length} indicadores encontrados
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -220,6 +286,7 @@ export default function AdminIndicatorsPage() {
                   <TableHead>CPF</TableHead>
                   <TableHead>Função</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Promotor Responsável</TableHead>
                   <TableHead>Cadastrado por</TableHead>
                   <TableHead>Indicações</TableHead>
                   <TableHead>Ganhos Totais</TableHead>
@@ -242,6 +309,26 @@ export default function AdminIndicatorsPage() {
                       <Badge className={getStatusBadgeColor(user.status || "active")}>
                         {user.status || "active"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className={user.promoterId ? "text-green-600 font-medium" : "text-gray-500"}>
+                          {getPromoterName(user.promoterId)}
+                        </span>
+                        {user.role === "indicador" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setSelectedPromoterId(user.promoterId?.toString() || "");
+                              setIsAssignDialogOpen(true);
+                            }}
+                          >
+                            <UserPlus className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{getRegisteredBy(user.id)}</TableCell>
                     <TableCell className="text-center">{getReferralsCount(user.id)}</TableCell>
@@ -274,6 +361,78 @@ export default function AdminIndicatorsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Assignment Dialog */}
+      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Atribuir Indicador a Promotor</DialogTitle>
+            <DialogDescription>
+              Selecione um promotor para gerenciar este indicador: <strong>{selectedUser?.fullName}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Promotor Responsável</label>
+              <Select 
+                value={selectedPromoterId} 
+                onValueChange={setSelectedPromoterId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um promotor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassign">Remover atribuição</SelectItem>
+                  {(promoters as any[]).map((promoter: any) => (
+                    <SelectItem key={promoter.id} value={promoter.id.toString()}>
+                      {promoter.fullName} ({promoter.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedPromoterId && selectedPromoterId !== "unassign" && (
+              <div className="p-3 bg-blue-50 rounded-md">
+                <p className="text-sm text-blue-700">
+                  <strong>Promotor selecionado:</strong> {(promoters as any[]).find((p: any) => p.id.toString() === selectedPromoterId)?.fullName}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  O promotor receberá comissões pelas vendas fechadas por este indicador.
+                </p>
+              </div>
+            )}
+            
+            {selectedPromoterId === "unassign" && (
+              <div className="p-3 bg-orange-50 rounded-md">
+                <p className="text-sm text-orange-700">
+                  Este indicador ficará sem promotor responsável.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsAssignDialogOpen(false);
+                setSelectedUser(null);
+                setSelectedPromoterId("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleAssignIndicator}
+              disabled={assignIndicatorMutation.isPending}
+            >
+              {assignIndicatorMutation.isPending ? "Salvando..." : "Confirmar Atribuição"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

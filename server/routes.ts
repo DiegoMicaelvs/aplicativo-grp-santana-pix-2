@@ -1082,6 +1082,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Assign indicator to promoter (admin only)
+  app.patch("/api/admin/users/:id/assign-promoter", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { promoterId } = req.body;
+      
+      // Update user with new promoter assignment
+      const updatedUser = await storage.assignIndicatorToPromoter(parseInt(id), promoterId);
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      // Log audit trail
+      try {
+        const action = promoterId ? "assign_promoter" : "unassign_promoter";
+        const details = promoterId 
+          ? `Indicador ${updatedUser.fullName} atribuído ao promotor ID: ${promoterId}`
+          : `Indicador ${updatedUser.fullName} removido de promotor`;
+          
+        await storage.logUserAction({
+          userId: req.user!.id,
+          action,
+          entityType: 'user',
+          entityId: parseInt(id),
+          details
+        });
+      } catch (error) {
+        console.warn('Failed to log promoter assignment:', error);
+      }
+      
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error assigning promoter:", error);
+      return res.status(500).json({ error: "Erro ao atribuir promotor" });
+    }
+  });
+
   // Create HTTP server
   const server = createServer(app);
 
