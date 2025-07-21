@@ -1,0 +1,53 @@
+1. separe o banco de dados para nao misturar informaçoes desse app.
+
+2. crie um banco de dados separado para esse app 
+
+3. otimize as tabelas evitando criaçao de tabalas que nao serao usadas 
+
+4. preciso atribuir acessos de usuarios de diferentes perfis, 
+
+4.1. - indicador - Esse realiza apenas indicaçao realizando cadastro desses futuros clientes cadastrando Nome completo, Placa do carro, Numero de celular e uma pergunta se tem ou nao seguro, seus ganhos por cadastro é de R$3 reais por cadastro e R$50 reais por cadastro convertido 
+4.2. - Promotor - esse alem de poder indicar e ganhar os R$3 reais, ele pode cadastrar novos indicadores, sendo assim ele cria uma rede de indicadores abaixo dele onde seus ganhos por promover essa atividade fica de R$1 real a cada cadastro validado e 10 reais a cada cadastro convertido 
+4.3 - administrador - esse perfil consegue visualizar todo eco sistema do aplicativo podendo analizar e mudar o status de cada uma indicaçao, alem disso ele pode ter acesso a relatorios de cadastro como livre acesso a qualquer area do app.
+4.4 - analista - esse precisa receber as autorizaçoes do administrador para que realize as atividades que te cabe, crie um painel de atribuiçao de perfil criando nivel, analista nivel 1, analista nivel 2  e analista nivel 3 assim o adm escolhe o que cada um pode fazer na ferramenta 
+
+5.0 na parte de cadastro da indicaçao os dados a serem coletados sao 
+* nome 
+*numero 
+* placa do veiculo 
+* tem seguro? sim ou nao 
+*campo onde aparece as empresa num scroll para que ele selecione qual empresa ele esta realizando aquele cadastro 
+
+
+6.0 para cadastrar o indicar precisamos dos seguintes dados 
+* Nome completo 
+* cpf
+*email
+* endereço 
+*tamanho camisa 
+*chave pix 
+
+
+crie os registros desses cadastro, tanto para indicador como para qualquer perfil criado, Data e hora para todos 
+
+7.0 Atribua o cadastro para o usuario que cadastrou, permitindo que ele visualize a produçao da sua equipe, mas nao permita que ele saque valores que nao sao deles, 
+
+8.0 crie um hambiente onde teremos um caixa e esse caixa sera usado para realizar o controle de pagamento e saldo de fundo para pagamento
+8.1 o Indicador e o promotor podera solicitar seus respectivos saques pelo seu acesso individual, promotor apenas o que for de seu diretito e indicador também 
+8.2 assim que o perfil realizar o pedido de saque mostre par o admin quem realizou o saque, chave pix, e informaçoes sobre o saque, realize o abatimento tortal dos valores para mudar o status para pagado assim que o Admin realizar o pagamento 
+8.3 nao permita que seja realizado pagemnto para cpf diferente do cadastrado 
+
+9.0 abas de controle dentro do painel adm 
+
+onde poderemos ver os indicadores e quem cadastrou 
+ver tambem as indicaçoes e seus detalhes 
+Aba pagamento para fazer controle de pagamentos
+
+
+10. Crie uma aba de analise para os cadastro dos indicadores
+
+
+11. Crie um botao de suporte para que os usuarios do app entre em contato para reportar alguma falha ou erro, abertura de ticket com numeraçao e status 
+Assunto e descriçao, permita anexar arquivos para mostrar respectivos erros e falha
+
+11.1 crie esse habiente de respostas e analise desses tickets dentro do painel adm 
