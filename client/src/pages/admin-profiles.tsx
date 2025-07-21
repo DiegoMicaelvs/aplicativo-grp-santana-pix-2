@@ -81,7 +81,7 @@ const profileManagementSchema = z.object({
   address: z.string().min(5, "Endereço é obrigatório"),
   shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
-  role: z.enum(["indicador", "promotor", "admin", "analista"]),
+  role: z.enum(["indicador", "promotor", "admin", "analista", "vendedor"]),
   analystLevel: z.coerce.number().int().min(1).max(3).optional(),
   permissions: z.array(z.string()).optional(),
   isActive: z.boolean(),
@@ -353,6 +353,7 @@ export default function AdminProfiles() {
       case "admin": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100";
       case "promotor": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
       case "analista": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100";
+      case "vendedor": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100";
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
     }
   };
@@ -1023,6 +1024,7 @@ function UserProfileForm({
                   <SelectItem value="indicador">Indicador</SelectItem>
                   <SelectItem value="promotor">Promotor</SelectItem>
                   <SelectItem value="analista">Analista</SelectItem>
+                  <SelectItem value="vendedor">Vendedor</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
