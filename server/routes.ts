@@ -816,10 +816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
       
-      // Prevent deletion of admins
-      if (userToDelete.role === 'admin') {
-        return res.status(403).json({ error: "Não é permitido excluir usuários administradores" });
-      }
+      // Admin users can now be deleted with master password
       
       // Delete the user
       await storage.deleteUser(parseInt(id));

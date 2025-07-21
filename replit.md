@@ -153,7 +153,7 @@ The system is designed for deployment on platforms that support Node.js applicat
 ### Secure User Deletion System (July 2025)
 - **Master Password Protection:** User deletion requires developer master password "Diego91425751" for security
 - **Comprehensive Data Cleanup:** Deletes all related user data including referrals, tickets, audit logs, and cash flow entries
-- **Admin Protection:** Prevents deletion of admin users to maintain system integrity
+- **Admin Deletion Enabled:** Admin users can now be deleted with proper master password authentication
 - **Transaction Safety:** Uses database transactions to ensure data consistency during deletion process
 - **Audit Trail:** Logs all deletion attempts with complete user information for security tracking
 - **UI Integration:** Alert dialog with clear warnings about permanent data loss and master password requirement
