@@ -15,6 +15,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
 import { InsurancePartnersSection } from '@/components/insurance-partners-fixed';
 
+import diegomicael58_3D_animated_childrens_storybook_style_top_down__bf4c1a1e_e808_4db2_a50f_ca7a494f0767_0 from "@assets/diegomicael58_3D_animated_childrens_storybook_style_top-down__bf4c1a1e-e808-4db2-a50f-ca7a494f0767_0.png";
+
 export default function HomePage() {
   const { user } = useAuth();
   const [location] = useLocation();
@@ -39,7 +41,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
       {/* Hero Section */}
       <div className="relative bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto">
@@ -88,12 +89,11 @@ export default function HomePage() {
         <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <img
             className="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
-            src="https://images.unsplash.com/photo-1517457373958-b7bdd4587205?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+            src={diegomicael58_3D_animated_childrens_storybook_style_top_down__bf4c1a1e_e808_4db2_a50f_ca7a494f0767_0}
             alt="Ilustração de uma pessoa indicando seguro para veículos"
           />
         </div>
       </div>
-      
       {/* How It Works Section */}
       <div className="bg-white py-12" id="como-funciona" ref={comoFuncionaRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -161,7 +161,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-      
       {/* Benefits Section */}
       <div className="bg-gray-50 py-12" id="vantagens" ref={vantagensRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -294,7 +293,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-      
       {/* Registration CTA */}
       <div className="bg-primary-700">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
@@ -320,12 +318,10 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-      
       {/* Parceiros Section */}
       <div id="parceiros" ref={parceirosRef}>
         <InsurancePartnersSection />
       </div>
-      
       {/* FAQ Section */}
       <div className="bg-white py-12" id="faq" ref={faqRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -398,7 +394,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-      
       <Footer />
     </div>
   );
