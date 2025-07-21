@@ -115,6 +115,8 @@ export default function AdminProfiles() {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<User | null>(null);
+  const [customPasswordDialogOpen, setCustomPasswordDialogOpen] = useState(false);
+  const [customPassword, setCustomPassword] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -213,32 +215,26 @@ export default function AdminProfiles() {
     },
   });
 
-  // Reset password mutation
+  // Reset password mutation with custom password
   const resetPasswordMutation = useMutation({
-    mutationFn: async (userData: {userId: number, userName: string}) => {
-      const response = await apiRequest('POST', `/api/admin/users/${userData.userId}/reset-password`);
+    mutationFn: async (userData: {userId: number, userName: string, customPassword: string}) => {
+      const response = await apiRequest('POST', `/api/admin/users/${userData.userId}/reset-password`, {
+        customPassword: userData.customPassword
+      });
       console.log('Raw API response:', response);
       return { ...response, userName: userData.userName };
     },
     onSuccess: (data: any) => {
       console.log('Full password reset response:', data);
-      console.log('New password value:', data.newPassword);
       
-      if (!data.newPassword) {
-        toast({
-          title: "Erro",
-          description: "Nova senha não foi retornada pela API.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      setNewPassword(data.newPassword);
+      setNewPassword(customPassword);
       setSelectedUserForPassword({ fullName: data.userName } as User);
       setPasswordDialogOpen(true);
+      setCustomPasswordDialogOpen(false);
+      setCustomPassword("");
       toast({
         title: "Senha redefinida",
-        description: "Nova senha gerada com sucesso.",
+        description: "Nova senha temporária definida com sucesso.",
       });
     },
     onError: (error: any) => {
@@ -473,48 +469,18 @@ export default function AdminProfiles() {
                               </DialogContent>
                             </Dialog>
 
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={resetPasswordMutation.isPending}
-                                >
-                                  <Shield className="h-4 w-4 mr-1" />
-                                  Redefinir Senha
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Redefinir Senha do Usuário</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Tem certeza de que deseja redefinir a senha do usuário <strong>{user.fullName}</strong>?
-                                    <br /><br />
-                                    Uma nova senha temporária será gerada automaticamente e exibida no painel para que você possa informar ao usuário.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => resetPasswordMutation.mutate({userId: user.id, userName: user.fullName})}
-                                    disabled={resetPasswordMutation.isPending}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    {resetPasswordMutation.isPending ? (
-                                      <>
-                                        <Settings className="h-4 w-4 mr-2 animate-spin" />
-                                        Redefinindo...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Shield className="h-4 w-4 mr-2" />
-                                        Redefinir Senha
-                                      </>
-                                    )}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={resetPasswordMutation.isPending}
+                              onClick={() => {
+                                setSelectedUserForPassword(user);
+                                setCustomPasswordDialogOpen(true);
+                              }}
+                            >
+                              <Shield className="h-4 w-4 mr-1" />
+                              Redefinir Senha
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -527,33 +493,103 @@ export default function AdminProfiles() {
         </div>
       </main>
       
+      {/* Custom Password Input Dialog */}
+      <Dialog open={customPasswordDialogOpen} onOpenChange={setCustomPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Definir Nova Senha Temporária</DialogTitle>
+            <DialogDescription>
+              Digite uma senha temporária para <strong>{selectedUserForPassword?.fullName}</strong>. 
+              O usuário será obrigado a alterar esta senha no primeiro acesso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="customPassword">Nova Senha Temporária</Label>
+              <Input
+                id="customPassword"
+                type="password"
+                value={customPassword}
+                onChange={(e) => setCustomPassword(e.target.value)}
+                placeholder="Digite a nova senha"
+                minLength={6}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Mínimo 6 caracteres. O usuário deve trocar no primeiro acesso.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCustomPasswordDialogOpen(false);
+                  setCustomPassword("");
+                  setSelectedUserForPassword(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!customPassword || customPassword.length < 6) {
+                    toast({
+                      title: "Erro",
+                      description: "A senha deve ter pelo menos 6 caracteres.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (selectedUserForPassword) {
+                    resetPasswordMutation.mutate({
+                      userId: selectedUserForPassword.id,
+                      userName: selectedUserForPassword.fullName,
+                      customPassword: customPassword
+                    });
+                  }
+                }}
+                disabled={resetPasswordMutation.isPending || !customPassword || customPassword.length < 6}
+              >
+                {resetPasswordMutation.isPending ? (
+                  <>
+                    <Settings className="h-4 w-4 mr-2 animate-spin" />
+                    Definindo...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Definir Senha
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Password Display Dialog */}
       <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Nova Senha Gerada</DialogTitle>
+            <DialogTitle>Senha Temporária Definida</DialogTitle>
             <DialogDescription>
-              Uma nova senha temporária foi gerada com sucesso. Compartilhe esta senha com o usuário.
+              A nova senha temporária foi definida com sucesso. Compartilhe esta senha com o usuário.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-4">
-                A nova senha temporária para <strong>{selectedUserForPassword?.fullName}</strong> é:
+                A senha temporária para <strong>{selectedUserForPassword?.fullName}</strong> é:
               </p>
               <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                 <code className="text-lg font-mono font-bold text-gray-900 select-all">
                   {newPassword || 'Carregando...'}
                 </code>
-                {/* Debug info */}
-                <div className="text-xs text-gray-400 mt-2">
-                  Debug: {JSON.stringify({newPassword: newPassword, length: newPassword?.length})}
-                </div>
               </div>
               <p className="text-xs text-gray-500 mt-4">
                 Clique na senha acima para selecioná-la e copiar. 
                 <br />
-                O usuário deve alterar esta senha no primeiro acesso.
+                <strong>O usuário será obrigado a alterar esta senha no primeiro acesso.</strong>
               </p>
             </div>
             <div className="flex justify-center space-x-2">
@@ -561,7 +597,6 @@ export default function AdminProfiles() {
                 variant="outline"
                 onClick={async () => {
                   try {
-                    console.log('Attempting to copy password:', newPassword);
                     if (!newPassword) {
                       toast({
                         title: "Erro",
@@ -577,7 +612,6 @@ export default function AdminProfiles() {
                       description: "A senha foi copiada para a área de transferência.",
                     });
                   } catch (error) {
-                    console.error('Error copying password:', error);
                     // Fallback for older browsers
                     const textArea = document.createElement('textarea');
                     textArea.value = newPassword;

@@ -10,6 +10,7 @@ import NewReferralPage from "@/pages/new-referral-page";
 import ReferralsPage from "@/pages/referrals-page";
 import EarningsPage from "@/pages/earnings-page";
 import WithdrawalPage from "@/pages/withdrawal-page";
+import ChangePasswordPage from "@/pages/change-password-page";
 import AdminDashboard from "@/pages/admin-dashboard-new";
 import AdminAnalysts from "@/pages/admin-analysts";
 import AdminProfiles from "@/pages/admin-profiles";
@@ -40,6 +41,7 @@ function Router() {
       <ProtectedRoute path="/earnings" component={EarningsPage} />
       <ProtectedRoute path="/withdrawals" component={WithdrawalPage} />
       <ProtectedRoute path="/saques" component={WithdrawalPage} />
+      <ProtectedRoute path="/change-password" component={ChangePasswordPage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/analysts" component={AdminAnalysts} />
       <AdminRoute path="/admin/profiles" component={AdminProfiles} />

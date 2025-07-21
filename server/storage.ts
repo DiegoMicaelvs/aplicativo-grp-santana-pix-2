@@ -235,10 +235,11 @@ class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
-  async resetUserPassword(userId: number) {
-    // Generate a new temporary password (shorter, more user-friendly)
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    const newPassword = Array.from({length: 10}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  async resetUserPassword(userId: number, customPassword?: string) {
+    // Use custom password if provided, otherwise generate one
+    const newPassword = customPassword || Array.from({length: 10}, () => 
+      'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
+    ).join('');
     
     // Import the hashPassword function from auth module
     const { hashPassword } = await import('./auth');
@@ -247,6 +248,7 @@ class DatabaseStorage implements IStorage {
     const [updatedUser] = await db.update(users)
       .set({ 
         password: hashedPassword,
+        mustChangePassword: true, // Force password change on next login
         updatedAt: new Date()
       })
       .where(eq(users.id, userId))

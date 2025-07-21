@@ -131,7 +131,7 @@ export function setupAuth(app: Express) {
         ...userData,
         password: hashedPassword,
         role: "indicador", // Default role for new registrations
-        createdBy: null // Self-registration
+        createdBy: undefined // Self-registration
       });
       
       // Log the user in
@@ -225,6 +225,44 @@ export function setupAuth(app: Express) {
       }
       
       return res.status(500).json({ message: "Erro no servidor" });
+    }
+  });
+
+  // Change password route
+  app.post("/api/change-password", (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Não autorizado" });
+    }
+    next();
+  }, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = req.user.id;
+      
+      // Get user from database
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+      
+      // Verify current password
+      const isValidPassword = await comparePasswords(currentPassword, user.password);
+      
+      if (!isValidPassword) {
+        return res.status(400).json({ error: "Senha atual incorreta" });
+      }
+      
+      // Hash new password and update
+      const hashedNewPassword = await hashPassword(newPassword);
+      await storage.updateUserProfile(userId, { 
+        password: hashedNewPassword,
+        mustChangePassword: false // Remove the flag after password change
+      });
+      
+      return res.json({ message: "Senha alterada com sucesso" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      return res.status(500).json({ error: "Erro ao alterar senha" });
     }
   });
 

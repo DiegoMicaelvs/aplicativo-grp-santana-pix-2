@@ -29,6 +29,15 @@ export function ProtectedRoute({
     );
   }
 
+  // Check if user must change password and redirect if not already on change password page
+  if (user.mustChangePassword && path !== "/change-password") {
+    return (
+      <Route path={path}>
+        <Redirect to="/change-password" />
+      </Route>
+    );
+  }
+
   return <Route path={path} component={Component} />;
 }
 

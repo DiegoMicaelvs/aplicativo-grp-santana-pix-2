@@ -35,6 +35,7 @@ export const users = pgTable("users", {
   promoterId: integer("promoter_id"), // ID do promotor que cadastrou este indicador
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0.00").notNull(), // Saldo disponível
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00").notNull(), // Total ganho
+  mustChangePassword: boolean("must_change_password").default(false).notNull(), // Força alteração de senha no próximo login
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

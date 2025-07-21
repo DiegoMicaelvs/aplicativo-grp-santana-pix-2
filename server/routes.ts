@@ -776,12 +776,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/users/:id/reset-password", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
+      const { customPassword } = req.body;
       
-      const newPassword = await storage.resetUserPassword(parseInt(id));
+      const newPassword = await storage.resetUserPassword(parseInt(id), customPassword);
       
       return res.json({ 
         message: "Senha redefinida com sucesso",
-        newPassword // In production, this should be sent via email
+        newPassword: newPassword
       });
     } catch (error) {
       console.error("Error resetting password:", error);
