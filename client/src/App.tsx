@@ -24,6 +24,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/referrals" component={ReferralsPage} />
       <ProtectedRoute path="/new-referral" component={NewReferralPage} />
+      <ProtectedRoute path="/nova-indicacao" component={NewReferralPage} />
       <ProtectedRoute path="/earnings" component={EarningsPage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/analysts" component={AdminAnalysts} />
