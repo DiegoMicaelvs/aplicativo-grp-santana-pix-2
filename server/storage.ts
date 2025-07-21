@@ -799,6 +799,18 @@ class DatabaseStorage implements IStorage {
     });
   }
   
+  async getSupportTicketsByUserId(userId: number) {
+    return await db.query.supportTickets.findMany({
+      where: eq(supportTickets.userId, userId),
+      orderBy: [desc(supportTickets.createdAt)],
+      with: {
+        responses: {
+          orderBy: [asc(ticketResponses.createdAt)]
+        }
+      }
+    });
+  }
+  
   async updateTicketStatus(id: number, status: string) {
     const [updated] = await db.update(supportTickets)
       .set({
