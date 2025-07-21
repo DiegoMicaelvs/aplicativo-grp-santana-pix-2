@@ -121,11 +121,16 @@ export default function NewReferralPage() {
   });
   
   const onSubmit = (data: ReferralFormValues) => {
-    // Primeiro verifica se há duplicatas
-    checkDuplicateMutation.mutate({
-      phone: data.phone,
-      licensePlate: data.licensePlate
-    });
+    // Se já há duplicatas conhecidas, pular verificação e enviar diretamente
+    if (duplicateInfo && duplicateInfo.length > 0) {
+      mutation.mutate(data as CreateReferral);
+    } else {
+      // Primeiro verifica se há duplicatas
+      checkDuplicateMutation.mutate({
+        phone: data.phone,
+        licensePlate: data.licensePlate
+      });
+    }
   };
 
   const handleForceSave = () => {
@@ -220,7 +225,10 @@ export default function NewReferralPage() {
                       </div>
                     ))}
                     <p className="text-sm mt-3 font-medium">
-                      Para evitar fraudes, não é possível cadastrar a mesma pessoa ou veículo duas vezes.
+                      ⚠️ Atenção: Este cadastro pode ser uma duplicata. Certifique-se que os dados estão corretos antes de prosseguir.
+                    </p>
+                    <p className="text-xs mt-1 text-red-600">
+                      Clique em "Enviar Indicação" para prosseguir mesmo assim (sujeito à aprovação administrativa).
                     </p>
                   </AlertDescription>
                 </Alert>
@@ -370,7 +378,7 @@ export default function NewReferralPage() {
                     </Button>
                     <Button 
                       type="submit" 
-                      disabled={mutation.isPending || checkDuplicateMutation.isPending || (duplicateInfo && duplicateInfo.length > 0)}
+                      disabled={mutation.isPending || checkDuplicateMutation.isPending}
                     >
                       {checkDuplicateMutation.isPending ? (
                         <>
