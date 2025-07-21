@@ -10,6 +10,9 @@ import {
   ticketResponses,
   auditLog,
   referralConversations,
+  salesLeads,
+  salesActivities,
+  salesReminders,
   type InsertUser, 
   type CreateReferral, 
   type ReferralStatus,
@@ -19,7 +22,14 @@ import {
   type CreateSupportTicket,
   type CreateTicketResponse,
   type CreateCashFlow,
-  type CreateReferralConversation
+  type CreateReferralConversation,
+  type SalesLead,
+  type CreateSalesLead,
+  type UpdateSalesLead,
+  type SalesActivity,
+  type CreateSalesActivity,
+  type SalesReminder,
+  type CreateSalesReminder
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -44,6 +54,19 @@ export interface IStorage {
   updateUserStatus(userId: number, isActive: boolean): Promise<any>;
   resetUserPassword(userId: number): Promise<string>;
   deleteUser(userId: number): Promise<void>;
+  
+  // Sales CRM methods
+  createSalesLead(leadData: CreateSalesLead, vendedorId: number): Promise<SalesLead>;
+  getSalesLeadsByVendedor(vendedorId: number): Promise<any[]>;
+  getSalesLeadById(leadId: number, vendedorId: number): Promise<any>;
+  updateSalesLead(leadId: number, vendedorId: number, updates: UpdateSalesLead): Promise<SalesLead>;
+  createSalesActivity(activityData: CreateSalesActivity & { leadId: number, vendedorId: number }): Promise<SalesActivity>;
+  getSalesActivitiesByLead(leadId: number, vendedorId: number): Promise<SalesActivity[]>;
+  createSalesReminder(reminderData: CreateSalesReminder & { leadId: number, vendedorId: number }): Promise<SalesReminder>;
+  getSalesRemindersByVendedor(vendedorId: number): Promise<any[]>;
+  completeSalesReminder(reminderId: number, vendedorId: number): Promise<SalesReminder>;
+  convertReferralToLead(referralId: number, vendedorId: number): Promise<SalesLead>;
+  getSalesStats(vendedorId: number): Promise<any>;
   
   // Referral methods
   createReferral(referral: CreateReferral & { userId: number }): Promise<any>;
@@ -923,6 +946,176 @@ class DatabaseStorage implements IStorage {
     return userCpf === requestCpf;
   }
 
+  // SALES CRM METHODS
+
+  async createSalesLead(leadData: any, vendedorId: number) {
+    const [newLead] = await db.insert(salesLeads).values({
+      ...leadData,
+      vendedorId
+    }).returning();
+    
+    // Create initial activity
+    await this.createSalesActivity({
+      leadId: newLead.id,
+      vendedorId,
+      activityType: 'note',
+      title: 'Lead criado',
+      description: 'Novo lead adicionado ao sistema'
+    });
+    
+    return newLead;
+  }
+
+  async getSalesLeadsByVendedor(vendedorId: number) {
+    return await db.query.salesLeads.findMany({
+      where: eq(salesLeads.vendedorId, vendedorId),
+      with: {
+        activities: {
+          orderBy: desc(salesActivities.createdAt),
+          limit: 3
+        },
+        reminders: {
+          where: eq(salesReminders.isCompleted, false)
+        },
+        referral: true
+      },
+      orderBy: desc(salesLeads.createdAt)
+    });
+  }
+
+  async getSalesLeadById(leadId: number, vendedorId: number) {
+    return await db.query.salesLeads.findFirst({
+      where: and(eq(salesLeads.id, leadId), eq(salesLeads.vendedorId, vendedorId)),
+      with: {
+        activities: {
+          orderBy: desc(salesActivities.createdAt)
+        },
+        reminders: {
+          orderBy: salesReminders.reminderDate
+        },
+        referral: true
+      }
+    });
+  }
+
+  async updateSalesLead(leadId: number, vendedorId: number, updates: any) {
+    const oldLead = await this.getSalesLeadById(leadId, vendedorId);
+    if (!oldLead) throw new Error('Lead não encontrado');
+
+    const [updatedLead] = await db.update(salesLeads)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+        ...(updates.status === 'negocio_fechado' || updates.status === 'perdido' ? { closedAt: new Date() } : {})
+      })
+      .where(and(eq(salesLeads.id, leadId), eq(salesLeads.vendedorId, vendedorId)))
+      .returning();
+
+    // Log status change if status was updated
+    if (updates.status && updates.status !== oldLead.status) {
+      await this.createSalesActivity({
+        leadId,
+        vendedorId,
+        activityType: 'status_change',
+        title: `Status alterado para: ${this.getSalesStatusLabel(updates.status)}`,
+        description: updates.notes || 'Status do lead foi alterado',
+        metadata: {
+          oldStatus: oldLead.status,
+          newStatus: updates.status
+        }
+      });
+    }
+
+    return updatedLead;
+  }
+
+  async createSalesActivity(activityData: any) {
+    const [activity] = await db.insert(salesActivities).values({
+      ...activityData,
+      completedAt: activityData.activityType !== 'follow_up' ? new Date() : null
+    }).returning();
+    
+    return activity;
+  }
+
+  async getSalesActivitiesByLead(leadId: number, vendedorId: number) {
+    return await db.query.salesActivities.findMany({
+      where: and(eq(salesActivities.leadId, leadId), eq(salesActivities.vendedorId, vendedorId)),
+      orderBy: desc(salesActivities.createdAt)
+    });
+  }
+
+  async createSalesReminder(reminderData: any) {
+    const [reminder] = await db.insert(salesReminders).values(reminderData).returning();
+    return reminder;
+  }
+
+  async getSalesRemindersByVendedor(vendedorId: number) {
+    return await db.query.salesReminders.findMany({
+      where: and(eq(salesReminders.vendedorId, vendedorId), eq(salesReminders.isCompleted, false)),
+      with: {
+        lead: true
+      },
+      orderBy: salesReminders.reminderDate
+    });
+  }
+
+  async completeSalesReminder(reminderId: number, vendedorId: number) {
+    const [reminder] = await db.update(salesReminders)
+      .set({ isCompleted: true, completedAt: new Date() })
+      .where(and(eq(salesReminders.id, reminderId), eq(salesReminders.vendedorId, vendedorId)))
+      .returning();
+    
+    return reminder;
+  }
+
+  async convertReferralToLead(referralId: number, vendedorId: number) {
+    const referral = await this.getReferralById(referralId);
+    if (!referral) throw new Error('Indicação não encontrada');
+
+    // Create lead from referral
+    const leadData = {
+      referralId: referralId,
+      fullName: referral.fullName,
+      phone: referral.phone,
+      licensePlate: referral.licensePlate,
+      hasInsurance: referral.hasInsurance,
+      status: 'novo' as const,
+      source: 'indicacao' as const,
+      notes: `Lead criado a partir da indicação #${referralId}`
+    };
+
+    return await this.createSalesLead(leadData, vendedorId);
+  }
+
+  async getSalesStats(vendedorId: number) {
+    const leads = await this.getSalesLeadsByVendedor(vendedorId);
+    
+    const stats = {
+      total: leads.length,
+      novo: leads.filter(l => l.status === 'novo').length,
+      em_negociacao: leads.filter(l => l.status === 'em_negociacao').length,
+      proposta_enviada: leads.filter(l => l.status === 'proposta_enviada').length,
+      negocio_fechado: leads.filter(l => l.status === 'negocio_fechado').length,
+      perdido: leads.filter(l => l.status === 'perdido').length,
+      totalValue: leads.reduce((sum, l) => sum + (l.finalValue ? parseFloat(l.finalValue.toString()) : 0), 0),
+      totalCommission: leads.reduce((sum, l) => sum + (l.actualCommission ? parseFloat(l.actualCommission.toString()) : 0), 0)
+    };
+
+    return stats;
+  }
+
+  private getSalesStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      'novo': 'Novo',
+      'em_negociacao': 'Em Negociação',
+      'proposta_enviada': 'Proposta Enviada',
+      'negocio_fechado': 'Negócio Fechado',
+      'perdido': 'Perdido',
+      'reagendado': 'Reagendado'
+    };
+    return labels[status] || status;
+  }
 
 }
 

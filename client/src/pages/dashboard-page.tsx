@@ -32,6 +32,9 @@ export default function DashboardPage() {
       } else if (user.role === "promotor") {
         setLocation("/promoter");
         return;
+      } else if (user.role === "vendedor") {
+        setLocation("/vendedor");
+        return;
       }
       // indicador and analista users stay on main dashboard
     }

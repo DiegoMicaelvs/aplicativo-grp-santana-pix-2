@@ -53,6 +53,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  // Middleware to check vendedor role
+  const requireVendedor = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || (req.user.role !== "vendedor" && req.user.role !== "admin")) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+    next();
+  };
+
   // Middleware to check analyst permissions
   const requireAnalystPermission = (permission: AnalystPermission) => {
     return (req: any, res: any, next: any) => {
@@ -929,6 +937,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error adding ticket response:", error);
       return res.status(500).json({ error: "Erro ao adicionar resposta ao ticket" });
+    }
+  });
+
+  // === SALES CRM ROUTES (VENDEDOR) ===
+
+  // Get sales leads for vendedor
+  app.get("/api/sales/leads", requireVendedor, async (req, res) => {
+    try {
+      const leads = await storage.getSalesLeadsByVendedor(req.user!.id);
+      return res.json(leads);
+    } catch (error) {
+      console.error("Error fetching sales leads:", error);
+      return res.status(500).json({ error: "Erro ao buscar leads" });
+    }
+  });
+
+  // Create new sales lead
+  app.post("/api/sales/leads", requireVendedor, async (req, res) => {
+    try {
+      const { createSalesLeadSchema } = await import("@shared/schema.ts");
+      const validatedData = createSalesLeadSchema.parse(req.body);
+      
+      const lead = await storage.createSalesLead(validatedData, req.user!.id);
+      return res.status(201).json(lead);
+    } catch (error) {
+      console.error("Error creating sales lead:", error);
+      return res.status(500).json({ error: "Erro ao criar lead" });
+    }
+  });
+
+  // Get specific sales lead with timeline
+  app.get("/api/sales/leads/:id", requireVendedor, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const lead = await storage.getSalesLeadById(parseInt(id), req.user!.id);
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead não encontrado" });
+      }
+      
+      return res.json(lead);
+    } catch (error) {
+      console.error("Error fetching sales lead:", error);
+      return res.status(500).json({ error: "Erro ao buscar lead" });
+    }
+  });
+
+  // Update sales lead
+  app.patch("/api/sales/leads/:id", requireVendedor, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { updateSalesLeadSchema } = await import("@shared/schema.ts");
+      const validatedData = updateSalesLeadSchema.parse(req.body);
+      
+      const lead = await storage.updateSalesLead(parseInt(id), req.user!.id, validatedData);
+      return res.json(lead);
+    } catch (error) {
+      console.error("Error updating sales lead:", error);
+      return res.status(500).json({ error: "Erro ao atualizar lead" });
+    }
+  });
+
+  // Add activity to sales lead
+  app.post("/api/sales/leads/:id/activities", requireVendedor, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { createSalesActivitySchema } = await import("@shared/schema.ts");
+      const validatedData = createSalesActivitySchema.parse(req.body);
+      
+      const activity = await storage.createSalesActivity({
+        ...validatedData,
+        leadId: parseInt(id),
+        vendedorId: req.user!.id
+      });
+      
+      return res.status(201).json(activity);
+    } catch (error) {
+      console.error("Error creating sales activity:", error);
+      return res.status(500).json({ error: "Erro ao criar atividade" });
+    }
+  });
+
+  // Get sales statistics for vendedor
+  app.get("/api/sales/stats", requireVendedor, async (req, res) => {
+    try {
+      const stats = await storage.getSalesStats(req.user!.id);
+      return res.json(stats);
+    } catch (error) {
+      console.error("Error fetching sales stats:", error);
+      return res.status(500).json({ error: "Erro ao buscar estatísticas" });
+    }
+  });
+
+  // Convert referral to lead
+  app.post("/api/sales/convert-referral/:referralId", requireVendedor, async (req, res) => {
+    try {
+      const { referralId } = req.params;
+      const lead = await storage.convertReferralToLead(parseInt(referralId), req.user!.id);
+      return res.status(201).json(lead);
+    } catch (error) {
+      console.error("Error converting referral to lead:", error);
+      return res.status(500).json({ error: "Erro ao converter indicação em lead" });
+    }
+  });
+
+  // Get referrals available for conversion
+  app.get("/api/sales/available-referrals", requireVendedor, async (req, res) => {
+    try {
+      const referrals = await storage.getReferralsByStatus("validated");
+      return res.json(referrals);
+    } catch (error) {
+      console.error("Error fetching available referrals:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicações disponíveis" });
     }
   });
 

@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // User roles
-export type UserRole = "indicador" | "promotor" | "admin" | "analista";
+export type UserRole = "indicador" | "promotor" | "admin" | "analista" | "vendedor";
 export type AnalystLevel = 1 | 2 | 3;
 
 // Analyst permissions
@@ -162,6 +162,73 @@ export const ticketResponses = pgTable("ticket_responses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Sales Pipeline - CRM for Vendedor role
+export type SalesLeadStatus = "novo" | "em_negociacao" | "proposta_enviada" | "negocio_fechado" | "perdido" | "reagendado";
+export type SalesLeadSource = "indicacao" | "prospeccao" | "marketing" | "referencia";
+
+export const salesLeads = pgTable("sales_leads", {
+  id: serial("id").primaryKey(),
+  referralId: integer("referral_id").references(() => referrals.id), // Vinculado a uma indicação (se aplicável)
+  vendedorId: integer("vendedor_id").references(() => users.id).notNull(), // Vendedor responsável
+  fullName: text("full_name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  licensePlate: text("license_plate"),
+  vehicleModel: text("vehicle_model"),
+  vehicleYear: integer("vehicle_year"),
+  currentInsurer: text("current_insurer"),
+  hasInsurance: boolean("has_insurance").default(false),
+  status: text("status").default("novo").notNull().$type<SalesLeadStatus>(),
+  source: text("source").default("indicacao").notNull().$type<SalesLeadSource>(),
+  proposalValue: decimal("proposal_value", { precision: 10, scale: 2 }),
+  discountPercent: decimal("discount_percent", { precision: 5, scale: 2 }).default("0.00"),
+  finalValue: decimal("final_value", { precision: 10, scale: 2 }),
+  expectedCommission: decimal("expected_commission", { precision: 10, scale: 2 }),
+  actualCommission: decimal("actual_commission", { precision: 10, scale: 2 }),
+  proposalAttachments: jsonb("proposal_attachments").$type<string[]>(), // URLs dos arquivos de proposta
+  notes: text("notes"),
+  nextFollowUp: timestamp("next_follow_up"), // Próximo lembrete/retorno
+  followUpReason: text("follow_up_reason"), // Motivo do reagendamento
+  closedAt: timestamp("closed_at"), // Data de fechamento (ganho ou perdido)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Sales Activities - Timeline de atividades do lead
+export type SalesActivityType = "call" | "email" | "meeting" | "proposal" | "follow_up" | "note" | "status_change";
+
+export const salesActivities = pgTable("sales_activities", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").references(() => salesLeads.id).notNull(),
+  vendedorId: integer("vendedor_id").references(() => users.id).notNull(),
+  activityType: text("activity_type").notNull().$type<SalesActivityType>(),
+  title: text("title").notNull(),
+  description: text("description"),
+  scheduledFor: timestamp("scheduled_for"), // Para atividades agendadas
+  completedAt: timestamp("completed_at"), // Quando foi concluída
+  attachments: jsonb("attachments").$type<string[]>(), // URLs dos arquivos
+  metadata: jsonb("metadata").$type<{
+    oldStatus?: string,
+    newStatus?: string,
+    callDuration?: number,
+    outcome?: string
+  }>(), // Dados específicos do tipo de atividade
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Calendar reminders for vendors
+export const salesReminders = pgTable("sales_reminders", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").references(() => salesLeads.id).notNull(),
+  vendedorId: integer("vendedor_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  reminderDate: timestamp("reminder_date").notNull(),
+  isCompleted: boolean("is_completed").default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   referrals: many(referrals),
@@ -264,6 +331,42 @@ export const ticketResponsesRelations = relations(ticketResponses, ({ one }) => 
     fields: [ticketResponses.userId],
     references: [users.id],
   }),
+}));
+
+// Sales Relations
+export const salesLeadsRelations = relations(salesLeads, ({ one, many }) => ({
+  vendedor: one(users, {
+    fields: [salesLeads.vendedorId],
+    references: [users.id]
+  }),
+  referral: one(referrals, {
+    fields: [salesLeads.referralId],
+    references: [referrals.id]
+  }),
+  activities: many(salesActivities),
+  reminders: many(salesReminders)
+}));
+
+export const salesActivitiesRelations = relations(salesActivities, ({ one }) => ({
+  lead: one(salesLeads, {
+    fields: [salesActivities.leadId],
+    references: [salesLeads.id]
+  }),
+  vendedor: one(users, {
+    fields: [salesActivities.vendedorId],
+    references: [users.id]
+  })
+}));
+
+export const salesRemindersRelations = relations(salesReminders, ({ one }) => ({
+  lead: one(salesLeads, {
+    fields: [salesReminders.leadId],
+    references: [salesLeads.id]
+  }),
+  vendedor: one(users, {
+    fields: [salesReminders.vendedorId],
+    references: [users.id]
+  })
 }));
 
 // Schemas for validation
@@ -372,10 +475,55 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Senha é obrigatória"),
 });
 
+// Sales Schemas
+export const createSalesLeadSchema = createInsertSchema(salesLeads, {
+  fullName: (schema) => schema.min(1, "Nome completo é obrigatório"),
+  phone: (schema) => schema.min(10, "Telefone inválido").max(15, "Telefone inválido"),
+  proposalValue: z.coerce.number().positive("Valor da proposta deve ser positivo").optional(),
+  discountPercent: z.coerce.number().min(0).max(100, "Desconto deve estar entre 0% e 100%").optional(),
+  finalValue: z.coerce.number().positive("Valor final deve ser positivo").optional(),
+  expectedCommission: z.coerce.number().min(0, "Comissão esperada deve ser positiva").optional(),
+}).omit({ id: true, vendedorId: true, createdAt: true, updatedAt: true, closedAt: true, actualCommission: true }).extend({
+  licensePlate: z.string().optional(),
+  hasInsurance: z.boolean().optional(),
+  source: z.enum(["manual", "indicacao", "website", "phone", "referral"]).default("manual"),
+  status: z.enum(["novo", "em_negociacao", "proposta_enviada", "negocio_fechado", "perdido", "reagendado"]).default("novo"),
+  notes: z.string().optional()
+});
+
+export const updateSalesLeadSchema = z.object({
+  status: z.enum(["novo", "em_negociacao", "proposta_enviada", "negocio_fechado", "perdido", "reagendado"]),
+  proposalValue: z.coerce.number().positive().optional(),
+  discountPercent: z.coerce.number().min(0).max(100).optional(),
+  finalValue: z.coerce.number().positive().optional(),
+  expectedCommission: z.coerce.number().min(0).optional(),
+  actualCommission: z.coerce.number().min(0).optional(),
+  notes: z.string().optional(),
+  nextFollowUp: z.string().optional(), // ISO date string
+  followUpReason: z.string().optional(),
+});
+
+export const createSalesActivitySchema = createInsertSchema(salesActivities, {
+  title: (schema) => schema.min(1, "Título é obrigatório"),
+  activityType: z.enum(["call", "email", "meeting", "proposal", "follow_up", "note", "status_change"]),
+}).omit({ id: true, leadId: true, vendedorId: true, createdAt: true, completedAt: true });
+
+export const createSalesReminderSchema = createInsertSchema(salesReminders, {
+  title: (schema) => schema.min(1, "Título é obrigatório"),
+  reminderDate: z.string().min(1, "Data do lembrete é obrigatória"), // ISO date string
+}).omit({ id: true, leadId: true, vendedorId: true, createdAt: true, completedAt: true, isCompleted: true });
+
 // Types for use in the application
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type CreateReferral = z.infer<typeof createReferralSchema>;
+export type SalesLead = typeof salesLeads.$inferSelect;
+export type CreateSalesLead = z.infer<typeof createSalesLeadSchema>;
+export type UpdateSalesLead = z.infer<typeof updateSalesLeadSchema>;
+export type SalesActivity = typeof salesActivities.$inferSelect;
+export type CreateSalesActivity = z.infer<typeof createSalesActivitySchema>;
+export type SalesReminder = typeof salesReminders.$inferSelect;
+export type CreateSalesReminder = z.infer<typeof createSalesReminderSchema>;
 export type Referral = typeof referrals.$inferSelect;
 export type UpdateReferralStatus = z.infer<typeof updateReferralStatusSchema>;
 export type UpdateReferralWithCommission = z.infer<typeof updateReferralWithCommissionSchema>;

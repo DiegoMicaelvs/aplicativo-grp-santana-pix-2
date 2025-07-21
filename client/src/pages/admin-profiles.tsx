@@ -363,6 +363,7 @@ export default function AdminProfiles() {
       case "promotor": return "Promotor";
       case "analista": return "Analista";
       case "indicador": return "Indicador";
+      case "vendedor": return "Vendedor";
       default: return role;
     }
   };
@@ -396,6 +397,7 @@ export default function AdminProfiles() {
                   <SelectItem value="promotor">Promotores</SelectItem>
                   <SelectItem value="analista">Analistas</SelectItem>
                   <SelectItem value="indicador">Indicadores</SelectItem>
+                  <SelectItem value="vendedor">Vendedores</SelectItem>
                 </SelectContent>
               </Select>
 
