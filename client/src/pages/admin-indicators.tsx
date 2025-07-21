@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Eye, Search, Filter, Users, DollarSign, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function AdminIndicatorsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -99,8 +100,13 @@ export default function AdminIndicatorsPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Gestão de Indicadores</h1>
-        <p className="text-gray-600 mt-2">Visualize e gerencie todos os indicadores cadastrados no sistema</p>
+        <div className="flex items-center gap-4 mb-4">
+          <BackButton />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gestão de Indicadores</h1>
+            <p className="text-gray-600 mt-2">Visualize e gerencie todos os indicadores cadastrados no sistema</p>
+          </div>
+        </div>
       </div>
 
       {/* Statistics Cards */}

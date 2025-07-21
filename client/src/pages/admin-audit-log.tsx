@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarIcon, FilterIcon, RefreshCcwIcon, UserIcon, ActivityIcon, FileTextIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/ui/back-button';
 
 interface AuditLogEntry {
   id: number;
@@ -99,7 +100,10 @@ export default function AdminAuditLog() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Log de Auditoria</h1>
+        <div className="flex items-center gap-4">
+          <BackButton />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Log de Auditoria</h1>
+        </div>
         <Button onClick={() => refetch()} className="flex items-center gap-2">
           <RefreshCcwIcon className="w-4 h-4" />
           Atualizar

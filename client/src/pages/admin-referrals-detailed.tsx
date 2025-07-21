@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { BackButton } from "@/components/ui/back-button";
 
 type ReferralStatus = "pending" | "processing" | "converted" | "rejected" | "validated" | "paid";
 
@@ -132,8 +133,13 @@ export default function AdminReferralsDetailedPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Gestão Detalhada de Indicações</h1>
-        <p className="text-gray-600 mt-2">Visualize, analise e gerencie todas as indicações do sistema</p>
+        <div className="flex items-center gap-4 mb-4">
+          <BackButton />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gestão Detalhada de Indicações</h1>
+            <p className="text-gray-600 mt-2">Visualize, analise e gerencie todas as indicações do sistema</p>
+          </div>
+        </div>
       </div>
 
       {/* Statistics Cards */}

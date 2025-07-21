@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Users, TrendingUp, DollarSign, Activity, Target, Award, Calendar, BarChart3 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function AdminAnalyticsPage() {
   const [timeRange, setTimeRange] = useState<string>("30_days");
@@ -156,8 +157,13 @@ export default function AdminAnalyticsPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Análise de Indicadores</h1>
-        <p className="text-gray-600 mt-2">Análise detalhada dos cadastros e performance dos indicadores</p>
+        <div className="flex items-center gap-4 mb-4">
+          <BackButton />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Análise de Indicadores</h1>
+            <p className="text-gray-600 mt-2">Análise detalhada dos cadastros e performance dos indicadores</p>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
