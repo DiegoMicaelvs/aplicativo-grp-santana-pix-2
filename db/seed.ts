@@ -32,13 +32,16 @@ async function seed() {
     // Criar usuário admin com a nova senha
     await db.insert(schema.users).values({
       username: "admin@gruposantana.com",
+      email: "admin@gruposantana.com",
       password: adminPassword,
-      firstName: "Administrador",
-      lastName: "Sistema",
+      fullName: "Administrador do Sistema",
       phone: "11999999999",
       cpf: "12345678900",
-      birthdate: "1980-01-01",
-      role: "admin"
+      address: "Grupo Santana",
+      shirtSize: "M",
+      pixKey: "admin@gruposantana.com",
+      role: "admin",
+      isActive: true
     });
     console.log("Admin user created with password 'admin123'");
     
@@ -51,68 +54,65 @@ async function seed() {
       const referrerPassword = await hashPassword("senha123");
       const [referrer] = await db.insert(schema.users).values({
         username: "joao@example.com",
+        email: "joao@example.com",
         password: referrerPassword,
-        firstName: "João",
-        lastName: "Silva",
+        fullName: "João Silva",
         phone: "11988888888",
         cpf: "98765432100",
-        birthdate: "1990-05-15",
-        bank: "Banco do Brasil",
-        agency: "1234",
-        account: "56789-0",
-        role: "referrer"
+        address: "Rua das Flores, 123",
+        shirtSize: "M",
+        pixKey: "joao@example.com",
+        role: "indicador",
+        isActive: true
       }).returning({ id: schema.users.id });
       
       console.log("Example referrer created");
+      
+      // Create a sample company first
+      const [company] = await db.insert(schema.companies).values({
+        name: "Seguradora ABC",
+        isActive: true
+      }).returning({ id: schema.companies.id });
       
       // Create example referrals
       await db.insert(schema.referrals).values([
         {
           userId: referrer.id,
-          firstName: "Maria",
-          lastName: "Costa",
-          email: "maria@example.com",
+          fullName: "Maria Costa",
           phone: "11977777777",
           licensePlate: "ABC1234",
+          hasInsurance: false,
+          companyId: company.id,
           status: "converted",
-          commission: "450.00",
-          paidAt: new Date(2023, 3, 15), // April 15, 2023
-          createdAt: new Date(2023, 3, 12), // April 12, 2023
-          updatedAt: new Date(2023, 3, 12)
+          commissionIndicator: "3.00"
         },
         {
           userId: referrer.id,
-          firstName: "Paulo",
-          lastName: "Ribeiro",
-          email: "paulo@example.com",
+          fullName: "Paulo Ribeiro",
           phone: "11966666666",
           licensePlate: "DEF5678",
+          hasInsurance: true,
+          companyId: company.id,
           status: "rejected",
-          notes: "Cliente já possui seguro",
-          createdAt: new Date(2023, 3, 5), // April 5, 2023
-          updatedAt: new Date(2023, 3, 5)
+          notes: "Cliente já possui seguro"
         },
         {
           userId: referrer.id,
-          firstName: "Roberto",
-          lastName: "Almeida",
-          email: "roberto@example.com",
+          fullName: "Roberto Almeida",
           phone: "11955555555",
           licensePlate: "GHI9J12",
-          status: "processing",
-          createdAt: new Date(2023, 3, 8), // April 8, 2023
-          updatedAt: new Date(2023, 3, 8)
+          hasInsurance: false,
+          companyId: company.id,
+          status: "validated"
         },
         {
           userId: referrer.id,
-          firstName: "Ana",
-          lastName: "Santos",
-          email: "ana@example.com",
+          fullName: "Ana Santos",
           phone: "11944444444",
           licensePlate: "KLM3456",
-          status: "pending",
-          createdAt: new Date(2023, 3, 10), // April 10, 2023
-          updatedAt: new Date(2023, 3, 10)
+          hasInsurance: false,
+          companyId: company.id,
+          status: "pending"
         }
       ]);
       

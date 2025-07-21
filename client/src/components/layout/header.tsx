@@ -219,7 +219,7 @@ export default function Header() {
               <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
                 {user ? (
                   <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-700 mr-2">Olá, {user.firstName}</span>
+                    <span className="text-sm font-medium text-gray-700 mr-2">Olá, {user.fullName.split(' ')[0]}</span>
                     <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-800 font-bold">
                       {getUserInitials()}
                     </div>

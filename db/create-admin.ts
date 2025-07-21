@@ -32,7 +32,7 @@ async function createOrUpdateAdmin() {
       console.log("ID:", updatedAdmin.id);
     } else {
       // Criar novo admin
-      const [newAdmin] = await db.insert(users).values({
+      const result = await db.insert(users).values({
         username: "admin@gruposantana.com",
         email: "admin@gruposantana.com",
         password: hashedPassword,
@@ -47,6 +47,7 @@ async function createOrUpdateAdmin() {
         balance: "0",
         totalEarnings: "0"
       }).returning();
+      const newAdmin = Array.isArray(result) ? result[0] : result;
       
       console.log("Administrador criado com sucesso!");
       console.log("Email: admin@gruposantana.com");

@@ -22,7 +22,7 @@ export const users = pgTable("users", {
   role: text("role").default("indicador").notNull().$type<UserRole>(),
   analystLevel: integer("analyst_level").$type<AnalystLevel>(), // Apenas para analistas
   permissions: jsonb("permissions").$type<string[]>(), // Permissões específicas para analistas
-  createdBy: integer("created_by").references(() => users.id), // Quem cadastrou este usuário
+  createdBy: integer("created_by"), // Quem cadastrou este usuário
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0.00").notNull(), // Saldo disponível
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00").notNull(), // Total ganho
   isActive: boolean("is_active").default(true).notNull(),
@@ -182,15 +182,15 @@ export const ticketResponsesRelations = relations(ticketResponses, ({ one }) => 
 
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users, {
-  fullName: (schema) => schema.min(1, "Nome completo é obrigatório"),
-  username: (schema) => schema.email("Email inválido").min(1, "Email é obrigatório"),
-  password: (schema) => schema.min(6, "Senha deve ter pelo menos 6 caracteres"),
-  cpf: (schema) => schema.min(11, "CPF inválido").max(14, "CPF inválido"),
-  email: (schema) => schema.email("Email inválido").min(1, "Email é obrigatório"),
-  phone: (schema) => schema.min(10, "Telefone inválido").max(15, "Telefone inválido"),
-  address: (schema) => schema.min(5, "Endereço é obrigatório"),
-  shirtSize: (schema) => schema.min(1, "Tamanho da camisa é obrigatório"),
-  pixKey: (schema) => schema.min(3, "Chave PIX é obrigatória"),
+  fullName: z.string().min(1, "Nome completo é obrigatório"),
+  username: z.string().email("Email inválido").min(1, "Email é obrigatório"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
+  email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
+  phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
+  address: z.string().min(5, "Endereço é obrigatório"),
+  shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
+  pixKey: z.string().min(3, "Chave PIX é obrigatória"),
 }).omit({ id: true, createdAt: true, updatedAt: true, balance: true, totalEarnings: true });
 
 export const createReferralSchema = createInsertSchema(referrals, {
