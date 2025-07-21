@@ -147,9 +147,33 @@ export function setupAuth(app: Express) {
       console.error("Registration error:", error);
       
       if (error.name === 'ZodError') {
+        const friendlyErrors = error.errors.map((err: any) => {
+          const field = err.path.join('.');
+          switch (field) {
+            case 'fullName':
+              return 'Nome completo é obrigatório';
+            case 'username':
+              return 'Email inválido ou não informado';
+            case 'email':
+              return 'Email é obrigatório e deve ser válido';
+            case 'password':
+              return 'Senha deve ter pelo menos 6 caracteres';
+            case 'cpf':
+              return 'CPF inválido';
+            case 'phone':
+              return 'Telefone inválido';
+            case 'address':
+              return 'Endereço é obrigatório';
+            case 'shirtSize':
+              return 'Tamanho da camisa é obrigatório';
+            case 'pixKey':
+              return 'Chave PIX é obrigatória';
+            default:
+              return err.message;
+          }
+        });
         return res.status(400).json({ 
-          message: "Dados inválidos", 
-          errors: error.errors 
+          message: "Por favor, corrija os seguintes erros: " + friendlyErrors.join(', ')
         });
       }
       
