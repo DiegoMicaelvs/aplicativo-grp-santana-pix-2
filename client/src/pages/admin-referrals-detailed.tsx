@@ -368,6 +368,34 @@ export default function AdminReferralsDetailedPage() {
                                   </div>
                                 )}
                                 
+                                {/* Commission reversal warning */}
+                                {selectedReferral && (
+                                  (selectedReferral.status === 'validated' || selectedReferral.status === 'converted') &&
+                                  (newStatus === 'pending' || newStatus === 'rejected' || newStatus === 'processing')
+                                ) && (
+                                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                    <div className="flex items-start">
+                                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-2" />
+                                      <div>
+                                        <h4 className="text-sm font-medium text-yellow-800">
+                                          ⚠️ Reversão de Comissões
+                                        </h4>
+                                        <p className="text-sm text-yellow-700 mt-1">
+                                          Esta mudança de status irá reverter automaticamente as comissões já pagas:
+                                        </p>
+                                        <ul className="text-sm text-yellow-700 mt-2 space-y-1">
+                                          {parseFloat(selectedReferral.commissionIndicator || '0') > 0 && (
+                                            <li>• Indicador: -R$ {parseFloat(selectedReferral.commissionIndicator).toFixed(2)}</li>
+                                          )}
+                                          {parseFloat(selectedReferral.commissionPromoter || '0') > 0 && (
+                                            <li>• Promotor: -R$ {parseFloat(selectedReferral.commissionPromoter).toFixed(2)}</li>
+                                          )}
+                                        </ul>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 <div className="flex justify-end gap-2">
                                   <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                                     Cancelar

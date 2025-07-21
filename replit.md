@@ -116,6 +116,15 @@ The system is designed for deployment on platforms that support Node.js applicat
 
 ## Recent Updates (July 2025)
 
+### Automatic Commission Reversal System (July 2025)
+- **Financial Integrity Protection:** Implemented automatic commission reversal when referral status is changed from paid to non-paid states
+- **Intelligent Detection:** System detects when status moves from `validated` or `converted` back to `pending`, `rejected`, etc.
+- **Automatic Balance Updates:** Automatically removes incorrect commission amounts from both indicator and promoter account balances
+- **Audit Trail:** Logs all commission reversals with detailed information in audit log
+- **Database Consistency:** Updates referral commission fields to 0.00 when status is reverted
+- **Multi-user Support:** Handles commission reversals for both indicadores and promotores correctly
+- **Error Prevention:** Prevents financial discrepancies from status changes and ensures accurate user earnings
+
 ### Support Ticket System Implementation
 - **Comprehensive Support Infrastructure:** Added complete support ticket system with file attachments and admin management interface
 - **User Interface:** Floating support button appears on all pages for easy ticket creation
