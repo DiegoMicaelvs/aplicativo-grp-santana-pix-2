@@ -614,10 +614,20 @@ export default function PromoterDashboard() {
           <TabsContent value="indicadores" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Meus Indicadores</CardTitle>
-                <CardDescription>
-                  Gerencie os indicadores em sua rede
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Meus Indicadores</CardTitle>
+                    <CardDescription>
+                      Gerencie os indicadores em sua rede
+                    </CardDescription>
+                  </div>
+                  <Link href="/register-indicator">
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Novo Indicador
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent>
                 {isLoadingIndicadores ? (

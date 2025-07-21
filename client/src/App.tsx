@@ -26,6 +26,7 @@ import AdminCompanies from "@/pages/admin-companies";
 import PromoterDashboard from "@/pages/promoter-dashboard";
 import TeamDashboard from "@/pages/team-dashboard";
 import VendedorDashboard from "@/pages/vendedor-dashboard";
+import RegisterIndicator from "@/pages/register-indicator";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AdminRoute, PromoterRoute, VendedorRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
@@ -56,6 +57,8 @@ function Router() {
       <AdminRoute path="/admin/support-tickets" component={AdminSupportTickets} />
       <AdminRoute path="/admin/companies" component={AdminCompanies} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
+      <PromoterRoute path="/promoter-dashboard" component={PromoterDashboard} />
+      <PromoterRoute path="/register-indicator" component={RegisterIndicator} />
       <PromoterRoute path="/team" component={TeamDashboard} />
       <VendedorRoute path="/vendedor" component={VendedorDashboard} />
       <Route path="/team-dashboard" component={TeamDashboard} />

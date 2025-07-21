@@ -18,25 +18,23 @@ import Footer from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
 import { Referral, ReferralStatus } from "@shared/schema";
 import { PromotionalAlert } from "@/components/promotional-alert";
+import { Plus } from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirect users to their specific dashboards based on role
+  // Redirect users to their specific dashboards based on role (but allow promotor to use main dashboard too)
   useEffect(() => {
     if (user) {
       if (user.role === "admin") {
         setLocation("/admin");
         return;
-      } else if (user.role === "promotor") {
-        setLocation("/promoter");
-        return;
       } else if (user.role === "vendedor") {
         setLocation("/vendedor");
         return;
       }
-      // indicador and analista users stay on main dashboard
+      // promotor, indicador and analista users stay on main dashboard
     }
   }, [user, setLocation]);
   
@@ -295,10 +293,23 @@ export default function DashboardPage() {
                         Indique alguém que precise de seguro para seu veículo e ganhe comissão.
                       </p>
                     </div>
-                    <div className="mt-5">
+                    <div className="mt-5 flex gap-4">
                       <Link href="/new-referral">
                         <Button>Fazer Nova Indicação</Button>
                       </Link>
+                      {user?.role === "promotor" && (
+                        <>
+                          <Link href="/promoter-dashboard">
+                            <Button variant="outline">Dashboard Promotor</Button>
+                          </Link>
+                          <Link href="/register-indicator">
+                            <Button variant="outline">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Cadastrar Indicador
+                            </Button>
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
