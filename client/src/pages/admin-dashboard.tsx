@@ -263,7 +263,7 @@ export default function AdminDashboard() {
               <h1 className="text-3xl font-bold text-gray-900 font-heading">Painel Administrativo</h1>
               <p className="mt-1 text-gray-600">Gerenciamento de indicadores e indicações</p>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
                 onClick={() => window.location.href = '/admin/profiles'}
@@ -277,6 +277,20 @@ export default function AdminDashboard() {
               >
                 <Users className="h-4 w-4 mr-2" />
                 Gerenciar Analistas
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/admin/withdrawals'}
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Gerenciar Saques
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/admin/audit-log'}
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Log de Auditoria
               </Button>
             </div>
           </div>

@@ -12,7 +12,10 @@ import EarningsPage from "@/pages/earnings-page";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminAnalysts from "@/pages/admin-analysts";
 import AdminProfiles from "@/pages/admin-profiles";
+import AdminAuditLog from "@/pages/admin-audit-log";
+import AdminWithdrawals from "@/pages/admin-withdrawals";
 import PromoterDashboard from "@/pages/promoter-dashboard";
+import TeamDashboard from "@/pages/team-dashboard";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AdminRoute, PromoterRoute } from "./lib/protected-route";
 
@@ -29,7 +32,10 @@ function Router() {
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/analysts" component={AdminAnalysts} />
       <AdminRoute path="/admin/profiles" component={AdminProfiles} />
+      <AdminRoute path="/admin/audit-log" component={AdminAuditLog} />
+      <AdminRoute path="/admin/withdrawals" component={AdminWithdrawals} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
+      <PromoterRoute path="/team" component={TeamDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -175,7 +175,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const referral = await storage.createReferral({
         ...validatedData,
-        userId: req.user!.id
+        userId: req.user!.id,
+        createdBy: req.user!.id
       });
       
       return res.status(201).json(referral);
@@ -588,6 +589,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating user:", error);
       return res.status(500).json({ error: "Erro ao atualizar usuário" });
+    }
+  });
+
+  // === AUDIT TRAIL ROUTES ===
+  
+  // Get audit log
+  app.get("/api/admin/audit-log", requireAdmin, async (req, res) => {
+    try {
+      const { userId, entityType, fromDate, toDate } = req.query;
+      
+      const filters: any = {};
+      if (userId) filters.userId = parseInt(userId as string);
+      if (entityType) filters.entityType = entityType as string;
+      if (fromDate) filters.fromDate = new Date(fromDate as string);
+      if (toDate) filters.toDate = new Date(toDate as string);
+      
+      const auditLogs = await storage.getAuditLog(filters);
+      return res.json(auditLogs);
+    } catch (error) {
+      console.error("Error fetching audit log:", error);
+      return res.status(500).json({ error: "Erro ao buscar log de auditoria" });
+    }
+  });
+
+  // === TEAM MANAGEMENT ROUTES ===
+  
+  // Get team referrals (for promoter)
+  app.get("/api/team/referrals", requirePromoter, async (req, res) => {
+    try {
+      const teamReferrals = await storage.getReferralsByTeam(req.user!.id);
+      return res.json(teamReferrals);
+    } catch (error) {
+      console.error("Error fetching team referrals:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicações da equipe" });
+    }
+  });
+  
+  // Get user team statistics
+  app.get("/api/team/stats", requireAuth, async (req, res) => {
+    try {
+      const stats = await storage.getUserTeamStats(req.user!.id);
+      return res.json(stats);
+    } catch (error) {
+      console.error("Error fetching team stats:", error);
+      return res.status(500).json({ error: "Erro ao buscar estatísticas da equipe" });
+    }
+  });
+
+  // === ENHANCED WITHDRAWAL ROUTES ===
+  
+  // Validate CPF for withdrawal
+  app.post("/api/withdrawals/validate-cpf", requireAuth, async (req, res) => {
+    try {
+      const { cpf } = req.body;
+      const isValid = await storage.validateCpfForWithdrawal(req.user!.id, cpf);
+      return res.json({ valid: isValid });
+    } catch (error) {
+      console.error("Error validating CPF:", error);
+      return res.status(500).json({ error: "Erro ao validar CPF" });
     }
   });
 

@@ -54,7 +54,9 @@ export type ReferralStatus = "pending" | "analyzing" | "validated" | "converted"
 // Referrals table
 export const referrals = pgTable("referrals", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(), // Indicador que fez a indicação
+  createdBy: integer("created_by").references(() => users.id).notNull(), // Usuário que criou o registro
+  promoterId: integer("promoter_id").references(() => users.id), // Promotor responsável pela equipe
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
   licensePlate: text("license_plate").notNull(),
@@ -63,6 +65,7 @@ export const referrals = pgTable("referrals", {
   status: text("status").default("pending").notNull().$type<ReferralStatus>(),
   commissionIndicator: decimal("commission_indicator", { precision: 10, scale: 2 }).default("0.00"),
   commissionPromoter: decimal("commission_promoter", { precision: 10, scale: 2 }).default("0.00"),
+  statusHistory: jsonb("status_history").$type<{status: string, changedBy: number, changedAt: string, notes?: string}[]>(), // Histórico de mudanças de status
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -76,20 +79,39 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   userId: integer("user_id").references(() => users.id).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   pixKey: text("pix_key").notNull(),
+  cpfKey: text("cpf_key").notNull(), // CPF associado à chave PIX
+  requestType: text("request_type").notNull().$type<"indicador" | "promotor">(), // Tipo de saque
   status: text("status").default("pending").notNull().$type<WithdrawalStatus>(),
   requestedAt: timestamp("requested_at").defaultNow().notNull(),
   processedAt: timestamp("processed_at"),
   processedBy: integer("processed_by").references(() => users.id),
   notes: text("notes"),
+  rejectionReason: text("rejection_reason"),
 });
 
-// Cash flow control
+// Audit trail for all system actions
+export const auditLog = pgTable("audit_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(), // Quem realizou a ação
+  action: text("action").notNull(), // Tipo de ação (create, update, delete, login, etc)
+  entityType: text("entity_type").notNull(), // Tipo de entidade (user, referral, withdrawal, etc)
+  entityId: integer("entity_id"), // ID da entidade afetada
+  oldValues: jsonb("old_values"), // Valores anteriores (para updates)
+  newValues: jsonb("new_values"), // Novos valores
+  ipAddress: text("ip_address"), // IP de onde veio a ação
+  userAgent: text("user_agent"), // User agent do navegador
+  details: text("details"), // Detalhes adicionais
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Cash flow control - Sistema de caixa
 export const cashFlow = pgTable("cash_flow", {
   id: serial("id").primaryKey(),
   type: text("type").notNull().$type<"inflow" | "outflow">(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   description: text("description").notNull(),
   relatedWithdrawalId: integer("related_withdrawal_id").references(() => withdrawalRequests.id),
+  relatedReferralId: integer("related_referral_id").references(() => referrals.id),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull(), // Saldo após a operação
   createdBy: integer("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -146,9 +168,24 @@ export const referralsRelations = relations(referrals, ({ one }) => ({
     fields: [referrals.userId],
     references: [users.id],
   }),
+  createdByUser: one(users, {
+    fields: [referrals.createdBy],
+    references: [users.id],
+  }),
+  promoter: one(users, {
+    fields: [referrals.promoterId],
+    references: [users.id],
+  }),
   company: one(companies, {
     fields: [referrals.companyId],
     references: [companies.id],
+  }),
+}));
+
+export const auditLogRelations = relations(auditLog, ({ one }) => ({
+  user: one(users, {
+    fields: [auditLog.userId],
+    references: [users.id],
   }),
 }));
 
@@ -214,7 +251,10 @@ export const createReferralSchema = createInsertSchema(referrals, {
   fullName: (schema) => schema.min(1, "Nome completo é obrigatório"),
   phone: (schema) => schema.min(10, "Telefone inválido").max(15, "Telefone inválido"),
   licensePlate: (schema) => schema.min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
-}).omit({ id: true, userId: true, status: true, commissionIndicator: true, commissionPromoter: true, createdAt: true, updatedAt: true, notes: true });
+}).omit({ id: true, userId: true, createdBy: true, promoterId: true, status: true, commissionIndicator: true, commissionPromoter: true, createdAt: true, updatedAt: true, notes: true, statusHistory: true });
+
+// Audit log schema
+export const createAuditLogSchema = createInsertSchema(auditLog).omit({ id: true, createdAt: true });
 
 export const updateReferralStatusSchema = z.object({
   status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid"]),

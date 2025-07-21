@@ -8,6 +8,7 @@ import {
   cashFlow,
   supportTickets,
   ticketResponses,
+  auditLog,
   type InsertUser, 
   type CreateReferral, 
   type ReferralStatus,
@@ -73,6 +74,25 @@ export interface IStorage {
   getSupportTicketById(id: number): Promise<any>;
   updateTicketStatus(id: number, status: string): Promise<any>;
   createTicketResponse(response: CreateTicketResponse): Promise<any>;
+  
+  // Audit trail methods
+  logUserAction(action: {
+    userId: number;
+    action: string;
+    entityType: string;
+    entityId?: number;
+    oldValues?: any;
+    newValues?: any;
+    ipAddress?: string;
+    userAgent?: string;
+    details?: string;
+  }): Promise<void>;
+  getAuditLog(filters?: { userId?: number; entityType?: string; fromDate?: Date; toDate?: Date }): Promise<any[]>;
+  
+  // Team-based access methods
+  getReferralsByTeam(promoterId: number): Promise<any[]>;
+  getUserTeamStats(userId: number): Promise<{ totalReferrals: number; convertedReferrals: number; totalCommissions: number }>;
+  validateCpfForWithdrawal(userId: number, cpfKey: string): Promise<boolean>;
   generateTicketNumber(): Promise<string>;
   
   // Session store
@@ -223,10 +243,33 @@ class DatabaseStorage implements IStorage {
   }
   
   // Referral methods
-  async createReferral(referralData: CreateReferral & { userId: number }) {
+  async createReferral(referralData: CreateReferral & { userId: number; createdBy: number; promoterId?: number }) {
+    // Get user info to determine promoter
+    const user = await this.getUserById(referralData.userId);
+    const promoterId = referralData.promoterId || user?.promoterId || null;
+    
     const [referral] = await db.insert(referrals)
-      .values(referralData)
+      .values({
+        ...referralData,
+        promoterId,
+        statusHistory: [{
+          status: 'pending',
+          changedBy: referralData.createdBy,
+          changedAt: new Date().toISOString(),
+          notes: 'Indicação criada'
+        }]
+      })
       .returning();
+    
+    // Log audit trail
+    await this.logUserAction({
+      userId: referralData.createdBy,
+      action: 'create',
+      entityType: 'referral',
+      entityId: referral.id,
+      newValues: referral,
+      details: `Nova indicação criada: ${referralData.fullName}`
+    });
     
     return referral;
   }
@@ -371,9 +414,25 @@ class DatabaseStorage implements IStorage {
   
   // Withdrawal methods
   async createWithdrawalRequest(request: CreateWithdrawalRequest & { userId: number }) {
+    // Validate CPF matches user's registered CPF
+    const isValidCpf = await this.validateCpfForWithdrawal(request.userId, request.pixKey);
+    if (!isValidCpf) {
+      throw new Error('A chave PIX (CPF) deve corresponder ao CPF cadastrado no perfil');
+    }
+    
     const [withdrawal] = await db.insert(withdrawalRequests)
       .values(request)
       .returning();
+    
+    // Log audit trail
+    await this.logUserAction({
+      userId: request.userId,
+      action: 'create',
+      entityType: 'withdrawal_request',
+      entityId: withdrawal.id,
+      newValues: withdrawal,
+      details: `Solicitação de saque criada: R$ ${request.amount}`
+    });
     
     return withdrawal;
   }
@@ -558,6 +617,102 @@ class DatabaseStorage implements IStorage {
     
     const sequenceNumber = (todayTickets.length + 1).toString().padStart(4, '0');
     return `${dateStr}-${sequenceNumber}`;
+  }
+
+  // Audit trail methods
+  async logUserAction(action: {
+    userId: number;
+    action: string;
+    entityType: string;
+    entityId?: number;
+    oldValues?: any;
+    newValues?: any;
+    ipAddress?: string;
+    userAgent?: string;
+    details?: string;
+  }) {
+    await db.insert(auditLog).values(action);
+  }
+  
+  async getAuditLog(filters?: { userId?: number; entityType?: string; fromDate?: Date; toDate?: Date }) {
+    const conditions = [];
+    
+    if (filters?.userId) {
+      conditions.push(eq(auditLog.userId, filters.userId));
+    }
+    if (filters?.entityType) {
+      conditions.push(eq(auditLog.entityType, filters.entityType));
+    }
+    if (filters?.fromDate) {
+      conditions.push(sql`${auditLog.createdAt} >= ${filters.fromDate}`);
+    }
+    if (filters?.toDate) {
+      conditions.push(sql`${auditLog.createdAt} <= ${filters.toDate}`);
+    }
+    
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    return await db.query.auditLog.findMany({
+      where: whereClause,
+      with: {
+        user: true
+      },
+      orderBy: desc(auditLog.createdAt)
+    });
+  }
+  
+  // Team-based access methods
+  async getReferralsByTeam(promoterId: number) {
+    return await db.query.referrals.findMany({
+      where: eq(referrals.promoterId, promoterId),
+      with: {
+        user: true,
+        createdByUser: true,
+        company: true
+      },
+      orderBy: desc(referrals.createdAt)
+    });
+  }
+  
+  async getUserTeamStats(userId: number) {
+    const user = await this.getUserById(userId);
+    if (!user) throw new Error('Usuário não encontrado');
+    
+    let referralsQuery;
+    if (user.role === 'promotor') {
+      // Promotor vê estatísticas da sua equipe
+      referralsQuery = db.query.referrals.findMany({
+        where: eq(referrals.promoterId, userId)
+      });
+    } else {
+      // Indicador vê apenas suas próprias estatísticas
+      referralsQuery = db.query.referrals.findMany({
+        where: eq(referrals.userId, userId)
+      });
+    }
+    
+    const teamReferrals = await referralsQuery;
+    const totalReferrals = teamReferrals.length;
+    const convertedReferrals = teamReferrals.filter(r => r.status === 'converted').length;
+    const totalCommissions = teamReferrals.reduce((sum, r) => {
+      const commission = user.role === 'promotor' 
+        ? (r.commissionPromoter ? parseFloat(r.commissionPromoter) : 0)
+        : (r.commissionIndicator ? parseFloat(r.commissionIndicator) : 0);
+      return sum + commission;
+    }, 0);
+    
+    return { totalReferrals, convertedReferrals, totalCommissions };
+  }
+  
+  async validateCpfForWithdrawal(userId: number, cpfKey: string) {
+    const user = await this.getUserById(userId);
+    if (!user) return false;
+    
+    // Remove formatting from both CPFs for comparison
+    const userCpf = user.cpf.replace(/\D/g, '');
+    const requestCpf = cpfKey.replace(/\D/g, '');
+    
+    return userCpf === requestCpf;
   }
 }
 
