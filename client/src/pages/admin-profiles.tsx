@@ -217,10 +217,22 @@ export default function AdminProfiles() {
   const resetPasswordMutation = useMutation({
     mutationFn: async (userData: {userId: number, userName: string}) => {
       const response = await apiRequest('POST', `/api/admin/users/${userData.userId}/reset-password`);
+      console.log('Raw API response:', response);
       return { ...response, userName: userData.userName };
     },
     onSuccess: (data: any) => {
-      console.log('Password reset response:', data);
+      console.log('Full password reset response:', data);
+      console.log('New password value:', data.newPassword);
+      
+      if (!data.newPassword) {
+        toast({
+          title: "Erro",
+          description: "Nova senha não foi retornada pela API.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setNewPassword(data.newPassword);
       setSelectedUserForPassword({ fullName: data.userName } as User);
       setPasswordDialogOpen(true);
@@ -531,8 +543,12 @@ export default function AdminProfiles() {
               </p>
               <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                 <code className="text-lg font-mono font-bold text-gray-900 select-all">
-                  {newPassword}
+                  {newPassword || 'Carregando...'}
                 </code>
+                {/* Debug info */}
+                <div className="text-xs text-gray-400 mt-2">
+                  Debug: {JSON.stringify({newPassword: newPassword, length: newPassword?.length})}
+                </div>
               </div>
               <p className="text-xs text-gray-500 mt-4">
                 Clique na senha acima para selecioná-la e copiar. 
@@ -543,13 +559,40 @@ export default function AdminProfiles() {
             <div className="flex justify-center space-x-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(newPassword);
-                  toast({
-                    title: "Senha copiada",
-                    description: "A senha foi copiada para a área de transferência.",
-                  });
+                onClick={async () => {
+                  try {
+                    console.log('Attempting to copy password:', newPassword);
+                    if (!newPassword) {
+                      toast({
+                        title: "Erro",
+                        description: "Senha não disponível para copiar.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    await navigator.clipboard.writeText(newPassword);
+                    toast({
+                      title: "Senha copiada",
+                      description: "A senha foi copiada para a área de transferência.",
+                    });
+                  } catch (error) {
+                    console.error('Error copying password:', error);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = newPassword;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    toast({
+                      title: "Senha copiada",
+                      description: "A senha foi copiada para a área de transferência.",
+                    });
+                  }
                 }}
+                disabled={!newPassword}
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Copiar Senha
