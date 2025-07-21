@@ -782,7 +782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.json({ 
         message: "Senha redefinida com sucesso",
-        newPassword: newPassword
+        newPassword: newPassword,
+        success: true
       });
     } catch (error) {
       console.error("Error resetting password:", error);

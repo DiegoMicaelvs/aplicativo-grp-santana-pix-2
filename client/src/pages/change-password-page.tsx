@@ -42,7 +42,7 @@ export default function ChangePasswordPage() {
   // Check if user must change password
   const { data: user } = useQuery({
     queryKey: ['/api/user'],
-  });
+  }) as { data?: { mustChangePassword?: boolean } };
 
   const changePasswordMutation = useMutation({
     mutationFn: async (data: ChangePasswordFormValues) => {
@@ -51,13 +51,20 @@ export default function ChangePasswordPage() {
     onSuccess: () => {
       toast({
         title: "Senha alterada",
-        description: "Sua senha foi alterada com sucesso.",
+        description: "Sua senha foi alterada com sucesso. Você será redirecionado para fazer login novamente.",
       });
       
-      // Redirect to dashboard after successful password change
-      setTimeout(() => {
-        setLocation('/dashboard');
-      }, 1500);
+      // Logout user and redirect to login after successful password change
+      setTimeout(async () => {
+        try {
+          await apiRequest('POST', '/api/logout');
+        } catch (error) {
+          console.log('Logout error (not critical):', error);
+        } finally {
+          // Force reload to clear any cached user data
+          window.location.href = '/auth';
+        }
+      }, 2000);
     },
     onError: (error: any) => {
       toast({

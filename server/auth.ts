@@ -131,7 +131,8 @@ export function setupAuth(app: Express) {
         ...userData,
         password: hashedPassword,
         role: "indicador", // Default role for new registrations
-        createdBy: undefined // Self-registration
+        createdBy: undefined, // Self-registration
+        promoterId: userData.promoterId || undefined
       });
       
       // Log the user in
@@ -234,10 +235,10 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ error: "Não autorizado" });
     }
     next();
-  }, async (req, res) => {
+  }, async (req: any, res: any) => {
     try {
       const { currentPassword, newPassword } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       // Get user from database
       const user = await storage.getUserById(userId);
