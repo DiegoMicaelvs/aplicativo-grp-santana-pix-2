@@ -95,9 +95,13 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUserById(id);
+      if (!user) {
+        return done(null, false);
+      }
       done(null, user);
     } catch (err) {
-      done(err);
+      console.error('Error deserializing user:', err);
+      done(null, false);
     }
   });
 
@@ -126,7 +130,8 @@ export function setupAuth(app: Express) {
       const newUser = await storage.createUser({
         ...userData,
         password: hashedPassword,
-        role: "indicador" // Default role for new registrations
+        role: "indicador", // Default role for new registrations
+        createdBy: null // Self-registration
       });
       
       // Log the user in
