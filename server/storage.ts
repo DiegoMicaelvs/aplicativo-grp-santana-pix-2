@@ -112,13 +112,20 @@ class DatabaseStorage implements IStorage {
   
   // User methods
   async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number }) {
-    const [user] = await db.insert(users)
-      .values({
-        ...userData,
-      })
-      .returning();
-    
-    return user;
+    try {
+      const [user] = await db.insert(users)
+        .values({
+          ...userData,
+          role: (userData.role || "indicador") as any,
+          analystLevel: userData.analystLevel as any
+        })
+        .returning();
+      
+      return user;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
   }
   
   async getUserById(id: number) {
@@ -413,15 +420,21 @@ class DatabaseStorage implements IStorage {
   }
   
   // Withdrawal methods
-  async createWithdrawalRequest(request: CreateWithdrawalRequest & { userId: number }) {
+  async createWithdrawalRequest(request: CreateWithdrawalRequest & { userId: number; cpfKey: string; requestType: "indicador" | "promotor" }) {
     // Validate CPF matches user's registered CPF
-    const isValidCpf = await this.validateCpfForWithdrawal(request.userId, request.pixKey);
+    const isValidCpf = await this.validateCpfForWithdrawal(request.userId, request.cpfKey);
     if (!isValidCpf) {
       throw new Error('A chave PIX (CPF) deve corresponder ao CPF cadastrado no perfil');
     }
     
     const [withdrawal] = await db.insert(withdrawalRequests)
-      .values(request)
+      .values({
+        userId: request.userId,
+        amount: request.amount.toString(),
+        pixKey: request.pixKey,
+        cpfKey: request.cpfKey,
+        requestType: request.requestType
+      })
       .returning();
     
     // Log audit trail
@@ -494,6 +507,7 @@ class DatabaseStorage implements IStorage {
     const [cashFlowEntry] = await db.insert(cashFlow)
       .values({
         ...entry,
+        amount: entry.amount.toString(),
         balance: newBalance.toString()
       })
       .returning();
@@ -578,7 +592,7 @@ class DatabaseStorage implements IStorage {
   async updateTicketStatus(id: number, status: string) {
     const [updated] = await db.update(supportTickets)
       .set({
-        status,
+        status: status as any,
         updatedAt: new Date()
       })
       .where(eq(supportTickets.id, id))
@@ -587,7 +601,7 @@ class DatabaseStorage implements IStorage {
     return updated;
   }
   
-  async createTicketResponse(response: CreateTicketResponse) {
+  async createTicketResponse(response: CreateTicketResponse & { userId: number; ticketId: number }) {
     const [ticketResponse] = await db.insert(ticketResponses)
       .values(response)
       .returning();
@@ -715,63 +729,7 @@ class DatabaseStorage implements IStorage {
     return userCpf === requestCpf;
   }
 
-  // === SUPPORT TICKET METHODS ===
 
-  async createSupportTicket(userId: number, ticketData: any) {
-    const { supportTickets } = await import("@shared/schema.ts");
-    
-    // Generate unique ticket number
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const randomSuffix = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
-    const ticketNumber = `${dateStr}-${randomSuffix}`;
-    
-    const [ticket] = await db.insert(supportTickets).values({
-      ...ticketData,
-      userId,
-      ticketNumber,
-    }).returning();
-    
-    return ticket;
-  }
-
-  async getUserSupportTickets(userId: number) {
-    const { supportTickets } = await import("@shared/schema.ts");
-    
-    return await db.select().from(supportTickets).where(eq(supportTickets.userId, userId));
-  }
-
-  async getAllSupportTickets() {
-    const { supportTickets } = await import("@shared/schema.ts");
-    
-    return await db.select().from(supportTickets);
-  }
-
-  async updateSupportTicketStatus(ticketId: number, status: string) {
-    const { supportTickets } = await import("@shared/schema.ts");
-    
-    const [updated] = await db.update(supportTickets)
-      .set({ 
-        status: status as any,
-        updatedAt: new Date()
-      })
-      .where(eq(supportTickets.id, ticketId))
-      .returning();
-    
-    return updated;
-  }
-
-  async addTicketResponse(ticketId: number, userId: number, responseData: any) {
-    const { ticketResponses } = await import("@shared/schema.ts");
-    
-    const [response] = await db.insert(ticketResponses).values({
-      ...responseData,
-      ticketId,
-      userId,
-    }).returning();
-    
-    return response;
-  }
 }
 
 export const storage = new DatabaseStorage();
