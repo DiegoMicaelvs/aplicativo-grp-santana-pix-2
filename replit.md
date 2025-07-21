@@ -116,14 +116,15 @@ The system is designed for deployment on platforms that support Node.js applicat
 
 ## Known Issues and Solutions
 
-### Login Issues in Production (Replit Deploy)
+### Login Issues in Production (Replit Deploy) - RESOLVED
 - **Problem**: Login works in preview but fails on deployed URL (https://indique.replit.app)
 - **Cause**: Cookie/session configuration differences between local and production environments
-- **Solution**: 
-  1. Set `NODE_ENV=production` in Replit Secrets
-  2. Set `SESSION_SECRET=(random secure value)` in Replit Secrets
-  3. Clear all browser data for the site or use incognito mode
-  4. See `fix-production-login.md` for detailed troubleshooting steps
+- **Solution Implemented (July 2025)**: 
+  1. Implementada detecção automática de ambiente de produção
+  2. Configuração adaptativa de cookies baseada no ambiente
+  3. Scripts de diagnóstico e manutenção criados
+  4. Ver `docs/solucao-login-producao.md` para detalhes técnicos
+- **Para Resolver Problemas**: Limpar cookies do navegador ou usar aba anônima
 
 ## Recent Updates (July 2025)
 

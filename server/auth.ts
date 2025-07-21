@@ -50,6 +50,13 @@ export async function comparePasswords(
 }
 
 export function setupAuth(app: Express) {
+  // Detectar se estamos em produção no Replit
+  const isProduction = process.env.NODE_ENV === "production" || 
+                      process.env.REPLIT_DEPLOYMENT === "1" ||
+                      (process.env.REPLIT_DEV_DOMAIN && !process.env.REPLIT_DEV_DOMAIN.includes("localhost"));
+  
+  console.log(`[AUTH] Configurando autenticação - Modo: ${isProduction ? 'PRODUÇÃO' : 'DESENVOLVIMENTO'}`);
+  
   // Session configuration
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || process.env.REPL_ID || crypto.randomBytes(32).toString("hex"),
@@ -60,9 +67,10 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Secure apenas em produção
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // None em produção
-      path: "/" // Cookie válido em todo o site
+      secure: isProduction, // Secure em produção
+      sameSite: isProduction ? "none" : "lax", // None em produção para funcionar com HTTPS
+      path: "/", // Cookie válido em todo o site
+      domain: isProduction ? ".replit.app" : undefined // Domínio específico em produção
     }
   };
 
