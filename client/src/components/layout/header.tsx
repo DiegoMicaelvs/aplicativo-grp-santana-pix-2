@@ -51,9 +51,9 @@ export default function Header() {
         <div className="flex justify-between items-center py-4 md:justify-start md:space-x-10">
           <div className="flex justify-start lg:w-0 lg:flex-1">
             <Link href="/" className="flex items-center">
-              <span className="sr-only">Indique e Ganhe</span>
-              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">I</div>
-              <span className="text-xl font-heading font-bold text-gray-900 ml-2">Indique e Ganhe</span>
+              <span className="sr-only">Kong Pix</span>
+              <img src="/images/logos/kong-pix-logo.png" alt="Kong Pix" className="h-10 w-auto" />
+              <span className="text-xl font-heading font-bold text-gray-900 ml-3">Kong Pix</span>
             </Link>
           </div>
 
@@ -67,9 +67,9 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                  <SheetTitle className="font-heading">Indique e Ganhe</SheetTitle>
+                  <SheetTitle className="font-heading">Kong Pix</SheetTitle>
                   <SheetDescription>
-                    Indique amigos com veículos sem seguro e ganhe comissões
+                    Cadastrou, validou é PIX! Indique e ganhe comissões
                   </SheetDescription>
                 </SheetHeader>
                 <div className="py-4 flex flex-col gap-2">

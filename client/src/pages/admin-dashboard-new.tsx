@@ -66,7 +66,7 @@ export default function AdminDashboard() {
     <div className="container mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Painel Administrativo</h1>
-        <p className="text-gray-600 mt-2">Controle completo do sistema Indique e Ganhe</p>
+        <p className="text-gray-600 mt-2">Controle completo do sistema Kong Pix</p>
       </div>
 
       {/* Key Metrics Overview */}
