@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,22 +17,38 @@ import {
   ClipboardList,
   Wallet,
   HelpCircle,
-  Building2
+  Building2,
+  ArrowLeft,
+  LogOut
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { apiRequest } from "@/lib/queryClient";
+import type { User, Referral } from "@shared/schema";
 
 export default function AdminDashboard() {
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { user, logoutMutation } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"]
   });
 
-  const { data: referrals = [], isLoading: referralsLoading } = useQuery({
+  const { data: referrals = [], isLoading: referralsLoading } = useQuery<Referral[]>({
     queryKey: ["/api/admin/referrals"]
   });
 
-  const { data: withdrawals = [] } = useQuery({
+  const { data: withdrawals = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/withdrawals"]
   });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+
+  const handleGoBack = () => {
+    setLocation('/dashboard');
+  };
 
   // Calculate key metrics
   const stats = {
@@ -43,7 +59,7 @@ export default function AdminDashboard() {
     pendingReferrals: referrals.filter(r => r.status === "pending").length,
     validatedReferrals: referrals.filter(r => r.status === "validated").length,
     totalCommissions: referrals.reduce((sum, r) => 
-      sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0),
+      sum + (parseFloat(r.commissionIndicator || '0') || 0) + (parseFloat(r.commissionPromoter || '0') || 0), 0),
     pendingWithdrawals: withdrawals.filter(w => w.status === "pending").length,
     totalPendingAmount: withdrawals.filter(w => w.status === "pending")
       .reduce((sum, w) => sum + parseFloat(w.amount), 0)
@@ -65,8 +81,32 @@ export default function AdminDashboard() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Painel Administrativo</h1>
-        <p className="text-gray-600 mt-2">Controle completo do sistema Kong Pix</p>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGoBack}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Painel Administrativo</h1>
+              <p className="text-gray-600 mt-2">Controle completo do sistema Kong Pix</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </Button>
+        </div>
       </div>
 
       {/* Key Metrics Overview */}
@@ -440,7 +480,7 @@ export default function AdminDashboard() {
                   <div className="text-xs sm:text-sm text-gray-600">Total de Indicadores</div>
                 </div>
                 <div className="text-center p-3 sm:p-4 border rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-green-600">{users.filter(u => u.role === "indicador" && u.status === "active").length}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-green-600">{users.filter(u => u.role === "indicador").length}</div>
                   <div className="text-xs sm:text-sm text-gray-600">Indicadores Ativos</div>
                 </div>
                 <div className="text-center p-3 sm:p-4 border rounded-lg">
