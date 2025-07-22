@@ -53,7 +53,6 @@ export default function Header() {
             <Link href="/" className="flex items-center">
               <span className="sr-only">Kong Pix</span>
               <img src="/images/logos/kong-pix-logo.png" alt="Kong Pix" className="h-10 w-auto" />
-              <span className="text-xl font-heading font-bold text-gray-900 ml-3">Kong Pix</span>
             </Link>
           </div>
 
