@@ -185,6 +185,12 @@ export default function AdminDashboard() {
               >
                 Suporte
               </TabsTrigger>
+              <TabsTrigger 
+                value="settings" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Configurações
+              </TabsTrigger>
             </TabsList>
           </div>
         </div>
@@ -383,21 +389,23 @@ export default function AdminDashboard() {
             </Card>
 
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-gray-600" />
-                  Configurações
-                </CardTitle>
-                <CardDescription>
-                  Configurações do sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-600">
-                  <Settings className="h-8 w-8" />
-                </div>
-                <p className="text-sm text-gray-600">configurações avançadas</p>
-              </CardContent>
+              <Link href="/admin/settings">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-gray-600" />
+                    Configurações
+                  </CardTitle>
+                  <CardDescription>
+                    Configurações do sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-gray-600">
+                    <Settings className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm text-gray-600">configurações avançadas</p>
+                </CardContent>
+              </Link>
             </Card>
           </div>
         </TabsContent>
@@ -569,6 +577,22 @@ export default function AdminDashboard() {
                 <Button size="sm" className="w-full text-xs sm:text-sm">
                   <HelpCircle className="h-4 w-4 mr-1 sm:mr-2" />
                   Tickets Suporte
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações do Sistema</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Link href="/admin/settings">
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <Settings className="h-4 w-4 mr-1 sm:mr-2" />
+                  Acessar Configurações
                 </Button>
               </Link>
             </CardContent>

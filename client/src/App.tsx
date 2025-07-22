@@ -23,6 +23,7 @@ import AdminPayments from "@/pages/admin-payments";
 import AdminAnalytics from "@/pages/admin-analytics";
 import AdminSupportTickets from "@/pages/admin-support-tickets";
 import AdminCompanies from "@/pages/admin-companies";
+import AdminSettings from "@/pages/admin-settings";
 import PromoterDashboard from "@/pages/promoter-dashboard";
 import TeamDashboard from "@/pages/team-dashboard";
 import VendedorDashboard from "@/pages/vendedor-dashboard";
@@ -60,6 +61,7 @@ function Router() {
       <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
       <AdminRoute path="/admin/support-tickets" component={AdminSupportTickets} />
       <AdminRoute path="/admin/companies" component={AdminCompanies} />
+      <AdminRoute path="/admin/settings" component={AdminSettings} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
       <PromoterRoute path="/promoter-dashboard" component={PromoterDashboard} />
       <PromoterRoute path="/register-indicator" component={RegisterIndicator} />
