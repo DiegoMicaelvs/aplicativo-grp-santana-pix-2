@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, Smartphone } from "lucide-react";
 import { 
   ArrowLeft, 
   Settings, 
@@ -51,6 +53,9 @@ export default function AdminSettings() {
     maxReferralsPerDay: 100,
     minWithdrawalAmount: 10.00
   });
+
+  // Variável para mostrar o número Twilio
+  const twilioNumber = smsStatus?.twilioNumber || '+18158578515';
 
   // Carregar status do SMS ao inicializar
   useEffect(() => {
@@ -495,6 +500,30 @@ export default function AdminSettings() {
                   {/* Teste de SMS */}
                   {smsStatus?.configured && (
                     <div className="space-y-4">
+                      {/* Aviso sobre conta Trial */}
+                      <Alert className="bg-yellow-50 border-yellow-200">
+                        <AlertCircle className="h-4 w-4 text-yellow-600" />
+                        <AlertTitle className="text-yellow-800">Conta Trial Twilio</AlertTitle>
+                        <AlertDescription className="space-y-2 text-yellow-700">
+                          <p>Sua conta Twilio está em modo Trial. Restrições:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                            <li>Só pode enviar SMS para números verificados</li>
+                            <li>Para verificar números: <a href="https://twilio.com/user/account/phone-numbers/verified" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">twilio.com/user/account/phone-numbers/verified</a></li>
+                            <li>Para remover restrições, faça upgrade para conta paga</li>
+                          </ul>
+                          <p className="text-sm font-medium mt-2">Número Twilio configurado: {twilioNumber || 'Não definido'}</p>
+                          
+                          <div className="mt-3 p-2 bg-blue-50 rounded-md">
+                            <p className="text-sm font-medium text-blue-800">💡 Dica para testar:</p>
+                            <p className="text-xs text-blue-700 mt-1">
+                              1. Acesse o link acima e verifique seu próprio número<br/>
+                              2. Ou use um número já verificado na sua conta Twilio<br/>
+                              3. Depois de verificar, teste o SMS com esse número
+                            </p>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+
                       <h4 className="font-medium">Teste de SMS</h4>
                       <div className="grid gap-3">
                         <div className="grid gap-2">
@@ -507,6 +536,9 @@ export default function AdminSettings() {
                           />
                           <p className="text-sm text-gray-600">
                             Use formato brasileiro: (11) 99999-9999
+                          </p>
+                          <p className="text-xs text-orange-600 font-medium">
+                            ⚠️ Conta Trial: Este número precisa estar verificado no Twilio primeiro
                           </p>
                         </div>
                         
