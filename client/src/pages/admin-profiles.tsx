@@ -823,11 +823,10 @@ export default function AdminProfiles() {
       <Footer />
     </div>
   );
-}
 
-// User Profile Form Component
-function UserProfileForm({ 
-  form, 
+  // User Profile Form Component
+  function UserProfileForm({ 
+    form, 
   onSubmit, 
   isLoading, 
   promoters, 
@@ -1133,4 +1132,5 @@ function UserProfileForm({
       </div>
     </form>
   );
+  }
 }
