@@ -65,6 +65,7 @@ export const sendSMS = async (to: string, message: string): Promise<boolean> => 
   try {
     const formattedNumber = formatBrazilianPhoneNumber(to);
     console.log(`[SMS] Enviando SMS para ${formattedNumber}`);
+    console.log(`[SMS] Usando número remetente: ${twilioPhoneNumber}`);
     
     const result = await twilioClient.messages.create({
       body: message,
@@ -160,9 +161,22 @@ export const isSMSConfigured = (): boolean => {
 
 // Obter status da configuração
 export const getSMSStatus = () => {
+  let phoneNumberWarning = null;
+  
+  if (twilioPhoneNumber) {
+    // Verificar formato do número
+    if (!twilioPhoneNumber.startsWith('+')) {
+      phoneNumberWarning = 'Número deve começar com + e código do país';
+    } else if (twilioPhoneNumber.startsWith('+55') || twilioPhoneNumber.startsWith('+5573')) {
+      phoneNumberWarning = 'ATENÇÃO: Este parece ser um número brasileiro pessoal. O Twilio requer um número de telefone comprado na plataforma deles (geralmente +1 para EUA).';
+    }
+  }
+  
   return {
     configured: isSMSConfigured(),
     accountSid: accountSid ? `${accountSid.substring(0, 8)}...` : 'não configurado',
-    phoneNumber: twilioPhoneNumber || 'não configurado'
+    phoneNumber: twilioPhoneNumber || 'não configurado',
+    phoneNumberWarning,
+    twilioHelp: phoneNumberWarning ? 'Acesse sua conta Twilio e compre um número de telefone válido para SMS. Use esse número no TWILIO_PHONE_NUMBER.' : null
   };
 };
