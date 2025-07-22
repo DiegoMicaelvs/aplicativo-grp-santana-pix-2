@@ -71,26 +71,6 @@ import {
   updateAnalystPermissionsSchema,
 } from "@shared/schema";
 
-// Permission groups for analysts
-const PERMISSION_GROUPS = {
-  "Indicações": [
-    { key: "view_referrals", label: "Visualizar indicações" },
-    { key: "edit_referral_status", label: "Editar status de indicações" }
-  ],
-  "Usuários": [
-    { key: "view_users", label: "Visualizar usuários" }
-  ],
-  "Financeiro": [
-    { key: "manage_withdrawals", label: "Gerenciar saques" }
-  ],
-  "Relatórios": [
-    { key: "view_reports", label: "Visualizar relatórios" }
-  ],
-  "Empresas": [
-    { key: "manage_companies", label: "Gerenciar empresas" }
-  ]
-};
-
 // Schema for creating/editing users with profile management
 const profileManagementSchema = z.object({
   fullName: z.string().min(1, "Nome completo é obrigatório"),
@@ -110,6 +90,20 @@ const profileManagementSchema = z.object({
 });
 
 type ProfileFormValues = z.infer<typeof profileManagementSchema>;
+
+// Permission groups for better organization
+const PERMISSION_GROUPS = {
+  "Visualização": [
+    { key: "view_referrals", label: "Ver Indicações" },
+    { key: "view_users", label: "Ver Usuários" },
+    { key: "view_reports", label: "Ver Relatórios" },
+  ],
+  "Edição": [
+    { key: "edit_referral_status", label: "Editar Status de Indicações" },
+    { key: "manage_withdrawals", label: "Gerenciar Saques" },
+    { key: "manage_companies", label: "Gerenciar Empresas" },
+  ],
+} as const;
 
 export default function AdminProfiles() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);

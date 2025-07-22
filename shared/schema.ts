@@ -50,7 +50,7 @@ export const companies = pgTable("companies", {
 });
 
 // Referral statuses
-export type ReferralStatus = "pending" | "analyzing" | "validated" | "converted" | "rejected" | "saque" | "paid";
+export type ReferralStatus = "pending" | "analyzing" | "validated" | "converted" | "rejected" | "paid";
 
 // Referrals table
 export const referrals = pgTable("referrals", {
@@ -393,7 +393,7 @@ export const createReferralSchema = createInsertSchema(referrals, {
 export const createAuditLogSchema = createInsertSchema(auditLog).omit({ id: true, createdAt: true });
 
 export const updateReferralStatusSchema = z.object({
-  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "saque", "paid"]),
+  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid"]),
   notes: z.string().optional(),
 });
 

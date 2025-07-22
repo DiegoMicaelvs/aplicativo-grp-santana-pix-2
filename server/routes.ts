@@ -431,27 +431,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Saldo insuficiente" });
       }
 
-      // Validação de valor mínimo - apenas maior que 0
-      if (validatedData.amount <= 0) {
+      // 4. Validação de valores pequenos para saque
+      const MIN_WITHDRAWAL_AMOUNT = 10.00;
+      if (validatedData.amount < MIN_WITHDRAWAL_AMOUNT) {
         return res.status(400).json({ 
-          error: "Valor inválido",
-          details: "O valor do saque deve ser maior que R$ 0,00" 
+          error: "Valor mínimo não atingido",
+          details: `Valor mínimo para saque: R$ ${MIN_WITHDRAWAL_AMOUNT.toFixed(2)}. Valor solicitado: R$ ${validatedData.amount.toFixed(2)}` 
         });
       }
       
       // Check if PIX key matches user's registered PIX
       if (validatedData.pixKey !== user.pixKey) {
         return res.status(400).json({ 
-          error: "Chave PIX inválida",
-          details: "Por segurança, você só pode sacar para a chave PIX cadastrada no seu perfil" 
-        });
-      }
-      
-      // Check if CPF matches user's registered CPF
-      if (validatedData.cpfKey !== user.cpf) {
-        return res.status(400).json({ 
-          error: "CPF inválido",
-          details: "O CPF informado deve ser o mesmo cadastrado no seu perfil" 
+          error: "Chave PIX deve ser a mesma cadastrada no perfil" 
         });
       }
       
@@ -460,21 +452,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user!.id,
         requestType: user.role === 'promotor' ? 'promotor' : 'indicador'
       });
-      
-      // Log audit trail
-      await storage.logUserAction({
-        userId: req.user!.id,
-        action: 'create',
-        entityType: 'withdrawal',
-        entityId: withdrawal.id,
-        newValues: withdrawal,
-        details: `Solicitação de saque de R$ ${validatedData.amount.toFixed(2)} para chave PIX: ${validatedData.pixKey}`
-      });
-      
-      // Update referral statuses to "saque" for user's validated/converted referrals
-      if (user.role === 'indicador' || user.role === 'promotor') {
-        await storage.updateReferralsStatusForWithdrawal(req.user!.id, user.role);
-      }
       
       return res.status(201).json(withdrawal);
     } catch (error) {
@@ -714,12 +691,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.user!.id,
         notes
       );
-
-      // If status is changing to paid, update referral statuses
-      if (status === 'paid' && withdrawal) {
-        // Update referrals from "saque" to "paid"
-        await storage.updateReferralsStatusAfterPayment(withdrawal.userId, user?.role || '');
-      }
 
       // Send SMS notification for withdrawal approval/rejection
       if (user?.phone && (status === 'approved' || status === 'rejected')) {

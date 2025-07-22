@@ -214,7 +214,7 @@ export default function NewReferralPage() {
                     <div className="text-sm space-y-1">
                       <p>• <strong>Limite diário:</strong> Máximo 30 cadastros</p>
                       <p>• <strong>Sem duplicatas:</strong> Telefone e placa únicos</p>
-
+                      <p>• <strong>Saque mínimo:</strong> R$ 10,00</p>
                       <p>• <strong>Proteção automática</strong> contra fraudes</p>
                     </div>
                   </AlertDescription>

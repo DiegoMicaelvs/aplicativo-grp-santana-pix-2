@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { BackButton } from "@/components/ui/back-button";
 
-type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "saque" | "paid";
+type ReferralStatus = "pending" | "processing" | "converted" | "rejected" | "validated" | "paid";
 
 export default function AdminReferralsDetailedPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,11 +81,10 @@ export default function AdminReferralsDetailedPage() {
   const getStatusBadgeColor = (status: ReferralStatus) => {
     switch (status) {
       case "pending": return "bg-yellow-100 text-yellow-800";
-      case "analyzing": return "bg-blue-100 text-blue-800";
+      case "processing": return "bg-blue-100 text-blue-800";
       case "converted": return "bg-purple-100 text-purple-800";
       case "rejected": return "bg-red-100 text-red-800";
       case "validated": return "bg-green-100 text-green-800";
-      case "saque": return "bg-orange-100 text-orange-800";
       case "paid": return "bg-emerald-100 text-emerald-800";
       default: return "bg-gray-100 text-gray-800";
     }
@@ -94,11 +93,10 @@ export default function AdminReferralsDetailedPage() {
   const getStatusLabel = (status: ReferralStatus) => {
     switch (status) {
       case "pending": return "Pendente";
-      case "analyzing": return "Em Análise";
+      case "processing": return "Em Análise";
       case "converted": return "Convertida";
       case "rejected": return "Rejeitada";
       case "validated": return "Validada";
-      case "saque": return "Em Saque";
       case "paid": return "Paga";
       default: return status;
     }

@@ -50,7 +50,8 @@ export default function AdminSettings() {
     bonusCommissionAmount: 50.00,
     autoApproveReferrals: false,
     requireEmailVerification: true,
-    maxReferralsPerDay: 100
+    maxReferralsPerDay: 100,
+    minWithdrawalAmount: 10.00
   });
 
 
@@ -197,7 +198,7 @@ export default function AdminSettings() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Link href="/admin">
+          <Link href="/admin/dashboard-new">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao Dashboard
@@ -341,7 +342,17 @@ export default function AdminSettings() {
                     <p className="text-sm text-gray-600">Bônus adicional por venda convertida</p>
                   </div>
 
-
+                  <div className="grid gap-2">
+                    <Label htmlFor="minWithdrawal">Valor Mínimo para Saque (R$)</Label>
+                    <Input 
+                      id="minWithdrawal"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={systemSettings.minWithdrawalAmount}
+                      onChange={(e) => handleSettingChange('minWithdrawalAmount', parseFloat(e.target.value))}
+                    />
+                  </div>
 
                   <div className="grid gap-2">
                     <Label htmlFor="maxReferrals">Máximo de Indicações por Dia</Label>

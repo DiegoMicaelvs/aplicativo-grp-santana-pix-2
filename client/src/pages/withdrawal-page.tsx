@@ -35,8 +35,8 @@ export default function WithdrawalPage() {
     resolver: zodResolver(createWithdrawalRequestSchema),
     defaultValues: {
       amount: "",
-      pixKey: user?.pixKey || "",
-      cpfKey: user?.cpf || ""
+      pixKey: "",
+      cpfKey: ""
     }
   });
 
@@ -115,6 +115,7 @@ export default function WithdrawalPage() {
   };
 
   const availableBalance = parseFloat(user?.balance || '0');
+  const minWithdrawal = 10; // Minimum R$ 10.00 for withdrawal (Sistema de Segurança)
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -145,7 +146,11 @@ export default function WithdrawalPage() {
                 <div className="text-3xl font-bold text-green-600 mb-2">
                   R$ {availableBalance.toFixed(2)}
                 </div>
-                {availableBalance > 0 ? (
+                <p className="text-sm text-gray-600 mb-4">
+                  Valor mínimo para saque: R$ {minWithdrawal.toFixed(2)}
+                </p>
+                
+                {availableBalance >= minWithdrawal ? (
                   <Button 
                     onClick={() => setShowForm(!showForm)}
                     className="w-full"
@@ -186,14 +191,14 @@ export default function WithdrawalPage() {
                               <Input
                                 type="number"
                                 step="0.01"
-                                min={0.01}
+                                min={minWithdrawal}
                                 max={availableBalance}
                                 placeholder="50.00"
                                 {...field}
                               />
                             </FormControl>
                             <FormDescription>
-                              Valor até R$ {availableBalance.toFixed(2)}
+                              Valor entre R$ {minWithdrawal.toFixed(2)} e R$ {availableBalance.toFixed(2)}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -210,12 +215,10 @@ export default function WithdrawalPage() {
                               <Input
                                 placeholder="Digite sua chave PIX"
                                 {...field}
-                                readOnly
-                                className="bg-gray-100"
                               />
                             </FormControl>
                             <FormDescription>
-                              Chave PIX cadastrada no seu perfil (não pode ser alterada)
+                              Chave PIX para recebimento (CPF, telefone, e-mail ou chave aleatória)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -232,12 +235,10 @@ export default function WithdrawalPage() {
                               <Input
                                 placeholder="000.000.000-00"
                                 {...field}
-                                readOnly
-                                className="bg-gray-100"
                               />
                             </FormControl>
                             <FormDescription>
-                              CPF cadastrado no seu perfil (não pode ser alterado)
+                              Deve ser o mesmo CPF cadastrado no seu perfil
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

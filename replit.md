@@ -236,22 +236,12 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Daily Limit Enforcement:** Maximum 30 referral registrations per user per day with real-time counter and visual progress bar
 - **Duplicate Prevention System:** Automatic detection of duplicate phone numbers and license plates across the entire database
 - **Duplicate Detection with Attribution:** Shows first name of original registrant when duplicates are found, with registration date
-- **Withdrawal Protection:** Removed minimum withdrawal limit to allow any amount withdrawals
+- **Minimum Withdrawal Protection:** R$ 10,00 minimum withdrawal amount to prevent micro-transactions abuse
 - **Real-time Validation API:** Instant feedback system for users with clear error messages and prevention guidance
 - **Visual Security Dashboard:** User interface shows daily usage statistics, security rules, and remaining capacity
 - **Enhanced Error Reporting:** Detailed error messages with specific duplicate information and original registrant details
 - **Database Optimization:** Efficient query system for duplicate checking with owner information joining
 - **Frontend Integration:** Complete UI overhaul with security alerts, progress indicators, and educational information panels
-
-### Enhanced Withdrawal Security System (July 2025)
-- **PIX Key Validation:** Withdrawals only allowed to PIX key registered in user profile
-- **CPF Verification:** CPF must match the one registered in user profile for security
-- **Automated Status Updates:** When withdrawal is requested, referrals status changes to "saque"
-- **Payment Tracking:** When admin confirms payment, referral status changes from "saque" to "paid"
-- **Timestamp Recording:** System records exact date/time of withdrawal request and payment confirmation
-- **Zero Minimum Withdrawal:** Users can withdraw any amount above R$ 0.01
-- **Audit Trail:** All withdrawal actions logged with user details and timestamps
-- **Status Workflow:** pending → approved → paid (with "saque" status for referrals)
 
 ### SMS Provider Migration to Comtele (July 2025)
 - **Provider Change:** Migrated from Twilio to Comtele SMS service for better Brazilian market support
