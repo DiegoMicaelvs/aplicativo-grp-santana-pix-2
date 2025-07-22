@@ -197,7 +197,7 @@ export default function AdminSettings() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Link href="/admin/dashboard-new">
+          <Link href="/admin">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao Dashboard
