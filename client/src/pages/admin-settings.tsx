@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   ArrowLeft, 
   Settings, 
@@ -22,12 +23,18 @@ import {
   Palette,
   Server,
   Key,
-  RefreshCw
+  RefreshCw,
+  MessageSquare,
+  Phone
 } from "lucide-react";
 
 export default function AdminSettings() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [smsStatus, setSmsStatus] = useState<any>(null);
+  const [testPhone, setTestPhone] = useState("");
+  const [testMessage, setTestMessage] = useState("");
+  const [isTestingSms, setIsTestingSms] = useState(false);
 
   // Estado das configurações do sistema
   const [systemSettings, setSystemSettings] = useState({
@@ -45,11 +52,120 @@ export default function AdminSettings() {
     minWithdrawalAmount: 10.00
   });
 
+  // Carregar status do SMS ao inicializar
+  useEffect(() => {
+    const fetchSmsStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/sms/status', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        setSmsStatus(data);
+        
+        // Atualizar configuração baseada no status
+        if (data.configured) {
+          setSystemSettings(prev => ({ ...prev, smsNotifications: true }));
+        }
+      } catch (error) {
+        console.error('Error fetching SMS status:', error);
+      }
+    };
+
+    fetchSmsStatus();
+  }, []);
+
   const handleSettingChange = (key: string, value: any) => {
     setSystemSettings(prev => ({
       ...prev,
       [key]: value
     }));
+  };
+
+  // Função para testar SMS
+  const handleTestSms = async () => {
+    if (!testPhone) {
+      toast({
+        title: "Erro",
+        description: "Por favor, insira um número de telefone para teste.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTestingSms(true);
+    try {
+      const response = await fetch('/api/admin/sms/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phoneNumber: testPhone }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao enviar SMS');
+      }
+
+      toast({
+        title: "SMS Enviado",
+        description: data.message || "SMS de teste enviado com sucesso!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro no teste",
+        description: error.message || "Falha ao enviar SMS de teste.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingSms(false);
+    }
+  };
+
+  // Função para enviar SMS manual
+  const handleSendManualSms = async () => {
+    if (!testPhone || !testMessage) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha o número e a mensagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/admin/sms/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          phoneNumber: testPhone, 
+          message: testMessage 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao enviar SMS');
+      }
+
+      toast({
+        title: "SMS Enviado",
+        description: data.message || "SMS enviado com sucesso!",
+      });
+
+      setTestMessage("");
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar",
+        description: error.message || "Falha ao enviar SMS.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveSettings = async () => {
@@ -267,14 +383,15 @@ export default function AdminSettings() {
           {/* Configurações de Notificações */}
           <TabsContent value="notifications">
             <div className="grid gap-6">
+              {/* Configurações de Email */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5" />
-                    Configurações de Notificação
+                    <Mail className="h-5 w-5" />
+                    Notificações por Email
                   </CardTitle>
                   <CardDescription>
-                    Configure como o sistema envia notificações
+                    Configure as notificações por email
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -290,19 +407,188 @@ export default function AdminSettings() {
                       onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
                     />
                   </div>
+                </CardContent>
+              </Card>
 
+              {/* Configurações de SMS */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Notificações por SMS
+                  </CardTitle>
+                  <CardDescription>
+                    Configure e teste as notificações por SMS via Twilio
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Status do SMS */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Status da Configuração</h4>
+                    <div className="grid gap-3">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <p className="font-medium">Status do SMS</p>
+                          <p className="text-sm text-gray-600">
+                            {smsStatus?.message || "Carregando..."}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant="secondary" 
+                          className={smsStatus?.configured 
+                            ? "bg-green-100 text-green-800" 
+                            : "bg-red-100 text-red-800"
+                          }
+                        >
+                          {smsStatus?.configured ? "Configurado" : "Não Configurado"}
+                        </Badge>
+                      </div>
+                      
+                      {smsStatus?.configured && (
+                        <>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Account SID</p>
+                              <p className="text-sm text-gray-600">{smsStatus.accountSid}</p>
+                            </div>
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                              OK
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Número Twilio</p>
+                              <p className="text-sm text-gray-600">{smsStatus.phoneNumber}</p>
+                            </div>
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                              OK
+                            </Badge>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Configuração de ativação */}
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label>Notificações por SMS</Label>
+                      <Label>Notificações por SMS Ativas</Label>
                       <p className="text-sm text-gray-600">
-                        Enviar notificações críticas por SMS
+                        {smsStatus?.configured 
+                          ? "Ativar envio automático de SMS para usuários"
+                          : "Configure as credenciais do Twilio primeiro"
+                        }
                       </p>
                     </div>
                     <Switch
-                      checked={systemSettings.smsNotifications}
+                      checked={systemSettings.smsNotifications && smsStatus?.configured}
+                      disabled={!smsStatus?.configured}
                       onCheckedChange={(checked) => handleSettingChange('smsNotifications', checked)}
                     />
                   </div>
+
+                  <Separator />
+
+                  {/* Teste de SMS */}
+                  {smsStatus?.configured && (
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Teste de SMS</h4>
+                      <div className="grid gap-3">
+                        <div className="grid gap-2">
+                          <Label htmlFor="testPhone">Número para Teste</Label>
+                          <Input 
+                            id="testPhone"
+                            placeholder="(11) 99999-9999"
+                            value={testPhone}
+                            onChange={(e) => setTestPhone(e.target.value)}
+                          />
+                          <p className="text-sm text-gray-600">
+                            Use formato brasileiro: (11) 99999-9999
+                          </p>
+                        </div>
+                        
+                        <Button 
+                          onClick={handleTestSms}
+                          disabled={isTestingSms || !testPhone}
+                          className="w-full"
+                        >
+                          {isTestingSms ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Enviando Teste...
+                            </>
+                          ) : (
+                            <>
+                              <Phone className="h-4 w-4 mr-2" />
+                              Enviar SMS de Teste
+                            </>
+                          )}
+                        </Button>
+                      </div>
+
+                      <Separator />
+
+                      {/* Envio manual de SMS */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Envio Manual de SMS</h4>
+                        <div className="grid gap-3">
+                          <div className="grid gap-2">
+                            <Label htmlFor="testMessage">Mensagem Personalizada</Label>
+                            <Input 
+                              id="testMessage"
+                              placeholder="Digite sua mensagem..."
+                              value={testMessage}
+                              onChange={(e) => setTestMessage(e.target.value)}
+                              maxLength={160}
+                            />
+                            <p className="text-sm text-gray-600">
+                              {testMessage.length}/160 caracteres
+                            </p>
+                          </div>
+                          
+                          <Button 
+                            onClick={handleSendManualSms}
+                            disabled={isLoading || !testPhone || !testMessage}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            {isLoading ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Enviar SMS Manual
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Informação sobre configuração */}
+                  {!smsStatus?.configured && (
+                    <div className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Key className="h-4 w-4 text-yellow-600" />
+                        <p className="font-medium text-yellow-800">Configuração Necessária</p>
+                      </div>
+                      <p className="text-sm text-yellow-700">
+                        Para ativar SMS, adicione as seguintes variáveis de ambiente:
+                      </p>
+                      <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside">
+                        <li>TWILIO_ACCOUNT_SID</li>
+                        <li>TWILIO_AUTH_TOKEN</li>
+                        <li>TWILIO_PHONE_NUMBER</li>
+                      </ul>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

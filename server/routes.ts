@@ -187,6 +187,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user!.id,
         createdBy: req.user!.id
       });
+
+      // Send SMS notification to user about new referral
+      const user = await storage.getUserById(req.user!.id);
+      if (user?.phone) {
+        try {
+          const { sendReferralNotification } = await import('./sms-service');
+          await sendReferralNotification(
+            user.phone,
+            user.fullName,
+            referral.id
+          );
+          console.log(`SMS notification sent to ${user.phone} for new referral #${referral.id}`);
+        } catch (smsError) {
+          console.log('SMS notification failed (non-critical):', smsError);
+          // Don't fail the referral creation if SMS fails
+        }
+      }
       
       return res.status(201).json(referral);
     } catch (error) {
@@ -556,12 +573,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const validatedData = updateReferralStatusSchema.parse(req.body);
       
+      // Get referral and user info before update for SMS notification
+      const referral = await storage.getReferralById(parseInt(id));
+      const user = referral ? await storage.getUserById(referral.userId) : null;
+      
       const updatedReferral = await storage.updateReferralStatus(
         parseInt(id),
         validatedData.status,
         validatedData.notes,
         req.user!.id
       );
+
+      // Send SMS notification if configured and user has phone
+      if (user?.phone && validatedData.status !== referral?.status) {
+        try {
+          const { sendStatusUpdateNotification } = await import('./sms-service');
+          await sendStatusUpdateNotification(
+            user.phone,
+            user.fullName,
+            parseInt(id),
+            validatedData.status
+          );
+          console.log(`SMS notification sent to ${user.phone} for referral status update`);
+        } catch (smsError) {
+          console.log('SMS notification failed (non-critical):', smsError);
+          // Don't fail the update if SMS fails
+        }
+      }
       
       return res.json(updatedReferral);
     } catch (error) {
@@ -587,12 +625,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { status, notes } = req.body;
       
+      // Get withdrawal and user info before update for SMS notification
+      const withdrawal = await storage.getWithdrawalRequestById(parseInt(id));
+      const user = withdrawal ? await storage.getUserById(withdrawal.userId) : null;
+      
       const updated = await storage.updateWithdrawalStatus(
         parseInt(id),
         status,
         req.user!.id,
         notes
       );
+
+      // Send SMS notification for withdrawal approval/rejection
+      if (user?.phone && (status === 'approved' || status === 'rejected')) {
+        try {
+          const { sendWithdrawalNotification } = await import('./sms-service');
+          await sendWithdrawalNotification(
+            user.phone,
+            user.fullName,
+            parseFloat(withdrawal.amount.toString()),
+            status as 'approved' | 'rejected'
+          );
+          console.log(`SMS notification sent to ${user.phone} for withdrawal ${status}`);
+        } catch (smsError) {
+          console.log('SMS notification failed (non-critical):', smsError);
+          // Don't fail the update if SMS fails
+        }
+      }
       
       return res.json(updated);
     } catch (error) {
@@ -700,6 +759,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const newUser = await storage.createUser(userData);
       const { password, ...userWithoutPassword } = newUser;
+
+      // Send welcome SMS to new user if they have a phone
+      if (newUser.phone) {
+        try {
+          const { sendWelcomeSMS } = await import('./sms-service');
+          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          console.log(`Welcome SMS sent to new user: ${newUser.fullName} (${newUser.phone})`);
+        } catch (smsError) {
+          console.log('Welcome SMS failed (non-critical):', smsError);
+          // Don't fail user creation if SMS fails
+        }
+      }
       
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
@@ -1119,6 +1190,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error assigning promoter:", error);
       return res.status(500).json({ error: "Erro ao atribuir promotor" });
+    }
+  });
+
+  // SMS Configuration and Testing Routes
+  // Get SMS status and configuration
+  app.get("/api/admin/sms/status", requireAdmin, async (req, res) => {
+    const { isSMSConfigured, getSMSStatus } = await import('./sms-service');
+    
+    try {
+      const status = getSMSStatus();
+      return res.json({
+        ...status,
+        message: status.configured 
+          ? "SMS está configurado e pronto para uso"
+          : "SMS não está configurado - adicione as credenciais do Twilio"
+      });
+    } catch (error) {
+      console.error("Error getting SMS status:", error);
+      return res.status(500).json({ error: "Erro ao verificar status do SMS" });
+    }
+  });
+
+  // Test SMS functionality
+  app.post("/api/admin/sms/test", requireAdmin, async (req, res) => {
+    const { testSMS } = await import('./sms-service');
+    
+    try {
+      const { phoneNumber } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ error: "Número de telefone é obrigatório" });
+      }
+
+      const success = await testSMS(phoneNumber);
+      
+      if (success) {
+        return res.json({ 
+          success: true, 
+          message: "SMS de teste enviado com sucesso!" 
+        });
+      } else {
+        return res.status(500).json({ 
+          success: false, 
+          error: "Falha ao enviar SMS - verifique as configurações" 
+        });
+      }
+    } catch (error) {
+      console.error("Error testing SMS:", error);
+      return res.status(500).json({ error: "Erro ao testar SMS" });
+    }
+  });
+
+  // Send manual SMS notification
+  app.post("/api/admin/sms/send", requireAdmin, async (req, res) => {
+    const { sendSMS } = await import('./sms-service');
+    
+    try {
+      const { phoneNumber, message } = req.body;
+      
+      if (!phoneNumber || !message) {
+        return res.status(400).json({ error: "Número e mensagem são obrigatórios" });
+      }
+
+      const success = await sendSMS(phoneNumber, message);
+      
+      if (success) {
+        // Log the manual SMS sending
+        await storage.logUserAction({
+          userId: req.user!.id,
+          action: 'send_manual_sms',
+          entityType: 'sms',
+          entityId: 0,
+          details: `SMS manual enviado para ${phoneNumber}: ${message.substring(0, 50)}...`
+        });
+
+        return res.json({ 
+          success: true, 
+          message: "SMS enviado com sucesso!" 
+        });
+      } else {
+        return res.status(500).json({ 
+          success: false, 
+          error: "Falha ao enviar SMS" 
+        });
+      }
+    } catch (error) {
+      console.error("Error sending manual SMS:", error);
+      return res.status(500).json({ error: "Erro ao enviar SMS" });
     }
   });
 
