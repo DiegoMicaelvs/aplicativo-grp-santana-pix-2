@@ -35,8 +35,8 @@ export default function WithdrawalPage() {
     resolver: zodResolver(createWithdrawalRequestSchema),
     defaultValues: {
       amount: "",
-      pixKey: "",
-      cpfKey: ""
+      pixKey: user?.pixKey || "",
+      cpfKey: user?.cpf || ""
     }
   });
 
@@ -210,10 +210,12 @@ export default function WithdrawalPage() {
                               <Input
                                 placeholder="Digite sua chave PIX"
                                 {...field}
+                                readOnly
+                                className="bg-gray-100"
                               />
                             </FormControl>
                             <FormDescription>
-                              Chave PIX para recebimento (CPF, telefone, e-mail ou chave aleatória)
+                              Chave PIX cadastrada no seu perfil (não pode ser alterada)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -230,10 +232,12 @@ export default function WithdrawalPage() {
                               <Input
                                 placeholder="000.000.000-00"
                                 {...field}
+                                readOnly
+                                className="bg-gray-100"
                               />
                             </FormControl>
                             <FormDescription>
-                              Deve ser o mesmo CPF cadastrado no seu perfil
+                              CPF cadastrado no seu perfil (não pode ser alterado)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

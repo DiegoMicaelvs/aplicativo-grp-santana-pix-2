@@ -88,8 +88,11 @@ export interface IStorage {
   // Withdrawal methods
   createWithdrawalRequest(request: CreateWithdrawalRequest & { userId: number }): Promise<any>;
   getWithdrawalRequestsByUserId(userId: number): Promise<any[]>;
+  getWithdrawalRequestById(id: number): Promise<any>;
   getAllWithdrawalRequests(): Promise<any[]>;
   updateWithdrawalStatus(id: number, status: WithdrawalStatus, processedBy: number, notes?: string): Promise<any>;
+  updateReferralsStatusForWithdrawal(userId: number, userRole: string): Promise<void>;
+  updateReferralsStatusAfterPayment(userId: number, userRole: string): Promise<void>;
   
   // Cash flow methods
   createCashFlowEntry(entry: CreateCashFlow & { createdBy: number }): Promise<any>;
@@ -700,6 +703,12 @@ class DatabaseStorage implements IStorage {
     });
   }
   
+  async getWithdrawalRequestById(id: number) {
+    return await db.query.withdrawalRequests.findFirst({
+      where: eq(withdrawalRequests.id, id)
+    });
+  }
+  
   async getAllWithdrawalRequests() {
     return await db.query.withdrawalRequests.findMany({
       with: {
@@ -710,6 +719,84 @@ class DatabaseStorage implements IStorage {
     });
   }
   
+  async updateReferralsStatusForWithdrawal(userId: number, userRole: string) {
+    // Update referrals to "saque" status when withdrawal is requested
+    if (userRole === 'indicador') {
+      // Update all validated/converted referrals from this indicador
+      await db.update(referrals)
+        .set({ 
+          status: 'saque' as ReferralStatus,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(referrals.userId, userId),
+            or(
+              eq(referrals.status, 'validated'),
+              eq(referrals.status, 'converted')
+            )
+          )
+        );
+    } else if (userRole === 'promotor') {
+      // For promoters, update referrals from their indicadores
+      const indicadores = await this.getIndicadoresByPromoter(userId);
+      const indicadorIds = indicadores.map(i => i.id);
+      
+      if (indicadorIds.length > 0) {
+        await db.update(referrals)
+          .set({ 
+            status: 'saque' as ReferralStatus,
+            updatedAt: new Date()
+          })
+          .where(
+            and(
+              sql`${referrals.userId} = ANY(${indicadorIds})`,
+              or(
+                eq(referrals.status, 'validated'),
+                eq(referrals.status, 'converted')
+              )
+            )
+          );
+      }
+    }
+  }
+
+  async updateReferralsStatusAfterPayment(userId: number, userRole: string) {
+    // Update referrals from "saque" to "paid" status after payment confirmation
+    if (userRole === 'indicador') {
+      // Update all "saque" referrals from this indicador to "paid"
+      await db.update(referrals)
+        .set({ 
+          status: 'paid' as ReferralStatus,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(referrals.userId, userId),
+            eq(referrals.status, 'saque')
+          )
+        );
+    } else if (userRole === 'promotor') {
+      // For promoters, update referrals from their indicadores
+      const indicadores = await this.getIndicadoresByPromoter(userId);
+      const indicadorIds = indicadores.map(i => i.id);
+      
+      if (indicadorIds.length > 0) {
+        await db.update(referrals)
+          .set({ 
+            status: 'paid' as ReferralStatus,
+            updatedAt: new Date()
+          })
+          .where(
+            and(
+              sql`${referrals.userId} = ANY(${indicadorIds})`,
+              eq(referrals.status, 'saque')
+            )
+          );
+      }
+    }
+  }
+
   async updateWithdrawalStatus(id: number, status: WithdrawalStatus, processedBy: number, notes?: string) {
     const [updated] = await db.update(withdrawalRequests)
       .set({

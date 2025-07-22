@@ -29,7 +29,7 @@ interface WithdrawalRequest {
   userId: number;
   amount: string;
   pixKey: string;
-  status: 'pending' | 'paid' | 'rejected';
+  status: 'pending' | 'approved' | 'paid' | 'rejected';
   requestedAt: string;
   processedAt?: string;
   notes?: string;
@@ -106,6 +106,11 @@ export default function AdminWithdrawals() {
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
           <ClockIcon className="w-3 h-3 mr-1" />
           Pendente
+        </Badge>;
+      case 'approved':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+          <CheckIcon className="w-3 h-3 mr-1" />
+          Aprovado
         </Badge>;
       case 'paid':
         return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
