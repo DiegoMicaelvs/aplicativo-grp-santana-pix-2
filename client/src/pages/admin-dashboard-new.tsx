@@ -414,7 +414,7 @@ export default function AdminDashboard() {
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/admin/indicators">
-                  <Button size="lg" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto ml-[-14px] mr-[-14px]">
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Todos os Indicadores
                   </Button>
