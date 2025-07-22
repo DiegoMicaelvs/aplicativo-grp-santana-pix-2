@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,7 @@ import {
 
 export default function AdminSettings() {
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [smsStatus, setSmsStatus] = useState<any>(null);
   const [testPhone, setTestPhone] = useState("");
@@ -201,7 +202,7 @@ export default function AdminSettings() {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => window.location.href = '/admin/dashboard-new'}
+            onClick={() => setLocation('/admin')}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar ao Dashboard
