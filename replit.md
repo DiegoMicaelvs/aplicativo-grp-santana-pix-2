@@ -240,3 +240,16 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Enhanced Error Reporting:** Detailed error messages with specific duplicate information and original registrant details
 - **Database Optimization:** Efficient query system for duplicate checking with owner information joining
 - **Frontend Integration:** Complete UI overhaul with security alerts, progress indicators, and educational information panels
+
+### SMS Provider Migration to Comtele (July 2025)
+- **Provider Change:** Migrated from Twilio to Comtele SMS service for better Brazilian market support
+- **Comtele API Integration:** Implemented new SMS service using Comtele's REST API v2
+- **API Configuration:**
+  - Endpoint: https://sms.comtele.com.br/api/v2/send
+  - Authentication: Header-based with auth-key
+  - Sender ID: KongPix
+- **Simplified Setup:** No phone number purchase required, works directly with Brazilian numbers
+- **Automatic Number Formatting:** System automatically formats Brazilian phone numbers for Comtele
+- **Updated Admin Interface:** SMS settings page updated to reflect Comtele configuration
+- **Direct Brazilian Support:** Native support for all Brazilian carriers without international routing
+- **Removed Dependencies:** Uninstalled Twilio package, reducing project dependencies

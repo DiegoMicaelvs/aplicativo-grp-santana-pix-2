@@ -54,8 +54,7 @@ export default function AdminSettings() {
     minWithdrawalAmount: 10.00
   });
 
-  // Variável para mostrar o número Twilio
-  const twilioNumber = smsStatus?.twilioNumber || '+18158578515';
+
 
   // Carregar status do SMS ao inicializar
   useEffect(() => {
@@ -423,7 +422,7 @@ export default function AdminSettings() {
                     Notificações por SMS
                   </CardTitle>
                   <CardDescription>
-                    Configure e teste as notificações por SMS via Twilio
+                    Configure e teste as notificações por SMS via Comtele
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -453,8 +452,8 @@ export default function AdminSettings() {
                         <>
                           <div className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
-                              <p className="font-medium">Account SID</p>
-                              <p className="text-sm text-gray-600">{smsStatus.accountSid}</p>
+                              <p className="font-medium">Provedor</p>
+                              <p className="text-sm text-gray-600">{smsStatus.provider || 'Comtele'}</p>
                             </div>
                             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                               OK
@@ -463,8 +462,18 @@ export default function AdminSettings() {
                           
                           <div className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
-                              <p className="font-medium">Número Twilio</p>
-                              <p className="text-sm text-gray-600">{smsStatus.phoneNumber}</p>
+                              <p className="font-medium">Auth Key</p>
+                              <p className="text-sm text-gray-600">{smsStatus.authKey || 'Configurado'}</p>
+                            </div>
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                              OK
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Sender ID</p>
+                              <p className="text-sm text-gray-600">{smsStatus.sender || 'KongPix'}</p>
                             </div>
                             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                               OK
@@ -484,7 +493,7 @@ export default function AdminSettings() {
                       <p className="text-sm text-gray-600">
                         {smsStatus?.configured 
                           ? "Ativar envio automático de SMS para usuários"
-                          : "Configure as credenciais do Twilio primeiro"
+                          : "Configure as credenciais do Comtele primeiro"
                         }
                       </p>
                     </div>
@@ -500,25 +509,24 @@ export default function AdminSettings() {
                   {/* Teste de SMS */}
                   {smsStatus?.configured && (
                     <div className="space-y-4">
-                      {/* Aviso sobre conta Trial */}
-                      <Alert className="bg-yellow-50 border-yellow-200">
-                        <AlertCircle className="h-4 w-4 text-yellow-600" />
-                        <AlertTitle className="text-yellow-800">Conta Trial Twilio</AlertTitle>
-                        <AlertDescription className="space-y-2 text-yellow-700">
-                          <p>Sua conta Twilio está em modo Trial. Restrições:</p>
+                      {/* Aviso sobre Comtele */}
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <AlertCircle className="h-4 w-4 text-blue-600" />
+                        <AlertTitle className="text-blue-800">SMS via Comtele Configurado</AlertTitle>
+                        <AlertDescription className="space-y-2 text-blue-700">
+                          <p>Seu sistema está configurado para enviar SMS via Comtele.</p>
                           <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
-                            <li>Só pode enviar SMS para números verificados</li>
-                            <li>Para verificar números: <a href="https://twilio.com/user/account/phone-numbers/verified" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">twilio.com/user/account/phone-numbers/verified</a></li>
-                            <li>Para remover restrições, faça upgrade para conta paga</li>
+                            <li>Provider: Comtele SMS</li>
+                            <li>Auth Key: Configurada</li>
+                            <li>Sender ID: KongPix</li>
+                            <li>Status: Pronto para uso</li>
                           </ul>
-                          <p className="text-sm font-medium mt-2">Número Twilio configurado: {twilioNumber || 'Não definido'}</p>
                           
-                          <div className="mt-3 p-2 bg-blue-50 rounded-md">
-                            <p className="text-sm font-medium text-blue-800">💡 Dica para testar:</p>
-                            <p className="text-xs text-blue-700 mt-1">
-                              1. Acesse o link acima e verifique seu próprio número<br/>
-                              2. Ou use um número já verificado na sua conta Twilio<br/>
-                              3. Depois de verificar, teste o SMS com esse número
+                          <div className="mt-3 p-2 bg-green-50 rounded-md">
+                            <p className="text-sm font-medium text-green-800">✅ Sistema Pronto</p>
+                            <p className="text-xs text-green-700 mt-1">
+                              O sistema está configurado e pronto para enviar SMS para qualquer número brasileiro.
+                              Use o formulário abaixo para testar o envio.
                             </p>
                           </div>
                         </AlertDescription>

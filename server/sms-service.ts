@@ -1,27 +1,11 @@
-import twilio from 'twilio';
+// Configuração do cliente Comtele
+const COMTELE_API_URL = 'https://sms.comtele.com.br/api/v2/send';
+const COMTELE_AUTH_KEY = 'c2e18779-6859-4988-b4c5-aa3521658e3b';
+const COMTELE_SENDER = 'KongPix'; // Sender ID customizado
 
-// Configuração do cliente Twilio
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-
-let twilioClient: any = null;
-
-// Inicializar cliente Twilio
-const initializeTwilio = () => {
-  if (!accountSid || !authToken || !twilioPhoneNumber) {
-    console.log('[SMS] Credenciais do Twilio não configuradas completamente');
-    return null;
-  }
-
-  try {
-    twilioClient = twilio(accountSid, authToken);
-    console.log('[SMS] Cliente Twilio inicializado com sucesso');
-    return twilioClient;
-  } catch (error) {
-    console.error('[SMS] Erro ao inicializar cliente Twilio:', error);
-    return null;
-  }
+// Verificar se as credenciais estão configuradas
+const isComteleConfigured = (): boolean => {
+  return !!(COMTELE_AUTH_KEY && COMTELE_API_URL);
 };
 
 // Função para validar e formatar número de telefone brasileiro
@@ -52,29 +36,43 @@ const formatBrazilianPhoneNumber = (phone: string): string => {
   return phone; // Retorna original se não conseguir formatar
 };
 
-// Função principal para enviar SMS
+// Função principal para enviar SMS via Comtele
 export const sendSMS = async (to: string, message: string): Promise<boolean> => {
-  if (!twilioClient) {
-    twilioClient = initializeTwilio();
-    if (!twilioClient) {
-      console.log('[SMS] SMS não enviado - Twilio não configurado');
-      return false;
-    }
+  if (!isComteleConfigured()) {
+    console.log('[SMS] SMS não enviado - Comtele não configurado');
+    return false;
   }
 
   try {
     const formattedNumber = formatBrazilianPhoneNumber(to);
-    console.log(`[SMS] Enviando SMS para ${formattedNumber}`);
-    console.log(`[SMS] Usando número remetente: ${twilioPhoneNumber}`);
+    console.log(`[SMS] Enviando SMS para ${formattedNumber} via Comtele`);
     
-    const result = await twilioClient.messages.create({
-      body: message,
-      from: twilioPhoneNumber,
-      to: formattedNumber
+    // Preparar dados para Comtele
+    const payload = {
+      Sender: COMTELE_SENDER,
+      Receivers: formattedNumber.replace('+55', ''), // Comtele espera número sem +55
+      Content: message
+    };
+
+    // Fazer requisição para API Comtele
+    const response = await fetch(COMTELE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'auth-key': COMTELE_AUTH_KEY
+      },
+      body: JSON.stringify(payload)
     });
 
-    console.log(`[SMS] SMS enviado com sucesso - SID: ${result.sid}`);
-    return true;
+    const result = await response.json();
+
+    if (result.Success) {
+      console.log(`[SMS] SMS enviado com sucesso - RequestID: ${result.Object?.requestUniqueId}`);
+      return true;
+    } else {
+      console.error('[SMS] Erro ao enviar SMS:', result.Message || 'Erro desconhecido');
+      return false;
+    }
   } catch (error: any) {
     console.error('[SMS] Erro ao enviar SMS:', error.message);
     return false;
@@ -156,27 +154,17 @@ export const testSMS = async (testPhone: string): Promise<boolean> => {
 
 // Verificar se as credenciais estão configuradas
 export const isSMSConfigured = (): boolean => {
-  return !!(accountSid && authToken && twilioPhoneNumber);
+  return isComteleConfigured();
 };
 
 // Obter status da configuração
 export const getSMSStatus = () => {
-  let phoneNumberWarning = null;
-  
-  if (twilioPhoneNumber) {
-    // Verificar formato do número
-    if (!twilioPhoneNumber.startsWith('+')) {
-      phoneNumberWarning = 'Número deve começar com + e código do país';
-    } else if (twilioPhoneNumber.startsWith('+55') || twilioPhoneNumber.startsWith('+5573')) {
-      phoneNumberWarning = 'ATENÇÃO: Este parece ser um número brasileiro pessoal. O Twilio requer um número de telefone comprado na plataforma deles (geralmente +1 para EUA).';
-    }
-  }
-  
   return {
     configured: isSMSConfigured(),
-    accountSid: accountSid ? `${accountSid.substring(0, 8)}...` : 'não configurado',
-    phoneNumber: twilioPhoneNumber || 'não configurado',
-    phoneNumberWarning,
-    twilioHelp: phoneNumberWarning ? 'Acesse sua conta Twilio e compre um número de telefone válido para SMS. Use esse número no TWILIO_PHONE_NUMBER.' : null
+    provider: 'Comtele',
+    authKey: COMTELE_AUTH_KEY ? `${COMTELE_AUTH_KEY.substring(0, 8)}...` : 'não configurado',
+    sender: COMTELE_SENDER || 'não configurado',
+    apiUrl: COMTELE_API_URL,
+    help: 'Sistema configurado para usar Comtele como provedor de SMS'
   };
 };
