@@ -74,6 +74,11 @@ export default function NewReferralPage() {
     queryKey: ['/api/companies'],
   });
 
+  // Fetch today's referral stats
+  const { data: todayStats } = useQuery({
+    queryKey: ['/api/referrals/today-stats'],
+  });
+
   // Mutation para verificar duplicatas
   const checkDuplicateMutation = useMutation({
     mutationFn: async (data: { phone: string, licensePlate: string }) => {
@@ -200,6 +205,46 @@ export default function NewReferralPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Sistema de Segurança - Regras e Contador */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertTriangle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <div className="font-semibold mb-2">🔒 Sistema de Segurança</div>
+                    <div className="text-sm space-y-1">
+                      <p>• <strong>Limite diário:</strong> Máximo 30 cadastros</p>
+                      <p>• <strong>Sem duplicatas:</strong> Telefone e placa únicos</p>
+                      <p>• <strong>Saque mínimo:</strong> R$ 10,00</p>
+                      <p>• <strong>Proteção automática</strong> contra fraudes</p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+
+                {/* Contador de cadastros diários */}
+                <Alert className={`border-2 ${todayStats?.count >= 25 ? 'border-red-200 bg-red-50' : todayStats?.count >= 20 ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
+                  <Check className={`h-4 w-4 ${todayStats?.count >= 25 ? 'text-red-600' : todayStats?.count >= 20 ? 'text-yellow-600' : 'text-green-600'}`} />
+                  <AlertDescription className={todayStats?.count >= 25 ? 'text-red-800' : todayStats?.count >= 20 ? 'text-yellow-800' : 'text-green-800'}>
+                    <div className="font-semibold mb-2">📊 Cadastros de Hoje</div>
+                    <div className="text-lg font-bold">
+                      {todayStats?.count || 0} / 30
+                    </div>
+                    <div className="text-sm">
+                      {todayStats?.remaining > 0 ? (
+                        `Restam ${todayStats.remaining} cadastros`
+                      ) : (
+                        "Limite diário atingido"
+                      )}
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all ${todayStats?.count >= 25 ? 'bg-red-500' : todayStats?.count >= 20 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                        style={{ width: `${Math.min(100, ((todayStats?.count || 0) / 30) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              </div>
+
               {/* Alerta de duplicatas */}
               {duplicateInfo && duplicateInfo.length > 0 && (
                 <Alert className="mb-6 border-red-200 bg-red-50">

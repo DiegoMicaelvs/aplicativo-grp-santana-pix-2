@@ -115,7 +115,7 @@ export default function WithdrawalPage() {
   };
 
   const availableBalance = parseFloat(user?.balance || '0');
-  const minWithdrawal = 50; // Minimum R$ 50.00 for withdrawal
+  const minWithdrawal = 10; // Minimum R$ 10.00 for withdrawal (Sistema de Segurança)
 
   return (
     <div className="min-h-screen flex flex-col">

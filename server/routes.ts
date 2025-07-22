@@ -170,15 +170,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = createReferralSchema.parse(req.body);
       
-      // Check for duplicates
-      const duplicates = await storage.checkDuplicateReferral(
+      // === SISTEMA DE SEGURANÇA PARA LEADS ===
+      
+      // 1. Verificar limite de 30 referrals por dia
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayReferrals = await storage.getTodayReferralsByUserId(req.user!.id, today);
+      
+      if (todayReferrals.length >= 30) {
+        return res.status(400).json({ 
+          error: "Limite diário atingido",
+          details: `Você já cadastrou ${todayReferrals.length} clientes hoje. Limite máximo: 30 por dia.`
+        });
+      }
+      
+      // 2. Verificar duplicatas (placa e telefone)
+      const duplicates = await storage.checkDuplicateReferralWithOwner(
         validatedData.phone,
         validatedData.licensePlate
       );
       
       if (duplicates.length > 0) {
+        const duplicate = duplicates[0];
+        const ownerFirstName = duplicate.createdByName ? duplicate.createdByName.split(' ')[0] : 'Usuário'; // Primeiro nome apenas
+        
+        let errorMessage = "Cadastro duplicado encontrado:\n";
+        if (duplicate.phone === validatedData.phone) {
+          errorMessage += `• Telefone ${validatedData.phone} já cadastrado por ${ownerFirstName}\n`;
+        }
+        if (duplicate.licensePlate === validatedData.licensePlate) {
+          errorMessage += `• Placa ${validatedData.licensePlate} já cadastrada por ${ownerFirstName}\n`;
+        }
+        errorMessage += `Data do primeiro cadastro: ${new Date(duplicate.createdAt).toLocaleDateString('pt-BR')}`;
+        
         return res.status(400).json({ 
-          error: "Já existe uma indicação com este telefone ou placa" 
+          error: "Duplicata encontrada",
+          details: errorMessage,
+          duplicatedBy: ownerFirstName,
+          originalDate: duplicate.createdAt
         });
       }
       
@@ -225,6 +254,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking duplicates:", error);
       return res.status(500).json({ error: "Erro ao verificar duplicatas" });
+    }
+  });
+
+  // Get today's referral stats for current user
+  app.get("/api/referrals/today-stats", requireAuth, async (req, res) => {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayReferrals = await storage.getTodayReferralsByUserId(req.user!.id, today);
+      
+      return res.json({
+        count: todayReferrals.length,
+        limit: 30,
+        remaining: Math.max(0, 30 - todayReferrals.length)
+      });
+    } catch (error) {
+      console.error("Error fetching today stats:", error);
+      return res.status(500).json({ error: "Erro ao buscar estatísticas" });
     }
   });
 
@@ -382,6 +429,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (parseFloat(user.balance) < validatedData.amount) {
         return res.status(400).json({ error: "Saldo insuficiente" });
+      }
+
+      // 4. Validação de valores pequenos para saque
+      const MIN_WITHDRAWAL_AMOUNT = 10.00;
+      if (validatedData.amount < MIN_WITHDRAWAL_AMOUNT) {
+        return res.status(400).json({ 
+          error: "Valor mínimo não atingido",
+          details: `Valor mínimo para saque: R$ ${MIN_WITHDRAWAL_AMOUNT.toFixed(2)}. Valor solicitado: R$ ${validatedData.amount.toFixed(2)}` 
+        });
       }
       
       // Check if PIX key matches user's registered PIX

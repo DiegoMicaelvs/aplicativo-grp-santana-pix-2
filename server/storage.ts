@@ -76,6 +76,8 @@ export interface IStorage {
   getAllReferrals(): Promise<any[]>;
   getReferralsByStatus(status: ReferralStatus): Promise<any[]>;
   checkDuplicateReferral(phone?: string, licensePlate?: string): Promise<any[]>;
+  checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string): Promise<any[]>;
+  getTodayReferralsByUserId(userId: number, startDate: Date): Promise<any[]>;
   updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number): Promise<any>;
   calculateCommissions(referralId: number): Promise<void>;
   
@@ -453,6 +455,38 @@ class DatabaseStorage implements IStorage {
       with: {
         user: true
       }
+    });
+  }
+
+  async checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string) {
+    const conditions = [];
+    if (phone) conditions.push(eq(referrals.phone, phone));
+    if (licensePlate) conditions.push(eq(referrals.licensePlate, licensePlate));
+    
+    if (conditions.length === 0) return [];
+    
+    return await db.select({
+      id: referrals.id,
+      phone: referrals.phone,
+      licensePlate: referrals.licensePlate,
+      createdAt: referrals.createdAt,
+      createdByName: users.fullName
+    }).from(referrals)
+      .leftJoin(users, eq(referrals.createdBy, users.id))
+      .where(or(...conditions))
+      .orderBy(asc(referrals.createdAt));
+  }
+
+  async getTodayReferralsByUserId(userId: number, startDate: Date) {
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 1);
+    
+    return await db.query.referrals.findMany({
+      where: and(
+        eq(referrals.userId, userId),
+        sql`${referrals.createdAt} >= ${startDate.toISOString()}`,
+        sql`${referrals.createdAt} < ${endDate.toISOString()}`
+      )
     });
   }
   
