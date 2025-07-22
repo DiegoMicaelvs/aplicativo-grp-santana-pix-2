@@ -126,6 +126,20 @@ The system is designed for deployment on platforms that support Node.js applicat
   4. Ver `docs/solucao-login-producao.md` para detalhes técnicos
 - **Para Resolver Problemas**: Limpar cookies do navegador ou usar aba anônima
 
+### Database Separation Between Environments (July 2025) - DOCUMENTED
+- **Discovery**: Replit uses completely separate PostgreSQL databases for preview and production environments
+- **Impact**: Users created in preview don't exist in production and vice-versa
+- **Root Cause**: Security feature - prevents development data from mixing with production data
+- **Solutions Implemented**:
+  1. Created `scripts/diagnose-database-sync.ts` to identify which environment/database is being used
+  2. Created `scripts/export-import-data.ts` for manual data synchronization between environments
+  3. Documentation in `docs/solucao-banco-separado.md` with complete explanation and solutions
+- **Best Practice**: Always use production environment (https://indique.replit.app) for real user registrations
+- **Current Data**:
+  - Preview environment: 4 users (3 admins, 1 indicador)
+  - Production environment: Separate database with different users
+  - Admin credentials: admin@kongpix.com.br / admin123 (must be created in each environment)
+
 ## Recent Updates (July 2025)
 
 ### Automatic Commission Reversal System (July 2025)
