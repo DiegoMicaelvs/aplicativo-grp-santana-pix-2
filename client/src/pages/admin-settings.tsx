@@ -198,12 +198,14 @@ export default function AdminSettings() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Link href="/admin/dashboard-new">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar ao Dashboard
-            </Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.href = '/admin/dashboard-new'}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar ao Dashboard
+          </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Configurações do Sistema</h1>
             <p className="text-gray-600">Gerencie as configurações globais do sistema</p>
@@ -827,11 +829,12 @@ export default function AdminSettings() {
 
         {/* Botão de Salvar */}
         <div className="flex justify-end gap-4 pt-6">
-          <Link href="/admin/dashboard-new">
-            <Button variant="outline">
-              Cancelar
-            </Button>
-          </Link>
+          <Button 
+            variant="outline"
+            onClick={() => window.location.href = '/admin/dashboard-new'}
+          >
+            Cancelar
+          </Button>
           <Button 
             onClick={handleSaveSettings}
             disabled={isLoading}
