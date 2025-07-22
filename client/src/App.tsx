@@ -27,6 +27,8 @@ import PromoterDashboard from "@/pages/promoter-dashboard";
 import TeamDashboard from "@/pages/team-dashboard";
 import VendedorDashboard from "@/pages/vendedor-dashboard";
 import RegisterIndicator from "@/pages/register-indicator";
+import SobrePage from "@/pages/sobre-page";
+import ContatoPage from "@/pages/contato-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AdminRoute, PromoterRoute, VendedorRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
@@ -35,6 +37,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
+      <Route path="/sobre" component={SobrePage} />
+      <Route path="/contato" component={ContatoPage} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/referrals" component={ReferralsPage} />
