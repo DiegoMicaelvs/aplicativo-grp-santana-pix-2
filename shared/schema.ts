@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // User roles
-export type UserRole = "indicador" | "promotor" | "admin" | "analista" | "vendedor";
+export type UserRole = "indicador" | "promotor" | "admin" | "analista" | "vendedor" | "gerente";
 export type AnalystLevel = 1 | 2 | 3;
 
 // Analyst permissions
@@ -15,6 +15,20 @@ export type AnalystPermission =
   | "manage_withdrawals" 
   | "view_reports" 
   | "manage_companies";
+
+// Manager permissions
+export type ManagerPermission = 
+  | "view_all_referrals"
+  | "edit_all_referrals"
+  | "view_all_users"
+  | "manage_all_users"
+  | "view_all_reports"
+  | "manage_analysts"
+  | "manage_promoters"
+  | "manage_withdrawals"
+  | "view_financial_reports"
+  | "manage_companies"
+  | "audit_access";
 
 // User types
 export const users = pgTable("users", {
@@ -30,7 +44,7 @@ export const users = pgTable("users", {
   pixKey: text("pix_key").notNull(),
   role: text("role").default("indicador").notNull().$type<UserRole>(),
   analystLevel: integer("analyst_level").$type<AnalystLevel>(), // Apenas para analistas
-  permissions: jsonb("permissions").$type<AnalystPermission[]>(), // Permissões específicas para analistas
+  permissions: jsonb("permissions").$type<AnalystPermission[] | ManagerPermission[]>(), // Permissões específicas para analistas e gerentes
   createdBy: integer("created_by"), // Quem cadastrou este usuário
   promoterId: integer("promoter_id"), // ID do promotor que cadastrou este indicador
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0.00").notNull(), // Saldo disponível

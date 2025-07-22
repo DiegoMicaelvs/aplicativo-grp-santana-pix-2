@@ -127,6 +127,11 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start">Painel Admin</Button>
                         </Link>
                       )}
+                      {user.role === 'gerente' && (
+                        <Link href="/manager" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">Painel Gerente</Button>
+                        </Link>
+                      )}
                       {user.role === 'promotor' && (
                         <Link href="/team" onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start">Minha Equipe</Button>

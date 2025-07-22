@@ -142,6 +142,18 @@ The system is designed for deployment on platforms that support Node.js applicat
 
 ## Recent Updates (July 2025)
 
+### Manager Role Implementation (July 22, 2025)
+- **New User Role:** Added "gerente" (Manager) role with comprehensive permissions between admin and analyst
+- **Manager Permissions System:** Created ManagerPermission type with full system access capabilities
+- **Dedicated Dashboard:** Created manager-specific dashboard at `/manager` with overview of entire system
+- **Permission Groups:** Defined manager-specific permission groups including:
+  - Visualização Completa: view_all_referrals, view_all_users, view_all_reports, view_financial_reports, audit_access
+  - Gestão: edit_all_referrals, manage_all_users, manage_analysts, manage_promoters, manage_withdrawals, manage_companies
+- **Role Integration:** Updated all user management interfaces to support gerente role
+- **Navigation Updates:** Added manager dashboard link in header navigation
+- **Protected Routes:** Created ManagerRoute component for role-based access control
+- **Visual Identity:** Gerente role uses green color scheme in badges and UI elements
+
 ### Automatic Commission Reversal System (July 2025)
 - **Financial Integrity Protection:** Implemented automatic commission reversal when referral status is changed from paid to non-paid states
 - **Intelligent Detection:** System detects when status moves from `validated` or `converted` back to `pending`, `rejected`, etc.

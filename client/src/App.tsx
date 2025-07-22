@@ -30,8 +30,9 @@ import VendedorDashboard from "@/pages/vendedor-dashboard";
 import RegisterIndicator from "@/pages/register-indicator";
 import SobrePage from "@/pages/sobre-page";
 import ContatoPage from "@/pages/contato-page";
+import ManagerDashboard from "@/pages/manager-dashboard";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AdminRoute, PromoterRoute, VendedorRoute } from "./lib/protected-route";
+import { AdminRoute, PromoterRoute, VendedorRoute, ManagerRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
 
 function Router() {
@@ -67,6 +68,7 @@ function Router() {
       <PromoterRoute path="/register-indicator" component={RegisterIndicator} />
       <PromoterRoute path="/team" component={TeamDashboard} />
       <VendedorRoute path="/vendedor" component={VendedorDashboard} />
+      <ManagerRoute path="/manager" component={ManagerDashboard} />
       <Route path="/team-dashboard" component={TeamDashboard} />
       <Route component={NotFound} />
     </Switch>

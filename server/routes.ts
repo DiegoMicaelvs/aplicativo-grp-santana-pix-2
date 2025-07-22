@@ -14,7 +14,8 @@ import {
   createIndicadorSchema,
   updateAnalystPermissionsSchema,
   createReferralConversationSchema,
-  type AnalystPermission
+  type AnalystPermission,
+  type ManagerPermission
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -56,6 +57,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware to check vendedor role
   const requireVendedor = (req: any, res: any, next: any) => {
     if (!req.isAuthenticated() || (req.user.role !== "vendedor" && req.user.role !== "admin")) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+    next();
+  };
+
+  // Middleware to check manager role
+  const requireManager = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || (req.user.role !== "gerente" && req.user.role !== "admin")) {
       return res.status(403).json({ error: "Acesso negado" });
     }
     next();

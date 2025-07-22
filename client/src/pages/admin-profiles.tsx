@@ -105,6 +105,25 @@ const PERMISSION_GROUPS = {
   ],
 } as const;
 
+// Manager permission groups
+const MANAGER_PERMISSION_GROUPS = {
+  "Visualização Completa": [
+    { key: "view_all_referrals", label: "Ver Todas as Indicações" },
+    { key: "view_all_users", label: "Ver Todos os Usuários" },
+    { key: "view_all_reports", label: "Ver Todos os Relatórios" },
+    { key: "view_financial_reports", label: "Ver Relatórios Financeiros" },
+    { key: "audit_access", label: "Acesso aos Logs de Auditoria" },
+  ],
+  "Gestão": [
+    { key: "edit_all_referrals", label: "Editar Todas as Indicações" },
+    { key: "manage_all_users", label: "Gerenciar Todos os Usuários" },
+    { key: "manage_analysts", label: "Gerenciar Analistas" },
+    { key: "manage_promoters", label: "Gerenciar Promotores" },
+    { key: "manage_withdrawals", label: "Gerenciar Saques" },
+    { key: "manage_companies", label: "Gerenciar Empresas" },
+  ],
+} as const;
+
 export default function AdminProfiles() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -354,6 +373,7 @@ export default function AdminProfiles() {
       case "promotor": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100";
       case "analista": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100";
       case "vendedor": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100";
+      case "gerente": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
     }
   };
@@ -365,6 +385,7 @@ export default function AdminProfiles() {
       case "analista": return "Analista";
       case "indicador": return "Indicador";
       case "vendedor": return "Vendedor";
+      case "gerente": return "Gerente";
       default: return role;
     }
   };
@@ -1024,6 +1045,7 @@ export default function AdminProfiles() {
                   <SelectItem value="promotor">Promotor</SelectItem>
                   <SelectItem value="analista">Analista</SelectItem>
                   <SelectItem value="vendedor">Vendedor</SelectItem>
+                  <SelectItem value="gerente">Gerente</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
@@ -1076,6 +1098,35 @@ export default function AdminProfiles() {
               <Label>Permissões do Analista</Label>
               <div className="mt-2 space-y-4">
                 {Object.entries(PERMISSION_GROUPS).map(([groupName, permissions]) => (
+                  <div key={groupName}>
+                    <h4 className="font-medium text-sm mb-2">{groupName}</h4>
+                    <div className="space-y-2 ml-4">
+                      {permissions.map(({ key, label }) => (
+                        <div key={key} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={key}
+                            checked={watchedPermissions.includes(key)}
+                            onCheckedChange={(checked) =>
+                              handlePermissionChange(key, !!checked)
+                            }
+                          />
+                          <label htmlFor={key} className="text-sm">
+                            {label}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {watchedRole === "gerente" && (
+            <div>
+              <Label>Permissões do Gerente</Label>
+              <div className="mt-2 space-y-4">
+                {Object.entries(MANAGER_PERMISSION_GROUPS).map(([groupName, permissions]) => (
                   <div key={groupName}>
                     <h4 className="font-medium text-sm mb-2">{groupName}</h4>
                     <div className="space-y-2 ml-4">
