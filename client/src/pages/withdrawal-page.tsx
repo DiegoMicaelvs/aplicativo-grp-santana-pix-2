@@ -115,7 +115,6 @@ export default function WithdrawalPage() {
   };
 
   const availableBalance = parseFloat(user?.balance || '0');
-  const minWithdrawal = 10; // Minimum R$ 10.00 for withdrawal (Sistema de Segurança)
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -146,11 +145,7 @@ export default function WithdrawalPage() {
                 <div className="text-3xl font-bold text-green-600 mb-2">
                   R$ {availableBalance.toFixed(2)}
                 </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  Valor mínimo para saque: R$ {minWithdrawal.toFixed(2)}
-                </p>
-                
-                {availableBalance >= minWithdrawal ? (
+                {availableBalance > 0 ? (
                   <Button 
                     onClick={() => setShowForm(!showForm)}
                     className="w-full"
@@ -191,14 +186,14 @@ export default function WithdrawalPage() {
                               <Input
                                 type="number"
                                 step="0.01"
-                                min={minWithdrawal}
+                                min={0.01}
                                 max={availableBalance}
                                 placeholder="50.00"
                                 {...field}
                               />
                             </FormControl>
                             <FormDescription>
-                              Valor entre R$ {minWithdrawal.toFixed(2)} e R$ {availableBalance.toFixed(2)}
+                              Valor até R$ {availableBalance.toFixed(2)}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
