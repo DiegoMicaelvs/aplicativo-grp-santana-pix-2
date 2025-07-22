@@ -120,24 +120,78 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* 10 Control Tabs */}
+      {/* 10 Control Tabs - Mobile Optimized with Touch Support */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-10">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="indicators">Indicadores</TabsTrigger>
-          <TabsTrigger value="referrals">Indicações</TabsTrigger>
-          <TabsTrigger value="payments">Pagamentos</TabsTrigger>
-          <TabsTrigger value="analytics">Análises</TabsTrigger>
-          <TabsTrigger value="withdrawals">Saques</TabsTrigger>
-          <TabsTrigger value="audit">Auditoria</TabsTrigger>
-          <TabsTrigger value="team">Equipes</TabsTrigger>
-          <TabsTrigger value="profiles">Perfis</TabsTrigger>
-          <TabsTrigger value="support">Suporte</TabsTrigger>
-        </TabsList>
+        <div className="w-full">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300 pb-2">
+            <TabsList className="inline-flex w-max h-auto p-1 bg-muted rounded-md gap-1">
+              <TabsTrigger 
+                value="overview" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Visão Geral
+              </TabsTrigger>
+              <TabsTrigger 
+                value="indicators" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Indicadores
+              </TabsTrigger>
+              <TabsTrigger 
+                value="referrals" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Indicações
+              </TabsTrigger>
+              <TabsTrigger 
+                value="payments" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Pagamentos
+              </TabsTrigger>
+              <TabsTrigger 
+                value="analytics" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Análises
+              </TabsTrigger>
+              <TabsTrigger 
+                value="withdrawals" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Saques
+              </TabsTrigger>
+              <TabsTrigger 
+                value="audit" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Auditoria
+              </TabsTrigger>
+              <TabsTrigger 
+                value="team" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Equipes
+              </TabsTrigger>
+              <TabsTrigger 
+                value="profiles" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Perfis
+              </TabsTrigger>
+              <TabsTrigger 
+                value="support" 
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Suporte
+              </TabsTrigger>
+            </TabsList>
+          </div>
+        </div>
 
         {/* Tab 1: Overview */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <Link href="/admin/indicators">
                 <CardHeader>
@@ -358,34 +412,34 @@ export default function AdminDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/admin/indicators">
-                  <Button size="lg">
+                  <Button size="lg" className="w-full sm:w-auto">
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Todos os Indicadores
                   </Button>
                 </Link>
                 <Link href="/admin/analytics">
-                  <Button variant="outline" size="lg">
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Análise de Performance
                   </Button>
                 </Link>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{stats.totalIndicators}</div>
-                  <div className="text-sm text-gray-600">Total de Indicadores</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="text-center p-3 sm:p-4 border rounded-lg">
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.totalIndicators}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Total de Indicadores</div>
                 </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{users.filter(u => u.role === "indicador" && u.status === "active").length}</div>
-                  <div className="text-sm text-gray-600">Indicadores Ativos</div>
+                <div className="text-center p-3 sm:p-4 border rounded-lg">
+                  <div className="text-xl sm:text-2xl font-bold text-green-600">{users.filter(u => u.role === "indicador" && u.status === "active").length}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Indicadores Ativos</div>
                 </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">
+                <div className="text-center p-3 sm:p-4 border rounded-lg">
+                  <div className="text-xl sm:text-2xl font-bold text-orange-600">
                     {stats.totalIndicators > 0 ? (stats.totalReferrals / stats.totalIndicators).toFixed(1) : 0}
                   </div>
-                  <div className="text-sm text-gray-600">Média por Indicador</div>
+                  <div className="text-xs sm:text-sm text-gray-600">Média por Indicador</div>
                 </div>
               </div>
             </CardContent>
@@ -499,6 +553,22 @@ export default function AdminDashboard() {
                 <Button size="lg">
                   <UserCheck className="h-4 w-4 mr-2" />
                   Gerenciar Perfis
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="support">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tickets de Suporte</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Link href="/admin/support-tickets">
+                <Button size="lg">
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Gerenciar Tickets de Suporte
                 </Button>
               </Link>
             </CardContent>
