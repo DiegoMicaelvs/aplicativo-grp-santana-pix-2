@@ -412,17 +412,17 @@ export default function AdminDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/admin/indicators">
-                  <Button size="lg" className="w-full sm:w-auto ml-[-14px] mr-[-14px]">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver Todos os Indicadores
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/admin/indicators" className="flex-1">
+                  <Button size="sm" className="w-full text-xs sm:text-sm">
+                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Ver Indicadores
                   </Button>
                 </Link>
-                <Link href="/admin/analytics">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Análise de Performance
+                <Link href="/admin/analytics" className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm">
+                    <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Performance
                   </Button>
                 </Link>
               </div>
@@ -454,9 +454,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <Link href="/admin/referrals-detailed">
-                <Button size="lg">
-                  <ClipboardList className="h-4 w-4 mr-2" />
-                  Ver Indicações Detalhadas
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <ClipboardList className="h-4 w-4 mr-1 sm:mr-2" />
+                  Ver Indicações
                 </Button>
               </Link>
             </CardContent>
@@ -470,9 +470,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <Link href="/admin/payments">
-                <Button size="lg">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Acessar Controle de Pagamentos
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <CreditCard className="h-4 w-4 mr-1 sm:mr-2" />
+                  Controle de Pagamentos
                 </Button>
               </Link>
             </CardContent>
@@ -486,9 +486,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <Link href="/admin/analytics">
-                <Button size="lg">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Ver Análises Detalhadas
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <BarChart3 className="h-4 w-4 mr-1 sm:mr-2" />
+                  Ver Análises
                 </Button>
               </Link>
             </CardContent>
@@ -502,8 +502,8 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <Link href="/admin/withdrawals">
-                <Button size="lg">
-                  <Wallet className="h-4 w-4 mr-2" />
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <Wallet className="h-4 w-4 mr-1 sm:mr-2" />
                   Gerenciar Saques
                 </Button>
               </Link>
@@ -518,9 +518,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <Link href="/admin/audit-log">
-                <Button size="lg">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Ver Log de Auditoria
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <Shield className="h-4 w-4 mr-1 sm:mr-2" />
+                  Log de Auditoria
                 </Button>
               </Link>
             </CardContent>
@@ -534,9 +534,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <Link href="/team-dashboard">
-                <Button size="lg">
-                  <Activity className="h-4 w-4 mr-2" />
-                  Ver Dashboard de Equipes
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <Activity className="h-4 w-4 mr-1 sm:mr-2" />
+                  Dashboard Equipes
                 </Button>
               </Link>
             </CardContent>
@@ -550,8 +550,8 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <Link href="/admin/profiles">
-                <Button size="lg">
-                  <UserCheck className="h-4 w-4 mr-2" />
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <UserCheck className="h-4 w-4 mr-1 sm:mr-2" />
                   Gerenciar Perfis
                 </Button>
               </Link>
@@ -566,9 +566,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <Link href="/admin/support-tickets">
-                <Button size="lg">
-                  <HelpCircle className="h-4 w-4 mr-2" />
-                  Gerenciar Tickets de Suporte
+                <Button size="sm" className="w-full text-xs sm:text-sm">
+                  <HelpCircle className="h-4 w-4 mr-1 sm:mr-2" />
+                  Tickets Suporte
                 </Button>
               </Link>
             </CardContent>
