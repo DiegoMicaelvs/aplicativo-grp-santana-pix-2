@@ -61,19 +61,19 @@ export default function HomePage() {
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
                   Chega de programas de indicação que só pagam se a empresa vender! Aqui você ganha <span className="font-semibold text-primary">R$3 por cada cadastro validado</span>, mesmo que a venda ainda nem tenha acontecido. Se o nosso time converter em venda, você ainda recebe <span className="font-semibold text-primary">R$50 de bônus!</span>
                 </p>
-                <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                  <div className="rounded-md shadow">
+                <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start">
+                  <div className="flex-1 sm:flex-initial">
                     <Link href={user ? "/new-referral" : "/auth"}>
-                      <Button size="lg" className="w-full">
+                      <Button size="lg" className="w-full whitespace-nowrap">
                         Comece a Ganhar
                       </Button>
                     </Link>
                   </div>
-                  <div className="mt-3 sm:mt-0 sm:ml-3">
+                  <div className="flex-1 sm:flex-initial">
                     <Button
                       variant="outline"
                       size="lg"
-                      className="w-full"
+                      className="w-full whitespace-nowrap"
                       onClick={() => comoFuncionaRef.current?.scrollIntoView({ behavior: 'smooth' })}
                     >
                       Como Funciona
@@ -182,7 +182,7 @@ export default function HomePage() {
                       <DollarSign className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Renda extra real e imediata</h3>
+                      <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Renda extra real e imediata</h3>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -201,7 +201,7 @@ export default function HomePage() {
                       <Shield className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Sem experiência, sem venda, sem complicação</h3>
+                      <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Sem experiência, sem venda, sem complicação</h3>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -220,7 +220,7 @@ export default function HomePage() {
                       <Users className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Kit credencial incluso</h3>
+                      <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Kit credencial incluso</h3>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -239,7 +239,7 @@ export default function HomePage() {
                       <HeadphonesIcon className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Apoio completo e treinamento</h3>
+                      <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Apoio completo e treinamento</h3>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -258,7 +258,7 @@ export default function HomePage() {
                       <Clock className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Flexibilidade total</h3>
+                      <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Flexibilidade total</h3>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -277,7 +277,7 @@ export default function HomePage() {
                       <BarChart className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Foco em quem tem contato com motoristas</h3>
+                      <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Foco em quem tem contato com motoristas</h3>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -298,17 +298,17 @@ export default function HomePage() {
             <span className="block text-[#0a0a0a]">Pronto para começar?</span>
             <span className="block text-[#000000]">Junte-se a mais de 600 indicadores ativos.</span>
           </h2>
-          <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
-            <div className="inline-flex rounded-md shadow">
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 lg:mt-0 lg:flex-shrink-0">
+            <div className="flex-1 sm:flex-initial">
               <Link href={user ? "/dashboard" : "/auth"}>
-                <Button size="lg" variant="secondary">
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto whitespace-nowrap">
                   Cadastre-se agora
                 </Button>
               </Link>
             </div>
-            <div className="ml-3 inline-flex rounded-md shadow">
+            <div className="flex-1 sm:flex-initial">
               <Link href={user ? "/dashboard" : "/auth"}>
-                <Button size="lg" variant="default">
+                <Button size="lg" variant="default" className="w-full sm:w-auto whitespace-nowrap">
                   {user ? "Acessar Dashboard" : "Já sou indicador"}
                 </Button>
               </Link>
