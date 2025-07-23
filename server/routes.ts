@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { 
   updateReferralStatusSchema,
@@ -567,9 +567,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = createIndicadorSchema.parse(req.body);
       
+      // Hash the password before saving
+      const hashedPassword = await hashPassword(validatedData.password);
+      
       // Add promoter relationship
       const userData = {
         ...validatedData,
+        password: hashedPassword,
         promoterId: req.user!.id,
         createdBy: req.user!.id
       };
@@ -732,7 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Send SMS notification for withdrawal approval/rejection
-      if (user?.phone && (status === 'approved' || status === 'rejected')) {
+      if (user?.phone && withdrawal && (status === 'approved' || status === 'rejected')) {
         try {
           const { sendWithdrawalNotification } = await import('./sms-service');
           await sendWithdrawalNotification(
@@ -847,8 +851,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new user (admin only)
   app.post("/api/admin/users", requireAdmin, async (req, res) => {
     try {
+      // Hash the password before saving
+      const hashedPassword = await hashPassword(req.body.password);
+      
       const userData = {
         ...req.body,
+        password: hashedPassword,
         createdBy: req.user!.id
       };
       
@@ -877,9 +885,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new indicador (analysts with permission can create)
   app.post("/api/analyst/indicadores", requireAnalystPermission("create_indicadores"), async (req, res) => {
     try {
+      // Hash the password before saving
+      const hashedPassword = await hashPassword(req.body.password);
+      
       // Force role to be indicador and set analyst as creator
       const userData = {
         ...req.body,
+        password: hashedPassword,
         role: "indicador",
         createdBy: req.user!.id
       };
@@ -908,9 +920,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new promotor (analysts with permission can create)
   app.post("/api/analyst/promotores", requireAnalystPermission("create_promotores"), async (req, res) => {
     try {
+      // Hash the password before saving
+      const hashedPassword = await hashPassword(req.body.password);
+      
       // Force role to be promotor and set analyst as creator
       const userData = {
         ...req.body,
+        password: hashedPassword,
         role: "promotor",
         createdBy: req.user!.id
       };
@@ -944,9 +960,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Apenas promotores podem cadastrar indicadores" });
       }
 
+      // Hash the password before saving
+      const hashedPassword = await hashPassword(req.body.password);
+
       // Force role to be indicador and set promotor as creator
       const userData = {
         ...req.body,
+        password: hashedPassword,
         role: "indicador",
         createdBy: req.user!.id,
         promoterId: req.user!.id // Automatically assign to the creating promotor

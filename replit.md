@@ -291,3 +291,17 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **API Endpoints:**
   - `POST /api/analyst/indicadores` - Create new indicador (requires create_indicadores permission)
   - `POST /api/analyst/promotores` - Create new promotor (requires create_promotores permission)
+
+### Critical Password Security Fix (July 23, 2025)
+- **Security Issue Identified:** Users created through admin and analyst interfaces had passwords stored in plain text, making login impossible
+- **Comprehensive Fix Applied:** Updated all user creation routes to properly hash passwords using scrypt-based hashPassword function
+- **Routes Fixed:**
+  - `POST /api/admin/users` - Admin user creation now hashes passwords
+  - `POST /api/analyst/indicadores` - Analyst indicador creation now hashes passwords  
+  - `POST /api/analyst/promotores` - Analyst promotor creation now hashes passwords
+  - `POST /api/promoter/indicators` - Promoter indicador creation now hashes passwords
+- **Existing Routes Verified:** Public registration (`/api/register`), password change (`/api/change-password`), and admin password reset (`/api/admin/users/:id/reset-password`) already properly hash passwords
+- **Database Schema Updates:** Enhanced address fields separation (city, state, zipCode) with proper TypeScript typing
+- **Enhanced Duplicate Detection:** License plate duplicates now show first name and state of original owner
+- **LSP Error Resolution:** Fixed all TypeScript compilation errors related to user role typing and database insertions
+- **Testing Status:** All user creation flows now working with proper password authentication

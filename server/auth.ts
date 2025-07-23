@@ -68,7 +68,7 @@ export function setupAuth(app: Express) {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
       secure: isProduction, // Secure em produção
-      sameSite: isProduction ? "none" : "lax", // None em produção para funcionar com HTTPS
+      sameSite: (isProduction ? "none" : "lax") as "lax" | "none", // None em produção para funcionar com HTTPS
       path: "/", // Cookie válido em todo o site
       domain: undefined // Deixar o navegador gerenciar o domínio automaticamente
     }

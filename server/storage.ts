@@ -145,11 +145,35 @@ class DatabaseStorage implements IStorage {
   // User methods
   async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number }) {
     try {
+      // Prepare user data with proper typing
+      const insertData = {
+        username: userData.username,
+        password: userData.password,
+        fullName: userData.fullName,
+        email: userData.email || userData.username,
+        phone: userData.phone,
+        cpf: userData.cpf,
+        city: userData.city,
+        state: userData.state,
+        zipCode: userData.zipCode,
+        shirtSize: userData.shirtSize,
+        pixKey: userData.pixKey,
+        role: (userData.role || "indicador") as "indicador" | "promotor" | "admin" | "analista" | "gerente" | "vendedor",
+        permissions: userData.permissions || [],
+        analystLevel: userData.analystLevel as 1 | 2 | 3 | null,
+        createdBy: userData.createdBy,
+        promoterId: userData.promoterId,
+        balance: 0,
+        totalEarnings: 0,
+        totalReferrals: 0,
+        isActive: true,
+        mustChangePassword: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
       const [user] = await db.insert(users)
-        .values({
-          ...userData,
-          role: (userData.role || "indicador")
-        })
+        .values(insertData)
         .returning();
       
       return user;
