@@ -225,6 +225,14 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Target Audience Focus:** Emphasized content for frentistas, lava-jatos, despachantes, and panfleteiros
 - **Earnings Transparency:** Highlighted R$5,000+ monthly earnings cases and R$1,980 potential with 30 daily cadastros
 
+### Daily Counter System Clarification (July 2025)
+- **Counter Function:** The daily counter (0/30) tracks referrals (leads/prospects), not indicators (new users)
+- **System Design:** Two separate entities with distinct purposes:
+  - Referrals = leads of people who need insurance (tracked by daily limit)
+  - Indicators = new users/promoters registered in the system (not limited daily)
+- **User Interface:** "Nova Indicação" page creates referrals, promoter dashboard creates indicators
+- **Security System:** 30 daily limit applies only to insurance referrals, not user creation
+
 ### Complete Rebranding to Kong Pix (July 2025)
 - **Brand Identity Transformation:** Complete migration from "Grupo Santana" to "Kong Pix" across entire platform
 - **New Color Palette Implementation:** Updated primary colors to Kong Pix yellow (#fcb900) and secondary gray (#abb8c3)
