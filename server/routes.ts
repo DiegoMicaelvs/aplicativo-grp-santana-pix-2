@@ -864,6 +864,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new indicador (analysts with permission can create)
+  app.post("/api/analyst/indicadores", requireAnalystPermission("create_indicadores"), async (req, res) => {
+    try {
+      // Force role to be indicador and set analyst as creator
+      const userData = {
+        ...req.body,
+        role: "indicador",
+        createdBy: req.user!.id
+      };
+      
+      const newUser = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = newUser;
+
+      // Send welcome SMS to new user if they have a phone
+      if (newUser.phone) {
+        try {
+          const { sendWelcomeSMS } = await import('./sms-service');
+          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          console.log(`Welcome SMS sent to new indicador: ${newUser.fullName} (${newUser.phone})`);
+        } catch (smsError) {
+          console.log('Welcome SMS failed (non-critical):', smsError);
+        }
+      }
+      
+      return res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating indicador:", error);
+      return res.status(500).json({ error: "Erro ao criar indicador" });
+    }
+  });
+
+  // Create new promotor (analysts with permission can create)
+  app.post("/api/analyst/promotores", requireAnalystPermission("create_promotores"), async (req, res) => {
+    try {
+      // Force role to be promotor and set analyst as creator
+      const userData = {
+        ...req.body,
+        role: "promotor",
+        createdBy: req.user!.id
+      };
+      
+      const newUser = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = newUser;
+
+      // Send welcome SMS to new user if they have a phone
+      if (newUser.phone) {
+        try {
+          const { sendWelcomeSMS } = await import('./sms-service');
+          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          console.log(`Welcome SMS sent to new promotor: ${newUser.fullName} (${newUser.phone})`);
+        } catch (smsError) {
+          console.log('Welcome SMS failed (non-critical):', smsError);
+        }
+      }
+      
+      return res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating promotor:", error);
+      return res.status(500).json({ error: "Erro ao criar promotor" });
+    }
+  });
+
   // Update user profile (admin only)
   app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {

@@ -132,6 +132,11 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start">Painel Gerente</Button>
                         </Link>
                       )}
+                      {user.role === 'analista' && (
+                        <Link href="/analyst" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">Painel Analista</Button>
+                        </Link>
+                      )}
                       {user.role === 'promotor' && (
                         <Link href="/team" onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start">Minha Equipe</Button>
@@ -218,6 +223,16 @@ export default function Header() {
                       {user.role === 'admin' && (
                         <Link href="/admin">
                           <DropdownMenuItem>Painel Admin</DropdownMenuItem>
+                        </Link>
+                      )}
+                      {user.role === 'gerente' && (
+                        <Link href="/manager">
+                          <DropdownMenuItem>Painel Gerente</DropdownMenuItem>
+                        </Link>
+                      )}
+                      {user.role === 'analista' && (
+                        <Link href="/analyst">
+                          <DropdownMenuItem>Painel Analista</DropdownMenuItem>
                         </Link>
                       )}
                       {user.role === 'promotor' && (

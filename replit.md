@@ -267,3 +267,19 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Updated Admin Interface:** SMS settings page updated to reflect Comtele configuration
 - **Direct Brazilian Support:** Native support for all Brazilian carriers without international routing
 - **Removed Dependencies:** Uninstalled Twilio package, reducing project dependencies
+
+### Analyst User Creation System (July 23, 2025)
+- **Full Implementation:** Complete system allowing analysts to create new indicadores and promotores with proper permissions
+- **Permission-Based Access:** Analysts require specific permissions (create_indicadores, create_promotores) to create users
+- **Dedicated Dashboard:** Created `/analyst` dashboard showing available actions based on analyst permissions and system overview
+- **User Creation Pages:** Separate interfaces for creating indicadores (`/analyst/create-indicador`) and promotores (`/analyst/create-promotor`)
+- **Role-Based Security:** Server routes force role assignment and prevent privilege escalation during user creation
+- **Permission Validation:** Server middleware `requireAnalystPermission()` validates analyst permissions before user creation
+- **SMS Integration:** New users created by analysts automatically receive welcome SMS via Comtele service
+- **Navigation Integration:** Added analyst dashboard links in header navigation for authenticated analysts
+- **Form Validation:** Complete form validation with required fields and proper data handling
+- **Success Feedback:** Toast notifications confirm successful user creation with automatic redirect to analyst dashboard
+- **Protected Routes:** `AnalystRoute` component ensures only authenticated analysts can access creation pages
+- **API Endpoints:**
+  - `POST /api/analyst/indicadores` - Create new indicador (requires create_indicadores permission)
+  - `POST /api/analyst/promotores` - Create new promotor (requires create_promotores permission)

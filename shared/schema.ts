@@ -14,7 +14,9 @@ export type AnalystPermission =
   | "view_users" 
   | "manage_withdrawals" 
   | "view_reports" 
-  | "manage_companies";
+  | "manage_companies"
+  | "create_indicadores"
+  | "create_promotores";
 
 // Manager permissions
 export type ManagerPermission = 

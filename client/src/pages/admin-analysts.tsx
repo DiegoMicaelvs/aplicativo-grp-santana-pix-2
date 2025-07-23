@@ -40,6 +40,8 @@ const PERMISSION_LABELS: Record<AnalystPermission, string> = {
   manage_withdrawals: "Gerenciar Saques",
   view_reports: "Visualizar Relatórios",
   manage_companies: "Gerenciar Empresas",
+  create_indicadores: "Criar Novos Indicadores",
+  create_promotores: "Criar Novos Promotores"
 };
 
 const LEVEL_DESCRIPTIONS = {
@@ -143,23 +145,6 @@ export default function AdminAnalysts() {
         </div>
       </div>
 
-      {/* Permission Levels Info */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {Object.entries(LEVEL_DESCRIPTIONS).map(([level, description]) => (
-          <Card key={level}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center">
-                <Shield className="mr-2 h-5 w-5" />
-                Analista Nível {level}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">{description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       {/* Analysts List */}
       <Card>
         <CardHeader>
@@ -232,14 +217,17 @@ export default function AdminAnalysts() {
 
       {/* Permission Configuration Dialog */}
       <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Configurar Permissões</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Configurar Permissões do Analista
+            </DialogTitle>
             <DialogDescription>
-              Configure o nível e as permissões para {selectedAnalyst?.fullName}
+              {selectedAnalyst && `Configure o nível e permissões de ${selectedAnalyst.fullName}`}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -248,7 +236,10 @@ export default function AdminAnalysts() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nível do Analista</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                    <Select
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      value={field.value?.toString()}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o nível" />
@@ -302,7 +293,7 @@ export default function AdminAnalysts() {
                 )}
               />
 
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex justify-end space-x-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -310,7 +301,10 @@ export default function AdminAnalysts() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={updatePermissionsMutation.isPending}>
+                <Button
+                  type="submit"
+                  disabled={updatePermissionsMutation.isPending}
+                >
                   {updatePermissionsMutation.isPending ? "Salvando..." : "Salvar Permissões"}
                 </Button>
               </div>
