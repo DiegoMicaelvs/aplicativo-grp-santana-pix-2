@@ -99,7 +99,7 @@ export default function AdminAuditLog() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center pt-[0px] pb-[0px] mt-[19px] mb-[19px] pl-[3px] pr-[3px] ml-[10px] mr-[10px]">
         <div className="flex items-center gap-4">
           <BackButton />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Log de Auditoria</h1>
@@ -109,7 +109,6 @@ export default function AdminAuditLog() {
           Atualizar
         </Button>
       </div>
-
       {/* Filtros */}
       <Card>
         <CardHeader>
@@ -227,7 +226,6 @@ export default function AdminAuditLog() {
           </div>
         </CardContent>
       </Card>
-
       {/* Tabela de logs */}
       <Card>
         <CardHeader>
