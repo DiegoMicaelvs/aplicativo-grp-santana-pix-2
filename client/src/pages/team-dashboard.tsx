@@ -121,14 +121,13 @@ export default function TeamDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between ml-[18px] mr-[18px] pt-[20px] pb-[20px] mt-[10px] mb-[10px]">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard da Equipe</h1>
           <p className="text-gray-600 dark:text-gray-400">Acompanhe o desempenho da sua equipe de indicadores</p>
         </div>
         <BackButton />
       </div>
-
       {/* Cards de estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -187,7 +186,6 @@ export default function TeamDashboard() {
           </CardContent>
         </Card>
       </div>
-
       <Tabs defaultValue="referrals" className="space-y-4">
         <TabsList>
           <TabsTrigger value="referrals">Indicações da Equipe</TabsTrigger>
