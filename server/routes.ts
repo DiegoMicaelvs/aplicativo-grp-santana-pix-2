@@ -203,24 +203,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (duplicates.length > 0) {
         const duplicate = duplicates[0];
-        const ownerFirstName = duplicate.createdByName ? duplicate.createdByName.split(' ')[0] : 'Usuário'; // Primeiro nome apenas
+        const ownerFirstName = duplicate.createdByFirstName || 'Usuário';
+        const ownerState = duplicate.createdByState || '';
+        const ownerInfo = ownerState ? `${ownerFirstName} (${ownerState})` : ownerFirstName;
         
         let errorMessage = "Cadastro duplicado encontrado:\n";
         if (duplicate.fullName && duplicate.fullName.toLowerCase() === validatedData.fullName.toLowerCase()) {
-          errorMessage += `• Nome "${validatedData.fullName}" já cadastrado por ${ownerFirstName}\n`;
+          errorMessage += `• Nome "${validatedData.fullName}" já cadastrado por ${ownerInfo}\n`;
         }
         if (duplicate.phone && duplicate.phone.toLowerCase() === validatedData.phone.toLowerCase()) {
-          errorMessage += `• Telefone ${validatedData.phone} já cadastrado por ${ownerFirstName}\n`;
+          errorMessage += `• Telefone ${validatedData.phone} já cadastrado por ${ownerInfo}\n`;
         }
         if (duplicate.licensePlate && duplicate.licensePlate.toLowerCase() === validatedData.licensePlate.toLowerCase()) {
-          errorMessage += `• Placa ${validatedData.licensePlate} já cadastrada por ${ownerFirstName}\n`;
+          errorMessage += `• Placa ${validatedData.licensePlate} já cadastrada por ${ownerInfo}\n`;
         }
         errorMessage += `Data do primeiro cadastro: ${new Date(duplicate.createdAt).toLocaleDateString('pt-BR')}`;
         
         return res.status(400).json({ 
           error: "Duplicata encontrada",
           details: errorMessage,
-          duplicatedBy: ownerFirstName,
+          duplicatedBy: ownerInfo,
           originalDate: duplicate.createdAt
         });
       }
@@ -259,11 +261,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/referrals/check-duplicate", requireAuth, async (req, res) => {
     try {
       const { phone, licensePlate, fullName } = req.body;
-      const duplicates = await storage.checkDuplicateReferral(phone, licensePlate, fullName);
+      const duplicates = await storage.checkDuplicateReferralWithOwner(phone, licensePlate, fullName);
       
       return res.json({ 
         isDuplicate: duplicates.length > 0,
-        duplicates 
+        duplicates: duplicates.map(duplicate => ({
+          ...duplicate,
+          ownerFirstName: duplicate.createdByFirstName,
+          ownerState: duplicate.createdByState
+        }))
       });
     } catch (error) {
       console.error("Error checking duplicates:", error);

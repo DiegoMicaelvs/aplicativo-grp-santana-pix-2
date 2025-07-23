@@ -87,7 +87,7 @@ export default function NewReferralPage() {
     },
     onSuccess: (data) => {
       if (data.isDuplicate) {
-        setDuplicateInfo(data.existingReferrals);
+        setDuplicateInfo(data.duplicates);
       } else {
         setDuplicateInfo(null);
         // Se não há duplicatas, proceder com o cadastro
@@ -257,17 +257,27 @@ export default function NewReferralPage() {
                         {duplicate.phone === form.getValues().phone && (
                           <p className="text-sm">
                             O telefone <strong>{duplicate.phone}</strong> já foi cadastrado por{" "}
-                            <strong>{duplicate.user.firstName} {duplicate.user.lastName}</strong> 
-                            ({duplicate.user.username})
+                            <strong>{duplicate.ownerFirstName}</strong>
+                            {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
                           </p>
                         )}
                         {duplicate.licensePlate === form.getValues().licensePlate && (
                           <p className="text-sm">
                             A placa <strong>{duplicate.licensePlate}</strong> já foi cadastrada por{" "}
-                            <strong>{duplicate.user.firstName} {duplicate.user.lastName}</strong> 
-                            ({duplicate.user.username})
+                            <strong>{duplicate.ownerFirstName}</strong>
+                            {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
                           </p>
                         )}
+                        {duplicate.fullName === form.getValues().fullName && (
+                          <p className="text-sm">
+                            O nome <strong>{duplicate.fullName}</strong> já foi cadastrado por{" "}
+                            <strong>{duplicate.ownerFirstName}</strong>
+                            {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-600 mt-1">
+                          Data do primeiro cadastro: {new Date(duplicate.createdAt).toLocaleDateString('pt-BR')}
+                        </p>
                       </div>
                     ))}
                     <p className="text-sm mt-3 font-medium">

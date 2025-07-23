@@ -473,7 +473,9 @@ class DatabaseStorage implements IStorage {
       phone: referrals.phone,
       licensePlate: referrals.licensePlate,
       createdAt: referrals.createdAt,
-      createdByName: users.fullName
+      createdByName: users.fullName,
+      createdByFirstName: sql`SPLIT_PART(${users.fullName}, ' ', 1)`.as('createdByFirstName'),
+      createdByState: users.state
     }).from(referrals)
       .leftJoin(users, eq(referrals.createdBy, users.id))
       .where(or(...conditions))
