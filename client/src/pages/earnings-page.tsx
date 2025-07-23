@@ -26,12 +26,12 @@ export default function EarningsPage() {
 
   // Filter only paid or validated referrals with commission
   const paidReferrals = referrals?.filter(r => 
-    (r.status === 'paid' || r.status === 'validated') && r.commission
+    (r.status === 'paid' || r.status === 'validated') && r.commissionIndicator
   ) || [];
   
   // Calculate total earnings
   const totalEarnings = paidReferrals.reduce((sum, r) => {
-    const commission = r.commission ? (typeof r.commission === 'string' ? parseFloat(r.commission) : r.commission) : 0;
+    const commission = r.commissionIndicator ? (typeof r.commissionIndicator === 'string' ? parseFloat(r.commissionIndicator) : r.commissionIndicator) : 0;
     return sum + commission;
   }, 0);
   

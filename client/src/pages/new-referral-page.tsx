@@ -65,7 +65,7 @@ export default function NewReferralPage() {
       phone: "",
       licensePlate: "",
       hasInsurance: false,
-      companyId: "",
+      companyId: "" as any,
     },
   });
 
@@ -75,7 +75,7 @@ export default function NewReferralPage() {
   });
 
   // Fetch today's referral stats
-  const { data: todayStats } = useQuery({
+  const { data: todayStats } = useQuery<any>({
     queryKey: ['/api/referrals/today-stats'],
   });
 
@@ -128,7 +128,7 @@ export default function NewReferralPage() {
   const onSubmit = (data: ReferralFormValues) => {
     // Se já há duplicatas conhecidas, pular verificação e enviar diretamente
     if (duplicateInfo && duplicateInfo.length > 0) {
-      mutation.mutate(data as CreateReferral);
+      mutation.mutate(data as any);
     } else {
       // Primeiro verifica se há duplicatas
       checkDuplicateMutation.mutate({

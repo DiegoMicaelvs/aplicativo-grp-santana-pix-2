@@ -18,14 +18,18 @@ import { ptBR } from "date-fns/locale";
 import { 
   MessageCircle, 
   Clock, 
-  User,
+  User as UserIcon,
   Shield,
   AlertCircle,
   CheckCircle,
   MessageSquare,
   Send
 } from "lucide-react";
-import { ReferralConversation, CreateReferralConversation } from "@shared/schema";
+import { ReferralConversation, CreateReferralConversation, User } from "@shared/schema";
+
+type ReferralConversationWithUser = ReferralConversation & {
+  user?: User;
+};
 
 const conversationSchema = z.object({
   message: z.string().min(1, "Mensagem é obrigatória"),
@@ -53,7 +57,7 @@ export function ReferralConversationComponent({ referralId, userRole }: Referral
     },
   });
 
-  const { data: conversations = [], isLoading } = useQuery<ReferralConversation[]>({
+  const { data: conversations = [], isLoading } = useQuery<ReferralConversationWithUser[]>({
     queryKey: ["/api/referrals", referralId, "conversations"],
   });
 
@@ -147,7 +151,7 @@ export function ReferralConversationComponent({ referralId, userRole }: Referral
                 <div key={conversation.id} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="text-xs">
-                      {conversation.user?.fullName?.charAt(0) || <User className="h-4 w-4" />}
+                      {conversation.user?.fullName?.charAt(0) || <UserIcon className="h-4 w-4" />}
                     </AvatarFallback>
                   </Avatar>
                   

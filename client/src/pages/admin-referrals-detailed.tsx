@@ -279,11 +279,11 @@ export default function AdminReferralsDetailedPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const { data: referrals = [], isLoading: referralsLoading } = useQuery({
+  const { data: referrals = [], isLoading: referralsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/referrals"]
   });
 
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"]
   });
 
@@ -309,11 +309,11 @@ export default function AdminReferralsDetailedPage() {
   });
 
   // Filter referrals
-  const filteredReferrals = referrals.filter(referral => {
-    const user = users.find(u => u.id === referral.userId);
-    const matchesSearch = referral.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         referral.customerPhone?.includes(searchTerm) ||
-                         referral.vehiclePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredReferrals = referrals.filter((referral: any) => {
+    const user = users.find((u: any) => u.id === referral.userId);
+    const matchesSearch = referral.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         referral.phone?.includes(searchTerm) ||
+                         referral.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all_statuses" || referral.status === statusFilter;
     const matchesUser = userFilter === "all_users" || referral.userId.toString() === userFilter;
@@ -324,15 +324,15 @@ export default function AdminReferralsDetailedPage() {
   // Calculate statistics
   const stats = {
     totalReferrals: referrals.length,
-    pendingReferrals: referrals.filter(r => r.status === "pending").length,
-    validatedReferrals: referrals.filter(r => r.status === "validated").length,
-    totalCommissions: referrals.reduce((sum, r) => sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0)
+    pendingReferrals: referrals.filter((r: any) => r.status === "pending").length,
+    validatedReferrals: referrals.filter((r: any) => r.status === "validated").length,
+    totalCommissions: referrals.reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0)
   };
 
   const getStatusBadgeColor = (status: ReferralStatus) => {
     switch (status) {
       case "pending": return "bg-yellow-100 text-yellow-800";
-      case "processing": return "bg-blue-100 text-blue-800";
+      case "analyzing": return "bg-blue-100 text-blue-800";
       case "converted": return "bg-purple-100 text-purple-800";
       case "rejected": return "bg-red-100 text-red-800";
       case "validated": return "bg-green-100 text-green-800";

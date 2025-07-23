@@ -25,15 +25,15 @@ export default function AdminPaymentsPage() {
 
   const { toast } = useToast();
 
-  const { data: withdrawals = [], isLoading: withdrawalsLoading } = useQuery({
+  const { data: withdrawals = [], isLoading: withdrawalsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/withdrawals"]
   });
 
-  const { data: cashFlow = [], isLoading: cashFlowLoading } = useQuery({
+  const { data: cashFlow = [], isLoading: cashFlowLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/cash-flow"]
   });
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/users"]
   });
 
@@ -60,8 +60,8 @@ export default function AdminPaymentsPage() {
   });
 
   // Filter withdrawals
-  const filteredWithdrawals = withdrawals.filter(withdrawal => {
-    const user = users.find(u => u.id === withdrawal.userId);
+  const filteredWithdrawals = withdrawals.filter((withdrawal: any) => {
+    const user = users.find((u: any) => u.id === withdrawal.userId);
     const matchesSearch = user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          withdrawal.pixKey?.includes(searchTerm);
@@ -74,12 +74,12 @@ export default function AdminPaymentsPage() {
   // Calculate statistics
   const stats = {
     totalWithdrawals: withdrawals.length,
-    pendingWithdrawals: withdrawals.filter(w => w.status === "pending").length,
-    approvedWithdrawals: withdrawals.filter(w => w.status === "approved").length,
-    totalPaidAmount: withdrawals.filter(w => w.status === "paid").reduce((sum, w) => sum + parseFloat(w.amount), 0),
-    totalPendingAmount: withdrawals.filter(w => w.status === "pending").reduce((sum, w) => sum + parseFloat(w.amount), 0),
-    totalInflow: cashFlow.filter(cf => cf.type === "inflow").reduce((sum, cf) => sum + parseFloat(cf.amount), 0),
-    totalOutflow: cashFlow.filter(cf => cf.type === "outflow").reduce((sum, cf) => sum + parseFloat(cf.amount), 0)
+    pendingWithdrawals: withdrawals.filter((w: any) => w.status === "pending").length,
+    approvedWithdrawals: withdrawals.filter((w: any) => w.status === "approved").length,
+    totalPaidAmount: withdrawals.filter((w: any) => w.status === "paid").reduce((sum: number, w: any) => sum + parseFloat(w.amount), 0),
+    totalPendingAmount: withdrawals.filter((w: any) => w.status === "pending").reduce((sum: number, w: any) => sum + parseFloat(w.amount), 0),
+    totalInflow: cashFlow.filter((cf: any) => cf.type === "inflow").reduce((sum: number, cf: any) => sum + parseFloat(cf.amount), 0),
+    totalOutflow: cashFlow.filter((cf: any) => cf.type === "outflow").reduce((sum: number, cf: any) => sum + parseFloat(cf.amount), 0)
   };
 
   const netCashFlow = stats.totalInflow - stats.totalOutflow;
@@ -113,7 +113,7 @@ export default function AdminPaymentsPage() {
   };
 
   const getUserName = (userId: number) => {
-    const user = users.find(u => u.id === userId);
+    const user = users.find((u: any) => u.id === userId);
     return user?.fullName || "Usuário não encontrado";
   };
 

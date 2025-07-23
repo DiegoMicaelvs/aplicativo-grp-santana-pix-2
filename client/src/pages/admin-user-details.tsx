@@ -14,11 +14,11 @@ export default function AdminUserDetailsPage() {
   const [, params] = useRoute("/admin/user-details/:id");
   const userId = params?.id ? parseInt(params.id) : 0;
 
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"]
   });
 
-  const { data: referrals = [], isLoading: referralsLoading } = useQuery({
+  const { data: referrals = [], isLoading: referralsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/referrals"]
   });
 

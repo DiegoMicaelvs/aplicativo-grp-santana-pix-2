@@ -43,7 +43,7 @@ export function SupportButton() {
   });
 
   // Get user's tickets
-  const { data: userTickets = [] } = useQuery({
+  const { data: userTickets = [] } = useQuery<any[]>({
     queryKey: ["/api/support/my-tickets"],
     enabled: showMyTickets
   });

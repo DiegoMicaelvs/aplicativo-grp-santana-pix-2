@@ -57,7 +57,7 @@ export default function AdminAnalysts() {
   const queryClient = useQueryClient();
 
   // Fetch all analysts
-  const { data: analysts = [], isLoading: isLoadingAnalysts } = useQuery({
+  const { data: analysts = [], isLoading: isLoadingAnalysts } = useQuery<User[]>({
     queryKey: ["/api/admin/analysts"],
   });
 
@@ -108,7 +108,7 @@ export default function AdminAnalysts() {
     setSelectedAnalyst(analyst);
     form.reset({
       analystLevel: analyst.analystLevel || 1,
-      permissions: analyst.permissions || [],
+      permissions: (analyst.permissions || []) as any,
     });
     setIsPermissionDialogOpen(true);
   };
@@ -172,7 +172,7 @@ export default function AdminAnalysts() {
                       <h3 className="font-medium">{analyst.fullName}</h3>
                       <p className="text-sm text-gray-500">{analyst.email}</p>
                       <div className="flex items-center space-x-2 mt-2">
-                        {getAnalystLevelBadge(analyst.analystLevel)}
+                        {getAnalystLevelBadge(analyst.analystLevel || undefined)}
                         <Badge variant={analyst.isActive ? "default" : "secondary"}>
                           {analyst.isActive ? "Ativo" : "Inativo"}
                         </Badge>
@@ -267,7 +267,7 @@ export default function AdminAnalysts() {
                         <div key={permission} className="flex items-center space-x-2">
                           <Checkbox
                             id={permission}
-                            checked={field.value?.includes(permission as AnalystPermission)}
+                            checked={field.value?.includes(permission as any)}
                             onCheckedChange={(checked) => {
                               const currentPermissions = field.value || [];
                               if (checked) {

@@ -14,15 +14,15 @@ export default function AdminAnalyticsPage() {
   const [timeRange, setTimeRange] = useState<string>("30_days");
   const [analysisType, setAnalysisType] = useState<string>("registrations");
 
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"]
   });
 
-  const { data: referrals = [], isLoading: referralsLoading } = useQuery({
+  const { data: referrals = [], isLoading: referralsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/referrals"]
   });
 
-  const { data: auditLog = [], isLoading: auditLoading } = useQuery({
+  const { data: auditLog = [], isLoading: auditLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/audit-log"]
   });
 
@@ -39,26 +39,26 @@ export default function AdminAnalyticsPage() {
   };
 
   const fromDate = getDateRange();
-  const filteredUsers = users.filter(user => new Date(user.createdAt) >= fromDate);
-  const filteredReferrals = referrals.filter(referral => new Date(referral.createdAt) >= fromDate);
+  const filteredUsers = users.filter((user: any) => new Date(user.createdAt) >= fromDate);
+  const filteredReferrals = referrals.filter((referral: any) => new Date(referral.createdAt) >= fromDate);
 
   // Registration Analysis
   const registrationStats = {
-    totalIndicators: filteredUsers.filter(u => u.role === "indicador").length,
-    totalPromoters: filteredUsers.filter(u => u.role === "promotor").length,
-    totalAnalysts: filteredUsers.filter(u => u.role === "analista").length,
-    activeUsers: filteredUsers.filter(u => u.status === "active").length,
-    selfRegistrations: filteredUsers.filter(u => !u.createdBy).length,
-    adminCreated: filteredUsers.filter(u => u.createdBy).length
+    totalIndicators: filteredUsers.filter((u: any) => u.role === "indicador").length,
+    totalPromoters: filteredUsers.filter((u: any) => u.role === "promotor").length,
+    totalAnalysts: filteredUsers.filter((u: any) => u.role === "analista").length,
+    activeUsers: filteredUsers.filter((u: any) => u.status === "active").length,
+    selfRegistrations: filteredUsers.filter((u: any) => !u.createdBy).length,
+    adminCreated: filteredUsers.filter((u: any) => u.createdBy).length
   };
 
   // Performance Analysis
   const performanceStats = {
     totalReferrals: filteredReferrals.length,
-    validatedReferrals: filteredReferrals.filter(r => r.status === "validated").length,
+    validatedReferrals: filteredReferrals.filter((r: any) => r.status === "validated").length,
     conversionRate: filteredReferrals.length > 0 ? 
-      (filteredReferrals.filter(r => r.status === "validated").length / filteredReferrals.length * 100) : 0,
-    totalCommissions: filteredReferrals.reduce((sum, r) => 
+      (filteredReferrals.filter((r: any) => r.status === "validated").length / filteredReferrals.length * 100) : 0,
+    totalCommissions: filteredReferrals.reduce((sum: number, r: any) => 
       sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0),
     avgReferralsPerIndicator: registrationStats.totalIndicators > 0 ? 
       filteredReferrals.length / registrationStats.totalIndicators : 0
@@ -75,7 +75,7 @@ export default function AdminAnalyticsPage() {
       timeline[dateKey] = 0;
     }
 
-    filteredUsers.filter(u => u.role === "indicador").forEach(user => {
+    filteredUsers.filter((u: any) => u.role === "indicador").forEach((user: any) => {
       const dateKey = format(new Date(user.createdAt), "dd/MM");
       if (timeline[dateKey] !== undefined) {
         timeline[dateKey]++;
@@ -88,11 +88,11 @@ export default function AdminAnalyticsPage() {
   // Top performers
   const getTopPerformers = () => {
     const indicatorPerformance = users
-      .filter(u => u.role === "indicador")
-      .map(user => {
-        const userReferrals = filteredReferrals.filter(r => r.userId === user.id);
-        const validatedReferrals = userReferrals.filter(r => r.status === "validated");
-        const totalEarnings = validatedReferrals.reduce((sum, r) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
+      .filter((u: any) => u.role === "indicador")
+      .map((user: any) => {
+        const userReferrals = filteredReferrals.filter((r: any) => r.userId === user.id);
+        const validatedReferrals = userReferrals.filter((r: any) => r.status === "validated");
+        const totalEarnings = validatedReferrals.reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
         
         return {
           id: user.id,
@@ -103,7 +103,7 @@ export default function AdminAnalyticsPage() {
           conversionRate: userReferrals.length > 0 ? (validatedReferrals.length / userReferrals.length * 100) : 0
         };
       })
-      .sort((a, b) => b.totalEarnings - a.totalEarnings)
+      .sort((a: any, b: any) => b.totalEarnings - a.totalEarnings)
       .slice(0, 10);
 
     return indicatorPerformance;
@@ -112,8 +112,8 @@ export default function AdminAnalyticsPage() {
   // Registration source analysis
   const getRegistrationSources = () => {
     const sources = {
-      "Auto-cadastro": filteredUsers.filter(u => u.role === "indicador" && !u.createdBy).length,
-      "Criado por Admin": filteredUsers.filter(u => u.role === "indicador" && u.createdBy).length
+      "Auto-cadastro": filteredUsers.filter((u: any) => u.role === "indicador" && !u.createdBy).length,
+      "Criado por Admin": filteredUsers.filter((u: any) => u.role === "indicador" && u.createdBy).length
     };
 
     return Object.entries(sources).map(([name, value]) => ({ name, value }));
@@ -122,10 +122,10 @@ export default function AdminAnalyticsPage() {
   // Role distribution
   const getRoleDistribution = () => {
     const roles = {
-      "Indicadores": filteredUsers.filter(u => u.role === "indicador").length,
-      "Promotores": filteredUsers.filter(u => u.role === "promotor").length,
-      "Analistas": filteredUsers.filter(u => u.role === "analista").length,
-      "Administradores": filteredUsers.filter(u => u.role === "admin").length
+      "Indicadores": filteredUsers.filter((u: any) => u.role === "indicador").length,
+      "Promotores": filteredUsers.filter((u: any) => u.role === "promotor").length,
+      "Analistas": filteredUsers.filter((u: any) => u.role === "analista").length,
+      "Administradores": filteredUsers.filter((u: any) => u.role === "admin").length
     };
 
     const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
@@ -352,7 +352,7 @@ export default function AdminAnalyticsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {topPerformers.map((performer, index) => (
+                {topPerformers.map((performer: any, index: number) => (
                   <TableRow key={performer.id}>
                     <TableCell>
                       <Badge className={

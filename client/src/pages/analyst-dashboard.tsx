@@ -31,7 +31,7 @@ export default function AnalystDashboard() {
   const { user } = useAuth();
 
   // Fetch basic stats
-  const { data: stats = {} } = useQuery({
+  const { data: stats = {} } = useQuery<any>({
     queryKey: ["/api/admin/stats"]
   });
 

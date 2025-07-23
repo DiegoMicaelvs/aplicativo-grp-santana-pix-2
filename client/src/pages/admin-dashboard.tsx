@@ -56,7 +56,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Interface estendida para incluir a relação com o usuário
 interface Referral extends BaseReferral {
-  user?: Pick<User, 'id' | 'firstName' | 'lastName' | 'username'>;
+  user?: Pick<User, 'id' | 'fullName' | 'username'>;
 }
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -81,7 +81,7 @@ const getStatusBadge = (status: ReferralStatus) => {
       return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
     case 'converted':
       return <Badge variant="outline" className="bg-green-100 text-green-800">Convertido</Badge>;
-    case 'processing':
+    case 'analyzing':
       return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em análise</Badge>;
     case 'rejected':
       return <Badge variant="outline" className="bg-red-100 text-red-800">Não convertido</Badge>;
@@ -89,8 +89,7 @@ const getStatusBadge = (status: ReferralStatus) => {
       return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
     case 'paid':
       return <Badge variant="outline" className="bg-emerald-100 text-emerald-800">Pago</Badge>;
-    case 'falso':
-      return <Badge variant="outline" className="bg-orange-100 text-orange-800">🚫 Falso</Badge>;
+
     default:
       return <Badge variant="outline">Desconhecido</Badge>;
   }
@@ -202,8 +201,8 @@ export default function AdminDashboard() {
   const handleOpenStatusDialog = (referral: Referral) => {
     setSelectedReferral(referral);
     form.reset({
-      status: referral.status,
-      commission: referral.commission ? Number(referral.commission) : undefined,
+      status: referral.status as any,
+      commission: referral.commissionIndicator ? Number(referral.commissionIndicator) : undefined,
       notes: referral.notes || ""
     });
     setDialogOpen(true);
@@ -228,12 +227,12 @@ export default function AdminDashboard() {
   };
   
   // Calculate dashboard stats
-  const totalReferrers = users?.filter(u => u.role === "referrer").length || 0;
+  const totalReferrers = users?.filter(u => u.role === "indicador").length || 0;
   const totalReferrals = referrals?.length || 0;
   const convertedReferrals = referrals?.filter(r => r.status === 'converted').length || 0;
   const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals * 100).toFixed(1) : "0";
   const totalCommissions = referrals?.reduce((sum, r) => {
-    const commission = r.commission ? (typeof r.commission === 'string' ? parseFloat(r.commission) : r.commission) : 0;
+    const commission = r.commissionIndicator ? (typeof r.commissionIndicator === 'string' ? parseFloat(r.commissionIndicator) : r.commissionIndicator) : 0;
     return sum + commission;
   }, 0) || 0;
   
@@ -428,7 +427,7 @@ export default function AdminDashboard() {
                                   <TableCell>{referral.id}</TableCell>
                                   <TableCell>
                                     <div>
-                                      {referral.user?.firstName} {referral.user?.lastName}
+                                      {referral.user?.fullName}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
                                       {referral.user?.username}
@@ -436,7 +435,7 @@ export default function AdminDashboard() {
                                   </TableCell>
                                   <TableCell className="font-medium">
                                     <div>
-                                      {referral.firstName} {referral.lastName}
+                                      {referral.contactName}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
                                       <div>Tel: {referral.phone}</div>
@@ -445,7 +444,7 @@ export default function AdminDashboard() {
                                   </TableCell>
                                   <TableCell>{formatDate(referral.createdAt)}</TableCell>
                                   <TableCell>{getStatusBadge(referral.status)}</TableCell>
-                                  <TableCell>{formatCurrency(referral.commission)}</TableCell>
+                                  <TableCell>{formatCurrency(referral.commissionIndicator)}</TableCell>
                                   <TableCell className="text-right">
                                     <Button 
                                       variant="outline" 
@@ -554,12 +553,12 @@ export default function AdminDashboard() {
                               <TableRow key={user.id}>
                                 <TableCell>{user.id}</TableCell>
                                 <TableCell className="font-medium">
-                                  {user.firstName} {user.lastName}
+                                  {user.fullName}
                                 </TableCell>
                                 <TableCell>{user.username}</TableCell>
                                 <TableCell>{user.phone}</TableCell>
                                 <TableCell>{user.cpf}</TableCell>
-                                <TableCell>{formatDate(user.birthdate)}</TableCell>
+                                <TableCell>{formatDate(null)}</TableCell>
                                 <TableCell>{formatDate(user.createdAt)}</TableCell>
                                 <TableCell>
                                   <Badge variant={user.role === 'admin' ? 'secondary' : 'default'}>
@@ -590,7 +589,7 @@ export default function AdminDashboard() {
                 <DialogDescription>
                   {selectedReferral && (
                     <span>
-                      Indicação de {selectedReferral.firstName} {selectedReferral.lastName} - 
+                      Indicação de {selectedReferral.contactName} - 
                       Placa: {selectedReferral.licensePlate}
                     </span>
                   )}
