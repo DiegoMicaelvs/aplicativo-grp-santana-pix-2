@@ -75,7 +75,9 @@ export default function DashboardPage() {
         username: data.email, // Use email as username
         role: "indicador" as const,
       };
-      return await apiRequest('POST', '/api/admin/users', payload);
+      // Use promoter-specific endpoint for promotors, admin endpoint for admins
+      const endpoint = user?.role === 'promotor' ? '/api/promoter/indicators' : '/api/admin/users';
+      return await apiRequest('POST', endpoint, payload);
     },
     onSuccess: () => {
       toast({

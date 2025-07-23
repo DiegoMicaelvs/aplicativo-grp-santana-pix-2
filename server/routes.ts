@@ -926,6 +926,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new indicador (promotors can create)
+  app.post("/api/promoter/indicators", requireAuth, async (req, res) => {
+    try {
+      // Check if user is a promotor
+      if (req.user!.role !== "promotor") {
+        return res.status(403).json({ error: "Apenas promotores podem cadastrar indicadores" });
+      }
+
+      // Force role to be indicador and set promotor as creator
+      const userData = {
+        ...req.body,
+        role: "indicador",
+        createdBy: req.user!.id,
+        promoterId: req.user!.id // Automatically assign to the creating promotor
+      };
+      
+      const newUser = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = newUser;
+
+      // Send welcome SMS to new user if they have a phone
+      if (newUser.phone) {
+        try {
+          const { sendWelcomeSMS } = await import('./sms-service');
+          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          console.log(`Welcome SMS sent to new indicador: ${newUser.fullName} (${newUser.phone})`);
+        } catch (smsError) {
+          console.log('Welcome SMS failed (non-critical):', smsError);
+        }
+      }
+      
+      return res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating indicador:", error);
+      return res.status(500).json({ error: "Erro ao criar indicador" });
+    }
+  });
+
   // Update user profile (admin only)
   app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {
