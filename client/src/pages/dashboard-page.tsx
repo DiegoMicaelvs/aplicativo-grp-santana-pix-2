@@ -75,7 +75,7 @@ export default function DashboardPage() {
         username: data.email, // Use email as username
         role: "indicador" as const,
       };
-      return await apiRequest('/api/admin/users', 'POST', payload);
+      return await apiRequest('POST', '/api/admin/users', payload);
     },
     onSuccess: () => {
       toast({
