@@ -80,9 +80,12 @@ const profileManagementSchema = z.object({
   cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
   phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
   address: z.string().min(5, "Endereço é obrigatório"),
+  city: z.string().min(2, "Cidade é obrigatória"),
+  state: z.string().min(2, "Estado é obrigatório").max(2, "Estado deve ter 2 letras"),
+  zipCode: z.string().min(8, "CEP inválido").max(9, "CEP inválido"),
   shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
-  role: z.enum(["indicador", "promotor", "admin", "analista", "vendedor"]),
+  role: z.enum(["indicador", "promotor", "admin", "analista", "vendedor", "gerente"]),
   analystLevel: z.coerce.number().int().min(1).max(3).optional(),
   permissions: z.array(z.string()).optional(),
   isActive: z.boolean(),
@@ -451,6 +454,9 @@ export default function AdminProfiles() {
                   cpf: "",
                   phone: "",
                   address: "",
+                  city: "",
+                  state: "",
+                  zipCode: "",
                   shirtSize: "M",
                   pixKey: "",
                   role: "indicador",
@@ -967,11 +973,58 @@ export default function AdminProfiles() {
               <Input
                 id="address"
                 {...form.register("address")}
-                placeholder="Endereço completo"
+                placeholder="Rua, número, bairro"
               />
               {form.formState.errors.address && (
                 <p className="text-sm text-destructive mt-1">
                   {form.formState.errors.address.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="city">Cidade</Label>
+              <Input
+                id="city"
+                {...form.register("city")}
+                placeholder="Nome da cidade"
+              />
+              {form.formState.errors.city && (
+                <p className="text-sm text-destructive mt-1">
+                  {form.formState.errors.city.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="state">Estado</Label>
+              <Input
+                id="state"
+                {...form.register("state")}
+                placeholder="UF (ex: SP)"
+                maxLength={2}
+                style={{ textTransform: 'uppercase' }}
+              />
+              {form.formState.errors.state && (
+                <p className="text-sm text-destructive mt-1">
+                  {form.formState.errors.state.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="zipCode">CEP</Label>
+              <Input
+                id="zipCode"
+                {...form.register("zipCode")}
+                placeholder="00000-000"
+                maxLength={9}
+              />
+              {form.formState.errors.zipCode && (
+                <p className="text-sm text-destructive mt-1">
+                  {form.formState.errors.zipCode.message}
                 </p>
               )}
             </div>

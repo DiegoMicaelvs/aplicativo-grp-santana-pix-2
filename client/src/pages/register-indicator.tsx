@@ -23,6 +23,9 @@ const indicatorSchema = z.object({
   email: z.string().email("Email inválido"),
   phone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
   address: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
+  city: z.string().min(2, "Cidade é obrigatória"),
+  state: z.string().min(2, "Estado é obrigatório").max(2, "Estado deve ter 2 letras"),
+  zipCode: z.string().min(8, "CEP inválido").max(9, "CEP inválido"),
   shirtSize: z.enum(["PP", "P", "M", "G", "GG", "XG"], {
     required_error: "Selecione um tamanho",
   }),
@@ -51,6 +54,9 @@ export default function RegisterIndicator() {
       email: "",
       phone: "",
       address: "",
+      city: "",
+      state: "",
+      zipCode: "",
       shirtSize: "M",
       pixKey: "",
       password: "",
@@ -183,12 +189,65 @@ export default function RegisterIndicator() {
                       <FormItem>
                         <FormLabel>Endereço</FormLabel>
                         <FormControl>
-                          <Input placeholder="Rua, número, bairro, cidade" {...field} />
+                          <Input placeholder="Rua, número, bairro" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cidade</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nome da cidade" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estado</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="UF (ex: SP)" 
+                              maxLength={2}
+                              style={{ textTransform: 'uppercase' }}
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CEP</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="00000-000" 
+                              maxLength={9}
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField

@@ -15,7 +15,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertUserSchema, type UserInsert } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema";
+import { z } from "zod";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 
@@ -23,7 +24,9 @@ export default function AnalystCreatePromotorPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const form = useForm<UserInsert>({
+  type UserInsertType = z.infer<typeof insertUserSchema>;
+  
+  const form = useForm<UserInsertType>({
     resolver: zodResolver(insertUserSchema),
     defaultValues: {
       role: "promotor",
@@ -33,7 +36,7 @@ export default function AnalystCreatePromotorPage() {
   });
 
   const createPromotorMutation = useMutation({
-    mutationFn: async (data: UserInsert) => {
+    mutationFn: async (data: UserInsertType) => {
       const response = await fetch("/api/analyst/promotores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -61,7 +64,7 @@ export default function AnalystCreatePromotorPage() {
     },
   });
 
-  const onSubmit = (data: UserInsert) => {
+  const onSubmit = (data: UserInsertType) => {
     // Auto-set username as email if not provided
     if (!data.username) {
       data.username = data.email;
@@ -181,15 +184,56 @@ export default function AnalystCreatePromotorPage() {
             </div>
 
             <div>
-              <Label htmlFor="address">Endereço Completo *</Label>
+              <Label htmlFor="address">Endereço *</Label>
               <Input
                 id="address"
                 {...register("address")}
-                placeholder="Rua, número, bairro, cidade - Estado"
+                placeholder="Rua, número, bairro"
               />
               {errors.address && (
                 <p className="text-sm text-red-600">{errors.address.message}</p>
               )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="city">Cidade *</Label>
+                <Input
+                  id="city"
+                  {...register("city")}
+                  placeholder="Nome da cidade"
+                />
+                {errors.city && (
+                  <p className="text-sm text-red-600">{errors.city.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="state">Estado *</Label>
+                <Input
+                  id="state"
+                  {...register("state")}
+                  placeholder="UF (ex: SP)"
+                  maxLength={2}
+                  style={{ textTransform: 'uppercase' }}
+                />
+                {errors.state && (
+                  <p className="text-sm text-red-600">{errors.state.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="zipCode">CEP *</Label>
+                <Input
+                  id="zipCode"
+                  {...register("zipCode")}
+                  placeholder="00000-000"
+                  maxLength={9}
+                />
+                {errors.zipCode && (
+                  <p className="text-sm text-red-600">{errors.zipCode.message}</p>
+                )}
+              </div>
             </div>
 
             <div>

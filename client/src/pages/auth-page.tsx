@@ -55,6 +55,9 @@ const registerSchema = z.object({
   cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
   phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
   address: z.string().min(5, "Endereço é obrigatório"),
+  city: z.string().min(2, "Cidade é obrigatória"),
+  state: z.string().min(2, "Estado é obrigatório").max(2, "Estado deve ter 2 letras"),
+  zipCode: z.string().min(8, "CEP inválido").max(9, "CEP inválido"),
   shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
   role: z.enum(["indicador", "promotor"], {
@@ -375,12 +378,65 @@ export default function AuthPage() {
                             <FormItem>
                               <FormLabel>Endereço</FormLabel>
                               <FormControl>
-                                <Input placeholder="Rua, número, bairro, cidade" {...field} />
+                                <Input placeholder="Rua, número, bairro" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                          <FormField
+                            control={registerForm.control}
+                            name="city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Cidade</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Nome da cidade" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={registerForm.control}
+                            name="state"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Estado</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="UF (ex: SP)" 
+                                    maxLength={2}
+                                    style={{ textTransform: 'uppercase' }}
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={registerForm.control}
+                            name="zipCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>CEP</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="00000-000" 
+                                    maxLength={9}
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                         
                         <FormField
                           control={registerForm.control}
