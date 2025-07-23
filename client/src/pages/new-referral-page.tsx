@@ -81,7 +81,7 @@ export default function NewReferralPage() {
 
   // Mutation para verificar duplicatas
   const checkDuplicateMutation = useMutation({
-    mutationFn: async (data: { phone: string, licensePlate: string }) => {
+    mutationFn: async (data: { phone: string, licensePlate: string, fullName: string }) => {
       const res = await apiRequest("POST", "/api/referrals/check-duplicate", data);
       return await res.json();
     },
@@ -133,7 +133,8 @@ export default function NewReferralPage() {
       // Primeiro verifica se há duplicatas
       checkDuplicateMutation.mutate({
         phone: data.phone,
-        licensePlate: data.licensePlate
+        licensePlate: data.licensePlate,
+        fullName: data.fullName
       });
     }
   };
@@ -377,7 +378,7 @@ export default function NewReferralPage() {
                           <FormLabel>Empresa</FormLabel>
                           <Select 
                             onValueChange={field.onChange}
-                            value={field.value}
+                            value={field.value.toString()}
                           >
                             <FormControl>
                               <SelectTrigger>

@@ -75,8 +75,8 @@ export interface IStorage {
   getReferralsByUsers(userIds: number[]): Promise<any[]>;
   getAllReferrals(): Promise<any[]>;
   getReferralsByStatus(status: ReferralStatus): Promise<any[]>;
-  checkDuplicateReferral(phone?: string, licensePlate?: string): Promise<any[]>;
-  checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string): Promise<any[]>;
+  checkDuplicateReferral(phone?: string, licensePlate?: string, fullName?: string): Promise<any[]>;
+  checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string, fullName?: string): Promise<any[]>;
   getTodayReferralsByUserId(userId: number, startDate: Date): Promise<any[]>;
   updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number): Promise<any>;
   calculateCommissions(referralId: number): Promise<void>;
@@ -145,12 +145,10 @@ class DatabaseStorage implements IStorage {
   // User methods
   async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number }) {
     try {
-      const { role, analystLevel, ...restUserData } = userData;
       const [user] = await db.insert(users)
         .values({
-          ...restUserData,
-          role: (role || "indicador"),
-          analystLevel: analystLevel || null
+          ...userData,
+          role: (userData.role || "indicador")
         })
         .returning();
       
@@ -443,10 +441,12 @@ class DatabaseStorage implements IStorage {
     });
   }
   
-  async checkDuplicateReferral(phone?: string, licensePlate?: string) {
+  async checkDuplicateReferral(phone?: string, licensePlate?: string, fullName?: string) {
     const conditions = [];
-    if (phone) conditions.push(eq(referrals.phone, phone));
-    if (licensePlate) conditions.push(eq(referrals.licensePlate, licensePlate));
+    // Use case-insensitive comparison with LOWER() SQL function
+    if (phone) conditions.push(sql`LOWER(${referrals.phone}) = LOWER(${phone})`);
+    if (licensePlate) conditions.push(sql`LOWER(${referrals.licensePlate}) = LOWER(${licensePlate})`);
+    if (fullName) conditions.push(sql`LOWER(${referrals.fullName}) = LOWER(${fullName})`);
     
     if (conditions.length === 0) return [];
     
@@ -458,15 +458,18 @@ class DatabaseStorage implements IStorage {
     });
   }
 
-  async checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string) {
+  async checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string, fullName?: string) {
     const conditions = [];
-    if (phone) conditions.push(eq(referrals.phone, phone));
-    if (licensePlate) conditions.push(eq(referrals.licensePlate, licensePlate));
+    // Use case-insensitive comparison with LOWER() SQL function
+    if (phone) conditions.push(sql`LOWER(${referrals.phone}) = LOWER(${phone})`);
+    if (licensePlate) conditions.push(sql`LOWER(${referrals.licensePlate}) = LOWER(${licensePlate})`);
+    if (fullName) conditions.push(sql`LOWER(${referrals.fullName}) = LOWER(${fullName})`);
     
     if (conditions.length === 0) return [];
     
     return await db.select({
       id: referrals.id,
+      fullName: referrals.fullName,
       phone: referrals.phone,
       licensePlate: referrals.licensePlate,
       createdAt: referrals.createdAt,
@@ -747,6 +750,16 @@ class DatabaseStorage implements IStorage {
         processedByUser: true
       },
       orderBy: desc(withdrawalRequests.requestedAt)
+    });
+  }
+  
+  async getWithdrawalRequestById(id: number) {
+    return await db.query.withdrawalRequests.findFirst({
+      where: eq(withdrawalRequests.id, id),
+      with: {
+        user: true,
+        processedByUser: true
+      }
     });
   }
   

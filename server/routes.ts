@@ -194,10 +194,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // 2. Verificar duplicatas (placa e telefone)
+      // 2. Verificar duplicatas (placa, telefone e nome)
       const duplicates = await storage.checkDuplicateReferralWithOwner(
         validatedData.phone,
-        validatedData.licensePlate
+        validatedData.licensePlate,
+        validatedData.fullName
       );
       
       if (duplicates.length > 0) {
@@ -205,10 +206,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const ownerFirstName = duplicate.createdByName ? duplicate.createdByName.split(' ')[0] : 'Usuário'; // Primeiro nome apenas
         
         let errorMessage = "Cadastro duplicado encontrado:\n";
-        if (duplicate.phone === validatedData.phone) {
+        if (duplicate.fullName && duplicate.fullName.toLowerCase() === validatedData.fullName.toLowerCase()) {
+          errorMessage += `• Nome "${validatedData.fullName}" já cadastrado por ${ownerFirstName}\n`;
+        }
+        if (duplicate.phone && duplicate.phone.toLowerCase() === validatedData.phone.toLowerCase()) {
           errorMessage += `• Telefone ${validatedData.phone} já cadastrado por ${ownerFirstName}\n`;
         }
-        if (duplicate.licensePlate === validatedData.licensePlate) {
+        if (duplicate.licensePlate && duplicate.licensePlate.toLowerCase() === validatedData.licensePlate.toLowerCase()) {
           errorMessage += `• Placa ${validatedData.licensePlate} já cadastrada por ${ownerFirstName}\n`;
         }
         errorMessage += `Data do primeiro cadastro: ${new Date(duplicate.createdAt).toLocaleDateString('pt-BR')}`;
@@ -254,8 +258,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check for duplicate referrals
   app.post("/api/referrals/check-duplicate", requireAuth, async (req, res) => {
     try {
-      const { phone, licensePlate } = req.body;
-      const duplicates = await storage.checkDuplicateReferral(phone, licensePlate);
+      const { phone, licensePlate, fullName } = req.body;
+      const duplicates = await storage.checkDuplicateReferral(phone, licensePlate, fullName);
       
       return res.json({ 
         isDuplicate: duplicates.length > 0,
