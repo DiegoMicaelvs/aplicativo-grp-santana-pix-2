@@ -156,7 +156,7 @@ export default function AdminWithdrawals() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center ml-[10px] mr-[10px] pl-[6px] pr-[6px] mt-[38px] mb-[38px]">
         <div className="flex items-center gap-4">
           <BackButton />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gerenciar Saques</h1>
@@ -166,7 +166,6 @@ export default function AdminWithdrawals() {
           Atualizar
         </Button>
       </div>
-
       {/* Cards de resumo */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -225,7 +224,6 @@ export default function AdminWithdrawals() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filtros */}
       <Card>
         <CardContent className="p-4">
@@ -249,7 +247,6 @@ export default function AdminWithdrawals() {
           </div>
         </CardContent>
       </Card>
-
       {/* Tabela de saques */}
       <Card>
         <CardHeader>
