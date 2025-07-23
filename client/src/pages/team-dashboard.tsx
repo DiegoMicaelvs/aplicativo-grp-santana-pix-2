@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BackButton } from '@/components/ui/back-button';
 import { 
   UsersIcon, 
   TrendingUpIcon, 
@@ -120,9 +121,12 @@ export default function TeamDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard da Equipe</h1>
-        <p className="text-gray-600 dark:text-gray-400">Acompanhe o desempenho da sua equipe de indicadores</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard da Equipe</h1>
+          <p className="text-gray-600 dark:text-gray-400">Acompanhe o desempenho da sua equipe de indicadores</p>
+        </div>
+        <BackButton />
       </div>
 
       {/* Cards de estatísticas */}
