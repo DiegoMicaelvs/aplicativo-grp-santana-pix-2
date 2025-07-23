@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BackButton } from "@/components/ui/back-button";
 import {
   Select,
   SelectContent,
@@ -395,13 +396,16 @@ export default function AdminProfiles() {
       <Header />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Gerenciar Perfis de Usuário
-          </h1>
-          <p className="text-muted-foreground">
-            Configure perfis, permissões e controle de acesso para todos os usuários do sistema.
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Gerenciar Perfis de Usuário
+            </h1>
+            <p className="text-muted-foreground">
+              Configure perfis, permissões e controle de acesso para todos os usuários do sistema.
+            </p>
+          </div>
+          <BackButton />
         </div>
 
         <div className="space-y-6">
