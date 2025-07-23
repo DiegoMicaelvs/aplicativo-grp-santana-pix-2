@@ -582,6 +582,46 @@ class DatabaseStorage implements IStorage {
     
     return updatedReferral;
   }
+
+  async validateReferral(id: number, validationData: any, validatorUserId: number) {
+    const referral = await this.getReferralById(id);
+    if (!referral) {
+      throw new Error("Referral not found");
+    }
+
+    // Update referral with validation data
+    const [updatedReferral] = await db.update(referrals)
+      .set({
+        vehicleBrand: validationData.vehicleBrand,
+        vehicleModel: validationData.vehicleModel,
+        vehicleYear: validationData.vehicleYear,
+        nameCorrect: validationData.nameCorrect,
+        plateCorrect: validationData.plateCorrect,
+        phoneCorrect: validationData.phoneCorrect,
+        validationNotes: validationData.validationNotes,
+        validatedBy: validatorUserId,
+        validatedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(referrals.id, id))
+      .returning();
+
+    // Log audit trail
+    try {
+      await this.logUserAction({
+        userId: validatorUserId,
+        action: 'validate',
+        entityType: 'referral',
+        entityId: id,
+        newValues: validationData,
+        details: `Indicação validada: ${validationData.vehicleBrand} ${validationData.vehicleModel} ${validationData.vehicleYear}${validationData.validationNotes ? ` - ${validationData.validationNotes}` : ''}`
+      });
+    } catch (error) {
+      console.warn('Failed to log validation:', error);
+    }
+
+    return updatedReferral;
+  }
   
   async calculateCommissions(referralId: number) {
     const referral = await this.getReferralById(referralId);

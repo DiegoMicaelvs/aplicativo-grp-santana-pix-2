@@ -14,6 +14,7 @@ import {
   createIndicadorSchema,
   updateAnalystPermissionsSchema,
   createReferralConversationSchema,
+  validateReferralSchema,
   type AnalystPermission,
   type ManagerPermission
 } from "@shared/schema";
@@ -670,6 +671,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating referral:", error);
       return res.status(500).json({ error: "Erro ao atualizar indicação" });
+    }
+  });
+
+  // Validate referral (for analysts and admins)
+  app.patch("/api/referrals/:id/validate", requireAnalyst, async (req, res) => {
+    try {
+      const referralId = parseInt(req.params.id);
+      const validatedData = validateReferralSchema.parse(req.body);
+      
+      const updatedReferral = await storage.validateReferral(
+        referralId,
+        validatedData,
+        req.user!.id
+      );
+      
+      return res.json(updatedReferral);
+    } catch (error) {
+      console.error("Error validating referral:", error);
+      return res.status(500).json({ error: "Erro ao validar indicação" });
     }
   });
 

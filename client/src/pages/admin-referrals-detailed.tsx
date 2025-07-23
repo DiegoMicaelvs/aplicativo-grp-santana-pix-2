@@ -14,8 +14,234 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { BackButton } from "@/components/ui/back-button";
+import { useAuth } from "@/hooks/use-auth";
 
 type ReferralStatus = "pending" | "processing" | "converted" | "rejected" | "validated" | "paid";
+
+// Componente de validação
+function ValidationDialog({ referral, onValidate }: { referral: any; onValidate: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    vehicleBrand: referral.vehicleBrand || "",
+    vehicleModel: referral.vehicleModel || "",
+    vehicleYear: referral.vehicleYear || "",
+    nameCorrect: referral.nameCorrect ?? true,
+    plateCorrect: referral.plateCorrect ?? true,
+    phoneCorrect: referral.phoneCorrect ?? true,
+    validationNotes: referral.validationNotes || "",
+  });
+  const [showObservations, setShowObservations] = useState(false);
+  const { toast } = useToast();
+
+  const validateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/referrals/${referral.id}/validate`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Erro ao validar indicação");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Indicação validada com sucesso!" });
+      setIsOpen(false);
+      onValidate();
+    },
+    onError: () => {
+      toast({ title: "Erro ao validar indicação", variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = () => {
+    // Verificar se há divergências
+    const hasDivergences = !formData.nameCorrect || !formData.plateCorrect || !formData.phoneCorrect;
+    setShowObservations(hasDivergences);
+    
+    if (hasDivergences && !formData.validationNotes.trim()) {
+      toast({ 
+        title: "Observações obrigatórias", 
+        description: "Adicione observações sobre as divergências encontradas",
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    validateMutation.mutate(formData);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="bg-blue-50 hover:bg-blue-100 text-blue-700">
+          <Check className="h-4 w-4 mr-1" />
+          Validação
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Validação da Indicação</DialogTitle>
+          <DialogDescription>
+            Valide as informações da indicação de {referral.fullName}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {/* Informações da indicação */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-medium mb-2">Dados da Indicação</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><strong>Cliente:</strong> {referral.fullName}</div>
+              <div><strong>Telefone:</strong> {referral.phone}</div>
+              <div><strong>Placa:</strong> {referral.licensePlate}</div>
+              <div><strong>Status:</strong> {referral.status}</div>
+            </div>
+          </div>
+
+          {/* 1. Campo para marca, modelo e ano */}
+          <div className="space-y-3">
+            <h4 className="font-medium">1. Dados do Veículo</h4>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-sm font-medium">Marca</label>
+                <Input
+                  value={formData.vehicleBrand}
+                  onChange={(e) => setFormData({...formData, vehicleBrand: e.target.value})}
+                  placeholder="Ex: Toyota"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Modelo</label>
+                <Input
+                  value={formData.vehicleModel}
+                  onChange={(e) => setFormData({...formData, vehicleModel: e.target.value})}
+                  placeholder="Ex: Corolla"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Ano</label>
+                <Input
+                  value={formData.vehicleYear}
+                  onChange={(e) => setFormData({...formData, vehicleYear: e.target.value})}
+                  placeholder="Ex: 2020"
+                  maxLength={4}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 2, 3, 4. Perguntas de validação */}
+          <div className="space-y-3">
+            <h4 className="font-medium">2. Validação dos Dados</h4>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 border rounded">
+                <span>O nome está correto?</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={formData.nameCorrect ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, nameCorrect: true})}
+                  >
+                    Sim
+                  </Button>
+                  <Button
+                    variant={!formData.nameCorrect ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, nameCorrect: false})}
+                  >
+                    Não
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded">
+                <span>A placa do carro está correta?</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={formData.plateCorrect ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, plateCorrect: true})}
+                  >
+                    Sim
+                  </Button>
+                  <Button
+                    variant={!formData.plateCorrect ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, plateCorrect: false})}
+                  >
+                    Não
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded">
+                <span>O número do celular está correto?</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={formData.phoneCorrect ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, phoneCorrect: true})}
+                  >
+                    Sim
+                  </Button>
+                  <Button
+                    variant={!formData.phoneCorrect ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, phoneCorrect: false})}
+                  >
+                    Não
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Campo de observações - aparece se houver divergências */}
+          {(!formData.nameCorrect || !formData.plateCorrect || !formData.phoneCorrect || showObservations) && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-red-600">
+                Observações sobre divergências *
+              </label>
+              <Textarea
+                value={formData.validationNotes}
+                onChange={(e) => setFormData({...formData, validationNotes: e.target.value})}
+                placeholder="Descreva as divergências encontradas..."
+                rows={3}
+                className="border-red-200"
+              />
+            </div>
+          )}
+
+          {/* Observações opcionais */}
+          {formData.nameCorrect && formData.plateCorrect && formData.phoneCorrect && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Observações (opcional)</label>
+              <Textarea
+                value={formData.validationNotes}
+                onChange={(e) => setFormData({...formData, validationNotes: e.target.value})}
+                placeholder="Adicione observações adicionais se necessário..."
+                rows={2}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={validateMutation.isPending || !formData.vehicleBrand || !formData.vehicleModel || !formData.vehicleYear}
+            >
+              {validateMutation.isPending ? "Validando..." : "Validar Indicação"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function AdminReferralsDetailedPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,6 +253,7 @@ export default function AdminReferralsDetailedPage() {
   const [statusNotes, setStatusNotes] = useState("");
 
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: referrals = [], isLoading: referralsLoading } = useQuery({
     queryKey: ["/api/admin/referrals"]
@@ -288,6 +515,14 @@ export default function AdminReferralsDetailedPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
+                        {/* Botão de Validação - apenas para analistas e admin */}
+                        {(user?.role === 'analista' || user?.role === 'admin') && (
+                          <ValidationDialog referral={referral} onValidate={() => {
+                            // Recarregar dados após validação
+                            queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+                          }} />
+                        )}
+                        
                         <Dialog open={isDialogOpen && selectedReferral?.id === referral.id} onOpenChange={(open) => {
                           setIsDialogOpen(open);
                           if (open) {

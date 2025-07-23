@@ -81,6 +81,16 @@ export const referrals = pgTable("referrals", {
   commissionIndicator: decimal("commission_indicator", { precision: 10, scale: 2 }).default("0.00"),
   commissionPromoter: decimal("commission_promoter", { precision: 10, scale: 2 }).default("0.00"),
   statusHistory: jsonb("status_history").$type<{status: string, changedBy: number, changedAt: string, notes?: string}[]>(), // Histórico de mudanças de status
+  // Campos de validação
+  vehicleBrand: text("vehicle_brand"), // Marca do veículo
+  vehicleModel: text("vehicle_model"), // Modelo do veículo  
+  vehicleYear: text("vehicle_year"), // Ano do veículo
+  nameCorrect: boolean("name_correct"), // Nome está correto?
+  plateCorrect: boolean("plate_correct"), // Placa está correta?
+  phoneCorrect: boolean("phone_correct"), // Telefone está correto?
+  validationNotes: text("validation_notes"), // Observações da validação
+  validatedBy: integer("validated_by").references(() => users.id), // Quem fez a validação
+  validatedAt: timestamp("validated_at"), // Quando foi validado
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -475,6 +485,17 @@ export const updateAnalystPermissionsSchema = z.object({
     "view_reports", 
     "manage_companies"
   ]))
+});
+
+// Schema para validação de indicação
+export const validateReferralSchema = z.object({
+  vehicleBrand: z.string().min(1, "Marca do veículo é obrigatória"),
+  vehicleModel: z.string().min(1, "Modelo do veículo é obrigatório"),
+  vehicleYear: z.string().min(4, "Ano do veículo é obrigatório").max(4, "Ano deve ter 4 dígitos"),
+  nameCorrect: z.boolean(),
+  plateCorrect: z.boolean(),
+  phoneCorrect: z.boolean(),
+  validationNotes: z.string().optional(),
 });
 
 // Schema para atualizar status de indicação com comissões
