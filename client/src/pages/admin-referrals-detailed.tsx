@@ -33,6 +33,30 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
   const [showObservations, setShowObservations] = useState(false);
   const { toast } = useToast();
 
+  // Verifica se há divergências baseado nos dados salvos ou no estado atual do form
+  const hasDiscrepancies = () => {
+    // Se já foi validado, usar os dados salvos
+    if (referral.validatedAt) {
+      return referral.nameCorrect === false || referral.plateCorrect === false || referral.phoneCorrect === false;
+    }
+    return false; // Se não foi validado ainda, não há divergências conhecidas
+  };
+
+  // Função para determinar a cor do botão
+  const getButtonStyle = () => {
+    if (!referral.validatedAt) {
+      // Se não foi validado ainda, usar cor padrão (azul)
+      return "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200";
+    }
+    
+    // Se foi validado, verificar se há divergências
+    if (hasDiscrepancies()) {
+      return "bg-red-50 hover:bg-red-100 text-red-700 border-red-200";
+    } else {
+      return "bg-green-50 hover:bg-green-100 text-green-700 border-green-200";
+    }
+  };
+
   const validateMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await fetch(`/api/referrals/${referral.id}/validate`, {
@@ -73,7 +97,7 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="bg-blue-50 hover:bg-blue-100 text-blue-700">
+        <Button variant="outline" size="sm" className={getButtonStyle()}>
           <Check className="h-4 w-4 mr-1" />
           Validação
         </Button>
