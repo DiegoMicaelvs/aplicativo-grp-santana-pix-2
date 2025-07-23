@@ -256,7 +256,7 @@ export default function AdminSupportTickets() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center ml-[14px] mr-[14px] pl-[3px] pr-[3px] mt-[28px] mb-[28px]">
         <div className="flex items-center gap-4">
           <BackButton />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tickets de Suporte</h1>
@@ -266,7 +266,6 @@ export default function AdminSupportTickets() {
           Atualizar
         </Button>
       </div>
-
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
@@ -329,7 +328,6 @@ export default function AdminSupportTickets() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -378,7 +376,6 @@ export default function AdminSupportTickets() {
           </div>
         </CardContent>
       </Card>
-
       {/* Tickets Table */}
       <Card>
         <CardHeader>
@@ -474,7 +471,6 @@ export default function AdminSupportTickets() {
           )}
         </CardContent>
       </Card>
-
       {/* Ticket Detail Dialog */}
       <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
