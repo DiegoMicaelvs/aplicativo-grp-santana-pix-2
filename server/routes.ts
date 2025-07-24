@@ -663,6 +663,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get basic stats (accessible by admin and analyst)
+  app.get("/api/admin/stats", requireAuth, async (req, res) => {
+    try {
+      // Only admin and analyst can access
+      if (req.user!.role !== "admin" && req.user!.role !== "analista") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const users = await storage.getAllUsers();
+      const referrals = await storage.getAllReferrals();
+      const withdrawals = await storage.getAllWithdrawalRequests();
+      
+      const totalIndicadores = users.filter(u => u.role === "indicador").length;
+      const totalReferrals = referrals.length;
+      const pendingReferrals = referrals.filter(r => r.status === "pending").length;
+      const convertedReferrals = referrals.filter(r => r.status === "converted" || r.status === "validated").length;
+      
+      return res.json({
+        totalIndicadores,
+        totalReferrals,
+        pendingReferrals,
+        convertedReferrals,
+        conversionRate: totalReferrals > 0 ? (convertedReferrals / totalReferrals * 100).toFixed(1) : "0"
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      return res.status(500).json({ error: "Erro ao buscar estatísticas" });
+    }
+  });
+
   // Update referral status
   app.patch("/api/referrals/:id/status", requireAdmin, async (req, res) => {
     try {
