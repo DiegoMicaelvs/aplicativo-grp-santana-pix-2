@@ -315,6 +315,26 @@ export default function AdminDashboard() {
             </Card>
 
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Link href="/admin/support-tickets">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5 text-pink-600" />
+                    Tickets de Suporte
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie solicitações de suporte dos usuários
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-pink-600">
+                    <HelpCircle className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm text-gray-600">central de suporte</p>
+                </CardContent>
+              </Link>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <Link href="/admin/withdrawals">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
