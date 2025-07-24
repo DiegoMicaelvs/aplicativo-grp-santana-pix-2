@@ -336,3 +336,9 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Form Update:** Updated admin-profiles.tsx to properly populate city, state, and zipCode fields when editing existing users
 - **Data Format:** Address is stored as "city, state - zipCode" format for backward compatibility
 - **Affected Areas:** Admin user profile management and all user creation/update endpoints
+
+### Analyst Permissions UI Deployment Issue (July 25, 2025)
+- **Issue:** "Criação de Usuários" permission group (create_indicadores, create_promotores) appears in preview but not after deployment
+- **Current Status:** Permissions are properly added to admin-profiles.tsx and functional in preview environment
+- **Workaround:** Force rebuild with `npm run build` and restart workflow may be required
+- **Note:** This appears to be a Replit deployment caching issue where UI changes in preview don't persist to production
