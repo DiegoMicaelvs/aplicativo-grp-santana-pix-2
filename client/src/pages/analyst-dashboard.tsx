@@ -182,7 +182,7 @@ export default function AnalystDashboard() {
             </CardHeader>
             <CardContent>
               <Button 
-                onClick={() => setLocation("/admin/referrals-detailed")}
+                onClick={() => setLocation("/analyst/referrals")}
                 className="w-full"
                 variant="outline"
               >

@@ -647,6 +647,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all referrals for analysts
+  app.get("/api/analyst/referrals", requireAnalyst, async (req, res) => {
+    try {
+      // Check if analyst has view_referrals permission
+      if (req.user!.role === "analista" && !req.user!.permissions?.includes("view_referrals")) {
+        return res.status(403).json({ error: "Você não tem permissão para visualizar indicações" });
+      }
+      
+      const allReferrals = await storage.getAllReferrals();
+      return res.json(allReferrals);
+    } catch (error) {
+      console.error("Error fetching all referrals for analyst:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicações" });
+    }
+  });
+
   // Update referral status
   app.patch("/api/referrals/:id/status", requireAdmin, async (req, res) => {
     try {

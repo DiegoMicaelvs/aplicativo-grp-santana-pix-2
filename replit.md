@@ -316,3 +316,15 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Enhanced Duplicate Detection:** License plate duplicates now show first name and state of original owner
 - **LSP Error Resolution:** Fixed all TypeScript compilation errors related to user role typing and database insertions
 - **Testing Status:** All user creation flows now working with proper password authentication
+
+### Analyst Referral Viewing System (July 24, 2025)
+- **New Capability:** Analysts can now view and validate referrals for quality control
+- **API Route Created:** `GET /api/analyst/referrals` - Returns all referrals for analysts with view_referrals permission
+- **Permission Check:** Route verifies analyst has "view_referrals" permission before granting access
+- **Dedicated Interface:** Created `/analyst/referrals` page with comprehensive referral management
+- **Validation Features:** Analysts with "edit_referral_status" permission can validate referrals with vehicle details
+- **Filtering System:** Search by name, phone, or license plate with status-based filtering
+- **Validation Form:** Captures vehicle brand, model, year and validates data accuracy
+- **Status Management:** Analysts can mark referrals as validated or rejected with notes
+- **Security:** Role-based access control ensures only authorized analysts can view/edit referrals
+- **Navigation Update:** Updated analyst dashboard to link to new referrals page instead of admin page
