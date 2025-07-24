@@ -1112,14 +1112,14 @@ export default function AdminProfiles() {
               <div>
                 <Label htmlFor="promoterId">Promotor Responsável</Label>
                 <Select
-                  value={form.watch("promoterId")?.toString() || ""}
-                  onValueChange={(value) => form.setValue("promoterId", value ? parseInt(value) : undefined)}
+                  value={form.watch("promoterId")?.toString() || "no_promoter"}
+                  onValueChange={(value) => form.setValue("promoterId", value === "no_promoter" ? undefined : parseInt(value))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o promotor" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum promotor</SelectItem>
+                    <SelectItem value="no_promoter">Nenhum promotor</SelectItem>
                     {promoters.map((promoter) => (
                       <SelectItem key={promoter.id} value={promoter.id.toString()}>
                         {promoter.fullName}
@@ -1134,13 +1134,14 @@ export default function AdminProfiles() {
               <div>
                 <Label htmlFor="analystLevel">Nível do Analista</Label>
                 <Select
-                  value={form.watch("analystLevel")?.toString() || ""}
-                  onValueChange={(value) => form.setValue("analystLevel", parseInt(value) as AnalystLevel)}
+                  value={form.watch("analystLevel")?.toString() || "no_level"}
+                  onValueChange={(value) => form.setValue("analystLevel", value === "no_level" ? null : parseInt(value) as AnalystLevel)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o nível" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="no_level">Nenhum nível</SelectItem>
                     <SelectItem value="1">Nível 1</SelectItem>
                     <SelectItem value="2">Nível 2</SelectItem>
                     <SelectItem value="3">Nível 3</SelectItem>
