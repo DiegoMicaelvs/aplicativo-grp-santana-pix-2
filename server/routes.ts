@@ -18,10 +18,18 @@ import {
   type AnalystPermission,
   type ManagerPermission
 } from "@shared/schema";
+import { 
+  registerCrossAppValidationRoutes,
+  validateUserDuplicates,
+  validateReferralDuplicates 
+} from "./crossAppValidation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
+  
+  // Register cross-app validation routes
+  registerCrossAppValidationRoutes(app);
 
   // Middleware to check authentication
   const requireAuth = (req: any, res: any, next: any) => {
@@ -194,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // 2. Verificar duplicatas (placa, telefone e nome)
+      // 2. Verificar duplicatas locais (placa, telefone e nome)
       const duplicates = await storage.checkDuplicateReferralWithOwner(
         validatedData.phone,
         validatedData.licensePlate,
@@ -224,6 +232,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: errorMessage,
           duplicatedBy: ownerInfo,
           originalDate: duplicate.createdAt
+        });
+      }
+
+      // 3. Verificar duplicatas em outros aplicativos (validação cruzada)
+      const crossAppValidation = await validateReferralDuplicates({
+        phone: validatedData.phone,
+        licensePlate: validatedData.licensePlate,
+        fullName: validatedData.fullName
+      });
+      
+      if (crossAppValidation.isDuplicate) {
+        const validationError = crossAppValidation.message || 
+          "Esta indicação já foi cadastrada em outro aplicativo";
+        
+        return res.status(400).json({
+          error: "Indicação duplicada em outro app",
+          details: validationError,
+          crossAppDuplicate: true
         });
       }
       

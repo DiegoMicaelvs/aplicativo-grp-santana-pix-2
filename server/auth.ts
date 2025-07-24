@@ -6,6 +6,7 @@ import { promisify } from "util";
 import { insertUserSchema, loginSchema } from "@shared/schema";
 import { storage } from "./storage";
 import type { Express } from "express";
+import { validateUserDuplicates } from "./crossAppValidation";
 
 const scryptAsync = promisify(scrypt);
 const crypto = { scrypt: scryptAsync, randomBytes, timingSafeEqual };
@@ -68,7 +69,7 @@ export function setupAuth(app: Express) {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
       secure: isProduction, // Secure em produção
-      sameSite: (isProduction ? "none" : "lax") as "lax" | "none", // None em produção para funcionar com HTTPS
+      sameSite: isProduction ? "none" : "lax", // None em produção para funcionar com HTTPS
       path: "/", // Cookie válido em todo o site
       domain: undefined // Deixar o navegador gerenciar o domínio automaticamente
     }
@@ -134,6 +135,24 @@ export function setupAuth(app: Express) {
       if (existingCpf) {
         console.log(`[REGISTRO] Tentativa de cadastro duplicado - CPF já existe: ${userData.cpf}`);
         return res.status(400).json({ message: "Este CPF já está cadastrado" });
+      }
+
+      // Check for duplicates in other apps (cross-app validation)
+      const crossAppValidation = await validateUserDuplicates({
+        cpf: userData.cpf,
+        phone: userData.phone,
+        email: userData.username
+      });
+      
+      if (crossAppValidation.isDuplicate) {
+        const validationError = crossAppValidation.message || 
+          "Este usuário já está cadastrado em outro aplicativo";
+        
+        console.log(`[REGISTRO] Cadastro duplicado em outro app - ${userData.cpf}: ${validationError}`);
+        return res.status(400).json({ 
+          message: validationError,
+          crossAppDuplicate: true
+        });
       }
       
       // Hash the password

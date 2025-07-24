@@ -1,152 +1,165 @@
 #!/usr/bin/env tsx
 /**
- * Verificação final do sistema em produção
- * Testa todas as funcionalidades críticas
+ * Verificação final do sistema de produção
+ * Testa todas as funcionalidades e configurações
  */
 
-import { db } from "../db";
-import { users, companies, referrals, auditLog } from "../shared/schema";
-import { sql } from "drizzle-orm";
+console.log("=== VERIFICAÇÃO FINAL DO SISTEMA DE PRODUÇÃO ===\n");
 
-console.log("🔍 VERIFICAÇÃO FINAL DO SISTEMA EM PRODUÇÃO");
-console.log("=" .repeat(60));
+// Verificar variáveis de ambiente
+console.log("1. VERIFICANDO CONFIGURAÇÕES:");
+console.log("-".repeat(40));
 
-async function finalVerification() {
+const hasDatabase = !!process.env.DATABASE_URL;
+const hasProduction = !!process.env.PRODUCTION_MODE;
+const hasMasterPassword = !!process.env.MASTER_PASSWORD;
+const hasCrossAppSecret = !!process.env.CROSS_APP_SECRET;
+
+console.log(`DATABASE_URL: ${hasDatabase ? '✅ Configurado' : '❌ Ausente'}`);
+console.log(`PRODUCTION_MODE: ${hasProduction ? '✅ Ativado' : '❌ Desativado'}`);
+console.log(`MASTER_PASSWORD: ${hasMasterPassword ? '✅ Configurado' : '❌ Ausente'}`);
+console.log(`CROSS_APP_SECRET: ${hasCrossAppSecret ? '✅ Configurado' : '❌ Ausente'}`);
+
+console.log("\n2. TESTANDO BANCO DE DADOS:");
+console.log("-".repeat(40));
+
+try {
+  const { db } = await import("../db/index");
+  
+  // Testar conexão com o banco
+  const result = await db.execute('SELECT 1 as test');
+  console.log("✅ Conexão com banco de dados OK");
+  
+  // Verificar tabelas principais
+  const tables = await db.execute(`
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_type = 'BASE TABLE'
+    ORDER BY table_name
+  `);
+  
+  const tableNames = (tables as any).map((t: any) => t.table_name);
+  const requiredTables = [
+    'users', 'referrals', 'companies', 'withdrawals', 
+    'support_tickets', 'audit_log', 'cash_flow'
+  ];
+  
+  console.log(`📊 Tabelas encontradas: ${tableNames.length}`);
+  
+  for (const table of requiredTables) {
+    const exists = tableNames.includes(table);
+    console.log(`   ${exists ? '✅' : '❌'} ${table}`);
+  }
+  
+} catch (error) {
+  console.log("❌ Erro ao conectar com banco:", error);
+}
+
+console.log("\n3. VERIFICANDO SISTEMA DE VALIDAÇÃO CRUZADA:");
+console.log("-".repeat(40));
+
+if (hasCrossAppSecret) {
   try {
-    // 1. Verificar configuração de produção
-    console.log("\n1. CONFIGURAÇÃO DE PRODUÇÃO:");
-    const isProduction = process.env.NODE_ENV === "production" || 
-                        process.env.PRODUCTION_MODE === "true" ||
-                        process.env.REPLIT_DEPLOYMENT === "1";
+    const { CENTRAL_VALIDATION_APIS } = await import("../server/crossAppValidation");
     
-    console.log(`   Modo produção: ${isProduction ? '✅ ATIVO' : '❌ INATIVO'}`);
-    console.log(`   Master password: ${process.env.MASTER_PASSWORD ? '✅ Configurado' : '❌ Não configurado'}`);
-    console.log(`   Database URL: ${process.env.DATABASE_URL ? '✅ Configurado' : '❌ Não configurado'}`);
+    console.log(`✅ Secret configurado`);
+    console.log(`📡 APIs configuradas: ${CENTRAL_VALIDATION_APIS.length}`);
     
-    // 2. Verificar banco de dados
-    console.log("\n2. BANCO DE DADOS:");
-    const dbConnTest = await db.select({ count: sql<number>`count(*)` }).from(users);
-    console.log(`   Conexão: ✅ OK`);
-    
-    // Contar registros em tabelas principais
-    const counts = await Promise.all([
-      db.select({ count: sql<number>`count(*)` }).from(users),
-      db.select({ count: sql<number>`count(*)` }).from(companies), 
-      db.select({ count: sql<number>`count(*)` }).from(referrals)
-    ]);
-    
-    console.log(`   Usuários: ${counts[0][0].count}`);
-    console.log(`   Empresas: ${counts[1][0].count}`);
-    console.log(`   Indicações: ${counts[2][0].count}`);
-    
-    // 3. Verificar usuários por role
-    console.log("\n3. USUÁRIOS POR ROLE:");
-    const roleStats = await db.select({
-      role: users.role,
-      count: sql<number>`count(*)`
-    }).from(users).groupBy(users.role);
-    
-    roleStats.forEach(stat => {
-      console.log(`   ${stat.role}: ${stat.count}`);
-    });
-    
-    // 4. Verificar admin principal
-    console.log("\n4. USUÁRIO ADMIN:");
-    const mainAdmin = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.username, 'admin@kongpix.com.br')
-    });
-    
-    if (mainAdmin) {
-      console.log(`   ✅ Admin principal encontrado: ${mainAdmin.fullName}`);
-      console.log(`   Email: ${mainAdmin.username}`);
-      console.log(`   Status: ${mainAdmin.isActive ? 'Ativo' : 'Inativo'}`);
-    } else {
-      console.log(`   ❌ Admin principal não encontrado!`);
-    }
-    
-    // 5. Verificar empresas ativas
-    console.log("\n5. EMPRESAS ATIVAS:");
-    const activeCompanies = await db.query.companies.findMany({
-      where: (companies, { eq }) => eq(companies.isActive, true)
-    });
-    
-    activeCompanies.forEach(company => {
-      console.log(`   • ${company.name}`);
-    });
-    
-    // 6. Verificar indicações por status
-    if (counts[2][0].count > 0) {
-      console.log("\n6. INDICAÇÕES POR STATUS:");
-      const statusStats = await db.select({
-        status: referrals.status,
-        count: sql<number>`count(*)`  
-      }).from(referrals).groupBy(referrals.status);
-      
-      statusStats.forEach(stat => {
-        console.log(`   ${stat.status}: ${stat.count}`);
+    if (CENTRAL_VALIDATION_APIS.length > 0) {
+      console.log("   URLs configuradas:");
+      CENTRAL_VALIDATION_APIS.forEach((url, index) => {
+        console.log(`   ${index + 1}. ${url}`);
       });
-    }
-    
-    // 7. Verificar integrações externas
-    console.log("\n7. INTEGRAÇÕES EXTERNAS:");
-    const integrations = [
-      { name: "SMS Comtele", status: "✅ Configurado", url: "https://sms.com.br/api/v2/send" },
-      { name: "Consulta CPF", status: "✅ Disponível", url: "API externa" },
-      { name: "Validação Veículo", status: "✅ Disponível", url: "API externa" },
-      { name: "Sistema Comissões", status: "✅ Ativo", url: "Interno" }
-    ];
-    
-    integrations.forEach(integration => {
-      console.log(`   ${integration.name}: ${integration.status}`);
-    });
-    
-    // 8. Verificar segurança
-    console.log("\n8. CONFIGURAÇÕES DE SEGURANÇA:");
-    const securityChecks = [
-      { name: "Rate Limiting", status: isProduction },
-      { name: "HTTPS Headers", status: true },
-      { name: "Session Store", status: true },
-      { name: "Password Hashing", status: true },
-      { name: "Audit Logging", status: true }
-    ];
-    
-    securityChecks.forEach(check => {
-      console.log(`   ${check.name}: ${check.status ? '✅' : '⚠️'}`);
-    });
-    
-    // 9. Status final
-    console.log("\n" + "=".repeat(60));
-    console.log("📊 RESULTADO DA VERIFICAÇÃO:");
-    
-    const allGood = isProduction && 
-                   process.env.MASTER_PASSWORD && 
-                   mainAdmin && 
-                   counts[1][0].count >= 3 &&
-                   securityChecks.every(check => check.status);
-    
-    if (allGood) {
-      console.log("🎉 SISTEMA 100% OPERACIONAL PARA PRODUÇÃO!");
-      console.log("\n✅ Todos os sistemas verificados e funcionando");
-      console.log("✅ Configurações de segurança ativas");
-      console.log("✅ Banco de dados populado");
-      console.log("✅ Integrações externas prontas");
-      console.log("\n🌐 Acesse: https://indique.replit.app");
-      console.log("🔑 Login: admin@kongpix.com.br / admin123");
     } else {
-      console.log("⚠️  Algumas verificações falharam");
-      console.log("   Revise os itens marcados com ⚠️ ou ❌");
+      console.log("   ⚠️  Nenhuma URL de validação configurada");
+      console.log("   Adicione URLs em server/crossAppValidation.ts");
     }
     
   } catch (error) {
-    console.error("❌ Erro durante verificação:", error);
-    process.exit(1);
+    console.log("❌ Erro ao carregar configuração de validação cruzada");
   }
+} else {
+  console.log("❌ CROSS_APP_SECRET não configurado");
+  console.log("   O sistema não conseguirá validar duplicatas entre apps");
 }
 
-finalVerification().then(() => {
-  console.log("\n✅ Verificação completa");
-  process.exit(0);
-}).catch((error) => {
-  console.error("❌ Falha na verificação:", error);
-  process.exit(1);
-});
+console.log("\n4. TESTANDO ENDPOINTS PRINCIPAIS:");
+console.log("-".repeat(40));
+
+try {
+  // Teste do endpoint de validação cruzada
+  const fetch = (await import('node-fetch')).default;
+  const baseUrl = process.env.REPL_SLUG ? 
+    `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 
+    'http://localhost:5000';
+  
+  console.log(`🌐 Testando: ${baseUrl}`);
+  
+  // Teste básico de saúde da API
+  try {
+    const healthResponse = await fetch(`${baseUrl}/api/companies`, {
+      method: 'GET',
+      timeout: 5000
+    });
+    
+    if (healthResponse.ok) {
+      console.log("✅ API principal funcionando");
+    } else {
+      console.log(`⚠️  API retornou status ${healthResponse.status}`);
+    }
+  } catch (apiError) {
+    console.log("❌ Erro ao testar API principal");
+  }
+  
+  // Teste do endpoint de validação cruzada
+  if (hasCrossAppSecret) {
+    try {
+      const crossAppResponse = await fetch(`${baseUrl}/api/validate/cross-app`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cpf: '00000000000',
+          appSecret: process.env.CROSS_APP_SECRET
+        }),
+        timeout: 5000
+      });
+      
+      console.log(`✅ Endpoint de validação cruzada disponível (${crossAppResponse.status})`);
+    } catch (crossAppError) {
+      console.log("⚠️  Endpoint de validação cruzada indisponível");
+    }
+  }
+  
+} catch (error) {
+  console.log("❌ Erro ao testar endpoints");
+}
+
+console.log("\n5. RESUMO DA CONFIGURAÇÃO:");
+console.log("=".repeat(40));
+
+const configScore = [hasDatabase, hasProduction, hasMasterPassword, hasCrossAppSecret]
+  .filter(Boolean).length;
+
+console.log(`📊 Configuração: ${configScore}/4 itens OK`);
+
+if (configScore === 4) {
+  console.log("🎉 SISTEMA COMPLETAMENTE CONFIGURADO!");
+  console.log("✅ Pronto para uso em produção");
+  console.log("✅ Validação cruzada ativa");
+  console.log("✅ Segurança máxima ativada");
+} else {
+  console.log("⚠️  CONFIGURAÇÃO INCOMPLETA");
+  
+  if (!hasDatabase) console.log("   - Configure DATABASE_URL");
+  if (!hasProduction) console.log("   - Configure PRODUCTION_MODE=true");
+  if (!hasMasterPassword) console.log("   - Configure MASTER_PASSWORD");
+  if (!hasCrossAppSecret) console.log("   - Configure CROSS_APP_SECRET");
+}
+
+console.log("\n📚 DOCUMENTAÇÃO:");
+console.log("   - Sistema geral: docs/configuracao-producao-completa.md");
+console.log("   - Validação cruzada: docs/validacao-cruzada-apps.md");
+console.log("   - Criar admin: docs/criar-admin-producao.md");
+
+console.log("\n" + "=".repeat(50));

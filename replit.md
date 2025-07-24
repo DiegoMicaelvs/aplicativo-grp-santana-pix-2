@@ -342,6 +342,7 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Environment Configuration:** 
   - PRODUCTION_MODE: true (configured via Replit Secrets)
   - MASTER_PASSWORD: Secure master password configured
+  - CROSS_APP_SECRET: Cross-application validation secret configured
   - Automatic production detection via environment variables
 - **Database Setup:** 
   - All tables created and migrated successfully
@@ -360,8 +361,16 @@ The system is designed for deployment on platforms that support Node.js applicat
   - External API integrations (CPF validation, vehicle validation)
   - Commission calculation system active
   - Audit logging fully operational
+- **Cross-App Validation System (NEW):**
+  - Anti-fraud system to prevent duplicate registrations across remixed applications
+  - Validates CPF, phone, and license plate duplicates between different app instances
+  - Secure API endpoints with authentication via CROSS_APP_SECRET
+  - Integrated into user registration and referral creation processes
+  - Prevents commission fraud from multiple app registrations
+  - Documentation: docs/validacao-cruzada-apps.md
 - **Verification Scripts Created:**
   - setup-production.ts: Complete production setup verification
   - configure-external-activities.ts: External integrations status
   - final-production-verification.ts: Comprehensive system verification
+  - setup-cross-app-validation.ts: Cross-application validation setup guide
 - **Production Status:** System is 100% operational and ready for production use at https://indique.replit.app
