@@ -153,6 +153,7 @@ class DatabaseStorage implements IStorage {
         email: userData.email || userData.username,
         phone: userData.phone,
         cpf: userData.cpf,
+        address: `${userData.city}, ${userData.state} - ${userData.zipCode}`, // Construct address from parts
         city: userData.city,
         state: userData.state,
         zipCode: userData.zipCode,
