@@ -37,7 +37,10 @@ async function seed() {
       fullName: "Administrador do Sistema",
       phone: "11999999999",
       cpf: "12345678900",
-      address: "Grupo Santana",
+      address: "Grupo Santana, São Paulo - SP - 01000-000",
+      city: "São Paulo",
+      state: "SP",
+      zipCode: "01000-000",
       shirtSize: "M",
       pixKey: "admin@gruposantana.com",
       role: "admin",
@@ -59,7 +62,10 @@ async function seed() {
         fullName: "João Silva",
         phone: "11988888888",
         cpf: "98765432100",
-        address: "Rua das Flores, 123",
+        address: "Rua das Flores, 123, São Paulo - SP - 01234-567",
+        city: "São Paulo",
+        state: "SP", 
+        zipCode: "01234-567",
         shirtSize: "M",
         pixKey: "joao@example.com",
         role: "indicador",
@@ -78,6 +84,7 @@ async function seed() {
       await db.insert(schema.referrals).values([
         {
           userId: referrer.id,
+          createdBy: referrer.id,
           fullName: "Maria Costa",
           phone: "11977777777",
           licensePlate: "ABC1234",
@@ -88,6 +95,7 @@ async function seed() {
         },
         {
           userId: referrer.id,
+          createdBy: referrer.id,
           fullName: "Paulo Ribeiro",
           phone: "11966666666",
           licensePlate: "DEF5678",
@@ -98,6 +106,7 @@ async function seed() {
         },
         {
           userId: referrer.id,
+          createdBy: referrer.id,
           fullName: "Roberto Almeida",
           phone: "11955555555",
           licensePlate: "GHI9J12",
@@ -107,6 +116,7 @@ async function seed() {
         },
         {
           userId: referrer.id,
+          createdBy: referrer.id,
           fullName: "Ana Santos",
           phone: "11944444444",
           licensePlate: "KLM3456",

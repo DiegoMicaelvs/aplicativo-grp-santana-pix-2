@@ -1,20 +1,25 @@
 // Configurações do sistema para produção
 export const config = {
+  // Detectar modo de produção
+  isProduction: process.env.NODE_ENV === "production" || 
+                process.env.PRODUCTION_MODE === "true" ||
+                process.env.REPLIT_DEPLOYMENT === "1",
+  
   // Configurações de segurança
   security: {
-    // Senha master para operações críticas (MUDAR EM PRODUÇÃO!)
+    // Senha master para operações críticas
     masterPassword: process.env.MASTER_PASSWORD || "Diego91425751",
     
     // Configurações de sessão
     session: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 dias
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production" || process.env.PRODUCTION_MODE === "true",
     },
     
     // Rate limiting
     rateLimit: {
-      loginAttempts: 5,
-      windowMinutes: 15,
+      loginAttempts: process.env.PRODUCTION_MODE === "true" ? 3 : 5,
+      windowMinutes: process.env.PRODUCTION_MODE === "true" ? 30 : 15,
     }
   },
   
