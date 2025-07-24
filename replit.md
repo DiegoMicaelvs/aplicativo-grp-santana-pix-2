@@ -292,6 +292,17 @@ The system is designed for deployment on platforms that support Node.js applicat
   - `POST /api/analyst/indicadores` - Create new indicador (requires create_indicadores permission)
   - `POST /api/analyst/promotores` - Create new promotor (requires create_promotores permission)
 
+### Analyst Permissions Visibility System (July 24, 2025)
+- **Permissions Page Created:** New dedicated page at `/analyst/permissions` for analysts to view their assigned permissions
+- **Comprehensive Permission Display:** Shows all permissions with detailed descriptions, grouped by category (Visualização, Gestão, Criação de Usuários)
+- **Visual Status Indicators:** Clear visual distinction between active and inactive permissions using checkmarks and badges
+- **Analyst Information Card:** Displays analyst name, email, level (Junior/Pleno/Senior), and total permission count
+- **Navigation Integration:** Added "Ver Detalhes das Permissões" button in analyst dashboard for easy access
+- **Role-Based Access:** Page only accessible to authenticated analysts through AnalystRoute protection
+- **Permission Grouping:** Organized permissions into logical groups for better understanding
+- **Summary Section:** Quick overview of all active capabilities in one place
+- **Empty State Handling:** Clear message when no permissions are assigned with instructions to contact administrator
+
 ### Critical Password Security Fix (July 23, 2025)
 - **Security Issue Identified:** Users created through admin and analyst interfaces had passwords stored in plain text, making login impossible
 - **Comprehensive Fix Applied:** Updated all user creation routes to properly hash passwords using scrypt-based hashPassword function

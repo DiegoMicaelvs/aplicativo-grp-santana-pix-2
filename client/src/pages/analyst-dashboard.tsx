@@ -106,6 +106,16 @@ export default function AnalystDashboard() {
               Nenhuma permissão específica configurada. Entre em contato com o administrador.
             </p>
           )}
+          <div className="mt-4">
+            <Button 
+              onClick={() => setLocation("/analyst/permissions")}
+              variant="outline"
+              className="w-full"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Ver Detalhes das Permissões
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
