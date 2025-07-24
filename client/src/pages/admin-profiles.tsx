@@ -322,6 +322,11 @@ export default function AdminProfiles() {
   // Load user data when editing
   useEffect(() => {
     if (selectedUser) {
+      // Extract city, state, and zipCode from the stored data
+      const city = selectedUser.city || '';
+      const state = selectedUser.state || '';
+      const zipCode = selectedUser.zipCode || '';
+      
       form.reset({
         fullName: selectedUser.fullName,
         username: selectedUser.username,
@@ -329,6 +334,9 @@ export default function AdminProfiles() {
         cpf: selectedUser.cpf,
         phone: selectedUser.phone,
         address: selectedUser.address,
+        city: city,
+        state: state,
+        zipCode: zipCode,
         shirtSize: selectedUser.shirtSize,
         pixKey: selectedUser.pixKey,
         role: selectedUser.role,

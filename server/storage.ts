@@ -269,6 +269,20 @@ class DatabaseStorage implements IStorage {
     delete updateData.balance;
     delete updateData.totalEarnings;
 
+    // If city, state, or zipCode are being updated, reconstruct the address field
+    if (updateData.city || updateData.state || updateData.zipCode) {
+      // Get current user data to fill in any missing parts
+      const currentUser = await this.getUserById(userId);
+      if (currentUser) {
+        const city = updateData.city || currentUser.city || '';
+        const state = updateData.state || currentUser.state || '';
+        const zipCode = updateData.zipCode || currentUser.zipCode || '';
+        
+        // Reconstruct address in the expected format
+        updateData.address = `${city}, ${state} - ${zipCode}`;
+      }
+    }
+
     const [updatedUser] = await db.update(users)
       .set(updateData)
       .where(eq(users.id, userId))

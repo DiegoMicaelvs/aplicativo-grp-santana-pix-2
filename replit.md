@@ -328,3 +328,11 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Status Management:** Analysts can mark referrals as validated or rejected with notes
 - **Security:** Role-based access control ensures only authorized analysts can view/edit referrals
 - **Navigation Update:** Updated analyst dashboard to link to new referrals page instead of admin page
+
+### Address Fields Persistence Fix (July 25, 2025)
+- **Issue Fixed:** City, state, and ZIP code fields were not being saved properly in user profiles
+- **Root Cause:** The updateUserProfile method wasn't reconstructing the address field from individual components
+- **Solution Implemented:** Modified server/storage.ts to automatically reconstruct address field when city, state, or zipCode are updated
+- **Form Update:** Updated admin-profiles.tsx to properly populate city, state, and zipCode fields when editing existing users
+- **Data Format:** Address is stored as "city, state - zipCode" format for backward compatibility
+- **Affected Areas:** Admin user profile management and all user creation/update endpoints
