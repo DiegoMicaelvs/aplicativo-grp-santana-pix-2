@@ -95,7 +95,7 @@ const profileManagementSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileManagementSchema>;
 
-// Permission groups for better organization
+// Permission groups for better organization - Updated July 25, 2025
 const PERMISSION_GROUPS = {
   "Visualização": [
     { key: "view_referrals", label: "Ver Indicações" },
