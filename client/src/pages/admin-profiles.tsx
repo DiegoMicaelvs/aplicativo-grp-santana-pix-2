@@ -869,6 +869,7 @@ export default function AdminProfiles() {
   promoters?: User[];
   isCreate: boolean;
 }) {
+  const [activeTab, setActiveTab] = useState("basic");
   const watchedRole = form.watch("role");
   const watchedPermissions = form.watch("permissions") || [];
 
@@ -883,7 +884,7 @@ export default function AdminProfiles() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <Tabs defaultValue="basic" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="basic">Dados Básicos</TabsTrigger>
           <TabsTrigger value="role">Papel e Permissões</TabsTrigger>
