@@ -107,6 +107,10 @@ const PERMISSION_GROUPS = {
     { key: "manage_withdrawals", label: "Gerenciar Saques" },
     { key: "manage_companies", label: "Gerenciar Empresas" },
   ],
+  "Criação de Usuários": [
+    { key: "create_indicadores", label: "Criar Indicadores" },
+    { key: "create_promotores", label: "Criar Promotores" },
+  ],
 } as const;
 
 // Manager permission groups
