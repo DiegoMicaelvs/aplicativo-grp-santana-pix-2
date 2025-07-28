@@ -143,7 +143,7 @@ class DatabaseStorage implements IStorage {
   }
   
   // User methods
-  async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number }) {
+  async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number; analystId?: number }) {
     try {
       // Prepare user data with proper typing
       const insertData = {
@@ -164,9 +164,9 @@ class DatabaseStorage implements IStorage {
         analystLevel: userData.analystLevel as 1 | 2 | 3 | null,
         createdBy: userData.createdBy,
         promoterId: userData.promoterId,
-        balance: 0,
-        totalEarnings: 0,
-        totalReferrals: 0,
+        analystId: userData.analystId,
+        balance: "0",
+        totalEarnings: "0",
         isActive: true,
         mustChangePassword: false,
         createdAt: new Date(),
@@ -174,7 +174,7 @@ class DatabaseStorage implements IStorage {
       };
 
       const [user] = await db.insert(users)
-        .values(insertData)
+        .values([insertData])
         .returning();
       
       return user;

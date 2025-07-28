@@ -90,6 +90,7 @@ const profileManagementSchema = z.object({
   permissions: z.array(z.string()).optional(),
   isActive: z.boolean(),
   promoterId: z.coerce.number().optional(),
+  analystId: z.coerce.number().optional(),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
 });
 
@@ -159,6 +160,9 @@ export default function AdminProfiles() {
   const { data: promoters } = useQuery<User[]>({
     queryKey: ['/api/admin/promoters'],
   });
+
+  // Filter Level 3 analysts from users
+  const analystLevel3 = users?.filter((user) => user.role === "analista" && user.analystLevel === 3) || [];
 
   // Form for editing user profiles
   const form = useForm<ProfileFormValues>({
@@ -348,6 +352,7 @@ export default function AdminProfiles() {
         permissions: selectedUser.permissions || [],
         isActive: selectedUser.isActive,
         promoterId: selectedUser.promoterId || undefined,
+        analystId: selectedUser.analystId || undefined,
       });
     }
   }, [selectedUser, form]);
@@ -497,6 +502,7 @@ export default function AdminProfiles() {
                   onSubmit={onSubmit}
                   isLoading={createUserMutation.isPending}
                   promoters={promoters}
+                  analysts={analystLevel3}
                   isCreate={true}
                 />
               </DialogContent>
@@ -591,6 +597,7 @@ export default function AdminProfiles() {
                                   onSubmit={onSubmit}
                                   isLoading={updateUserMutation.isPending}
                                   promoters={promoters}
+                                  analysts={analystLevel3}
                                   isCreate={false}
                                 />
                               </DialogContent>
@@ -872,13 +879,15 @@ export default function AdminProfiles() {
     form, 
   onSubmit, 
   isLoading, 
-  promoters, 
+  promoters,
+  analysts, 
   isCreate 
 }: {
   form: any;
   onSubmit: (data: ProfileFormValues) => void;
   isLoading: boolean;
   promoters?: User[];
+  analysts?: User[];
   isCreate: boolean;
 }) {
   const [activeTab, setActiveTab] = useState("basic");
@@ -1136,6 +1145,28 @@ export default function AdminProfiles() {
                     {promoters.map((promoter) => (
                       <SelectItem key={promoter.id} value={promoter.id.toString()}>
                         {promoter.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {(watchedRole === "promotor" && analysts && analysts.length > 0) && (
+              <div>
+                <Label htmlFor="analystId">Analista Nível 3 Responsável</Label>
+                <Select
+                  value={form.watch("analystId")?.toString() || "no_analyst"}
+                  onValueChange={(value) => form.setValue("analystId", value === "no_analyst" ? undefined : parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o analista" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no_analyst">Nenhum analista</SelectItem>
+                    {analysts.map((analyst) => (
+                      <SelectItem key={analyst.id} value={analyst.id.toString()}>
+                        {analyst.fullName}
                       </SelectItem>
                     ))}
                   </SelectContent>

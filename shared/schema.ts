@@ -52,6 +52,7 @@ export const users = pgTable("users", {
   permissions: jsonb("permissions").$type<AnalystPermission[] | ManagerPermission[]>(), // Permissões específicas para analistas e gerentes
   createdBy: integer("created_by"), // Quem cadastrou este usuário
   promoterId: integer("promoter_id"), // ID do promotor que cadastrou este indicador
+  analystId: integer("analyst_id"), // ID do analista nível 3 responsável (para promotores)
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0.00").notNull(), // Saldo disponível
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00").notNull(), // Total ganho
   mustChangePassword: boolean("must_change_password").default(false).notNull(), // Força alteração de senha no próximo login
