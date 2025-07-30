@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle } from "lucide-react";
+import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,7 @@ import { queryClient } from "@/lib/queryClient";
 import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/hooks/use-auth";
 
-type ReferralStatus = "pending" | "processing" | "converted" | "rejected" | "validated" | "paid";
+type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid";
 
 // Componente de validação
 function ValidationDialog({ referral, onValidate }: { referral: any; onValidate: () => void }) {
@@ -294,7 +294,13 @@ export default function AdminReferralsDetailedPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, notes }),
       });
-      if (!response.ok) throw new Error("Erro ao atualizar status");
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.details || errorData.error || "Erro ao atualizar status";
+        throw new Error(errorMessage);
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -303,15 +309,21 @@ export default function AdminReferralsDetailedPage() {
       setIsDialogOpen(false);
       setStatusNotes("");
     },
-    onError: () => {
-      toast({ title: "Erro ao atualizar status", variant: "destructive" });
+    onError: (error: any) => {
+      console.error("Erro ao atualizar status:", error);
+      const errorMessage = error?.message || "Erro ao atualizar status";
+      toast({ 
+        title: "Erro ao atualizar status", 
+        description: errorMessage,
+        variant: "destructive" 
+      });
     },
   });
 
   // Filter referrals
   const filteredReferrals = referrals.filter((referral: any) => {
     const user = users.find((u: any) => u.id === referral.userId);
-    const matchesSearch = referral.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = referral.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          referral.phone?.includes(searchTerm) ||
                          referral.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -344,7 +356,7 @@ export default function AdminReferralsDetailedPage() {
   const getStatusLabel = (status: ReferralStatus) => {
     switch (status) {
       case "pending": return "Pendente";
-      case "processing": return "Em Análise";
+      case "analyzing": return "Em Análise";
       case "converted": return "Convertida";
       case "rejected": return "Rejeitada";
       case "validated": return "Validada";
@@ -465,7 +477,7 @@ export default function AdminReferralsDetailedPage() {
               <SelectContent>
                 <SelectItem value="all_statuses">Todos os Status</SelectItem>
                 <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="processing">Em Análise</SelectItem>
+                <SelectItem value="analyzing">Em Análise</SelectItem>
                 <SelectItem value="converted">Convertida</SelectItem>
                 <SelectItem value="rejected">Rejeitada</SelectItem>
                 <SelectItem value="validated">Validada</SelectItem>
@@ -599,7 +611,7 @@ export default function AdminReferralsDetailedPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="pending">Pendente</SelectItem>
-                                      <SelectItem value="processing">Em Análise</SelectItem>
+                                      <SelectItem value="analyzing">Em Análise</SelectItem>
                                       <SelectItem value="converted">Convertida</SelectItem>
                                       <SelectItem value="rejected">Rejeitada</SelectItem>
                                       <SelectItem value="validated">Validada</SelectItem>
