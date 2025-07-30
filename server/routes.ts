@@ -755,12 +755,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.getUserById(referral.userId);
       
-      const updatedReferral = await storage.updateReferralStatus(
-        parseInt(id),
-        validatedData.status,
-        validatedData.notes,
-        req.user!.id
-      );
+      let updatedReferral;
+      try {
+        updatedReferral = await storage.updateReferralStatus(
+          parseInt(id),
+          validatedData.status,
+          validatedData.notes,
+          req.user!.id
+        );
+      } catch (updateError) {
+        console.error(`[/api/referrals/:id/status] Erro no updateReferralStatus:`, updateError);
+        throw updateError;
+      }
 
       // Send SMS notification if configured and user has phone
       if (user?.phone && validatedData.status !== referral?.status) {

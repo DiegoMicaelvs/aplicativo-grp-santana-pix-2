@@ -553,6 +553,12 @@ class DatabaseStorage implements IStorage {
     });
   }
   
+  async calculateCommissions(referralId: number) {
+    // Commission calculation is handled inside updateReferralStatus method
+    // This method is here just to satisfy the interface requirement
+    console.log(`[calculateCommissions] Called for referral ${referralId} - commissions are calculated in updateReferralStatus`);
+  }
+  
   async updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number) {
     try {
       console.log(`[updateReferralStatus] Starting update for referral ${id} to status ${status}`);
@@ -598,7 +604,7 @@ class DatabaseStorage implements IStorage {
         newCommissionIndicator = previousCommissionIndicator;
         newCommissionPromoter = previousCommissionPromoter;
       }
-      // Para outros status (pending, rejected, processing), as comissões são zero
+      // Para outros status (pending, rejected, analyzing), as comissões são zero
       
       console.log(`[updateReferralStatus] New commissions: indicator=${newCommissionIndicator}, promoter=${newCommissionPromoter}`);
       
@@ -625,8 +631,8 @@ class DatabaseStorage implements IStorage {
         .set({ 
           status, 
           notes,
-          commissionIndicator: newCommissionIndicator.toString(),
-          commissionPromoter: newCommissionPromoter.toString(),
+          commissionIndicator: newCommissionIndicator.toFixed(2),
+          commissionPromoter: newCommissionPromoter.toFixed(2),
           statusHistory: [...currentHistory, newHistoryEntry],
           updatedAt: new Date()
         })

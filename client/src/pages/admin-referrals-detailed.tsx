@@ -289,6 +289,8 @@ export default function AdminReferralsDetailedPage() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ referralId, status, notes }: { referralId: number; status: ReferralStatus; notes: string }) => {
+      console.log(`[updateStatusMutation] Iniciando atualização: referralId=${referralId}, status=${status}`);
+      
       const response = await fetch(`/api/referrals/${referralId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -298,19 +300,25 @@ export default function AdminReferralsDetailedPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.details || errorData.error || "Erro ao atualizar status";
+        console.error(`[updateStatusMutation] Erro na resposta:`, errorData);
         throw new Error(errorMessage);
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log(`[updateStatusMutation] Resposta bem-sucedida:`, result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log(`[updateStatusMutation] onSuccess - dados recebidos:`, data);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "Status atualizado com sucesso!" });
       setIsDialogOpen(false);
       setStatusNotes("");
+      setSelectedReferral(null);
     },
     onError: (error: any) => {
-      console.error("Erro ao atualizar status:", error);
+      console.error("[updateStatusMutation] onError - Erro ao atualizar status:", error);
       const errorMessage = error?.message || "Erro ao atualizar status";
       toast({ 
         title: "Erro ao atualizar status", 
@@ -650,33 +658,35 @@ export default function AdminReferralsDetailedPage() {
                                         </h4>
                                         <div className="text-sm text-blue-700 mt-1">
                                           {(() => {
-                                            const currentIndicator = parseFloat(selectedReferral.commissionIndicator || '0');
-                                            const currentPromoter = parseFloat(selectedReferral.commissionPromoter || '0');
-                                            
-                                            // Calculate new commissions based on status
-                                            let newIndicator = 0;
-                                            let newPromoter = 0;
-                                            
-                                            if (newStatus === 'validated') {
-                                              newIndicator = 3;
-                                              newPromoter = 1;
-                                            } else if (newStatus === 'converted') {
-                                              if (selectedReferral.status === 'validated') {
-                                                newIndicator = currentIndicator + 50; // Sum to existing
-                                                newPromoter = currentPromoter + 10;
-                                              } else {
-                                                newIndicator = 50;
-                                                newPromoter = 10;
+                                            try {
+                                              const currentIndicator = parseFloat(selectedReferral.commissionIndicator || '0');
+                                              const currentPromoter = parseFloat(selectedReferral.commissionPromoter || '0');
+                                              
+                                              // Calculate new commissions based on status
+                                              let newIndicator = 0;
+                                              let newPromoter = 0;
+                                              
+                                              if (newStatus === 'validated') {
+                                                newIndicator = 3;
+                                                newPromoter = 1;
+                                              } else if (newStatus === 'converted') {
+                                                if (selectedReferral.status === 'validated') {
+                                                  newIndicator = currentIndicator + 50; // Sum to existing
+                                                  newPromoter = currentPromoter + 10;
+                                                } else {
+                                                  newIndicator = 50;
+                                                  newPromoter = 10;
+                                                }
+                                              } else if (newStatus === 'paid') {
+                                                newIndicator = currentIndicator; // Keep current
+                                                newPromoter = currentPromoter;
                                               }
-                                            } else if (newStatus === 'paid') {
-                                              newIndicator = currentIndicator; // Keep current
-                                              newPromoter = currentPromoter;
-                                            }
-                                            
-                                            const diffIndicator = newIndicator - currentIndicator;
-                                            const diffPromoter = newPromoter - currentPromoter;
-                                            
-                                            return (
+                                              // Para outros status (pending, rejected, analyzing), as comissões são zero
+                                              
+                                              const diffIndicator = newIndicator - currentIndicator;
+                                              const diffPromoter = newPromoter - currentPromoter;
+                                              
+                                              return (
                                               <>
                                                 <p>Esta mudança de status irá alterar as comissões:</p>
                                                 <ul className="mt-2 space-y-1">
@@ -700,6 +710,10 @@ export default function AdminReferralsDetailedPage() {
                                                 )}
                                               </>
                                             );
+                                            } catch (error) {
+                                              console.error('[Commission Calculation Error]:', error);
+                                              return <p className="text-red-600">Erro ao calcular comissões</p>;
+                                            }
                                           })()}
                                         </div>
                                       </div>
