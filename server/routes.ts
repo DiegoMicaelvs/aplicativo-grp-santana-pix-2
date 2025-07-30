@@ -755,7 +755,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.json(updatedReferral);
     } catch (error) {
-      console.error("Error updating referral:", error);
+      console.error("Error updating referral status:", error);
+      
+      // Return more specific error messages
+      if (error instanceof Error) {
+        if (error.message === "Referral not found") {
+          return res.status(404).json({ error: "Indicação não encontrada" });
+        }
+        return res.status(500).json({ 
+          error: "Erro ao atualizar indicação",
+          details: error.message
+        });
+      }
+      
       return res.status(500).json({ error: "Erro ao atualizar indicação" });
     }
   });

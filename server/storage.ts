@@ -535,103 +535,118 @@ class DatabaseStorage implements IStorage {
   }
   
   async updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number) {
-    const referral = await this.getReferralById(id);
-    if (!referral) {
-      throw new Error("Referral not found");
-    }
-    
-    const previousStatus = referral.status;
-    const previousCommissionIndicator = parseFloat(referral.commissionIndicator?.toString() || '0');
-    const previousCommissionPromoter = parseFloat(referral.commissionPromoter?.toString() || '0');
-    
-    // Add to status history
-    const currentHistory = referral.statusHistory || [];
-    const newHistoryEntry = {
-      status,
-      changedBy: adminUserId || 0,
-      changedAt: new Date().toISOString(),
-      notes: notes || ''
-    };
-    
-    // Calculate new commission values based on status
-    let newCommissionIndicator = 0;
-    let newCommissionPromoter = 0;
-    
-    if (status === 'validated') {
-      newCommissionIndicator = 3; // R$ 3 por validado
-      newCommissionPromoter = 1; // R$ 1 para o promotor
-    } else if (status === 'converted') {
-      // Se estava validado antes, soma as comissões
-      if (previousStatus === 'validated') {
-        newCommissionIndicator = previousCommissionIndicator + 50; // Soma R$ 50 aos R$ 3 existentes
-        newCommissionPromoter = previousCommissionPromoter + 10; // Soma R$ 10 ao R$ 1 existente
-      } else {
-        newCommissionIndicator = 50; // R$ 50 por conversão
-        newCommissionPromoter = 10; // R$ 10 para o promotor
+    try {
+      console.log(`[updateReferralStatus] Starting update for referral ${id} to status ${status}`);
+      
+      const referral = await this.getReferralById(id);
+      if (!referral) {
+        throw new Error("Referral not found");
       }
-    } else if (status === 'paid') {
-      // Mantém as comissões existentes quando muda para pago
-      newCommissionIndicator = previousCommissionIndicator;
-      newCommissionPromoter = previousCommissionPromoter;
-    }
-    // Para outros status (pending, rejected, analyzing), as comissões são zero
-    
-    // Calculate the difference in commissions
-    const commissionDifferenceIndicator = newCommissionIndicator - previousCommissionIndicator;
-    const commissionDifferencePromoter = newCommissionPromoter - previousCommissionPromoter;
-    
-    // Update user balances based on commission differences
-    const user = await this.getUserById(referral.userId);
-    if (user && commissionDifferenceIndicator !== 0) {
-      await this.updateUserBalance(user.id, commissionDifferenceIndicator);
-      console.log(`Updated indicator balance for user ${user.id}: ${commissionDifferenceIndicator > 0 ? '+' : ''}${commissionDifferenceIndicator}`);
-    }
-    
-    // Update promoter balance if exists
-    if (user?.promoterId && commissionDifferencePromoter !== 0) {
-      await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
-      console.log(`Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
-    }
-    
-    const [updatedReferral] = await db.update(referrals)
-      .set({ 
-        status, 
-        notes,
-        commissionIndicator: newCommissionIndicator.toString(),
-        commissionPromoter: newCommissionPromoter.toString(),
-        statusHistory: [...currentHistory, newHistoryEntry],
-        updatedAt: new Date()
-      })
-      .where(eq(referrals.id, id))
-      .returning();
-    
-    // Log audit trail (with error handling)
-    if (adminUserId) {
-      try {
-        await this.logUserAction({
-          userId: adminUserId,
-          action: 'update',
-          entityType: 'referral',
-          entityId: id,
-          oldValues: { 
-            status: previousStatus, 
-            commissionIndicator: previousCommissionIndicator,
-            commissionPromoter: previousCommissionPromoter 
-          },
-          newValues: { 
-            status, 
-            commissionIndicator: newCommissionIndicator,
-            commissionPromoter: newCommissionPromoter 
-          },
-          details: `Status alterado de ${previousStatus} para ${status}${commissionDifferenceIndicator < 0 ? ' (comissões revertidas)' : ''}${notes ? `: ${notes}` : ''}`
-        });
-      } catch (error) {
-        console.warn('Failed to log status update:', error);
-        // Don't fail the status update if audit logging fails
+      
+      const previousStatus = referral.status;
+      const previousCommissionIndicator = parseFloat(referral.commissionIndicator?.toString() || '0');
+      const previousCommissionPromoter = parseFloat(referral.commissionPromoter?.toString() || '0');
+      
+      console.log(`[updateReferralStatus] Previous status: ${previousStatus}, commissions: indicator=${previousCommissionIndicator}, promoter=${previousCommissionPromoter}`);
+      
+      // Add to status history
+      const currentHistory = referral.statusHistory || [];
+      const newHistoryEntry = {
+        status,
+        changedBy: adminUserId || 0,
+        changedAt: new Date().toISOString(),
+        notes: notes || ''
+      };
+      
+      // Calculate new commission values based on status
+      let newCommissionIndicator = 0;
+      let newCommissionPromoter = 0;
+      
+      if (status === 'validated') {
+        newCommissionIndicator = 3; // R$ 3 por validado
+        newCommissionPromoter = 1; // R$ 1 para o promotor
+      } else if (status === 'converted') {
+        // Se estava validado antes, soma as comissões
+        if (previousStatus === 'validated') {
+          newCommissionIndicator = previousCommissionIndicator + 50; // Soma R$ 50 aos R$ 3 existentes
+          newCommissionPromoter = previousCommissionPromoter + 10; // Soma R$ 10 ao R$ 1 existente
+        } else {
+          newCommissionIndicator = 50; // R$ 50 por conversão
+          newCommissionPromoter = 10; // R$ 10 para o promotor
+        }
+      } else if (status === 'paid') {
+        // Mantém as comissões existentes quando muda para pago
+        newCommissionIndicator = previousCommissionIndicator;
+        newCommissionPromoter = previousCommissionPromoter;
       }
+      // Para outros status (pending, rejected, processing), as comissões são zero
+      
+      console.log(`[updateReferralStatus] New commissions: indicator=${newCommissionIndicator}, promoter=${newCommissionPromoter}`);
+      
+      // Calculate the difference in commissions
+      const commissionDifferenceIndicator = newCommissionIndicator - previousCommissionIndicator;
+      const commissionDifferencePromoter = newCommissionPromoter - previousCommissionPromoter;
+      
+      console.log(`[updateReferralStatus] Commission differences: indicator=${commissionDifferenceIndicator}, promoter=${commissionDifferencePromoter}`);
+      
+      // Update user balances based on commission differences
+      const user = await this.getUserById(referral.userId);
+      if (user && commissionDifferenceIndicator !== 0) {
+        await this.updateUserBalance(user.id, commissionDifferenceIndicator);
+        console.log(`[updateReferralStatus] Updated indicator balance for user ${user.id}: ${commissionDifferenceIndicator > 0 ? '+' : ''}${commissionDifferenceIndicator}`);
+      }
+      
+      // Update promoter balance if exists
+      if (user?.promoterId && commissionDifferencePromoter !== 0) {
+        await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
+        console.log(`[updateReferralStatus] Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
+      }
+      
+      const [updatedReferral] = await db.update(referrals)
+        .set({ 
+          status, 
+          notes,
+          commissionIndicator: newCommissionIndicator.toString(),
+          commissionPromoter: newCommissionPromoter.toString(),
+          statusHistory: [...currentHistory, newHistoryEntry],
+          updatedAt: new Date()
+        })
+        .where(eq(referrals.id, id))
+        .returning();
+      
+      console.log(`[updateReferralStatus] Referral updated successfully`);
+      
+      // Log audit trail (with error handling)
+      if (adminUserId) {
+        try {
+          await this.logUserAction({
+            userId: adminUserId,
+            action: 'update',
+            entityType: 'referral',
+            entityId: id,
+            oldValues: { 
+              status: previousStatus, 
+              commissionIndicator: previousCommissionIndicator,
+              commissionPromoter: previousCommissionPromoter 
+            },
+            newValues: { 
+              status, 
+              commissionIndicator: newCommissionIndicator,
+              commissionPromoter: newCommissionPromoter 
+            },
+            details: `Status alterado de ${previousStatus} para ${status}${commissionDifferenceIndicator < 0 ? ' (comissões revertidas)' : ''}${notes ? `: ${notes}` : ''}`
+          });
+        } catch (error) {
+          console.warn('Failed to log status update:', error);
+          // Don't fail the status update if audit logging fails
+        }
+      }
+      
+      return updatedReferral;
+    } catch (error) {
+      console.error(`[updateReferralStatus] Error updating referral ${id}:`, error);
+      throw error;
     }
-    
-    return updatedReferral;
   }
 
   async validateReferral(id: number, validationData: any, validatorUserId: number) {
@@ -674,53 +689,7 @@ class DatabaseStorage implements IStorage {
     return updatedReferral;
   }
   
-  async calculateCommissions(referralId: number) {
-    const referral = await this.getReferralById(referralId);
-    if (!referral) return;
-    
-    const user = await this.getUserById(referral.userId);
-    if (!user) return;
-    
-    let indicatorCommission = 0;
-    let promoterCommission = 0;
-    
-    if (referral.status === 'validated') {
-      indicatorCommission = 3; // R$3 por cadastro validado
-      
-      // Se o indicador tem um promotor, ele ganha R$1
-      if (user.promoterId) {
-        const promoter = await this.getUserById(user.promoterId);
-        if (promoter && promoter.role === 'promotor') {
-          promoterCommission = 1;
-          await this.updateUserBalance(promoter.id, promoterCommission);
-        }
-      }
-    } else if (referral.status === 'converted') {
-      indicatorCommission = 50; // R$50 por conversão
-      
-      // Se o indicador tem um promotor, ele ganha R$10
-      if (user.promoterId) {
-        const promoter = await this.getUserById(user.promoterId);
-        if (promoter && promoter.role === 'promotor') {
-          promoterCommission = 10;
-          await this.updateUserBalance(promoter.id, promoterCommission);
-        }
-      }
-    }
-    
-    // Atualizar saldo do indicador
-    if (indicatorCommission > 0) {
-      await this.updateUserBalance(user.id, indicatorCommission);
-    }
-    
-    // Atualizar comissões na indicação
-    await db.update(referrals)
-      .set({
-        commissionIndicator: indicatorCommission.toString(),
-        commissionPromoter: promoterCommission.toString()
-      })
-      .where(eq(referrals.id, referralId));
-  }
+  // Método removido - comissões agora são calculadas em updateReferralStatus
   
   // Company methods
   async getAllCompanies() {
