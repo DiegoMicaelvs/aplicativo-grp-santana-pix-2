@@ -627,29 +627,69 @@ export default function AdminReferralsDetailedPage() {
                                   </div>
                                 )}
                                 
-                                {/* Commission reversal warning */}
-                                {selectedReferral && (
-                                  (selectedReferral.status === 'validated' || selectedReferral.status === 'converted') &&
-                                  (newStatus === 'pending' || newStatus === 'rejected' || newStatus === 'processing')
-                                ) && (
-                                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                {/* Commission change warning */}
+                                {selectedReferral && newStatus !== selectedReferral.status && (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                                     <div className="flex items-start">
-                                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-2" />
+                                      <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-2" />
                                       <div>
-                                        <h4 className="text-sm font-medium text-yellow-800">
-                                          ⚠️ Reversão de Comissões
+                                        <h4 className="text-sm font-medium text-blue-800">
+                                          💰 Alteração de Comissões
                                         </h4>
-                                        <p className="text-sm text-yellow-700 mt-1">
-                                          Esta mudança de status irá reverter automaticamente as comissões já pagas:
-                                        </p>
-                                        <ul className="text-sm text-yellow-700 mt-2 space-y-1">
-                                          {parseFloat(selectedReferral.commissionIndicator || '0') > 0 && (
-                                            <li>• Indicador: -R$ {parseFloat(selectedReferral.commissionIndicator).toFixed(2)}</li>
-                                          )}
-                                          {parseFloat(selectedReferral.commissionPromoter || '0') > 0 && (
-                                            <li>• Promotor: -R$ {parseFloat(selectedReferral.commissionPromoter).toFixed(2)}</li>
-                                          )}
-                                        </ul>
+                                        <div className="text-sm text-blue-700 mt-1">
+                                          {(() => {
+                                            const currentIndicator = parseFloat(selectedReferral.commissionIndicator || '0');
+                                            const currentPromoter = parseFloat(selectedReferral.commissionPromoter || '0');
+                                            
+                                            // Calculate new commissions based on status
+                                            let newIndicator = 0;
+                                            let newPromoter = 0;
+                                            
+                                            if (newStatus === 'validated') {
+                                              newIndicator = 3;
+                                              newPromoter = 1;
+                                            } else if (newStatus === 'converted') {
+                                              if (selectedReferral.status === 'validated') {
+                                                newIndicator = currentIndicator + 50; // Sum to existing
+                                                newPromoter = currentPromoter + 10;
+                                              } else {
+                                                newIndicator = 50;
+                                                newPromoter = 10;
+                                              }
+                                            } else if (newStatus === 'paid') {
+                                              newIndicator = currentIndicator; // Keep current
+                                              newPromoter = currentPromoter;
+                                            }
+                                            
+                                            const diffIndicator = newIndicator - currentIndicator;
+                                            const diffPromoter = newPromoter - currentPromoter;
+                                            
+                                            return (
+                                              <>
+                                                <p>Esta mudança de status irá alterar as comissões:</p>
+                                                <ul className="mt-2 space-y-1">
+                                                  <li>• Indicador: R$ {currentIndicator.toFixed(2)} → R$ {newIndicator.toFixed(2)} 
+                                                    <span className={`font-medium ${diffIndicator > 0 ? 'text-green-700' : diffIndicator < 0 ? 'text-red-700' : ''}`}>
+                                                      {diffIndicator !== 0 && ` (${diffIndicator > 0 ? '+' : ''}R$ ${diffIndicator.toFixed(2)})`}
+                                                    </span>
+                                                  </li>
+                                                  {currentPromoter > 0 || newPromoter > 0 ? (
+                                                    <li>• Promotor: R$ {currentPromoter.toFixed(2)} → R$ {newPromoter.toFixed(2)}
+                                                      <span className={`font-medium ${diffPromoter > 0 ? 'text-green-700' : diffPromoter < 0 ? 'text-red-700' : ''}`}>
+                                                        {diffPromoter !== 0 && ` (${diffPromoter > 0 ? '+' : ''}R$ ${diffPromoter.toFixed(2)})`}
+                                                      </span>
+                                                    </li>
+                                                  ) : null}
+                                                </ul>
+                                                {selectedReferral.status === 'validated' && newStatus === 'converted' && (
+                                                  <p className="mt-2 text-green-700 font-medium">
+                                                    ✅ Comissões serão somadas (validação + conversão)
+                                                  </p>
+                                                )}
+                                              </>
+                                            );
+                                          })()}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>

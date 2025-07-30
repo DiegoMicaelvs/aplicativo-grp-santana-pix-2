@@ -154,14 +154,22 @@ The system is designed for deployment on platforms that support Node.js applicat
 - **Protected Routes:** Created ManagerRoute component for role-based access control
 - **Visual Identity:** Gerente role uses green color scheme in badges and UI elements
 
-### Automatic Commission Reversal System (July 2025)
-- **Financial Integrity Protection:** Implemented automatic commission reversal when referral status is changed from paid to non-paid states
-- **Intelligent Detection:** System detects when status moves from `validated` or `converted` back to `pending`, `rejected`, etc.
-- **Automatic Balance Updates:** Automatically removes incorrect commission amounts from both indicator and promoter account balances
-- **Audit Trail:** Logs all commission reversals with detailed information in audit log
-- **Database Consistency:** Updates referral commission fields to 0.00 when status is reverted
-- **Multi-user Support:** Handles commission reversals for both indicadores and promotores correctly
-- **Error Prevention:** Prevents financial discrepancies from status changes and ensures accurate user earnings
+### Enhanced Commission System with Accumulation (January 2025)
+- **Intelligent Commission Calculation:** System now correctly handles commission accumulation when status changes
+- **Commission Values:**
+  - Validated: R$ 3,00 (indicator) + R$ 1,00 (promoter)
+  - Converted: R$ 50,00 (indicator) + R$ 10,00 (promoter)
+  - Validated → Converted: Sums commissions (R$ 53,00 indicator + R$ 11,00 promoter)
+- **Status Change Behaviors:**
+  - Pending → Validated: Adds R$ 3,00
+  - Pending → Converted: Adds R$ 50,00
+  - Validated → Converted: Adds R$ 50,00 to existing R$ 3,00 = R$ 53,00
+  - Validated/Converted → Pending/Rejected: Reverts all commissions to R$ 0,00
+  - Converted → Validated: Adjusts from R$ 50,00 to R$ 3,00
+- **Automatic Balance Updates:** User balances are updated based on commission differences
+- **Visual Feedback:** Admin interface shows commission changes with clear before/after values
+- **Audit Trail:** All commission changes are logged with detailed information
+- **Financial Integrity:** Prevents discrepancies and ensures accurate earnings tracking
 
 ### Support Ticket System Implementation
 - **Comprehensive Support Infrastructure:** Added complete support ticket system with file attachments and admin management interface

@@ -544,12 +544,6 @@ class DatabaseStorage implements IStorage {
     const previousCommissionIndicator = parseFloat(referral.commissionIndicator?.toString() || '0');
     const previousCommissionPromoter = parseFloat(referral.commissionPromoter?.toString() || '0');
     
-    // Check if we're moving from a paid status to a non-paid status
-    const wasPaidStatus = previousStatus === 'validated' || previousStatus === 'converted';
-    const isNewPaidStatus = status === 'validated' || status === 'converted';
-    const shouldRevertCommissions = wasPaidStatus && !isNewPaidStatus;
-    const shouldCalculateCommissions = !wasPaidStatus && isNewPaidStatus;
-    
     // Add to status history
     const currentHistory = referral.statusHistory || [];
     const newHistoryEntry = {
@@ -559,26 +553,44 @@ class DatabaseStorage implements IStorage {
       notes: notes || ''
     };
     
-    let newCommissionIndicator = previousCommissionIndicator;
-    let newCommissionPromoter = previousCommissionPromoter;
+    // Calculate new commission values based on status
+    let newCommissionIndicator = 0;
+    let newCommissionPromoter = 0;
     
-    // Revert commissions if moving from paid to non-paid status
-    if (shouldRevertCommissions) {
-      console.log(`Reverting commissions for referral ${id}: Indicator: -${previousCommissionIndicator}, Promoter: -${previousCommissionPromoter}`);
-      
-      // Remove commissions from user balances
-      const user = await this.getUserById(referral.userId);
-      if (user && previousCommissionIndicator > 0) {
-        await this.updateUserBalance(user.id, -previousCommissionIndicator);
+    if (status === 'validated') {
+      newCommissionIndicator = 3; // R$ 3 por validado
+      newCommissionPromoter = 1; // R$ 1 para o promotor
+    } else if (status === 'converted') {
+      // Se estava validado antes, soma as comissões
+      if (previousStatus === 'validated') {
+        newCommissionIndicator = previousCommissionIndicator + 50; // Soma R$ 50 aos R$ 3 existentes
+        newCommissionPromoter = previousCommissionPromoter + 10; // Soma R$ 10 ao R$ 1 existente
+      } else {
+        newCommissionIndicator = 50; // R$ 50 por conversão
+        newCommissionPromoter = 10; // R$ 10 para o promotor
       }
-      
-      // Remove promoter commission if exists
-      if (user?.promoterId && previousCommissionPromoter > 0) {
-        await this.updateUserBalance(user.promoterId, -previousCommissionPromoter);
-      }
-      
-      newCommissionIndicator = 0;
-      newCommissionPromoter = 0;
+    } else if (status === 'paid') {
+      // Mantém as comissões existentes quando muda para pago
+      newCommissionIndicator = previousCommissionIndicator;
+      newCommissionPromoter = previousCommissionPromoter;
+    }
+    // Para outros status (pending, rejected, analyzing), as comissões são zero
+    
+    // Calculate the difference in commissions
+    const commissionDifferenceIndicator = newCommissionIndicator - previousCommissionIndicator;
+    const commissionDifferencePromoter = newCommissionPromoter - previousCommissionPromoter;
+    
+    // Update user balances based on commission differences
+    const user = await this.getUserById(referral.userId);
+    if (user && commissionDifferenceIndicator !== 0) {
+      await this.updateUserBalance(user.id, commissionDifferenceIndicator);
+      console.log(`Updated indicator balance for user ${user.id}: ${commissionDifferenceIndicator > 0 ? '+' : ''}${commissionDifferenceIndicator}`);
+    }
+    
+    // Update promoter balance if exists
+    if (user?.promoterId && commissionDifferencePromoter !== 0) {
+      await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
+      console.log(`Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
     }
     
     const [updatedReferral] = await db.update(referrals)
@@ -592,11 +604,6 @@ class DatabaseStorage implements IStorage {
       })
       .where(eq(referrals.id, id))
       .returning();
-    
-    // Calculate new commissions if moving to paid status
-    if (shouldCalculateCommissions) {
-      await this.calculateCommissions(id);
-    }
     
     // Log audit trail (with error handling)
     if (adminUserId) {
@@ -616,7 +623,7 @@ class DatabaseStorage implements IStorage {
             commissionIndicator: newCommissionIndicator,
             commissionPromoter: newCommissionPromoter 
           },
-          details: `Status alterado de ${previousStatus} para ${status}${shouldRevertCommissions ? ' (comissões revertidas)' : ''}${notes ? `: ${notes}` : ''}`
+          details: `Status alterado de ${previousStatus} para ${status}${commissionDifferenceIndicator < 0 ? ' (comissões revertidas)' : ''}${notes ? `: ${notes}` : ''}`
         });
       } catch (error) {
         console.warn('Failed to log status update:', error);
