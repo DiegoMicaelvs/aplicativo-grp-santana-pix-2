@@ -230,13 +230,32 @@ class DatabaseStorage implements IStorage {
   }
   
   async updateUserBalance(userId: number, amount: number) {
-    await db.update(users)
-      .set({ 
-        balance: sql`balance + ${amount}`,
-        totalEarnings: sql`total_earnings + ${amount}`,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId));
+    try {
+      console.log(`[updateUserBalance] Atualizando saldo do usuário ${userId} com valor: ${amount}`);
+      
+      // Buscar saldo atual para debug
+      const currentUser = await this.getUserById(userId);
+      if (currentUser) {
+        console.log(`[updateUserBalance] Saldo atual: ${currentUser.balance}, Total ganhos: ${currentUser.totalEarnings}`);
+      }
+      
+      await db.update(users)
+        .set({ 
+          balance: sql`balance + ${amount}`,
+          totalEarnings: amount > 0 ? sql`total_earnings + ${amount}` : sql`total_earnings`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      
+      // Verificar saldo após atualização
+      const updatedUser = await this.getUserById(userId);
+      if (updatedUser) {
+        console.log(`[updateUserBalance] Novo saldo: ${updatedUser.balance}, Novo total ganhos: ${updatedUser.totalEarnings}`);
+      }
+    } catch (error) {
+      console.error(`[updateUserBalance] Erro ao atualizar saldo do usuário ${userId}:`, error);
+      throw error;
+    }
   }
   
   async updateUserPermissions(userId: number, permissions: string[], analystLevel?: number) {
