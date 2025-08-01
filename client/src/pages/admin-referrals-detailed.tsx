@@ -16,7 +16,7 @@ import { queryClient } from "@/lib/queryClient";
 import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/hooks/use-auth";
 
-type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid";
+type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid" | "false" | "not_validated" | "not_converted";
 
 // Componente de validação
 function ValidationDialog({ referral, onValidate }: { referral: any; onValidate: () => void }) {

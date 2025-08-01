@@ -84,11 +84,17 @@ const getStatusBadge = (status: ReferralStatus) => {
     case 'analyzing':
       return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em análise</Badge>;
     case 'rejected':
-      return <Badge variant="outline" className="bg-red-100 text-red-800">Não convertido</Badge>;
+      return <Badge variant="outline" className="bg-red-100 text-red-800">Rejeitado</Badge>;
     case 'validated':
       return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
     case 'paid':
       return <Badge variant="outline" className="bg-emerald-100 text-emerald-800">Pago</Badge>;
+    case 'false':
+      return <Badge variant="outline" className="bg-gray-900 text-white">Falso</Badge>;
+    case 'not_validated':
+      return <Badge variant="outline" className="bg-orange-100 text-orange-800">Não validado</Badge>;
+    case 'not_converted':
+      return <Badge variant="outline" className="bg-indigo-100 text-indigo-800">Não convertido</Badge>;
 
     default:
       return <Badge variant="outline">Desconhecido</Badge>;
@@ -122,7 +128,7 @@ const formatCurrency = (value: number | string | null | undefined) => {
 
 // Status update form schema
 const updateReferralSchema = z.object({
-  status: z.enum(["pending", "processing", "converted", "rejected", "validated", "paid"]),
+  status: z.enum(["pending", "analyzing", "converted", "rejected", "validated", "paid", "false", "not_validated", "not_converted"]),
   commission: z.preprocess(
     (val) => (val === "" ? undefined : Number(val)),
     z.number().optional()
@@ -390,12 +396,14 @@ export default function AdminDashboard() {
                           <SelectContent>
                             <SelectItem value="all">Todos os Status</SelectItem>
                             <SelectItem value="pending">Pendente</SelectItem>
-                            <SelectItem value="processing">Em análise</SelectItem>
+                            <SelectItem value="analyzing">Em análise</SelectItem>
                             <SelectItem value="converted">Convertido</SelectItem>
-                            <SelectItem value="rejected">Não convertido</SelectItem>
+                            <SelectItem value="rejected">Rejeitado</SelectItem>
                             <SelectItem value="validated">Validado</SelectItem>
                             <SelectItem value="paid">Pago</SelectItem>
-                            <SelectItem value="falso">🚫 Falso</SelectItem>
+                            <SelectItem value="false">Falso</SelectItem>
+                            <SelectItem value="not_validated">Não validado</SelectItem>
+                            <SelectItem value="not_converted">Não convertido</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

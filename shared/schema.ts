@@ -426,7 +426,7 @@ export const createReferralSchema = createInsertSchema(referrals, {
 export const createAuditLogSchema = createInsertSchema(auditLog).omit({ id: true, createdAt: true });
 
 export const updateReferralStatusSchema = z.object({
-  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid"]),
+  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted"]),
   notes: z.string().optional(),
 });
 
