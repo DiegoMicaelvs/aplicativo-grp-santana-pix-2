@@ -229,11 +229,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // 2. Verificar duplicatas locais (placa, telefone e nome)
+      // 2. Verificar duplicatas locais (placa e telefone)
       const duplicates = await storage.checkDuplicateReferralWithOwner(
         validatedData.phone,
-        validatedData.licensePlate,
-        validatedData.fullName
+        validatedData.licensePlate
       );
       
       if (duplicates.length > 0) {
@@ -243,9 +242,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const ownerInfo = ownerState ? `${ownerFirstName} (${ownerState})` : ownerFirstName;
         
         let errorMessage = "Cadastro duplicado encontrado:\n";
-        if (duplicate.fullName && duplicate.fullName.toLowerCase() === validatedData.fullName.toLowerCase()) {
-          errorMessage += `• Nome "${validatedData.fullName}" já cadastrado por ${ownerInfo}\n`;
-        }
         if (duplicate.phone && duplicate.phone.toLowerCase() === validatedData.phone.toLowerCase()) {
           errorMessage += `• Telefone ${validatedData.phone} já cadastrado por ${ownerInfo}\n`;
         }
@@ -312,8 +308,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check for duplicate referrals
   app.post("/api/referrals/check-duplicate", requireAuth, async (req, res) => {
     try {
-      const { phone, licensePlate, fullName } = req.body;
-      const duplicates = await storage.checkDuplicateReferralWithOwner(phone, licensePlate, fullName);
+      const { phone, licensePlate } = req.body;
+      const duplicates = await storage.checkDuplicateReferralWithOwner(phone, licensePlate);
       
       return res.json({ 
         isDuplicate: duplicates.length > 0,

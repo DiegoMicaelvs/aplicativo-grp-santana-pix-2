@@ -517,12 +517,11 @@ class DatabaseStorage implements IStorage {
     });
   }
   
-  async checkDuplicateReferral(phone?: string, licensePlate?: string, fullName?: string) {
+  async checkDuplicateReferral(phone?: string, licensePlate?: string) {
     const conditions = [];
     // Use case-insensitive comparison with LOWER() SQL function
     if (phone) conditions.push(sql`LOWER(${referrals.phone}) = LOWER(${phone})`);
     if (licensePlate) conditions.push(sql`LOWER(${referrals.licensePlate}) = LOWER(${licensePlate})`);
-    if (fullName) conditions.push(sql`LOWER(${referrals.fullName}) = LOWER(${fullName})`);
     
     if (conditions.length === 0) return [];
     
@@ -534,12 +533,11 @@ class DatabaseStorage implements IStorage {
     });
   }
 
-  async checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string, fullName?: string) {
+  async checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string) {
     const conditions = [];
     // Use case-insensitive comparison with LOWER() SQL function
     if (phone) conditions.push(sql`LOWER(${referrals.phone}) = LOWER(${phone})`);
     if (licensePlate) conditions.push(sql`LOWER(${referrals.licensePlate}) = LOWER(${licensePlate})`);
-    if (fullName) conditions.push(sql`LOWER(${referrals.fullName}) = LOWER(${fullName})`);
     
     if (conditions.length === 0) return [];
     

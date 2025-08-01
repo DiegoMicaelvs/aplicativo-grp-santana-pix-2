@@ -116,7 +116,7 @@ export default function NewReferralPage() {
 
   // Mutation para verificar duplicatas
   const checkDuplicateMutation = useMutation({
-    mutationFn: async (data: { phone: string, licensePlate: string, fullName: string }) => {
+    mutationFn: async (data: { phone: string, licensePlate: string }) => {
       const res = await apiRequest("POST", "/api/referrals/check-duplicate", data);
       return await res.json();
     },
@@ -168,8 +168,7 @@ export default function NewReferralPage() {
       // Primeiro verifica se há duplicatas
       checkDuplicateMutation.mutate({
         phone: data.phone,
-        licensePlate: data.licensePlate,
-        fullName: data.fullName
+        licensePlate: data.licensePlate
       });
     }
   };
@@ -299,13 +298,6 @@ export default function NewReferralPage() {
                         {duplicate.licensePlate === form.getValues().licensePlate && (
                           <p className="text-sm">
                             A placa <strong>{duplicate.licensePlate}</strong> já foi cadastrada por{" "}
-                            <strong>{duplicate.ownerFirstName}</strong>
-                            {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
-                          </p>
-                        )}
-                        {duplicate.fullName === form.getValues().fullName && (
-                          <p className="text-sm">
-                            O nome <strong>{duplicate.fullName}</strong> já foi cadastrado por{" "}
                             <strong>{duplicate.ownerFirstName}</strong>
                             {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
                           </p>
