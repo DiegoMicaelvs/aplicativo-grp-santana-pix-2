@@ -62,6 +62,7 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
       const response = await fetch(`/api/referrals/${referral.id}/validate`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Incluir cookies de autenticação
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error("Erro ao validar indicação");
@@ -312,6 +313,7 @@ export default function AdminReferralsDetailedPage() {
       const response = await fetch(`/api/referrals/${referralId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Incluir cookies de autenticação
         body: JSON.stringify({ status, notes }),
       });
       
@@ -351,6 +353,7 @@ export default function AdminReferralsDetailedPage() {
       const response = await fetch(`/api/referrals/${referralId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Incluir cookies de autenticação
         body: JSON.stringify(data),
       });
       
@@ -380,6 +383,7 @@ export default function AdminReferralsDetailedPage() {
     mutationFn: async (referralId: number) => {
       const response = await fetch(`/api/referrals/${referralId}`, {
         method: "DELETE",
+        credentials: "include", // Incluir cookies de autenticação
       });
       
       if (!response.ok) {
