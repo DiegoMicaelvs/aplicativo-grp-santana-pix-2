@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle } from "lucide-react";
+import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -275,6 +275,14 @@ export default function AdminReferralsDetailedPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<ReferralStatus>("pending");
   const [statusNotes, setStatusNotes] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    fullName: "",
+    phone: "",
+    licensePlate: "",
+    companyId: 0,
+    userId: 0
+  });
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -285,6 +293,14 @@ export default function AdminReferralsDetailedPage() {
 
   const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"]
+  });
+
+  const { data: companies = [] } = useQuery<any[]>({
+    queryKey: ["/api/companies"]
+  });
+
+  const { data: indicadores = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/indicadores"]
   });
 
   const updateStatusMutation = useMutation({
@@ -323,6 +339,65 @@ export default function AdminReferralsDetailedPage() {
       toast({ 
         title: "Erro ao atualizar status", 
         description: errorMessage,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const updateReferralMutation = useMutation({
+    mutationFn: async ({ referralId, data }: { referralId: number; data: any }) => {
+      const response = await fetch(`/api/referrals/${referralId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro ao atualizar indicação");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      toast({ title: "Indicação atualizada com sucesso!" });
+      setIsDialogOpen(false);
+      setSelectedReferral(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao atualizar indicação", 
+        description: error?.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const deleteReferralMutation = useMutation({
+    mutationFn: async (referralId: number) => {
+      const response = await fetch(`/api/referrals/${referralId}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro ao deletar indicação");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      toast({ title: "Indicação deletada com sucesso!" });
+      setIsDialogOpen(false);
+      setIsDeleteDialogOpen(false);
+      setSelectedReferral(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao deletar indicação", 
+        description: error?.message,
         variant: "destructive" 
       });
     },
@@ -572,6 +647,13 @@ export default function AdminReferralsDetailedPage() {
                           if (open) {
                             setSelectedReferral(referral);
                             setNewStatus(referral.status);
+                            setEditFormData({
+                              fullName: referral.fullName,
+                              phone: referral.phone,
+                              licensePlate: referral.licensePlate,
+                              companyId: referral.companyId || 1,
+                              userId: referral.userId
+                            });
                           }
                         }}>
                           <DialogTrigger asChild>
@@ -580,63 +662,137 @@ export default function AdminReferralsDetailedPage() {
                               Editar
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
+                          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>Editar Indicação</DialogTitle>
                               <DialogDescription>
-                                Atualize o status e adicione observações sobre a indicação
+                                Atualize os dados da indicação, altere o status ou delete o registro
                               </DialogDescription>
                             </DialogHeader>
                             
                             {selectedReferral && (
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <strong>Cliente:</strong> {selectedReferral.fullName}
+                              <div className="space-y-6">
+                                {/* Seção 1: Editar Dados */}
+                                <div className="space-y-4 border rounded-lg p-4">
+                                  <h3 className="font-semibold flex items-center gap-2">
+                                    <Edit className="h-4 w-4" />
+                                    Editar Dados da Indicação
+                                  </h3>
+                                  
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium">Nome Completo</label>
+                                      <Input
+                                        value={editFormData.fullName}
+                                        onChange={(e) => setEditFormData({...editFormData, fullName: e.target.value})}
+                                        placeholder="Nome completo do cliente"
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium">Telefone</label>
+                                      <Input
+                                        value={editFormData.phone}
+                                        onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
+                                        placeholder="(00) 00000-0000"
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium">Placa do Veículo</label>
+                                      <Input
+                                        value={editFormData.licensePlate}
+                                        onChange={(e) => setEditFormData({...editFormData, licensePlate: e.target.value})}
+                                        placeholder="ABC-0000"
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium">Seguradora</label>
+                                      <Select 
+                                        value={editFormData.companyId.toString()} 
+                                        onValueChange={(value) => setEditFormData({...editFormData, companyId: parseInt(value)})}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {companies.map((company) => (
+                                            <SelectItem key={company.id} value={company.id.toString()}>
+                                              {company.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <strong>Telefone:</strong> {selectedReferral.phone}
+                                  
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium flex items-center gap-2">
+                                      <UserCheck className="h-4 w-4" />
+                                      Atribuir a outro Indicador
+                                    </label>
+                                    <Select 
+                                      value={editFormData.userId.toString()} 
+                                      onValueChange={(value) => setEditFormData({...editFormData, userId: parseInt(value)})}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {indicadores.map((indicador) => (
+                                          <SelectItem key={indicador.id} value={indicador.id.toString()}>
+                                            {indicador.fullName} ({indicador.username})
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                   </div>
-                                  <div>
-                                    <strong>Veículo:</strong> -
-                                  </div>
-                                  <div>
-                                    <strong>Placa:</strong> {selectedReferral.licensePlate}
-                                  </div>
-                                  <div>
-                                    <strong>Indicador:</strong> {getUserName(selectedReferral.userId)}
-                                  </div>
-                                  <div>
-                                    <strong>Status Atual:</strong> {getStatusLabel(selectedReferral.status)}
-                                  </div>
+                                  
+                                  <Button 
+                                    onClick={() => {
+                                      updateReferralMutation.mutate({
+                                        referralId: selectedReferral.id,
+                                        data: editFormData
+                                      });
+                                    }}
+                                    disabled={updateReferralMutation.isPending}
+                                    className="w-full"
+                                  >
+                                    {updateReferralMutation.isPending ? "Salvando..." : "Salvar Dados"}
+                                  </Button>
                                 </div>
                                 
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">Novo Status:</label>
-                                  <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReferralStatus)}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">Pendente</SelectItem>
-                                      <SelectItem value="analyzing">Em Análise</SelectItem>
-                                      <SelectItem value="converted">Convertida</SelectItem>
-                                      <SelectItem value="rejected">Rejeitada</SelectItem>
-                                      <SelectItem value="validated">Validada</SelectItem>
-                                      <SelectItem value="paid">Paga</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">Observações:</label>
-                                  <Textarea
-                                    value={statusNotes}
-                                    onChange={(e) => setStatusNotes(e.target.value)}
-                                    placeholder="Adicione observações sobre a mudança de status..."
-                                    rows={3}
-                                  />
-                                </div>
+                                {/* Seção 2: Alterar Status */}
+                                <div className="space-y-4 border rounded-lg p-4">
+                                  <h3 className="font-semibold">Alterar Status</h3>
+                                  
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium">Status</label>
+                                    <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReferralStatus)}>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="pending">Pendente</SelectItem>
+                                        <SelectItem value="analyzing">Em Análise</SelectItem>
+                                        <SelectItem value="converted">Convertida</SelectItem>
+                                        <SelectItem value="rejected">Rejeitada</SelectItem>
+                                        <SelectItem value="validated">Validada</SelectItem>
+                                        <SelectItem value="paid">Paga</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium">Observações</label>
+                                    <Textarea
+                                      value={statusNotes}
+                                      onChange={(e) => setStatusNotes(e.target.value)}
+                                      placeholder="Adicione observações sobre a mudança de status..."
+                                      rows={3}
+                                    />
+                                  </div>
                                 
                                 {selectedReferral.notes && (
                                   <div className="space-y-2">
@@ -720,14 +876,63 @@ export default function AdminReferralsDetailedPage() {
                                     </div>
                                   </div>
                                 )}
+                                  
+                                  <Button 
+                                    onClick={handleStatusUpdate} 
+                                    disabled={updateStatusMutation.isPending}
+                                    className="w-full"
+                                  >
+                                    {updateStatusMutation.isPending ? "Atualizando..." : "Atualizar Status"}
+                                  </Button>
+                                </div>
                                 
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                                    Cancelar
-                                  </Button>
-                                  <Button onClick={handleStatusUpdate} disabled={updateStatusMutation.isPending}>
-                                    {updateStatusMutation.isPending ? "Salvando..." : "Salvar Alterações"}
-                                  </Button>
+                                {/* Seção 3: Deletar */}
+                                <div className="space-y-4 border border-red-200 rounded-lg p-4 bg-red-50">
+                                  <h3 className="font-semibold text-red-700 flex items-center gap-2">
+                                    <Trash2 className="h-4 w-4" />
+                                    Zona de Perigo
+                                  </h3>
+                                  <p className="text-sm text-red-600">
+                                    Esta ação é irreversível. A indicação será permanentemente removida do sistema.
+                                  </p>
+                                  
+                                  <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                    <DialogTrigger asChild>
+                                      <Button variant="destructive" className="w-full">
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Deletar Indicação
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Confirmar Exclusão</DialogTitle>
+                                        <DialogDescription>
+                                          Tem certeza que deseja deletar esta indicação? Esta ação não pode ser desfeita.
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <div className="space-y-4 py-4">
+                                        <div className="bg-red-50 p-3 rounded-lg">
+                                          <p className="text-sm">
+                                            <strong>Cliente:</strong> {selectedReferral.fullName}<br />
+                                            <strong>Telefone:</strong> {selectedReferral.phone}<br />
+                                            <strong>Placa:</strong> {selectedReferral.licensePlate}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-end gap-2">
+                                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                                          Cancelar
+                                        </Button>
+                                        <Button 
+                                          variant="destructive" 
+                                          onClick={() => deleteReferralMutation.mutate(selectedReferral.id)}
+                                          disabled={deleteReferralMutation.isPending}
+                                        >
+                                          {deleteReferralMutation.isPending ? "Deletando..." : "Sim, Deletar"}
+                                        </Button>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
                                 </div>
                               </div>
                             )}

@@ -714,6 +714,35 @@ class DatabaseStorage implements IStorage {
     return updatedReferral;
   }
   
+  async deleteReferral(id: number) {
+    // Delete all related data first
+    await db.transaction(async (tx) => {
+      // Delete referral conversations
+      await tx.delete(referralConversations)
+        .where(eq(referralConversations.referralId, id));
+      
+      // Delete the referral
+      await tx.delete(referrals)
+        .where(eq(referrals.id, id));
+    });
+  }
+  
+  async updateReferral(id: number, updates: Partial<{
+    fullName: string;
+    phone: string;
+    licensePlate: string;
+    companyId: number;
+    userId: number;
+    updatedAt: Date;
+  }>) {
+    const [updatedReferral] = await db.update(referrals)
+      .set(updates)
+      .where(eq(referrals.id, id))
+      .returning();
+    
+    return updatedReferral;
+  }
+  
   // Método removido - comissões agora são calculadas em updateReferralStatus
   
   // Company methods

@@ -816,6 +816,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete referral (admin only)
+  app.delete("/api/referrals/:id", requireAdmin, async (req, res) => {
+    try {
+      const referralId = parseInt(req.params.id);
+      
+      // Check if referral exists
+      const referral = await storage.getReferralById(referralId);
+      if (!referral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Log the deletion
+      await storage.logUserAction({
+        userId: req.user!.id,
+        action: "delete_referral",
+        entityType: "referral",
+        entityId: referralId,
+        oldValues: referral,
+        details: `Indicação ${referralId} deletada`
+      });
+      
+      await storage.deleteReferral(referralId);
+      
+      return res.json({ message: "Indicação deletada com sucesso" });
+    } catch (error) {
+      console.error("Error deleting referral:", error);
+      return res.status(500).json({ error: "Erro ao deletar indicação" });
+    }
+  });
+
+  // Update referral data (admin only)
+  app.patch("/api/referrals/:id", requireAdmin, async (req, res) => {
+    try {
+      const referralId = parseInt(req.params.id);
+      const { fullName, phone, licensePlate, companyId, userId } = req.body;
+      
+      // Check if referral exists
+      const existingReferral = await storage.getReferralById(referralId);
+      if (!existingReferral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Check for duplicates if phone or licensePlate changed
+      if (phone !== existingReferral.phone || licensePlate !== existingReferral.licensePlate) {
+        const duplicates = await storage.checkDuplicateReferral(phone, licensePlate);
+        const filteredDuplicates = duplicates.filter(d => d.id !== referralId);
+        
+        if (filteredDuplicates.length > 0) {
+          return res.status(400).json({ 
+            error: "Duplicata encontrada",
+            details: "Já existe uma indicação com este telefone ou placa"
+          });
+        }
+      }
+      
+      // Update the referral
+      const updatedReferral = await storage.updateReferral(referralId, {
+        fullName,
+        phone,
+        licensePlate,
+        companyId,
+        userId, // This allows reassigning to another indicador
+        updatedAt: new Date()
+      });
+      
+      // Log the update
+      await storage.logUserAction({
+        userId: req.user!.id,
+        action: "update_referral",
+        entityType: "referral",
+        entityId: referralId,
+        oldValues: existingReferral,
+        newValues: updatedReferral,
+        details: `Dados da indicação ${referralId} atualizados`
+      });
+      
+      return res.json(updatedReferral);
+    } catch (error) {
+      console.error("Error updating referral:", error);
+      return res.status(500).json({ error: "Erro ao atualizar indicação" });
+    }
+  });
+
+  // Get all indicadores for reassignment dropdown
+  app.get("/api/admin/indicadores", requireAdmin, async (req, res) => {
+    try {
+      const indicadores = await storage.getUsersByRole("indicador");
+      return res.json(indicadores.map(u => ({
+        id: u.id,
+        fullName: u.fullName,
+        username: u.username
+      })));
+    } catch (error) {
+      console.error("Error fetching indicadores:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicadores" });
+    }
+  });
+
   // Validate referral (for analysts and admins)
   app.patch("/api/referrals/:id/validate", requireAnalyst, async (req, res) => {
     try {
