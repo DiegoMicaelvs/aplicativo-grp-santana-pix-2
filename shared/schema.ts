@@ -70,7 +70,7 @@ export const companies = pgTable("companies", {
 });
 
 // Referral statuses
-export type ReferralStatus = "pending" | "analyzing" | "validated" | "converted" | "rejected" | "paid";
+export type ReferralStatus = "pending" | "analyzing" | "validated" | "converted" | "rejected" | "paid" | "false" | "not_validated" | "not_converted";
 
 // Referrals table
 export const referrals = pgTable("referrals", {

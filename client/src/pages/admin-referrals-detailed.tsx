@@ -432,6 +432,9 @@ export default function AdminReferralsDetailedPage() {
       case "rejected": return "bg-red-100 text-red-800";
       case "validated": return "bg-green-100 text-green-800";
       case "paid": return "bg-emerald-100 text-emerald-800";
+      case "false": return "bg-gray-900 text-white";
+      case "not_validated": return "bg-orange-100 text-orange-800";
+      case "not_converted": return "bg-indigo-100 text-indigo-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -444,6 +447,9 @@ export default function AdminReferralsDetailedPage() {
       case "rejected": return "Rejeitada";
       case "validated": return "Validada";
       case "paid": return "Paga";
+      case "false": return "Falso";
+      case "not_validated": return "Não validado";
+      case "not_converted": return "Não convertido";
       default: return status;
     }
   };
@@ -565,6 +571,9 @@ export default function AdminReferralsDetailedPage() {
                 <SelectItem value="rejected">Rejeitada</SelectItem>
                 <SelectItem value="validated">Validada</SelectItem>
                 <SelectItem value="paid">Paga</SelectItem>
+                <SelectItem value="false">Falso</SelectItem>
+                <SelectItem value="not_validated">Não validado</SelectItem>
+                <SelectItem value="not_converted">Não convertido</SelectItem>
               </SelectContent>
             </Select>
             
@@ -780,6 +789,9 @@ export default function AdminReferralsDetailedPage() {
                                         <SelectItem value="rejected">Rejeitada</SelectItem>
                                         <SelectItem value="validated">Validada</SelectItem>
                                         <SelectItem value="paid">Paga</SelectItem>
+                                        <SelectItem value="false">Falso</SelectItem>
+                                        <SelectItem value="not_validated">Não validado</SelectItem>
+                                        <SelectItem value="not_converted">Não convertido</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
@@ -837,7 +849,7 @@ export default function AdminReferralsDetailedPage() {
                                                 newIndicator = currentIndicator; // Keep current
                                                 newPromoter = currentPromoter;
                                               }
-                                              // Para outros status (pending, rejected, analyzing), as comissões são zero
+                                              // Para outros status (pending, rejected, analyzing, false, not_validated, not_converted), as comissões são zero
                                               
                                               const diffIndicator = newIndicator - currentIndicator;
                                               const diffPromoter = newPromoter - currentPromoter;
