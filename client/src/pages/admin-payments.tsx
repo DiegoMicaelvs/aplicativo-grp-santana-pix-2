@@ -307,7 +307,7 @@ export default function AdminPaymentsPage() {
                           }
                         }}>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" disabled={withdrawal.status !== "pending"}>
+                            <Button variant="outline" size="sm">
                               <Eye className="h-4 w-4 mr-1" />
                               {withdrawal.status === "pending" ? "Processar" : "Visualizar"}
                             </Button>
