@@ -39,10 +39,11 @@ export default function AdminPaymentsPage() {
 
   const processWithdrawalMutation = useMutation({
     mutationFn: async ({ withdrawalId, action, notes }: { withdrawalId: number; action: "approve" | "reject"; notes: string }) => {
-      const response = await fetch(`/api/admin/withdrawals/${withdrawalId}/${action}`, {
+      const status = action === "approve" ? "approved" : "rejected";
+      const response = await fetch(`/api/admin/withdrawals/${withdrawalId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({ status, notes }),
       });
       if (!response.ok) throw new Error("Erro ao processar saque");
       return response.json();
