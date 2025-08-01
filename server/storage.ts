@@ -160,11 +160,11 @@ class DatabaseStorage implements IStorage {
         shirtSize: userData.shirtSize,
         pixKey: userData.pixKey,
         role: (userData.role || "indicador") as "indicador" | "promotor" | "admin" | "analista" | "gerente" | "vendedor",
-        permissions: userData.permissions || [],
+        permissions: userData.permissions || null,
         analystLevel: userData.analystLevel as 1 | 2 | 3 | null,
-        createdBy: userData.createdBy,
-        promoterId: userData.promoterId,
-        analystId: userData.analystId,
+        createdBy: userData.createdBy || null,
+        promoterId: userData.promoterId || null,
+        analystId: userData.analystId || null,
         balance: "0",
         totalEarnings: "0",
         isActive: true,
@@ -174,7 +174,7 @@ class DatabaseStorage implements IStorage {
       };
 
       const [user] = await db.insert(users)
-        .values([insertData])
+        .values(insertData)
         .returning();
       
       return user;

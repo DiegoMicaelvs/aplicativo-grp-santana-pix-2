@@ -144,6 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         createdBy: req.user!.id,
         promoterId: req.user!.id, // Link indicador to promoter
+        analystId: undefined, // Explicitly set to undefined
         role: "indicador" as const
       };
       
@@ -238,8 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 3. Verificar duplicatas em outros aplicativos (validação cruzada)
       const crossAppValidation = await validateReferralDuplicates({
         phone: validatedData.phone,
-        licensePlate: validatedData.licensePlate,
-        fullName: validatedData.fullName
+        licensePlate: validatedData.licensePlate
       });
       
       if (crossAppValidation.isDuplicate) {
@@ -601,7 +601,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         password: hashedPassword,
         promoterId: req.user!.id,
-        createdBy: req.user!.id
+        createdBy: req.user!.id,
+        analystId: undefined, // Explicitly set to undefined
+        role: "indicador" as const
       };
       
       const newUser = await storage.createUser(userData);
@@ -677,7 +679,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analyst/referrals", requireAnalyst, async (req, res) => {
     try {
       // Check if analyst has view_referrals permission
-      if (req.user!.role === "analista" && !req.user!.permissions?.includes("view_referrals")) {
+      const user = await storage.getUserById(req.user!.id);
+      const userPermissions = user?.permissions as string[] || [];
+      if (req.user!.role === "analista" && !userPermissions.includes("view_referrals")) {
         return res.status(403).json({ error: "Você não tem permissão para visualizar indicações" });
       }
       
