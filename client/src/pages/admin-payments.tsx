@@ -29,7 +29,7 @@ export default function AdminPaymentsPage() {
     queryKey: ["/api/admin/withdrawals"]
   });
 
-  const { data: cashFlow = [], isLoading: cashFlowLoading } = useQuery<any[]>({
+  const { data: cashFlowData = { entries: [], balance: 0 }, isLoading: cashFlowLoading } = useQuery<any>({
     queryKey: ["/api/admin/cash-flow"]
   });
 
@@ -78,8 +78,8 @@ export default function AdminPaymentsPage() {
     approvedWithdrawals: withdrawals.filter((w: any) => w.status === "approved").length,
     totalPaidAmount: withdrawals.filter((w: any) => w.status === "paid").reduce((sum: number, w: any) => sum + parseFloat(w.amount), 0),
     totalPendingAmount: withdrawals.filter((w: any) => w.status === "pending").reduce((sum: number, w: any) => sum + parseFloat(w.amount), 0),
-    totalInflow: cashFlow.filter((cf: any) => cf.type === "inflow").reduce((sum: number, cf: any) => sum + parseFloat(cf.amount), 0),
-    totalOutflow: cashFlow.filter((cf: any) => cf.type === "outflow").reduce((sum: number, cf: any) => sum + parseFloat(cf.amount), 0)
+    totalInflow: cashFlowData.entries.filter((cf: any) => cf.type === "inflow").reduce((sum: number, cf: any) => sum + parseFloat(cf.amount), 0),
+    totalOutflow: cashFlowData.entries.filter((cf: any) => cf.type === "outflow").reduce((sum: number, cf: any) => sum + parseFloat(cf.amount), 0)
   };
 
   const netCashFlow = stats.totalInflow - stats.totalOutflow;
@@ -427,7 +427,7 @@ export default function AdminPaymentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cashFlow.slice(0, 10).map((entry) => (
+                {cashFlowData.entries.slice(0, 10).map((entry: any) => (
                   <TableRow key={entry.id}>
                     <TableCell>
                       {format(new Date(entry.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
@@ -452,7 +452,7 @@ export default function AdminPaymentsPage() {
               </TableBody>
             </Table>
             
-            {cashFlow.length === 0 && (
+            {cashFlowData.entries.length === 0 && (
               <div className="text-center py-8">
                 <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">Nenhuma movimentação encontrada.</p>
