@@ -102,7 +102,7 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
           Validação
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Validação da Indicação</DialogTitle>
           <DialogDescription>
@@ -997,7 +997,7 @@ export default function AdminReferralsDetailedPage() {
                                         Deletar Indicação
                                       </Button>
                                     </DialogTrigger>
-                                    <DialogContent>
+                                    <DialogContent className="max-h-[90vh] overflow-y-auto">
                                       <DialogHeader>
                                         <DialogTitle>Confirmar Exclusão</DialogTitle>
                                         <DialogDescription>
