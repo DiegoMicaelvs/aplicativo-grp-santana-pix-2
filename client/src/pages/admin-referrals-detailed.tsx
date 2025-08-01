@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck } from "lucide-react";
+import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -418,6 +418,42 @@ export default function AdminReferralsDetailedPage() {
     return matchesSearch && matchesStatus && matchesUser;
   });
 
+  // Export to Excel function
+  const handleExportExcel = async () => {
+    try {
+      const response = await fetch('/api/admin/export/referrals', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao exportar dados');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `indicacoes_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({ 
+        title: "Exportação concluída!",
+        description: "O arquivo Excel foi baixado com sucesso."
+      });
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast({ 
+        title: "Erro ao exportar",
+        description: "Não foi possível exportar os dados para Excel.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Calculate statistics
   const stats = {
     totalReferrals: referrals.length,
@@ -599,10 +635,22 @@ export default function AdminReferralsDetailedPage() {
       {/* Referrals Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista Detalhada de Indicações</CardTitle>
-          <CardDescription>
-            {filteredReferrals.length} de {referrals.length} indicações encontradas
-          </CardDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle>Lista Detalhada de Indicações</CardTitle>
+              <CardDescription>
+                {filteredReferrals.length} de {referrals.length} indicações encontradas
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={handleExportExcel}
+              className="flex items-center gap-2"
+              variant="outline"
+            >
+              <Download className="h-4 w-4" />
+              Exportar Excel
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

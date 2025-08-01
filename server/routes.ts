@@ -916,6 +916,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export referrals to Excel
+  app.get("/api/admin/export/referrals", requireAdmin, async (req, res) => {
+    try {
+      const XLSX = await import('xlsx');
+      
+      // Get all referrals with related data
+      const referrals = await storage.getAllReferrals();
+      const users = await storage.getAllUsers();
+      const companies = await storage.getAllCompanies();
+      
+      // Map user and company data for quick lookup
+      const userMap = new Map(users.map(u => [u.id, u]));
+      const companyMap = new Map(companies.map(c => [c.id, c]));
+      
+      // Format data for Excel
+      const excelData = referrals.map(r => {
+        const user = userMap.get(r.userId);
+        const company = companyMap.get(r.companyId);
+        
+        return {
+          'ID': r.id,
+          'Cliente': r.fullName,
+          'Telefone': r.phone,
+          'Placa': r.licensePlate,
+          'Indicador': user ? user.fullName : 'N/A',
+          'Empresa': company ? company.name : 'N/A',
+          'Status': getStatusLabel(r.status),
+          'Comissão Indicador (R$)': parseFloat(r.commissionIndicator || '0').toFixed(2),
+          'Comissão Promotor (R$)': parseFloat(r.commissionPromoter || '0').toFixed(2),
+          'Data Criação': new Date(r.createdAt).toLocaleDateString('pt-BR'),
+          'Possui Seguro': r.hasInsurance ? 'Sim' : 'Não',
+          'Marca Veículo': r.vehicleBrand || 'N/A',
+          'Modelo Veículo': r.vehicleModel || 'N/A',
+          'Ano Veículo': r.vehicleYear || 'N/A',
+          'Observações': r.notes || ''
+        };
+      });
+      
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      
+      // Set column widths
+      const colWidths = [
+        { wch: 5 },   // ID
+        { wch: 25 },  // Cliente
+        { wch: 15 },  // Telefone
+        { wch: 10 },  // Placa
+        { wch: 25 },  // Indicador
+        { wch: 30 },  // Empresa
+        { wch: 15 },  // Status
+        { wch: 20 },  // Comissão Indicador
+        { wch: 20 },  // Comissão Promotor
+        { wch: 15 },  // Data Criação
+        { wch: 15 },  // Possui Seguro
+        { wch: 15 },  // Marca
+        { wch: 15 },  // Modelo
+        { wch: 10 },  // Ano
+        { wch: 40 }   // Observações
+      ];
+      ws['!cols'] = colWidths;
+      
+      XLSX.utils.book_append_sheet(wb, ws, 'Indicações');
+      
+      // Generate buffer
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      // Set headers for download
+      const filename = `indicacoes_${new Date().toISOString().split('T')[0]}.xlsx`;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length.toString());
+      
+      return res.send(buffer);
+      
+      function getStatusLabel(status: string): string {
+        const labels: Record<string, string> = {
+          'pending': 'Pendente',
+          'analyzing': 'Em Análise',
+          'validated': 'Validado',
+          'converted': 'Convertido',
+          'rejected': 'Rejeitado',
+          'paid': 'Pago',
+          'false': 'Falso',
+          'not_validated': 'Não validado',
+          'not_converted': 'Não convertido'
+        };
+        return labels[status] || status;
+      }
+    } catch (error) {
+      console.error("Error exporting referrals:", error);
+      return res.status(500).json({ error: "Erro ao exportar indicações" });
+    }
+  });
+
   // Validate referral (for analysts and admins)
   app.patch("/api/referrals/:id/validate", requireAnalyst, async (req, res) => {
     try {
