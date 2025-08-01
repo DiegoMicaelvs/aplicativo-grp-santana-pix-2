@@ -665,6 +665,7 @@ export default function AdminReferralsDetailedPage() {
                   <TableHead>Telefone</TableHead>
                   <TableHead>Veículo</TableHead>
                   <TableHead>Placa</TableHead>
+                  <TableHead>Cidade/Estado</TableHead>
                   <TableHead>Indicador</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Comissão Indicador</TableHead>
@@ -680,6 +681,15 @@ export default function AdminReferralsDetailedPage() {
                     <TableCell>{referral.phone}</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell className="font-mono">{referral.licensePlate}</TableCell>
+                    <TableCell>
+                      {referral.city && referral.state ? (
+                        <span className="text-sm">
+                          {referral.city}/{referral.state}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>{getUserName(referral.userId)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(referral.status)}>

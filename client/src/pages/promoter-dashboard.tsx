@@ -519,6 +519,7 @@ export default function PromoterDashboard() {
                       <TableRow>
                         <TableHead>Nome</TableHead>
                         <TableHead>Telefone</TableHead>
+                        <TableHead>Cidade/Estado</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Comissão</TableHead>
                         <TableHead>Data</TableHead>
@@ -529,6 +530,15 @@ export default function PromoterDashboard() {
                         <TableRow key={referral.id}>
                           <TableCell>{referral.fullName}</TableCell>
                           <TableCell>{referral.phone}</TableCell>
+                          <TableCell>
+                            {referral.city && referral.state ? (
+                              <span className="text-sm">
+                                {referral.city}/{referral.state}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
                           <TableCell>{getStatusBadge(referral.status)}</TableCell>
                           <TableCell>
                             R$ {referral.commissionIndicator ? parseFloat(referral.commissionIndicator).toFixed(2) : '0.00'}
@@ -567,6 +577,7 @@ export default function PromoterDashboard() {
                         <TableHead>Indicador</TableHead>
                         <TableHead>Cliente</TableHead>
                         <TableHead>Telefone</TableHead>
+                        <TableHead>Cidade/Estado</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Sua Comissão</TableHead>
                         <TableHead>Data</TableHead>
@@ -585,6 +596,15 @@ export default function PromoterDashboard() {
                             </TableCell>
                             <TableCell>{referral.fullName}</TableCell>
                             <TableCell>{referral.phone}</TableCell>
+                            <TableCell>
+                              {referral.city && referral.state ? (
+                                <span className="text-sm">
+                                  {referral.city}/{referral.state}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
                             <TableCell>{getStatusBadge(referral.status)}</TableCell>
                             <TableCell>
                               <div>

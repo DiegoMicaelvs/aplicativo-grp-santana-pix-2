@@ -177,6 +177,7 @@ export default function ReferralsPage() {
                         <TableRow>
                           <TableHead>Nome</TableHead>
                           <TableHead>Veículo</TableHead>
+                          <TableHead>Cidade/Estado</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Comissão</TableHead>
@@ -188,21 +189,27 @@ export default function ReferralsPage() {
                           <TableRow key={referral.id}>
                             <TableCell className="font-medium">
                               <div>
-                                {referral.firstName} {referral.lastName}
+                                {referral.fullName}
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
-                                {referral.email}
+                                {referral.phone}
                               </div>
                             </TableCell>
                             <TableCell>
                               <div>Placa: {referral.licensePlate}</div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                Tel: {referral.phone}
-                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {referral.city && referral.state ? (
+                                <span className="text-sm">
+                                  {referral.city}/{referral.state}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
                             </TableCell>
                             <TableCell>{formatDate(referral.createdAt)}</TableCell>
                             <TableCell>{getStatusBadge(referral.status)}</TableCell>
-                            <TableCell>{formatCurrency(referral.commission)}</TableCell>
+                            <TableCell>{formatCurrency(referral.commissionIndicator)}</TableCell>
                             <TableCell className="text-right">
                               <Button 
                                 variant="ghost" 
@@ -306,20 +313,15 @@ export default function ReferralsPage() {
                     </div>
                   </div>
                   
-                  {selectedReferral.comments && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500">Comentários</h4>
-                      <p className="mt-1">{selectedReferral.comments}</p>
-                    </div>
-                  )}
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Dados do Indicado</h4>
                       <div className="mt-1 space-y-1">
-                        <p><span className="font-medium">Nome:</span> {selectedReferral.firstName} {selectedReferral.lastName}</p>
-                        <p><span className="font-medium">Email:</span> {selectedReferral.email}</p>
+                        <p><span className="font-medium">Nome:</span> {selectedReferral.fullName}</p>
                         <p><span className="font-medium">Telefone:</span> {selectedReferral.phone}</p>
+                        {selectedReferral.city && selectedReferral.state && (
+                          <p><span className="font-medium">Localização:</span> {selectedReferral.city}/{selectedReferral.state}</p>
+                        )}
                       </div>
                     </div>
                     
@@ -335,13 +337,8 @@ export default function ReferralsPage() {
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Comissão</h4>
                       <p className="mt-1 text-lg font-medium text-green-600">
-                        {formatCurrency(selectedReferral.commission)}
+                        {formatCurrency(selectedReferral.commissionIndicator)}
                       </p>
-                      {selectedReferral.status === 'paid' && selectedReferral.paidAt && (
-                        <p className="text-sm text-gray-500">
-                          Pago em {formatDate(selectedReferral.paidAt)}
-                        </p>
-                      )}
                     </div>
                   )}
                   
