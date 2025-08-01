@@ -113,9 +113,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
       
+      // Calculate real total earnings from converted/paid referrals
+      const userReferrals = await storage.getReferralsByUserId(user.id);
+      let realTotalEarnings = 0;
+      
+      // Sum commissions only from converted or paid referrals
+      for (const referral of userReferrals) {
+        if (referral.status === 'converted' || referral.status === 'paid') {
+          realTotalEarnings += parseFloat(referral.commissionIndicator || '0');
+        }
+      }
+      
+      // If user is a promoter, also calculate promoter commissions
+      if (user.role === 'promotor') {
+        const promoterReferrals = await storage.getReferralsByTeam(user.id);
+        for (const referral of promoterReferrals) {
+          if (referral.status === 'converted' || referral.status === 'paid') {
+            realTotalEarnings += parseFloat(referral.commissionPromoter || '0');
+          }
+        }
+      }
+      
       // Don't send password
       const { password, ...userWithoutPassword } = user;
-      return res.json(userWithoutPassword);
+      
+      // Override totalEarnings with the real calculated value
+      return res.json({
+        ...userWithoutPassword,
+        totalEarnings: realTotalEarnings.toFixed(2)
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       return res.status(500).json({ error: "Erro ao buscar usuário" });
