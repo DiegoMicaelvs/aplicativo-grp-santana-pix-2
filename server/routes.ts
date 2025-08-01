@@ -525,6 +525,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestType: user.role === 'promotor' ? 'promotor' : 'indicador'
       });
       
+      // Descontar imediatamente o valor do saldo do usuário
+      await storage.updateUserBalance(req.user!.id, -validatedData.amount);
+      
       return res.status(201).json(withdrawal);
     } catch (error) {
       console.error("Error creating withdrawal:", error);
