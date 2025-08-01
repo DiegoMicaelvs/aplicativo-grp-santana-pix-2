@@ -146,11 +146,17 @@ class DatabaseStorage implements IStorage {
   async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number; analystId?: number }) {
     try {
       // Prepare user data with proper typing
+      // Normalizar username e email
+      const normalizedUsername = userData.username.trim().toLowerCase();
+      const normalizedEmail = (userData.email || userData.username).trim().toLowerCase();
+      
+      console.log(`[STORAGE] Criando usuário com username normalizado: ${normalizedUsername}`);
+      
       const insertData = {
-        username: userData.username,
+        username: normalizedUsername,
         password: userData.password,
         fullName: userData.fullName,
-        email: userData.email || userData.username,
+        email: normalizedEmail,
         phone: userData.phone,
         cpf: userData.cpf,
         address: `${userData.city}, ${userData.state} - ${userData.zipCode}`, // Construct address from parts
@@ -191,9 +197,21 @@ class DatabaseStorage implements IStorage {
   }
   
   async getUserByUsername(username: string) {
-    return await db.query.users.findFirst({
-      where: eq(users.username, username)
+    // Normalizar username: remover espaços e converter para minúsculas
+    const normalizedUsername = username.trim().toLowerCase();
+    
+    // Buscar usuário com case-insensitive
+    const user = await db.query.users.findFirst({
+      where: sql`LOWER(${users.username}) = ${normalizedUsername}`
     });
+    
+    if (!user) {
+      console.log(`[AUTH] Usuário não encontrado: ${normalizedUsername}`);
+    } else {
+      console.log(`[AUTH] Usuário encontrado: ${user.username} (${user.fullName})`);
+    }
+    
+    return user;
   }
   
   async getUserByCpf(cpf: string) {

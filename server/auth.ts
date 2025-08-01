@@ -84,18 +84,33 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        // Normalizar username
+        const normalizedUsername = username.trim().toLowerCase();
+        console.log(`[AUTH] Tentativa de login: ${normalizedUsername}`);
+        
+        const user = await storage.getUserByUsername(normalizedUsername);
+        
+        if (!user) {
+          console.log(`[AUTH] Usuário não encontrado: ${normalizedUsername}`);
+          return done(null, false);
+        }
+        
+        const passwordMatch = await comparePasswords(password, user.password);
+        if (!passwordMatch) {
+          console.log(`[AUTH] Senha incorreta para usuário: ${normalizedUsername}`);
           return done(null, false);
         }
         
         // Check if user is active
         if (!user.isActive) {
+          console.log(`[AUTH] Usuário desativado: ${normalizedUsername}`);
           return done(new AuthError("Usuário desativado", 403), false);
         }
         
+        console.log(`[AUTH] Login bem-sucedido: ${normalizedUsername}`);
         return done(null, user);
       } catch (err) {
+        console.error(`[AUTH] Erro na autenticação:`, err);
         return done(err);
       }
     }),
