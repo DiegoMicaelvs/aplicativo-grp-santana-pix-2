@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/use-auth";
 import { 
   Table, 
   TableBody, 
@@ -87,6 +87,7 @@ const formatCurrency = (value: number | string | null | undefined) => {
 };
 
 export default function ReferralsPage() {
+  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
