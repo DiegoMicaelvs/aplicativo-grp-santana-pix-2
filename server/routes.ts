@@ -528,6 +528,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Descontar imediatamente o valor do saldo do usuário
       await storage.updateUserBalance(req.user!.id, -validatedData.amount);
       
+      // Send SMS notification to admins about new withdrawal request
+      try {
+        const { sendAdminWithdrawalNotification } = await import('./sms-service');
+        const admins = await storage.getUsersByRole('admin');
+        
+        // Send SMS to all admins with phone numbers
+        for (const admin of admins) {
+          if (admin.phone) {
+            await sendAdminWithdrawalNotification(
+              admin.phone,
+              user.fullName,
+              user.cpf,
+              validatedData.amount
+            );
+            console.log(`SMS notification sent to admin ${admin.fullName} for new withdrawal request`);
+          }
+        }
+      } catch (smsError) {
+        console.log('Admin SMS notification failed (non-critical):', smsError);
+        // Don't fail the withdrawal creation if SMS fails
+      }
+      
       return res.status(201).json(withdrawal);
     } catch (error) {
       console.error("Error creating withdrawal:", error);

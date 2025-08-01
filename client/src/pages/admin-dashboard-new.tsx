@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { 
   Users, 
   DollarSign, 
@@ -19,16 +20,21 @@ import {
   HelpCircle,
   Building2,
   ArrowLeft,
-  LogOut
+  LogOut,
+  Bell
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect, useRef } from "react";
 import type { User, Referral } from "@shared/schema";
 
 export default function AdminDashboard() {
   const { user, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const previousPendingCount = useRef<number>(0);
   
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"]
@@ -39,7 +45,8 @@ export default function AdminDashboard() {
   });
 
   const { data: withdrawals = [] } = useQuery<any[]>({
-    queryKey: ["/api/admin/withdrawals"]
+    queryKey: ["/api/admin/withdrawals"],
+    refetchInterval: 30000, // Poll every 30 seconds for new withdrawals
   });
 
   const handleLogout = () => {
@@ -64,6 +71,31 @@ export default function AdminDashboard() {
     totalPendingAmount: withdrawals.filter(w => w.status === "pending")
       .reduce((sum, w) => sum + parseFloat(w.amount), 0)
   };
+
+  // Check for new withdrawal requests
+  useEffect(() => {
+    const currentPendingCount = stats.pendingWithdrawals;
+    
+    // Only show notification if count increased and not on initial load
+    if (previousPendingCount.current > 0 && currentPendingCount > previousPendingCount.current) {
+      const newRequests = currentPendingCount - previousPendingCount.current;
+      toast({
+        title: "Nova solicitação de saque!",
+        description: `${newRequests} nova(s) solicitação(ões) de saque pendente(s)`,
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLocation("/admin/withdrawals")}
+          >
+            Ver Saques
+          </Button>
+        ),
+      });
+    }
+    
+    previousPendingCount.current = currentPendingCount;
+  }, [stats.pendingWithdrawals, toast, setLocation]);
 
   if (usersLoading || referralsLoading) {
     return (
@@ -197,9 +229,14 @@ export default function AdminDashboard() {
               </TabsTrigger>
               <TabsTrigger 
                 value="withdrawals" 
-                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-all hover:bg-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm relative"
               >
                 Saques
+                {stats.pendingWithdrawals > 0 && (
+                  <Badge className="ml-2 bg-red-600 text-white text-xs px-1.5 py-0.5 animate-pulse">
+                    {stats.pendingWithdrawals}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="audit" 
@@ -334,12 +371,17 @@ export default function AdminDashboard() {
               </Link>
             </Card>
 
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow relative">
               <Link href="/admin/withdrawals">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Wallet className="h-5 w-5 text-red-600" />
                     Gestão de Saques
+                    {stats.pendingWithdrawals > 0 && (
+                      <Badge className="ml-auto bg-red-600 text-white animate-pulse">
+                        {stats.pendingWithdrawals} novo{stats.pendingWithdrawals > 1 ? 's' : ''}
+                      </Badge>
+                    )}
                   </CardTitle>
                   <CardDescription>
                     Processar solicitações de saque
@@ -348,6 +390,12 @@ export default function AdminDashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold text-red-600">{stats.pendingWithdrawals}</div>
                   <p className="text-sm text-gray-600">saques pendentes</p>
+                  {stats.pendingWithdrawals > 0 && (
+                    <div className="mt-2 flex items-center text-red-600">
+                      <Bell className="h-4 w-4 mr-1 animate-bounce" />
+                      <span className="text-xs">Atenção necessária!</span>
+                    </div>
+                  )}
                 </CardContent>
               </Link>
             </Card>

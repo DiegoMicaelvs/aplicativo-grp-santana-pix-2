@@ -124,6 +124,17 @@ export const sendWithdrawalNotification = async (
   return sendSMS(userPhone, message);
 };
 
+export const sendAdminWithdrawalNotification = async (
+  adminPhone: string,
+  userName: string,
+  userCPF: string,
+  amount: number
+): Promise<boolean> => {
+  const message = `🚨 Kong Pix - NOVA SOLICITAÇÃO DE SAQUE!\n\nIndicador: ${userName}\nCPF: ${userCPF}\nValor: R$ ${amount.toFixed(2)}\n\nAcesse o painel para processar:\nkongprotecaoveicular.com.br/admin`;
+  
+  return sendSMS(adminPhone, message);
+};
+
 export const sendWelcomeSMS = async (
   userPhone: string,
   userName: string
