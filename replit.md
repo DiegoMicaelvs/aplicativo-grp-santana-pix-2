@@ -35,6 +35,11 @@ The application follows a modern full-stack architecture with separate client an
 - **Color Scheme:** Kong Pix yellow (#fcb900) and secondary gray (#abb8c3) are used throughout the application.
 - **Components:** Utilizes Radix UI primitives and Shadcn/UI components for a consistent and modern interface.
 - **Navigation:** BackButton component for consistent navigation, and role-specific dashboard links in the header.
+- **Responsive Design:** Enhanced mobile responsiveness with:
+  - Statistics cards that adapt from 1 column on mobile to 5 columns on desktop
+  - Buttons that stack vertically on mobile and display horizontally on larger screens
+  - Text sizes that scale appropriately for different screen sizes
+  - Dialog widths that adjust to 95% viewport width on mobile devices
 
 ## External Dependencies
 

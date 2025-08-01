@@ -202,22 +202,22 @@ export default function DashboardPage() {
               <div className="px-4 py-8 sm:px-0">
                 <PromotionalAlert />
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                   {/* Total Referrals Card */}
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 bg-primary rounded-md p-3">
-                          <Users className="h-6 w-6 text-white" />
+                        <div className="flex-shrink-0 bg-primary rounded-md p-2 sm:p-3">
+                          <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-5 w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-500 truncate">Total de Indicações</div>
-                          <div className="text-lg font-medium text-gray-900">{totalReferrals}</div>
+                        <div className="ml-3 sm:ml-5 w-0 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Total de Indicações</div>
+                          <div className="text-base sm:text-lg font-medium text-gray-900">{totalReferrals}</div>
                         </div>
                       </div>
-                      <div className="mt-6">
+                      <div className="mt-4 sm:mt-6">
                         <Link href="/referrals">
-                          <Button variant="link" className="text-primary p-0">Ver todas</Button>
+                          <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Ver todas</Button>
                         </Link>
                       </div>
                     </CardContent>
@@ -225,19 +225,19 @@ export default function DashboardPage() {
 
                   {/* Converted Referrals Card */}
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
-                          <Clock className="h-6 w-6 text-white" />
+                        <div className="flex-shrink-0 bg-green-500 rounded-md p-2 sm:p-3">
+                          <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-5 w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-500 truncate">Indicações Convertidas</div>
-                          <div className="text-lg font-medium text-gray-900">{convertedReferrals}</div>
+                        <div className="ml-3 sm:ml-5 w-0 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Indicações Convertidas</div>
+                          <div className="text-base sm:text-lg font-medium text-gray-900">{convertedReferrals}</div>
                         </div>
                       </div>
-                      <div className="mt-6">
+                      <div className="mt-4 sm:mt-6">
                         <Link href="/referrals?status=converted">
-                          <Button variant="link" className="text-primary p-0">Ver detalhes</Button>
+                          <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Ver detalhes</Button>
                         </Link>
                       </div>
                     </CardContent>
@@ -245,19 +245,19 @@ export default function DashboardPage() {
 
                   {/* Conversion Rate Card */}
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                          <TrendingUp className="h-6 w-6 text-white" />
+                        <div className="flex-shrink-0 bg-blue-500 rounded-md p-2 sm:p-3">
+                          <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-5 w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-500 truncate">Taxa de Conversão</div>
-                          <div className="text-lg font-medium text-gray-900">{conversionRate}%</div>
+                        <div className="ml-3 sm:ml-5 w-0 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Taxa de Conversão</div>
+                          <div className="text-base sm:text-lg font-medium text-gray-900">{conversionRate}%</div>
                         </div>
                       </div>
-                      <div className="mt-6">
+                      <div className="mt-4 sm:mt-6">
                         <div className="text-xs text-gray-500">
-                          Percentual de indicações convertidas em vendas
+                          Percentual de indicações convertidas
                         </div>
                       </div>
                     </CardContent>
@@ -265,19 +265,19 @@ export default function DashboardPage() {
 
                   {/* Current Balance Card */}
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 bg-green-600 rounded-md p-3">
-                          <DollarSign className="h-6 w-6 text-white" />
+                        <div className="flex-shrink-0 bg-green-600 rounded-md p-2 sm:p-3">
+                          <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-5 w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-500 truncate">Saldo Disponível</div>
-                          <div className="text-lg font-medium text-gray-900">{formatCurrency(user?.balance || 0)}</div>
+                        <div className="ml-3 sm:ml-5 w-0 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Saldo Disponível</div>
+                          <div className="text-base sm:text-lg font-medium text-gray-900">{formatCurrency(user?.balance || 0)}</div>
                         </div>
                       </div>
-                      <div className="mt-6">
+                      <div className="mt-4 sm:mt-6">
                         <Link href="/withdrawals">
-                          <Button variant="link" className="text-primary p-0">Solicitar saque</Button>
+                          <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Solicitar saque</Button>
                         </Link>
                       </div>
                     </CardContent>
@@ -285,19 +285,19 @@ export default function DashboardPage() {
 
                   {/* Total Earnings Card */}
                   <Card>
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 sm:p-6">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                          <TrendingUp className="h-6 w-6 text-white" />
+                        <div className="flex-shrink-0 bg-accent rounded-md p-2 sm:p-3">
+                          <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-5 w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-500 truncate">Total de Ganhos</div>
-                          <div className="text-lg font-medium text-gray-900">{formatCurrency(user?.totalEarnings || 0)}</div>
+                        <div className="ml-3 sm:ml-5 w-0 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Total de Ganhos</div>
+                          <div className="text-base sm:text-lg font-medium text-gray-900">{formatCurrency(user?.totalEarnings || 0)}</div>
                         </div>
                       </div>
-                      <div className="mt-6">
+                      <div className="mt-4 sm:mt-6">
                         <Link href="/earnings">
-                          <Button variant="link" className="text-primary p-0">Ver histórico</Button>
+                          <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Ver histórico</Button>
                         </Link>
                       </div>
                     </CardContent>
@@ -374,33 +374,33 @@ export default function DashboardPage() {
                         Indique alguém que precise de seguro para seu veículo e ganhe comissão.
                       </p>
                     </div>
-                    <div className="mt-5 flex gap-4">
-                      <Link href="/new-referral">
-                        <Button>Fazer Nova Indicação</Button>
+                    <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                      <Link href="/new-referral" className="w-full sm:w-auto">
+                        <Button className="w-full sm:w-auto">Fazer Nova Indicação</Button>
                       </Link>
                       {user?.role === "promotor" && (
                         <>
-                          <Link href="/promoter-dashboard">
-                            <Button variant="outline">Dashboard Promotor</Button>
+                          <Link href="/promoter-dashboard" className="w-full sm:w-auto">
+                            <Button variant="outline" className="w-full sm:w-auto">Dashboard Promotor</Button>
                           </Link>
                           <Dialog open={isIndicatorDialogOpen} onOpenChange={setIsIndicatorDialogOpen}>
                             <DialogTrigger asChild>
-                              <Button variant="outline">
+                              <Button variant="outline" className="w-full sm:w-auto">
                                 <Plus className="h-4 w-4 mr-2" />
-                                Cadastrar Indicador
+                                <span className="truncate">Cadastrar Indicador</span>
                               </Button>
                             </DialogTrigger>
                             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                               <DialogHeader>
-                                <DialogTitle>Cadastrar Novo Indicador</DialogTitle>
-                                <DialogDescription>
+                                <DialogTitle className="text-base sm:text-lg">Cadastrar Novo Indicador</DialogTitle>
+                                <DialogDescription className="text-sm">
                                   Cadastre um novo indicador em sua rede. Você receberá R$ 1,00 por cada indicação registrada e R$ 10,00 por cada venda fechada.
                                 </DialogDescription>
                               </DialogHeader>
                               
                               <Form {...indicatorForm}>
                                 <form onSubmit={indicatorForm.handleSubmit(onSubmitIndicator)} className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <FormField
                                       control={indicatorForm.control}
                                       name="fullName"

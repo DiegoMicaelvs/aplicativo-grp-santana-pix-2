@@ -196,31 +196,31 @@ export default function PromoterDashboard() {
       <Header />
       
       <main className="flex-1 container mx-auto py-6 px-4">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-4 mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
               <Link href="/dashboard">
                 <Button variant="outline" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
                 </Button>
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900">Painel do Promotor</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Painel do Promotor</h1>
             </div>
-            <p className="text-gray-600">Gerencie sua rede de indicadores e acompanhe suas comissões</p>
+            <p className="text-sm sm:text-base text-gray-600">Gerencie sua rede de indicadores e acompanhe suas comissões</p>
           </div>
         
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Cadastrar Indicador
+                <span className="truncate">Cadastrar Indicador</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
               <DialogHeader>
-                <DialogTitle>Cadastrar Novo Indicador</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-base sm:text-lg">Cadastrar Novo Indicador</DialogTitle>
+                <DialogDescription className="text-sm">
                   Crie um novo indicador em sua rede. Você receberá R$ 1,00 por cada indicação registrada e R$ 10,00 por cada venda fechada.
                 </DialogDescription>
               </DialogHeader>
