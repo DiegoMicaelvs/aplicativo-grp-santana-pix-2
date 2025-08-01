@@ -328,13 +328,13 @@ export default function AdminWithdrawals() {
                                 Processar
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>Processar Solicitação de Saque</DialogTitle>
                               </DialogHeader>
                               
                               {selectedWithdrawal && (
-                                <div className="space-y-6">
+                                <div className="space-y-6 pb-4">
                                   {/* Informações do usuário */}
                                   <div className="border rounded-lg p-4 space-y-2">
                                     <h3 className="font-semibold">Informações do Usuário</h3>
