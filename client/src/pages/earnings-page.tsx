@@ -151,11 +151,11 @@ export default function EarningsPage() {
                                 <TableCell>
                                   <div className="flex items-center">
                                     <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold">
-                                      {referral.firstName.charAt(0)}{referral.lastName.charAt(0)}
+                                      {referral.fullName ? referral.fullName.charAt(0).toUpperCase() : '?'}
                                     </div>
                                     <div className="ml-4">
-                                      <div className="text-sm font-medium text-gray-900">{referral.firstName} {referral.lastName}</div>
-                                      <div className="text-sm text-gray-500">{referral.email}</div>
+                                      <div className="text-sm font-medium text-gray-900">{referral.fullName || 'Nome não informado'}</div>
+                                      <div className="text-sm text-gray-500">{referral.phone || 'Telefone não informado'}</div>
                                     </div>
                                   </div>
                                 </TableCell>
@@ -167,12 +167,12 @@ export default function EarningsPage() {
                                 </TableCell>
                                 <TableCell>
                                   <div className="text-sm font-medium text-gray-900">
-                                    {formatCurrency(referral.commission)}
+                                    {formatCurrency(referral.commissionIndicator)}
                                   </div>
                                 </TableCell>
                                 <TableCell>
                                   <div className="text-sm text-gray-900">
-                                    {referral.paidAt ? formatDate(referral.paidAt) : 'Pendente'}
+                                    {referral.status === 'paid' ? 'Pago' : 'Pendente'}
                                   </div>
                                 </TableCell>
                               </TableRow>
