@@ -98,6 +98,9 @@ export const referrals = pgTable("referrals", {
   validatedBy: integer("validated_by").references(() => users.id), // Quem fez a validação
   validatedAt: timestamp("validated_at"), // Quando foi validado
   notes: text("notes"),
+  // Campos de localização da indicação
+  city: text("city"), // Cidade onde foi feita a indicação
+  state: text("state"), // Estado onde foi feita a indicação
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -420,6 +423,8 @@ export const createReferralSchema = createInsertSchema(referrals, {
   phone: (schema) => schema.min(10, "Telefone inválido").max(15, "Telefone inválido"),
   licensePlate: (schema) => schema.min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
   companyId: z.coerce.number().positive("Empresa é obrigatória"),
+  city: z.string().min(2, "Cidade é obrigatória"),
+  state: z.string().length(2, "Estado deve ter 2 letras (ex: SP, RJ)"),
 }).omit({ id: true, userId: true, createdBy: true, promoterId: true, status: true, commissionIndicator: true, commissionPromoter: true, createdAt: true, updatedAt: true, notes: true, statusHistory: true });
 
 // Audit log schema

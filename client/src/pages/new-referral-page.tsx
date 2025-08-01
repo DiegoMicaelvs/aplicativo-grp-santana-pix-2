@@ -41,6 +41,37 @@ import { PromotionalAlert } from "@/components/promotional-alert";
 import { BackButton } from "@/components/ui/back-button";
 import { CreateReferral, Company } from "@shared/schema";
 
+// Lista de estados brasileiros
+const BRAZILIAN_STATES = [
+  { value: "AC", label: "Acre" },
+  { value: "AL", label: "Alagoas" },
+  { value: "AP", label: "Amapá" },
+  { value: "AM", label: "Amazonas" },
+  { value: "BA", label: "Bahia" },
+  { value: "CE", label: "Ceará" },
+  { value: "DF", label: "Distrito Federal" },
+  { value: "ES", label: "Espírito Santo" },
+  { value: "GO", label: "Goiás" },
+  { value: "MA", label: "Maranhão" },
+  { value: "MT", label: "Mato Grosso" },
+  { value: "MS", label: "Mato Grosso do Sul" },
+  { value: "MG", label: "Minas Gerais" },
+  { value: "PA", label: "Pará" },
+  { value: "PB", label: "Paraíba" },
+  { value: "PR", label: "Paraná" },
+  { value: "PE", label: "Pernambuco" },
+  { value: "PI", label: "Piauí" },
+  { value: "RJ", label: "Rio de Janeiro" },
+  { value: "RN", label: "Rio Grande do Norte" },
+  { value: "RS", label: "Rio Grande do Sul" },
+  { value: "RO", label: "Rondônia" },
+  { value: "RR", label: "Roraima" },
+  { value: "SC", label: "Santa Catarina" },
+  { value: "SP", label: "São Paulo" },
+  { value: "SE", label: "Sergipe" },
+  { value: "TO", label: "Tocantins" },
+];
+
 // Define validation schema matching the exact fields requested
 const referralSchema = z.object({
   fullName: z.string().min(1, "Nome é obrigatório"),
@@ -48,6 +79,8 @@ const referralSchema = z.object({
   licensePlate: z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
   hasInsurance: z.boolean(),
   companyId: z.string().min(1, "Selecione uma empresa").transform(val => Number(val)),
+  city: z.string().min(2, "Cidade é obrigatória"),
+  state: z.string().length(2, "Selecione um estado"),
 });
 
 type ReferralFormValues = z.infer<typeof referralSchema>;
@@ -66,6 +99,8 @@ export default function NewReferralPage() {
       licensePlate: "",
       hasInsurance: false,
       companyId: "" as any,
+      city: "",
+      state: "",
     },
   });
 
@@ -413,6 +448,61 @@ export default function NewReferralPage() {
                         </FormItem>
                       )}
                     />
+
+                    {/* Seção de Localização */}
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Localização da Indicação</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Informe a cidade e o estado onde foi feita esta indicação. 
+                        Essas informações nos ajudam a entender melhor a distribuição geográfica das indicações.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Cidade */}
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Cidade</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ex: São Paulo" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Estado */}
+                        <FormField
+                          control={form.control}
+                          name="state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Estado</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange}
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o estado" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {BRAZILIAN_STATES.map((state) => (
+                                    <SelectItem key={state.value} value={state.value}>
+                                      {state.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="flex items-center justify-end space-x-4">
