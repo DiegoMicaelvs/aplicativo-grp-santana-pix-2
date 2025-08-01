@@ -477,12 +477,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Saldo insuficiente" });
       }
 
-      // 4. Validação de valores pequenos para saque
-      const MIN_WITHDRAWAL_AMOUNT = 10.00;
+      // 4. Validação para permitir sacar qualquer valor disponível
+      const MIN_WITHDRAWAL_AMOUNT = 0.01;
       if (validatedData.amount < MIN_WITHDRAWAL_AMOUNT) {
         return res.status(400).json({ 
-          error: "Valor mínimo não atingido",
-          details: `Valor mínimo para saque: R$ ${MIN_WITHDRAWAL_AMOUNT.toFixed(2)}. Valor solicitado: R$ ${validatedData.amount.toFixed(2)}` 
+          error: "Valor inválido",
+          details: `Valor mínimo: R$ ${MIN_WITHDRAWAL_AMOUNT.toFixed(2)}` 
         });
       }
       
