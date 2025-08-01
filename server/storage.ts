@@ -733,6 +733,8 @@ class DatabaseStorage implements IStorage {
     licensePlate: string;
     companyId: number;
     userId: number;
+    commissionIndicator: string;
+    commissionPromoter: string;
     updatedAt: Date;
   }>) {
     const [updatedReferral] = await db.update(referrals)

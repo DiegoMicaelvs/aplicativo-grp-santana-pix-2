@@ -850,7 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/referrals/:id", requireAdmin, async (req, res) => {
     try {
       const referralId = parseInt(req.params.id);
-      const { fullName, phone, licensePlate, companyId, userId } = req.body;
+      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter } = req.body;
       
       // Check if referral exists
       const existingReferral = await storage.getReferralById(referralId);
@@ -878,6 +878,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         licensePlate,
         companyId,
         userId, // This allows reassigning to another indicador
+        commissionIndicator: commissionIndicator !== undefined ? commissionIndicator : existingReferral.commissionIndicator,
+        commissionPromoter: commissionPromoter !== undefined ? commissionPromoter : existingReferral.commissionPromoter,
         updatedAt: new Date()
       });
       

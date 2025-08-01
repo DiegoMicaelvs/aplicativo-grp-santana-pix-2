@@ -281,7 +281,9 @@ export default function AdminReferralsDetailedPage() {
     phone: "",
     licensePlate: "",
     companyId: 0,
-    userId: 0
+    userId: 0,
+    commissionIndicator: "0",
+    commissionPromoter: "0"
   });
 
   const { toast } = useToast();
@@ -661,7 +663,9 @@ export default function AdminReferralsDetailedPage() {
                               phone: referral.phone,
                               licensePlate: referral.licensePlate,
                               companyId: referral.companyId || 1,
-                              userId: referral.userId
+                              userId: referral.userId,
+                              commissionIndicator: referral.commissionIndicator || "0",
+                              commissionPromoter: referral.commissionPromoter || "0"
                             });
                           }
                         }}>
@@ -733,6 +737,36 @@ export default function AdminReferralsDetailedPage() {
                                           ))}
                                         </SelectContent>
                                       </Select>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium flex items-center gap-2">
+                                        <DollarSign className="h-4 w-4 text-green-600" />
+                                        Comissão Indicador (R$)
+                                      </label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={editFormData.commissionIndicator}
+                                        onChange={(e) => setEditFormData({...editFormData, commissionIndicator: e.target.value})}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium flex items-center gap-2">
+                                        <DollarSign className="h-4 w-4 text-blue-600" />
+                                        Comissão Promotor (R$)
+                                      </label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={editFormData.commissionPromoter}
+                                        onChange={(e) => setEditFormData({...editFormData, commissionPromoter: e.target.value})}
+                                        placeholder="0.00"
+                                      />
                                     </div>
                                   </div>
                                   
