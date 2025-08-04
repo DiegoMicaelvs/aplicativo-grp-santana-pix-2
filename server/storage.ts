@@ -180,7 +180,7 @@ class DatabaseStorage implements IStorage {
       };
 
       const [user] = await db.insert(users)
-        .values(insertData)
+        .values([insertData])
         .returning();
       
       return user;
@@ -832,15 +832,19 @@ class DatabaseStorage implements IStorage {
     if (updates.phone !== undefined) updateData.phone = updates.phone;
     if (updates.licensePlate !== undefined) updateData.licensePlate = updates.licensePlate;
     if (updates.hasInsurance !== undefined) updateData.hasInsurance = updates.hasInsurance;
+    if (updates.companyId !== undefined) updateData.companyId = updates.companyId;
+    if (updates.userId !== undefined) updateData.userId = updates.userId;
     if (updates.vehicleBrand !== undefined) updateData.vehicleBrand = updates.vehicleBrand;
     if (updates.vehicleModel !== undefined) updateData.vehicleModel = updates.vehicleModel;
     if (updates.vehicleYear !== undefined) updateData.vehicleYear = updates.vehicleYear;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
+    if (updates.commissionIndicator !== undefined) updateData.commissionIndicator = updates.commissionIndicator;
+    if (updates.commissionPromoter !== undefined) updateData.commissionPromoter = updates.commissionPromoter;
     
     // Handle status update separately to ensure commission calculations
     if (updates.status !== undefined && updates.status !== currentReferral.status) {
       // Use updateReferralStatus for status changes to handle commissions
-      return await this.updateReferralStatus(id, updates.status, editorUserId, updates.notes);
+      return await this.updateReferralStatus(id, updates.status, updates.notes, editorUserId);
     }
 
     // Update referral
@@ -861,10 +865,14 @@ class DatabaseStorage implements IStorage {
           phone: currentReferral.phone,
           licensePlate: currentReferral.licensePlate,
           hasInsurance: currentReferral.hasInsurance,
+          companyId: currentReferral.companyId,
+          userId: currentReferral.userId,
           vehicleBrand: currentReferral.vehicleBrand,
           vehicleModel: currentReferral.vehicleModel,
           vehicleYear: currentReferral.vehicleYear,
-          notes: currentReferral.notes
+          notes: currentReferral.notes,
+          commissionIndicator: currentReferral.commissionIndicator,
+          commissionPromoter: currentReferral.commissionPromoter
         },
         newValues: updateData,
         details: `Indicação editada: ${updatedReferral.fullName} - ${updatedReferral.licensePlate}`
