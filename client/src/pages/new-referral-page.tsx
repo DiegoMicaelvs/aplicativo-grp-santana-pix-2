@@ -102,7 +102,7 @@ export default function NewReferralPage() {
       phone: "",
       licensePlate: "",
       hasInsurance: false,
-      companyId: "" as any,
+      companyId: user?.role === "admin" ? "" as any : "1", // Kong Pix para não-admin
       city: "",
       state: "",
     },
@@ -181,6 +181,11 @@ export default function NewReferralPage() {
   });
   
   const onSubmit = async (data: ReferralFormValues) => {
+    // Para usuários não-admin, sempre usar Kong Pix (ID 1)
+    if (user?.role !== "admin") {
+      data.companyId = 1;
+    }
+    
     // Validar se é empresa customizada
     if (isCustomCompany) {
       if (!customCompanyName.trim()) {
@@ -474,58 +479,66 @@ export default function NewReferralPage() {
                       render={({ field }) => (
                         <FormItem className="mb-4">
                           <FormLabel>Empresa</FormLabel>
-                          <Select 
-                            onValueChange={(value) => {
-                              if (value === "custom") {
-                                setIsCustomCompany(true);
-                                field.onChange(""); // Clear the company ID when selecting custom
-                              } else {
-                                setIsCustomCompany(false);
-                                setCustomCompanyName("");
-                                field.onChange(value);
-                              }
-                            }}
-                            value={isCustomCompany ? "custom" : field.value.toString()}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione uma empresa" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {isLoadingCompanies ? (
-                                <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
-                              ) : companies && companies.length > 0 ? (
-                                <>
-                                  {companies.map((company) => (
-                                    <SelectItem key={company.id} value={company.id.toString()}>
-                                      {company.name}
-                                    </SelectItem>
-                                  ))}
-                                  {user?.role === "admin" && (
-                                    <SelectItem value="custom">
-                                      + Adicionar nova empresa
-                                    </SelectItem>
+                          {user?.role === "admin" ? (
+                            <>
+                              <Select 
+                                onValueChange={(value) => {
+                                  if (value === "custom") {
+                                    setIsCustomCompany(true);
+                                    field.onChange(""); // Clear the company ID when selecting custom
+                                  } else {
+                                    setIsCustomCompany(false);
+                                    setCustomCompanyName("");
+                                    field.onChange(value);
+                                  }
+                                }}
+                                value={isCustomCompany ? "custom" : field.value.toString()}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione uma empresa" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {isLoadingCompanies ? (
+                                    <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
+                                  ) : companies && companies.length > 0 ? (
+                                    <>
+                                      {companies.map((company) => (
+                                        <SelectItem key={company.id} value={company.id.toString()}>
+                                          {company.name}
+                                        </SelectItem>
+                                      ))}
+                                      <SelectItem value="custom">
+                                        + Adicionar nova empresa
+                                      </SelectItem>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <SelectItem value="none" disabled>Nenhuma empresa disponível</SelectItem>
+                                      <SelectItem value="custom">
+                                        + Adicionar nova empresa
+                                      </SelectItem>
+                                    </>
                                   )}
-                                </>
-                              ) : (
-                                <>
-                                  <SelectItem value="none" disabled>Nenhuma empresa disponível</SelectItem>
-                                  {user?.role === "admin" && (
-                                    <SelectItem value="custom">
-                                      + Adicionar nova empresa
-                                    </SelectItem>
-                                  )}
-                                </>
+                                </SelectContent>
+                              </Select>
+                              {isCustomCompany && (
+                                <div className="mt-2">
+                                  <Input
+                                    placeholder="Digite o nome da nova empresa"
+                                    value={customCompanyName}
+                                    onChange={(e) => setCustomCompanyName(e.target.value)}
+                                  />
+                                </div>
                               )}
-                            </SelectContent>
-                          </Select>
-                          {isCustomCompany && (
+                            </>
+                          ) : (
                             <div className="mt-2">
-                              <Input
-                                placeholder="Digite o nome da nova empresa"
-                                value={customCompanyName}
-                                onChange={(e) => setCustomCompanyName(e.target.value)}
+                              <Input 
+                                value="Kong Pix" 
+                                disabled 
+                                className="bg-gray-50"
                               />
                             </div>
                           )}
