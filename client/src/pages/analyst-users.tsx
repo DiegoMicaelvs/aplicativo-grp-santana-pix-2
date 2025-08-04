@@ -90,6 +90,12 @@ export default function AnalystUsers() {
               <h1 className="text-2xl font-bold text-gray-900">Usuários do Sistema</h1>
             </div>
             <p className="text-gray-600 mt-1">Visualize os usuários cadastrados no sistema</p>
+            {user?.analystLevel === 3 && (
+              <Badge className="mt-2 bg-purple-100 text-purple-800">
+                <Shield className="h-3 w-3 mr-1" />
+                Mostrando apenas usuários sob sua supervisão
+              </Badge>
+            )}
           </div>
           
           <div className="flex gap-2">

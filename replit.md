@@ -1,67 +1,82 @@
-# Replit Configuration for Indique e Ganhe System
+# Replit Project Information
 
-## Overview
-The "Indique e Ganhe" (Refer and Earn) system is a web application for Kong Pix that allows individuals to register as referrers and earn commissions by referring vehicle owners without insurance. It features a comprehensive referral management platform with multi-role support, commission tracking, payment processing, and robust security measures. The business vision is to provide a seamless and secure platform for managing insurance referrals, fostering a network of referrers, and expanding market reach through incentivized referrals.
-
-## User Preferences
-Preferred communication style: Simple, everyday language.
-
-## System Architecture
-
-### Full-Stack Web Application
-- **Frontend:** React.js with TypeScript, styled using TailwindCSS and Shadcn/UI components.
-- **Backend:** Node.js with Express.js.
-- **Database:** PostgreSQL with Drizzle ORM.
-- **Authentication:** Passport.js with session-based authentication using scrypt for password hashing.
-- **Build Tools:** Vite for frontend bundling, ESBuild for backend compilation.
-
-### Architectural Pattern
-The application follows a modern full-stack architecture with separate client and server directories, shared schema definitions, API-based communication via RESTful endpoints, and session-based authentication with PostgreSQL session storage.
+## Project Overview
+A comprehensive digital referral platform for Grupo Santana, transforming vehicle insurance networking through intelligent technological solutions.
 
 ### Key Features
-- **User Management:** Supports referrer, promoter, analyst, manager, and admin roles with role-based access control, comprehensive registration, and secure authentication.
-- **Referral Management:** Allows creation and tracking of referrals with multiple status levels (pending, processing, converted, rejected, validated, paid), automatic commission calculation, and duplicate prevention for phone numbers and license plates.
-- **Commission and Payment System:** Tracks commissions with intelligent accumulation based on referral status changes and supports withdrawal requests with admin approval.
-- **Administrative Features:** Provides an admin dashboard for user, referral, and payment oversight, status management, and reporting.
-- **Support Ticket System:** Integrated system for users to create support tickets with file attachments, managed through an admin interface.
-- **Legal Compliance:** Implementation of Privacy Policy and Terms of Consent with LGPD compliance.
-- **Lead Security System:** 4-layer security system preventing fraud with daily limits, duplicate detection across the database and multiple app instances (cross-app validation), and minimum withdrawal protection.
-- **User Creation System:** Comprehensive forms for creating users of all roles with proper password hashing and validation.
-- **Indicador Assignment System:** Admin interface for assigning and unassigning indicators to promoters.
-- **Analyst Capabilities:** Analysts can view and validate referrals, create new indicators and promoters, and view their assigned permissions.
-- **Rebranding:** Complete rebranding to Kong Pix, including new color palette, logo, social media links, and updated legal documents.
+- Multi-role authentication system (indicador, promotor, analista, gerente, admin, vendedor)
+- Advanced location-based SMS notification system
+- Real-time referral status tracking and management  
+- Detailed audit trails for comprehensive referral oversight
+- Enhanced geographic referral tracking with city and state display
+- Supervisor-based filtering for Analyst Level 3 users
 
-### UI/UX Decisions
-- **Color Scheme:** Kong Pix yellow (#fcb900) and secondary gray (#abb8c3) are used throughout the application.
-- **Components:** Utilizes Radix UI primitives and Shadcn/UI components for a consistent and modern interface.
-- **Navigation:** BackButton component for consistent navigation, and role-specific dashboard links in the header.
-- **Responsive Design:** Enhanced mobile responsiveness with:
-  - Statistics cards that adapt from 1 column on mobile to 5 columns on desktop
-  - Buttons that stack vertically on mobile and display horizontally on larger screens
-  - Text sizes that scale appropriately for different screen sizes
-  - Dialog widths that adjust to 95% viewport width on mobile devices
+### Technologies
+- **Frontend**: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Express.js, TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: Passport.js with session-based auth
+- **SMS Service**: Twilio integration
 
-## External Dependencies
+## Project Architecture
 
-### Frontend Dependencies
-- **React ecosystem:** React, React DOM, React Hook Form.
-- **UI Components:** Radix UI primitives, Shadcn/UI.
-- **Styling:** TailwindCSS.
-- **State Management:** TanStack Query.
-- **Routing:** Wouter.
-- **Form Validation:** Zod.
+### Database Schema
+- **Users Table**: Multi-role users with hierarchical relationships
+  - `supervisorId`: Links users to their Analyst Level 3 supervisor
+  - `promoterId`: Links indicadores to their promoter
+  - `analystLevel`: Defines analyst seniority (1-3)
+  - Permissions system for granular access control
 
-### Backend Dependencies
-- **Web Framework:** Express.js.
-- **Database:** PostgreSQL (via Neon serverless).
-- **ORM:** Drizzle ORM.
-- **Authentication:** Passport.js.
-- **Session Storage:** connect-pg-simple.
-- **Password Security:** Node.js crypto module (scrypt).
-- **SMS Service:** Comtele SMS API (for sending welcome SMS and notifications).
+- **Referrals Table**: Complete referral lifecycle management
+  - Status tracking with history
+  - Commission management
+  - Geographic location tracking (city/state)
+  - Validation fields for data quality
 
-### Development Tools
-- **Build System:** Vite.
-- **Type Checking:** TypeScript.
-- **Database Migrations:** Drizzle Kit.
-- **Development Server:** tsx.
+- **Supporting Tables**: Companies, Withdrawals, Audit Log, Cash Flow, Support Tickets
+
+### API Architecture
+- RESTful API with role-based middleware
+- Separate endpoints for each role (admin, analyst, promoter, etc.)
+- Automatic filtering for Analyst Level 3 users:
+  - `/api/analyst/users` - Returns only supervised users
+  - `/api/analyst/referrals` - Returns only referrals from supervised users
+  - `/api/analyst/stats` - Shows statistics only for supervised users
+
+### Frontend Structure
+- Role-based routing and dashboards
+- Responsive design with mobile optimization
+- Real-time updates using React Query
+- Visual indicators for filtered data (Analyst Level 3)
+
+## Recent Changes
+
+### 2025-01-03 - Analyst Level 3 Filtering Implementation
+- Added supervisor-based filtering for Analyst Level 3 users
+- When Analyst Level 3 users access the system, they now see:
+  - Only users assigned to them (via supervisorId field)
+  - Only referrals created by their supervised users
+  - Statistics filtered to their supervised team
+- Added visual indicators in the UI to show when data is filtered
+- Assigned initial users to existing Analyst Level 3 for testing
+
+### Implementation Details
+- Backend filtering implemented in routes:
+  - `storage.getAllUsersBySupervisor()` - Gets all users under supervision
+  - `storage.getReferralsBySupervisor()` - Gets referrals from supervised users
+- Frontend shows badges indicating filtered view for Level 3 analysts
+- Automatic assignment of supervisorId when Level 3 analysts create new users
+
+## User Preferences
+- Language: Portuguese (pt-BR) for all user-facing content
+- Code comments and technical documentation in English
+- Maintain existing design patterns and color schemes
+- Preserve all existing functionality while adding new features
+
+## Development Guidelines
+- Always test with different user roles
+- Maintain backward compatibility
+- Update documentation when adding new features
+- Follow existing code patterns and conventions
+- Use TypeScript for type safety
+- Implement proper error handling and user feedback

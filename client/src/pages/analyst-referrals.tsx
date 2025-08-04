@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle } from "lucide-react";
+import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -288,6 +288,12 @@ export default function AnalystReferrals() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Indicações para Análise</h1>
           <p className="text-gray-600">Visualize e valide as indicações cadastradas</p>
+          {user?.analystLevel === 3 && (
+            <Badge className="mt-2 bg-purple-100 text-purple-800">
+              <Shield className="h-3 w-3 mr-1" />
+              Mostrando apenas indicações dos usuários supervisionados
+            </Badge>
+          )}
         </div>
         <BackButton to="/analyst" />
       </div>
