@@ -191,9 +191,26 @@ class DatabaseStorage implements IStorage {
   }
   
   async getUserById(id: number) {
-    return await db.query.users.findFirst({
+    const user = await db.query.users.findFirst({
       where: eq(users.id, id)
     });
+    
+    // If user is an analyst, include their level and permissions
+    if (user && user.role === 'analista') {
+      const analystProfile = await db.query.analystProfiles.findFirst({
+        where: eq(analystProfiles.userId, id)
+      });
+      
+      if (analystProfile) {
+        return {
+          ...user,
+          analystLevel: analystProfile.level,
+          permissions: analystProfile.permissions
+        };
+      }
+    }
+    
+    return user;
   }
   
   async getUserByUsername(username: string) {
