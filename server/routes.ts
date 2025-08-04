@@ -643,6 +643,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the password before saving
       const hashedPassword = await hashPassword(validatedData.password);
       
+      // Get promoter info to check if they have a supervisor
+      const promoter = await storage.getUserById(req.user!.id);
+      
       // Add promoter relationship
       const userData = {
         ...validatedData,
@@ -650,6 +653,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         promoterId: req.user!.id,
         createdBy: req.user!.id,
         analystId: undefined, // Explicitly set to undefined
+        // If promoter has a supervisor, inherit it
+        supervisorId: promoter?.supervisorId || undefined,
         role: "indicador" as const
       };
       
@@ -732,7 +737,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Você não tem permissão para visualizar indicações" });
       }
       
-      const allReferrals = await storage.getAllReferrals();
+      // If analyst is level 3, only show referrals from supervised users
+      let allReferrals;
+      if (user?.analystLevel === 3) {
+        allReferrals = await storage.getReferralsBySupervisor(req.user!.id);
+      } else {
+        allReferrals = await storage.getAllReferrals();
+      }
+      
       return res.json(allReferrals);
     } catch (error) {
       console.error("Error fetching all referrals for analyst:", error);
@@ -750,7 +762,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Você não tem permissão para visualizar relatórios" });
       }
       
-      const allUsers = await storage.getAllUsers();
+      // If analyst is level 3, only show users under supervision
+      let allUsers;
+      if (user?.analystLevel === 3) {
+        allUsers = await storage.getAllUsersBySupervisor(req.user!.id);
+      } else {
+        allUsers = await storage.getAllUsers();
+      }
+      
       return res.json(allUsers);
     } catch (error) {
       console.error("Error fetching users for analytics:", error);
@@ -767,7 +786,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Você não tem permissão para visualizar relatórios" });
       }
       
-      const allReferrals = await storage.getAllReferrals();
+      // If analyst is level 3, only show referrals from supervised users
+      let allReferrals;
+      if (user?.analystLevel === 3) {
+        allReferrals = await storage.getReferralsBySupervisor(req.user!.id);
+      } else {
+        allReferrals = await storage.getAllReferrals();
+      }
+      
       return res.json(allReferrals);
     } catch (error) {
       console.error("Error fetching referrals for analytics:", error);
@@ -1335,12 +1361,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the password before saving
       const hashedPassword = await hashPassword(req.body.password);
       
+      // Get analyst info to check if level 3
+      const analyst = await storage.getUserById(req.user!.id);
+      
       // Force role to be indicador and set analyst as creator
       const userData = {
         ...req.body,
         password: hashedPassword,
         role: "indicador",
-        createdBy: req.user!.id
+        createdBy: req.user!.id,
+        // If analyst is level 3, set them as supervisor
+        supervisorId: (analyst?.role === "analista" && analyst?.analystLevel === 3) ? req.user!.id : undefined
       };
       
       const newUser = await storage.createUser(userData);
@@ -1370,12 +1401,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the password before saving
       const hashedPassword = await hashPassword(req.body.password);
       
+      // Get analyst info to check if level 3
+      const analyst = await storage.getUserById(req.user!.id);
+      
       // Force role to be promotor and set analyst as creator
       const userData = {
         ...req.body,
         password: hashedPassword,
         role: "promotor",
-        createdBy: req.user!.id
+        createdBy: req.user!.id,
+        // If analyst is level 3, set them as supervisor
+        supervisorId: (analyst?.role === "analista" && analyst?.analystLevel === 3) ? req.user!.id : undefined
       };
       
       const newUser = await storage.createUser(userData);

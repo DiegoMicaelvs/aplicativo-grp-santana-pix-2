@@ -246,6 +246,32 @@ class DatabaseStorage implements IStorage {
       orderBy: desc(users.createdAt)
     });
   }
+
+  async getUsersBySupervisor(supervisorId: number) {
+    return await db.query.users.findMany({
+      where: eq(users.supervisorId, supervisorId),
+      orderBy: desc(users.createdAt)
+    });
+  }
+
+  async getAllUsersBySupervisor(supervisorId: number) {
+    // Get all users directly supervised
+    const directUsers = await db.query.users.findMany({
+      where: eq(users.supervisorId, supervisorId),
+      orderBy: desc(users.createdAt)
+    });
+
+    // Get all users created by promoters under supervision
+    const promotersUnderSupervision = directUsers.filter(u => u.role === 'promotor');
+    const indirectUsers: any[] = [];
+    
+    for (const promoter of promotersUnderSupervision) {
+      const indicadores = await this.getIndicadoresByPromoter(promoter.id);
+      indirectUsers.push(...indicadores);
+    }
+
+    return [...directUsers, ...indirectUsers];
+  }
   
   async updateUserBalance(userId: number, amount: number) {
     try {
@@ -498,6 +524,28 @@ class DatabaseStorage implements IStorage {
   
   async getAllReferrals() {
     return await db.query.referrals.findMany({
+      with: {
+        user: true,
+        company: true
+      },
+      orderBy: desc(referrals.createdAt)
+    });
+  }
+
+  async getReferralsBySupervisor(supervisorId: number) {
+    // Get all users under supervision (direct and indirect)
+    const allUsers = await this.getAllUsersBySupervisor(supervisorId);
+    const userIds = allUsers.map(u => u.id);
+    
+    if (userIds.length === 0) {
+      return [];
+    }
+    
+    return await db.query.referrals.findMany({
+      where: or(
+        sql`${referrals.userId} = ANY(${userIds})`,
+        sql`${referrals.createdBy} = ANY(${userIds})`
+      ),
       with: {
         user: true,
         company: true
