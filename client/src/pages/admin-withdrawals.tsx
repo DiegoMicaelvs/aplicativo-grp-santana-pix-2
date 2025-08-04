@@ -107,6 +107,11 @@ export default function AdminWithdrawals() {
           <ClockIcon className="w-3 h-3 mr-1" />
           Pendente
         </Badge>;
+      case 'approved':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+          <CheckIcon className="w-3 h-3 mr-1" />
+          Aprovado
+        </Badge>;
       case 'paid':
         return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
           <CheckIcon className="w-3 h-3 mr-1" />
@@ -140,7 +145,7 @@ export default function AdminWithdrawals() {
       .reduce((sum, w) => sum + parseFloat(w.amount), 0);
   };
 
-  const handleProcessWithdrawal = (withdrawal: WithdrawalRequest, newStatus: 'paid' | 'rejected') => {
+  const handleProcessWithdrawal = (withdrawal: WithdrawalRequest, newStatus: 'approved' | 'paid' | 'rejected') => {
     updateWithdrawalMutation.mutate({
       id: withdrawal.id,
       status: newStatus,
@@ -315,22 +320,27 @@ export default function AdminWithdrawals() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        {withdrawal.status === 'pending' && (
+                        {(withdrawal.status === 'pending' || withdrawal.status === 'approved') && (
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button 
                                 size="sm" 
+                                variant={withdrawal.status === 'approved' ? 'outline' : 'default'}
                                 onClick={() => {
                                   setSelectedWithdrawal(withdrawal);
                                   setProcessingNotes('');
                                 }}
                               >
-                                Processar
+                                {withdrawal.status === 'approved' ? 'Marcar como Pago' : 'Processar'}
                               </Button>
                             </DialogTrigger>
                             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                               <DialogHeader>
-                                <DialogTitle>Processar Solicitação de Saque</DialogTitle>
+                                <DialogTitle>
+                                  {selectedWithdrawal?.status === 'approved' 
+                                    ? 'Marcar Saque como Pago' 
+                                    : 'Processar Solicitação de Saque'}
+                                </DialogTitle>
                               </DialogHeader>
                               
                               {selectedWithdrawal && (
@@ -399,21 +409,30 @@ export default function AdminWithdrawals() {
 
                                   {/* Ações */}
                                   <div className="flex justify-end gap-3">
+                                    {selectedWithdrawal.status === 'pending' && (
+                                      <Button
+                                        variant="destructive"
+                                        onClick={() => handleProcessWithdrawal(selectedWithdrawal, 'rejected')}
+                                        disabled={updateWithdrawalMutation.isPending}
+                                      >
+                                        <XIcon className="w-4 h-4 mr-2" />
+                                        Rejeitar
+                                      </Button>
+                                    )}
                                     <Button
-                                      variant="destructive"
-                                      onClick={() => handleProcessWithdrawal(selectedWithdrawal, 'rejected')}
-                                      disabled={updateWithdrawalMutation.isPending}
-                                    >
-                                      <XIcon className="w-4 h-4 mr-2" />
-                                      Rejeitar
-                                    </Button>
-                                    <Button
-                                      onClick={() => handleProcessWithdrawal(selectedWithdrawal, 'paid')}
+                                      onClick={() => handleProcessWithdrawal(
+                                        selectedWithdrawal, 
+                                        selectedWithdrawal.status === 'approved' ? 'paid' : 'approved'
+                                      )}
                                       disabled={updateWithdrawalMutation.isPending}
                                       className="bg-green-600 hover:bg-green-700"
                                     >
                                       <CheckIcon className="w-4 h-4 mr-2" />
-                                      {updateWithdrawalMutation.isPending ? 'Processando...' : 'Aprovar Pagamento'}
+                                      {updateWithdrawalMutation.isPending 
+                                        ? 'Processando...' 
+                                        : selectedWithdrawal.status === 'approved' 
+                                          ? 'Confirmar Pagamento' 
+                                          : 'Aprovar Saque'}
                                     </Button>
                                   </div>
                                 </div>

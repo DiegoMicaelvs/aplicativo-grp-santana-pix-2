@@ -983,10 +983,12 @@ class DatabaseStorage implements IStorage {
       .where(eq(withdrawalRequests.id, id))
       .returning();
     
-    // Se o pagamento foi realizado, atualizar o saldo do usuário
+    // Se o saque foi aprovado mas ainda não pago, não fazer nada com o saldo
+    // O saldo já foi descontado quando a solicitação foi criada
+    
+    // Se o pagamento foi realizado, criar entrada no fluxo de caixa
     if (status === 'paid' && updated) {
       const amount = parseFloat(updated.amount);
-      await this.updateUserBalance(updated.userId, -amount);
       
       // Criar entrada no fluxo de caixa
       const currentBalance = await this.getCurrentBalance();
