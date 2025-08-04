@@ -74,11 +74,35 @@ async function seed() {
       
       console.log("Example referrer created");
       
-      // Create a sample company first
-      const [company] = await db.insert(schema.companies).values({
-        name: "Seguradora ABC",
-        isActive: true
-      }).returning({ id: schema.companies.id });
+      // Create insurance companies
+      const existingCompanies = await db.query.companies.findMany();
+      const existingCompanyNames = existingCompanies.map(c => c.name);
+      
+      const companiesToCreate = [
+        "Kong Pix Proteção Veicular",
+        "Metis",
+        "Cativa",
+        "Kin",
+        "Associativa",
+        "Top Brasil"
+      ];
+      
+      // Only create companies that don't already exist
+      const newCompanies = companiesToCreate.filter(name => !existingCompanyNames.includes(name));
+      
+      if (newCompanies.length > 0) {
+        await db.insert(schema.companies).values(
+          newCompanies.map(name => ({
+            name,
+            isActive: true
+          }))
+        );
+        console.log(`Created ${newCompanies.length} new insurance companies`);
+      }
+      
+      // Get a company for creating example referrals
+      const companies = await db.query.companies.findMany();
+      const company = companies[0];
       
       // Create example referrals
       await db.insert(schema.referrals).values([
