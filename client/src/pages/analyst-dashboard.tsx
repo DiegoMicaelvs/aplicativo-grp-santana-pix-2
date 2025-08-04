@@ -33,7 +33,7 @@ export default function AnalystDashboard() {
 
   // Fetch basic stats
   const { data: stats = {} } = useQuery<any>({
-    queryKey: ["/api/admin/stats"]
+    queryKey: ["/api/analyst/stats"]
   });
 
   const hasPermission = (permission: AnalystPermission) => {

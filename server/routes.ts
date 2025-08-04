@@ -752,6 +752,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get stats for analysts
+  app.get("/api/analyst/stats", requireAnalyst, async (req, res) => {
+    try {
+      const user = await storage.getUserById(req.user!.id);
+      
+      let users, referrals;
+      
+      // If analyst is level 3, only show stats from supervised users
+      if (user?.analystLevel === 3) {
+        users = await storage.getAllUsersBySupervisor(req.user!.id);
+        referrals = await storage.getReferralsBySupervisor(req.user!.id);
+      } else {
+        users = await storage.getAllUsers();
+        referrals = await storage.getAllReferrals();
+      }
+      
+      const totalIndicators = users.filter(u => u.role === "indicador").length;
+      const totalPromoters = users.filter(u => u.role === "promotor").length;
+      const totalReferrals = referrals.length;
+      const pendingReferrals = referrals.filter(r => r.status === "pending").length;
+      const convertedReferrals = referrals.filter(r => r.status === "converted" || r.status === "validated").length;
+      
+      return res.json({
+        totalIndicators,
+        totalPromoters,
+        totalReferrals,
+        pendingReferrals,
+        convertedReferrals,
+        conversionRate: totalReferrals > 0 ? (convertedReferrals / totalReferrals * 100).toFixed(1) : "0"
+      });
+    } catch (error) {
+      console.error("Error fetching analyst stats:", error);
+      return res.status(500).json({ error: "Erro ao buscar estatísticas" });
+    }
+  });
+
   // Get users for analysts with view_users permission
   app.get("/api/analyst/users", requireAnalyst, async (req, res) => {
     try {
