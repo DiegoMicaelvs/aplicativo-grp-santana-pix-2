@@ -525,7 +525,7 @@ export default function AdminReferralsDetailedPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="w-full px-4 md:px-6 py-6 max-w-[100vw] overflow-hidden">
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <BackButton />
@@ -656,57 +656,469 @@ export default function AdminReferralsDetailedPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+        <CardContent className="p-0 md:p-6">
+          {/* Mobile View - Cards */}
+          <div className="block md:hidden">
+            {filteredReferrals.map((referral) => (
+              <div key={referral.id} className="border-b p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold">{referral.fullName}</p>
+                    <p className="text-sm text-gray-600">{referral.phone}</p>
+                  </div>
+                  <Badge className={getStatusBadgeColor(referral.status)}>
+                    {getStatusLabel(referral.status)}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-500">Placa:</span> 
+                    <span className="font-mono ml-1">{referral.licensePlate}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Local:</span> 
+                    {referral.city && referral.state ? (
+                      <span className="ml-1">{referral.city}/{referral.state}</span>
+                    ) : (
+                      <span className="text-gray-400 ml-1">-</span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-500">Indicador:</span>
+                    <span className="ml-1">{getUserName(referral.createdBy)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Data:</span>
+                    <span className="ml-1">{format(new Date(referral.createdAt), "dd/MM/yy", { locale: ptBR })}</span>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div className="text-sm">
+                    <span className="text-green-600 font-semibold">
+                      Ind: R$ {(parseFloat(referral.commissionIndicator) || 0).toFixed(2)}
+                    </span>
+                    {parseFloat(referral.commissionPromoter || '0') > 0 && (
+                      <span className="text-blue-600 font-semibold ml-2">
+                        Prom: R$ {parseFloat(referral.commissionPromoter).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    {(user?.role === 'analista' || user?.role === 'admin') && (
+                      <ValidationDialog referral={referral} onValidate={() => {
+                        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+                      }} />
+                    )}
+                    <Dialog open={isDialogOpen && selectedReferral?.id === referral.id} onOpenChange={(open) => {
+                      setIsDialogOpen(open);
+                      if (open) {
+                        setSelectedReferral(referral);
+                        setNewStatus(referral.status);
+                        setEditFormData({
+                          fullName: referral.fullName,
+                          phone: referral.phone,
+                          licensePlate: referral.licensePlate,
+                          companyId: referral.companyId || 1,
+                          userId: referral.userId,
+                          commissionIndicator: referral.commissionIndicator || "0",
+                          commissionPromoter: referral.commissionPromoter || "0"
+                        });
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Editar Indicação</DialogTitle>
+                          <DialogDescription>
+                            Atualize os dados da indicação, altere o status ou delete o registro
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        {selectedReferral && (
+                          <div className="space-y-6">
+                            {/* Seção 1: Editar Dados */}
+                            <div className="space-y-4 border rounded-lg p-4">
+                              <h3 className="font-semibold flex items-center gap-2">
+                                <Edit className="h-4 w-4" />
+                                Editar Dados da Indicação
+                              </h3>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Nome Completo</label>
+                                  <Input
+                                    value={editFormData.fullName}
+                                    onChange={(e) => setEditFormData({...editFormData, fullName: e.target.value})}
+                                    placeholder="Nome completo do cliente"
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Telefone</label>
+                                  <Input
+                                    value={editFormData.phone}
+                                    onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
+                                    placeholder="(00) 00000-0000"
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Placa do Veículo</label>
+                                  <Input
+                                    value={editFormData.licensePlate}
+                                    onChange={(e) => setEditFormData({...editFormData, licensePlate: e.target.value})}
+                                    placeholder="ABC-0000"
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Seguradora</label>
+                                  <Select 
+                                    value={editFormData.companyId.toString()} 
+                                    onValueChange={(value) => setEditFormData({...editFormData, companyId: parseInt(value)})}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {companies.map((company) => (
+                                        <SelectItem key={company.id} value={company.id.toString()}>
+                                          {company.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4 text-green-600" />
+                                    Comissão Indicador (R$)
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={editFormData.commissionIndicator}
+                                    onChange={(e) => setEditFormData({...editFormData, commissionIndicator: e.target.value})}
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4 text-blue-600" />
+                                    Comissão Promotor (R$)
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={editFormData.commissionPromoter}
+                                    onChange={(e) => setEditFormData({...editFormData, commissionPromoter: e.target.value})}
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium flex items-center gap-2">
+                                  <UserCheck className="h-4 w-4" />
+                                  Atribuir a outro Indicador
+                                </label>
+                                <Select 
+                                  value={editFormData.userId.toString()} 
+                                  onValueChange={(value) => setEditFormData({...editFormData, userId: parseInt(value)})}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {indicadores.map((indicador) => (
+                                      <SelectItem key={indicador.id} value={indicador.id.toString()}>
+                                        {indicador.fullName} ({indicador.username})
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <Button 
+                                onClick={() => {
+                                  updateReferralMutation.mutate({
+                                    referralId: selectedReferral.id,
+                                    data: editFormData
+                                  });
+                                }}
+                                disabled={updateReferralMutation.isPending}
+                                className="w-full"
+                              >
+                                {updateReferralMutation.isPending ? "Salvando..." : "Salvar Dados"}
+                              </Button>
+                            </div>
+                            
+                            {/* Seção 2: Alterar Status */}
+                            <div className="space-y-4 border rounded-lg p-4">
+                              <h3 className="font-semibold">Alterar Status</h3>
+                              
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Status</label>
+                                <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReferralStatus)}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pendente</SelectItem>
+                                    <SelectItem value="analyzing">Em Análise</SelectItem>
+                                    <SelectItem value="converted">Convertida</SelectItem>
+                                    <SelectItem value="rejected">Rejeitada</SelectItem>
+                                    <SelectItem value="validated">Validada</SelectItem>
+                                    <SelectItem value="paid">Paga</SelectItem>
+                                    <SelectItem value="false">Falso</SelectItem>
+                                    <SelectItem value="not_validated">Não validado</SelectItem>
+                                    <SelectItem value="not_converted">Não convertido</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Observações</label>
+                                <Textarea
+                                  value={statusNotes}
+                                  onChange={(e) => setStatusNotes(e.target.value)}
+                                  placeholder="Adicione observações sobre a mudança de status..."
+                                  rows={3}
+                                />
+                              </div>
+                            
+                            {selectedReferral.notes && (
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Observações Anteriores:</label>
+                                <div className="p-2 bg-gray-50 rounded text-sm">
+                                  {selectedReferral.notes}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Commission change warning */}
+                            {selectedReferral && newStatus !== selectedReferral.status && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <div className="flex items-start">
+                                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-2" />
+                                  <div>
+                                    <h4 className="text-sm font-medium text-blue-800">
+                                      💰 Alteração de Comissões
+                                    </h4>
+                                    <div className="text-sm text-blue-700 mt-1">
+                                      {(() => {
+                                        try {
+                                          const currentIndicator = parseFloat(selectedReferral.commissionIndicator || '0');
+                                          const currentPromoter = parseFloat(selectedReferral.commissionPromoter || '0');
+                                          
+                                          // Calculate new commissions based on status
+                                          let newIndicator = 0;
+                                          let newPromoter = 0;
+                                          
+                                          if (newStatus === 'validated') {
+                                            newIndicator = 3;
+                                            newPromoter = 1;
+                                          } else if (newStatus === 'converted') {
+                                            if (selectedReferral.status === 'validated') {
+                                              newIndicator = currentIndicator + 50; // Sum to existing
+                                              newPromoter = currentPromoter + 10;
+                                            } else {
+                                              newIndicator = 50;
+                                              newPromoter = 10;
+                                            }
+                                          } else if (newStatus === 'paid') {
+                                            newIndicator = currentIndicator; // Keep current
+                                            newPromoter = currentPromoter;
+                                          }
+                                          // Para outros status (pending, rejected, analyzing, false, not_validated, not_converted), as comissões são zero
+                                          
+                                          const diffIndicator = newIndicator - currentIndicator;
+                                          const diffPromoter = newPromoter - currentPromoter;
+                                          
+                                          return (
+                                          <>
+                                            <p>Esta mudança de status irá alterar as comissões:</p>
+                                            <ul className="mt-2 space-y-1">
+                                              <li>• Indicador: R$ {currentIndicator.toFixed(2)} → R$ {newIndicator.toFixed(2)} 
+                                                <span className={`font-medium ${diffIndicator > 0 ? 'text-green-700' : diffIndicator < 0 ? 'text-red-700' : ''}`}>
+                                                  {diffIndicator !== 0 && ` (${diffIndicator > 0 ? '+' : ''}R$ ${diffIndicator.toFixed(2)})`}
+                                                </span>
+                                              </li>
+                                              {currentPromoter > 0 || newPromoter > 0 ? (
+                                                <li>• Promotor: R$ {currentPromoter.toFixed(2)} → R$ {newPromoter.toFixed(2)}
+                                                  <span className={`font-medium ${diffPromoter > 0 ? 'text-green-700' : diffPromoter < 0 ? 'text-red-700' : ''}`}>
+                                                    {diffPromoter !== 0 && ` (${diffPromoter > 0 ? '+' : ''}R$ ${diffPromoter.toFixed(2)})`}
+                                                  </span>
+                                                </li>
+                                              ) : null}
+                                            </ul>
+                                            {selectedReferral.status === 'validated' && newStatus === 'converted' && (
+                                              <p className="mt-2 text-green-700 font-medium">
+                                                ✅ Comissões serão somadas (validação + conversão)
+                                              </p>
+                                            )}
+                                          </>
+                                        );
+                                        } catch (error) {
+                                          console.error('[Commission Calculation Error]:', error);
+                                          return <p className="text-red-600">Erro ao calcular comissões</p>;
+                                        }
+                                      })()}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                              
+                              <Button 
+                                onClick={handleStatusUpdate} 
+                                disabled={updateStatusMutation.isPending}
+                                className="w-full"
+                              >
+                                {updateStatusMutation.isPending ? "Atualizando..." : "Atualizar Status"}
+                              </Button>
+                            </div>
+                            
+                            {/* Seção 3: Deletar */}
+                            <div className="space-y-4 border border-red-200 rounded-lg p-4 bg-red-50">
+                              <h3 className="font-semibold text-red-700 flex items-center gap-2">
+                                <Trash2 className="h-4 w-4" />
+                                Zona de Perigo
+                              </h3>
+                              <p className="text-sm text-red-600">
+                                Esta ação é irreversível. A indicação será permanentemente removida do sistema.
+                              </p>
+                              
+                              <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                <DialogTrigger asChild>
+                                  <Button variant="destructive" className="w-full">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Deletar Indicação
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                                  <DialogHeader>
+                                    <DialogTitle>Confirmar Exclusão</DialogTitle>
+                                    <DialogDescription>
+                                      Tem certeza que deseja deletar esta indicação? Esta ação não pode ser desfeita.
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="bg-red-50 p-3 rounded-lg">
+                                      <p className="text-sm">
+                                        <strong>Cliente:</strong> {selectedReferral.fullName}<br />
+                                        <strong>Placa:</strong> {selectedReferral.licensePlate}<br />
+                                        <strong>Status:</strong> {getStatusLabel(selectedReferral.status)}
+                                      </p>
+                                    </div>
+                                    <div className="flex justify-end gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        onClick={() => setIsDeleteDialogOpen(false)}
+                                      >
+                                        Cancelar
+                                      </Button>
+                                      <Button 
+                                        variant="destructive" 
+                                        onClick={() => {
+                                          deleteReferralMutation.mutate(selectedReferral.id);
+                                          setIsDeleteDialogOpen(false);
+                                        }}
+                                        disabled={deleteReferralMutation.isPending}
+                                      >
+                                        {deleteReferralMutation.isPending ? "Deletando..." : "Deletar Indicação"}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            </div>
+                          </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Desktop View - Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <div className="min-w-full">
+              <Table className="w-full text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Veículo</TableHead>
-                  <TableHead>Placa</TableHead>
-                  <TableHead>Cidade/Estado</TableHead>
-                  <TableHead>Indicador</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Comissão Indicador</TableHead>
-                  <TableHead>Comissão Promotor</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="min-w-[150px]">Cliente</TableHead>
+                  <TableHead className="min-w-[110px]">Telefone</TableHead>
+                  <TableHead className="min-w-[80px]">Placa</TableHead>
+                  <TableHead className="min-w-[90px]">Local</TableHead>
+                  <TableHead className="min-w-[110px]">Indicador</TableHead>
+                  <TableHead className="min-w-[90px]">Status</TableHead>
+                  <TableHead className="min-w-[100px]">Comissões</TableHead>
+                  <TableHead className="min-w-[70px]">Data</TableHead>
+                  <TableHead className="min-w-[100px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredReferrals.map((referral) => (
                   <TableRow key={referral.id}>
-                    <TableCell className="font-medium">{referral.fullName}</TableCell>
-                    <TableCell>{referral.phone}</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell className="font-mono">{referral.licensePlate}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium text-sm">
+                      <div className="truncate max-w-[150px]" title={referral.fullName}>
+                        {referral.fullName}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs">{referral.phone}</TableCell>
+                    <TableCell className="font-mono text-xs">{referral.licensePlate}</TableCell>
+                    <TableCell className="text-xs">
                       {referral.city && referral.state ? (
-                        <span className="text-sm">
-                          {referral.city}/{referral.state}
+                        <span title={`${referral.city}/${referral.state}`}>
+                          {referral.state}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{getUserName(referral.createdBy)}</TableCell>
+                    <TableCell className="text-xs">
+                      <div className="truncate max-w-[110px]" title={getUserName(referral.createdBy)}>
+                        {getUserName(referral.createdBy).split(' ')[0]}
+                      </div>
+                    </TableCell>
                     <TableCell>
-                      <Badge className={getStatusBadgeColor(referral.status)}>
+                      <Badge className={`${getStatusBadgeColor(referral.status)} text-xs`}>
                         {getStatusLabel(referral.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-green-600 font-semibold">
-                      R$ {(parseFloat(referral.commissionIndicator) || 0).toFixed(2)}
+                    <TableCell className="text-xs">
+                      <div>
+                        <span className="text-green-600 font-semibold">
+                          I: {(parseFloat(referral.commissionIndicator) || 0).toFixed(0)}
+                        </span>
+                        {parseFloat(referral.commissionPromoter || '0') > 0 && (
+                          <span className="text-blue-600 font-semibold block">
+                            P: {parseFloat(referral.commissionPromoter).toFixed(0)}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-blue-600 font-semibold">
-                      R$ {(parseFloat(referral.commissionPromoter) || 0).toFixed(2)}
+                    <TableCell className="text-xs">
+                      {format(new Date(referral.createdAt), "dd/MM", { locale: ptBR })}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(referral.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         {/* Botão de Validação - apenas para analistas e admin */}
                         {(user?.role === 'analista' || user?.role === 'admin') && (
                           <ValidationDialog referral={referral} onValidate={() => {
@@ -733,8 +1145,7 @@ export default function AdminReferralsDetailedPage() {
                         }}>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4 mr-1" />
-                              Editar
+                              <Edit className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -1052,6 +1463,7 @@ export default function AdminReferralsDetailedPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             
             {filteredReferrals.length === 0 && (
               <div className="text-center py-8">
