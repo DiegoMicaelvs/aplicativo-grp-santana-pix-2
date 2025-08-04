@@ -49,6 +49,19 @@ const validateSchema = z.object({
 
 type ValidateFormValues = z.infer<typeof validateSchema>;
 
+const editSchema = z.object({
+  fullName: z.string().min(1, "Nome é obrigatório"),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  licensePlate: z.string().min(1, "Placa é obrigatória"),
+  hasInsurance: z.boolean(),
+  vehicleBrand: z.string().optional(),
+  vehicleModel: z.string().optional(),
+  vehicleYear: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type EditFormValues = z.infer<typeof editSchema>;
+
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   processing: "bg-blue-100 text-blue-800",
@@ -74,6 +87,7 @@ export default function AnalystReferrals() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [isValidateDialogOpen, setIsValidateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Fetch referrals
   const { data: referrals = [], isLoading } = useQuery<Referral[]>({
@@ -104,6 +118,20 @@ export default function AnalystReferrals() {
     },
   });
 
+  const editForm = useForm<EditFormValues>({
+    resolver: zodResolver(editSchema),
+    defaultValues: {
+      fullName: "",
+      phone: "",
+      licensePlate: "",
+      hasInsurance: false,
+      vehicleBrand: "",
+      vehicleModel: "",
+      vehicleYear: "",
+      notes: "",
+    },
+  });
+
   // Validate referral mutation
   const validateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: ValidateFormValues }) => {
@@ -124,6 +152,32 @@ export default function AnalystReferrals() {
       setIsValidateDialogOpen(false);
       setSelectedReferral(null);
       form.reset();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Edit referral mutation
+  const editMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: EditFormValues }) => {
+      const response = await fetch(`/api/referrals/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao editar indicação");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+      toast({ title: "Sucesso", description: "Indicação editada com sucesso!" });
+      setIsEditDialogOpen(false);
+      setSelectedReferral(null);
+      editForm.reset();
     },
     onError: (error: Error) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -161,9 +215,30 @@ export default function AnalystReferrals() {
     setIsValidateDialogOpen(true);
   };
 
+  const handleEditClick = (referral: Referral) => {
+    setSelectedReferral(referral);
+    editForm.reset({
+      fullName: referral.fullName,
+      phone: referral.phone,
+      licensePlate: referral.licensePlate,
+      hasInsurance: referral.hasInsurance || false,
+      vehicleBrand: referral.vehicleBrand || "",
+      vehicleModel: referral.vehicleModel || "",
+      vehicleYear: referral.vehicleYear || "",
+      notes: referral.notes || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
   const onSubmit = (data: ValidateFormValues) => {
     if (selectedReferral) {
       validateMutation.mutate({ id: selectedReferral.id, data });
+    }
+  };
+
+  const onEditSubmit = (data: EditFormValues) => {
+    if (selectedReferral) {
+      editMutation.mutate({ id: selectedReferral.id, data });
     }
   };
 
@@ -307,15 +382,25 @@ export default function AnalystReferrals() {
                         </TableCell>
                         {canEdit && (
                           <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleValidateClick(referral)}
-                              disabled={referral.status === "validated" || referral.status === "paid"}
-                            >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Validar
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditClick(referral)}
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Editar
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleValidateClick(referral)}
+                                disabled={referral.status === "validated" || referral.status === "paid"}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Validar
+                              </Button>
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>
@@ -479,6 +564,122 @@ export default function AnalystReferrals() {
               </Button>
               <Button type="submit" disabled={validateMutation.isPending}>
                 {validateMutation.isPending ? "Validando..." : "Confirmar Validação"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Indicação</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-fullName">Nome Completo</Label>
+                <Input
+                  id="edit-fullName"
+                  {...editForm.register("fullName")}
+                  placeholder="Nome completo"
+                />
+                {editForm.formState.errors.fullName && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {editForm.formState.errors.fullName.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="edit-phone">Telefone</Label>
+                <Input
+                  id="edit-phone"
+                  {...editForm.register("phone")}
+                  placeholder="(00) 00000-0000"
+                />
+                {editForm.formState.errors.phone && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {editForm.formState.errors.phone.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="edit-licensePlate">Placa do Veículo</Label>
+                <Input
+                  id="edit-licensePlate"
+                  {...editForm.register("licensePlate")}
+                  placeholder="ABC-1234"
+                />
+                {editForm.formState.errors.licensePlate && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {editForm.formState.errors.licensePlate.message}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-hasInsurance"
+                  {...editForm.register("hasInsurance")}
+                  className="rounded"
+                />
+                <Label htmlFor="edit-hasInsurance">Tem Seguro?</Label>
+              </div>
+            </div>
+
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="font-semibold">Informações do Veículo</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="edit-vehicleBrand">Marca</Label>
+                  <Input
+                    id="edit-vehicleBrand"
+                    {...editForm.register("vehicleBrand")}
+                    placeholder="Ex: Toyota"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-vehicleModel">Modelo</Label>
+                  <Input
+                    id="edit-vehicleModel"
+                    {...editForm.register("vehicleModel")}
+                    placeholder="Ex: Corolla"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-vehicleYear">Ano</Label>
+                  <Input
+                    id="edit-vehicleYear"
+                    {...editForm.register("vehicleYear")}
+                    placeholder="Ex: 2022"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 border-t pt-4">
+              <div>
+                <Label htmlFor="edit-notes">Observações</Label>
+                <textarea
+                  id="edit-notes"
+                  {...editForm.register("notes")}
+                  className="w-full min-h-[80px] px-3 py-2 border rounded-md"
+                  placeholder="Adicione observações sobre a indicação..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={editMutation.isPending}>
+                {editMutation.isPending ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
           </form>

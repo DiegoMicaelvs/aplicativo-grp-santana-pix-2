@@ -743,20 +743,57 @@ class DatabaseStorage implements IStorage {
     });
   }
   
-  async updateReferral(id: number, updates: Partial<{
-    fullName: string;
-    phone: string;
-    licensePlate: string;
-    companyId: number;
-    userId: number;
-    commissionIndicator: string;
-    commissionPromoter: string;
-    updatedAt: Date;
-  }>) {
+  async updateReferral(id: number, updates: any, editorUserId: number) {
+    // Get current referral data for audit trail
+    const currentReferral = await this.getReferralById(id);
+    if (!currentReferral) {
+      throw new Error("Indicação não encontrada");
+    }
+
+    // Prepare update data
+    const updateData: any = {
+      updatedAt: new Date()
+    };
+
+    // Only include fields that are being updated
+    if (updates.fullName !== undefined) updateData.fullName = updates.fullName;
+    if (updates.phone !== undefined) updateData.phone = updates.phone;
+    if (updates.licensePlate !== undefined) updateData.licensePlate = updates.licensePlate;
+    if (updates.hasInsurance !== undefined) updateData.hasInsurance = updates.hasInsurance;
+    if (updates.vehicleBrand !== undefined) updateData.vehicleBrand = updates.vehicleBrand;
+    if (updates.vehicleModel !== undefined) updateData.vehicleModel = updates.vehicleModel;
+    if (updates.vehicleYear !== undefined) updateData.vehicleYear = updates.vehicleYear;
+    if (updates.notes !== undefined) updateData.notes = updates.notes;
+
+    // Update referral
     const [updatedReferral] = await db.update(referrals)
-      .set(updates)
+      .set(updateData)
       .where(eq(referrals.id, id))
       .returning();
+
+    // Log audit trail
+    try {
+      await this.logUserAction({
+        userId: editorUserId,
+        action: 'edit',
+        entityType: 'referral',
+        entityId: id,
+        oldValues: {
+          fullName: currentReferral.fullName,
+          phone: currentReferral.phone,
+          licensePlate: currentReferral.licensePlate,
+          hasInsurance: currentReferral.hasInsurance,
+          vehicleBrand: currentReferral.vehicleBrand,
+          vehicleModel: currentReferral.vehicleModel,
+          vehicleYear: currentReferral.vehicleYear,
+          notes: currentReferral.notes
+        },
+        newValues: updateData,
+        details: `Indicação editada: ${updatedReferral.fullName} - ${updatedReferral.licensePlate}`
+      });
+    } catch (error) {
+      console.warn('Failed to log referral edit:', error);
+    }
     
     return updatedReferral;
   }

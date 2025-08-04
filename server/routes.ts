@@ -1077,6 +1077,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Edit referral (for analysts level 1+ and admins)
+  app.patch("/api/referrals/:id", requireAnalyst, async (req, res) => {
+    try {
+      // Check if analyst has level 1 or higher
+      if (req.user!.role === "analista" && (!req.user!.analystLevel || req.user!.analystLevel < 1)) {
+        return res.status(403).json({ error: "Você precisa ser analista nível 1 ou superior para editar indicações" });
+      }
+
+      const referralId = parseInt(req.params.id);
+      const updatedReferral = await storage.updateReferral(referralId, req.body, req.user!.id);
+      
+      return res.json(updatedReferral);
+    } catch (error) {
+      console.error("Error updating referral:", error);
+      return res.status(500).json({ error: "Erro ao editar indicação" });
+    }
+  });
+
   // Get all withdrawal requests
   app.get("/api/admin/withdrawals", requireAdmin, async (req, res) => {
     try {
