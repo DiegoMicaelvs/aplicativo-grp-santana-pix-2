@@ -547,7 +547,7 @@ export default function AdminReferralsDetailedPage() {
   }
 
   return (
-    <div className="w-full px-4 md:px-6 py-6 max-w-[100vw] overflow-hidden">
+    <div className="w-full px-4 md:px-6 py-6">
       <div className="mb-4 md:mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
           <BackButton />
@@ -1150,30 +1150,22 @@ export default function AdminReferralsDetailedPage() {
                 {filteredReferrals.map((referral) => (
                   <TableRow key={referral.id}>
                     <TableCell className="font-medium text-sm">
-                      <div className="truncate max-w-[150px]" title={referral.fullName}>
-                        {referral.fullName}
-                      </div>
+                      {referral.fullName}
                     </TableCell>
                     <TableCell className="text-xs">{referral.phone}</TableCell>
                     <TableCell className="font-mono text-xs">{referral.licensePlate}</TableCell>
                     <TableCell className="text-xs">
-                      <div className="truncate max-w-[120px]" title={getCompanyName(referral.companyId)}>
-                        {getCompanyName(referral.companyId)}
-                      </div>
+                      {getCompanyName(referral.companyId)}
                     </TableCell>
                     <TableCell className="text-xs">
                       {referral.city && referral.state ? (
-                        <div className="truncate max-w-[90px]" title={`${referral.city}/${referral.state}`}>
-                          {referral.city}/{referral.state}
-                        </div>
+                        `${referral.city}/${referral.state}`
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-xs">
-                      <div className="truncate max-w-[110px]" title={getUserName(referral.createdBy)}>
-                        {getUserName(referral.createdBy).split(' ')[0]}
-                      </div>
+                      {getUserName(referral.createdBy)}
                     </TableCell>
                     <TableCell>
                       <Badge className={`${getStatusBadgeColor(referral.status)} text-xs`}>

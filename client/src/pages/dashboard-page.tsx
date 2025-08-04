@@ -210,8 +210,8 @@ export default function DashboardPage() {
                         <div className="flex-shrink-0 bg-primary rounded-md p-2 sm:p-3">
                           <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-3 sm:ml-5 w-0 flex-1">
-                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Total de Indicações</div>
+                        <div className="ml-3 sm:ml-5 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500">Total de Indicações</div>
                           <div className="text-base sm:text-lg font-medium text-gray-900">{totalReferrals}</div>
                         </div>
                       </div>
@@ -230,8 +230,8 @@ export default function DashboardPage() {
                         <div className="flex-shrink-0 bg-green-500 rounded-md p-2 sm:p-3">
                           <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-3 sm:ml-5 w-0 flex-1">
-                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Indicações Convertidas</div>
+                        <div className="ml-3 sm:ml-5 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500">Indicações Convertidas</div>
                           <div className="text-base sm:text-lg font-medium text-gray-900">{convertedReferrals}</div>
                         </div>
                       </div>
@@ -250,8 +250,8 @@ export default function DashboardPage() {
                         <div className="flex-shrink-0 bg-blue-500 rounded-md p-2 sm:p-3">
                           <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-3 sm:ml-5 w-0 flex-1">
-                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Taxa de Conversão</div>
+                        <div className="ml-3 sm:ml-5 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500">Taxa de Conversão</div>
                           <div className="text-base sm:text-lg font-medium text-gray-900">{conversionRate}%</div>
                         </div>
                       </div>
@@ -270,8 +270,8 @@ export default function DashboardPage() {
                         <div className="flex-shrink-0 bg-green-600 rounded-md p-2 sm:p-3">
                           <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-3 sm:ml-5 w-0 flex-1">
-                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Saldo Disponível</div>
+                        <div className="ml-3 sm:ml-5 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500">Saldo Disponível</div>
                           <div className="text-base sm:text-lg font-medium text-gray-900">{formatCurrency(user?.balance || 0)}</div>
                         </div>
                       </div>
@@ -290,8 +290,8 @@ export default function DashboardPage() {
                         <div className="flex-shrink-0 bg-accent rounded-md p-2 sm:p-3">
                           <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
-                        <div className="ml-3 sm:ml-5 w-0 flex-1">
-                          <div className="text-xs sm:text-sm font-medium text-gray-500 truncate">Total de Ganhos</div>
+                        <div className="ml-3 sm:ml-5 flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-500">Total de Ganhos</div>
                           <div className="text-base sm:text-lg font-medium text-gray-900">{formatCurrency(user?.totalEarnings || 0)}</div>
                         </div>
                       </div>

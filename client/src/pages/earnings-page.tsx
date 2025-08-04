@@ -102,8 +102,8 @@ export default function EarningsPage() {
                         <div className="flex-shrink-0 bg-accent rounded-md p-3">
                           <DollarSign className="h-6 w-6 text-white" />
                         </div>
-                        <div className="ml-5 w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-500 truncate">Total de Ganhos</div>
+                        <div className="ml-5 flex-1">
+                          <div className="text-sm font-medium text-gray-500">Total de Ganhos</div>
                           <div className="text-lg font-medium text-gray-900">{formatCurrency(totalEarnings)}</div>
                         </div>
                       </div>
@@ -116,8 +116,8 @@ export default function EarningsPage() {
                         <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
                           <Calendar className="h-6 w-6 text-white" />
                         </div>
-                        <div className="ml-5 w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-500 truncate">Indicações Pagas/Validadas</div>
+                        <div className="ml-5 flex-1">
+                          <div className="text-sm font-medium text-gray-500">Indicações Pagas/Validadas</div>
                           <div className="text-lg font-medium text-gray-900">{paidReferrals.length}</div>
                         </div>
                       </div>

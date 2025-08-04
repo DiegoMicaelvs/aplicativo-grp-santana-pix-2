@@ -327,8 +327,8 @@ export default function AdminDashboard() {
                   <div className="flex-shrink-0 bg-primary rounded-md p-3">
                     <Users className="h-6 w-6 text-white" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <div className="text-sm font-medium text-gray-500 truncate">Total de Indicadores</div>
+                  <div className="ml-5 flex-1">
+                    <div className="text-sm font-medium text-gray-500">Total de Indicadores</div>
                     <div className="text-lg font-medium text-gray-900">{totalReferrers}</div>
                   </div>
                 </div>
@@ -342,8 +342,8 @@ export default function AdminDashboard() {
                   <div className="flex-shrink-0 bg-secondary rounded-md p-3">
                     <ClipboardList className="h-6 w-6 text-white" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <div className="text-sm font-medium text-gray-500 truncate">Total de Indicações</div>
+                  <div className="ml-5 flex-1">
+                    <div className="text-sm font-medium text-gray-500">Total de Indicações</div>
                     <div className="text-lg font-medium text-gray-900">{totalReferrals}</div>
                   </div>
                 </div>
@@ -357,8 +357,8 @@ export default function AdminDashboard() {
                   <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
                     <CheckCircle className="h-6 w-6 text-white" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <div className="text-sm font-medium text-gray-500 truncate">Taxa de Conversão</div>
+                  <div className="ml-5 flex-1">
+                    <div className="text-sm font-medium text-gray-500">Taxa de Conversão</div>
                     <div className="text-lg font-medium text-gray-900">{conversionRate}%</div>
                   </div>
                 </div>
@@ -372,8 +372,8 @@ export default function AdminDashboard() {
                   <div className="flex-shrink-0 bg-accent rounded-md p-3">
                     <DollarSign className="h-6 w-6 text-white" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <div className="text-sm font-medium text-gray-500 truncate">Comissões Pagas</div>
+                  <div className="ml-5 flex-1">
+                    <div className="text-sm font-medium text-gray-500">Comissões Pagas</div>
                     <div className="text-lg font-medium text-gray-900">{formatCurrency(totalCommissions)}</div>
                   </div>
                 </div>
@@ -461,7 +461,7 @@ export default function AdminDashboard() {
                                   </TableCell>
                                   <TableCell className="font-medium">
                                     <div>
-                                      {referral.contactName}
+                                      {referral.fullName}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
                                       <div>Tel: {referral.phone}</div>
@@ -615,7 +615,7 @@ export default function AdminDashboard() {
                 <DialogDescription>
                   {selectedReferral && (
                     <span>
-                      Indicação de {selectedReferral.contactName} - 
+                      Indicação de {selectedReferral.fullName} - 
                       Placa: {selectedReferral.licensePlate}
                     </span>
                   )}
