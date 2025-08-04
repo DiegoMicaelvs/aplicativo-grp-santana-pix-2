@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // User roles
-export type UserRole = "indicador" | "promotor" | "admin" | "analista" | "vendedor" | "gerente";
+export type UserRole = "indicador" | "promotor" | "admin" | "analista" | "vendedor" | "gerente" | "supervisor";
 export type AnalystLevel = 1 | 2 | 3;
 
 // Analyst permissions
@@ -53,6 +53,7 @@ export const users = pgTable("users", {
   createdBy: integer("created_by"), // Quem cadastrou este usuário
   promoterId: integer("promoter_id"), // ID do promotor que cadastrou este indicador
   analystId: integer("analyst_id"), // ID do analista nível 3 responsável (para promotores)
+  supervisorId: integer("supervisor_id"), // ID do supervisor responsável (para promotores e indicadores)
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0.00").notNull(), // Saldo disponível
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00").notNull(), // Total ganho
   mustChangePassword: boolean("must_change_password").default(false).notNull(), // Força alteração de senha no próximo login
@@ -78,6 +79,7 @@ export const referrals = pgTable("referrals", {
   userId: integer("user_id").references(() => users.id).notNull(), // Indicador que fez a indicação
   createdBy: integer("created_by").references(() => users.id).notNull(), // Usuário que criou o registro
   promoterId: integer("promoter_id").references(() => users.id), // Promotor responsável pela equipe
+  supervisorId: integer("supervisor_id").references(() => users.id), // Supervisor responsável
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
   licensePlate: text("license_plate").notNull(),
