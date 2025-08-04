@@ -634,8 +634,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         promoterId: req.user!.id,
         createdBy: req.user!.id,
         analystId: undefined, // Explicitly set to undefined
-        // If promoter has a supervisor, inherit it
-        supervisorId: promoter?.supervisorId || undefined,
+        // Set the promoter as supervisor of the indicador
+        supervisorId: req.user!.id,
         role: "indicador" as const
       };
       
