@@ -517,6 +517,16 @@ class DatabaseStorage implements IStorage {
       orderBy: desc(referrals.createdAt)
     });
   }
+
+  async getReferralsByCreator(creatorId: number) {
+    return await db.query.referrals.findMany({
+      where: eq(referrals.createdBy, creatorId),
+      with: {
+        company: true
+      },
+      orderBy: desc(referrals.createdAt)
+    });
+  }
   
   async getReferralsByUsers(userIds: number[]) {
     if (userIds.length === 0) return [];

@@ -183,7 +183,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's referrals
   app.get("/api/referrals", requireAuth, async (req, res) => {
     try {
-      const userReferrals = await storage.getReferralsByUserId(req.user!.id);
+      let userReferrals;
+      
+      // Se for indicador, mostrar apenas as indicações criadas por ele
+      if (req.user!.role === "indicador") {
+        userReferrals = await storage.getReferralsByCreator(req.user!.id);
+      } else {
+        // Para outros perfis, mostrar indicações pelo userId
+        userReferrals = await storage.getReferralsByUserId(req.user!.id);
+      }
+      
       return res.json(userReferrals);
     } catch (error) {
       console.error("Error fetching referrals:", error);
