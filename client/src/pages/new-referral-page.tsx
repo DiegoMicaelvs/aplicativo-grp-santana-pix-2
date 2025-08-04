@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PromotionalAlert } from "@/components/promotional-alert";
 import { BackButton } from "@/components/ui/back-button";
 import { CreateReferral, Company } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
 
 // Lista de estados brasileiros
 const BRAZILIAN_STATES = [
@@ -78,7 +79,7 @@ const referralSchema = z.object({
   phone: z.string().min(10, "Número é obrigatório").max(15, "Número inválido"),
   licensePlate: z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
   hasInsurance: z.boolean(),
-  companyId: z.string().min(1, "Selecione uma empresa").transform(val => Number(val)),
+  companyId: z.string().optional().transform(val => val && val !== "" ? Number(val) : 0),
   city: z.string().min(2, "Cidade é obrigatória"),
   state: z.string().length(2, "Selecione um estado"),
 });
@@ -88,8 +89,11 @@ type ReferralFormValues = z.infer<typeof referralSchema>;
 export default function NewReferralPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<any>(null);
+  const [isCustomCompany, setIsCustomCompany] = useState(false);
+  const [customCompanyName, setCustomCompanyName] = useState("");
   
   const form = useForm<ReferralFormValues>({
     resolver: zodResolver(referralSchema),
@@ -138,6 +142,21 @@ export default function NewReferralPage() {
     },
   });
   
+  // Mutation para criar nova empresa
+  const createCompanyMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await apiRequest("POST", "/api/companies", { name, isActive: true });
+      return await res.json();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao criar empresa",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const mutation = useMutation({
     mutationFn: async (data: CreateReferral) => {
       const res = await apiRequest("POST", "/api/referrals", data);
@@ -145,6 +164,7 @@ export default function NewReferralPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/referrals'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
       setSubmitted(true);
       toast({
         title: "Indicação enviada com sucesso!",
@@ -160,7 +180,48 @@ export default function NewReferralPage() {
     },
   });
   
-  const onSubmit = (data: ReferralFormValues) => {
+  const onSubmit = async (data: ReferralFormValues) => {
+    // Validar se é empresa customizada
+    if (isCustomCompany) {
+      if (!customCompanyName.trim()) {
+        toast({
+          title: "Nome da empresa obrigatório",
+          description: "Por favor, digite o nome da nova empresa.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Se o usuário é admin, criar a empresa
+      if (user?.role === "admin") {
+        try {
+          const newCompany = await createCompanyMutation.mutateAsync(customCompanyName);
+          // Atualizar o companyId com a nova empresa
+          data.companyId = newCompany.id as any;
+        } catch (error) {
+          // Se falhar ao criar empresa, parar o processo
+          return;
+        }
+      } else {
+        toast({
+          title: "Permissão negada",
+          description: "Apenas administradores podem adicionar novas empresas.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      // Validar se uma empresa foi selecionada
+      if (!data.companyId || data.companyId === 0) {
+        toast({
+          title: "Empresa obrigatória",
+          description: "Por favor, selecione uma empresa.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Se já há duplicatas conhecidas, pular verificação e enviar diretamente
     if (duplicateInfo && duplicateInfo.length > 0) {
       mutation.mutate(data as any);
@@ -414,8 +475,17 @@ export default function NewReferralPage() {
                         <FormItem className="mb-4">
                           <FormLabel>Empresa</FormLabel>
                           <Select 
-                            onValueChange={field.onChange}
-                            value={field.value.toString()}
+                            onValueChange={(value) => {
+                              if (value === "custom") {
+                                setIsCustomCompany(true);
+                                field.onChange(""); // Clear the company ID when selecting custom
+                              } else {
+                                setIsCustomCompany(false);
+                                setCustomCompanyName("");
+                                field.onChange(value);
+                              }
+                            }}
+                            value={isCustomCompany ? "custom" : field.value.toString()}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -426,16 +496,39 @@ export default function NewReferralPage() {
                               {isLoadingCompanies ? (
                                 <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
                               ) : companies && companies.length > 0 ? (
-                                companies.map((company) => (
-                                  <SelectItem key={company.id} value={company.id.toString()}>
-                                    {company.name}
-                                  </SelectItem>
-                                ))
+                                <>
+                                  {companies.map((company) => (
+                                    <SelectItem key={company.id} value={company.id.toString()}>
+                                      {company.name}
+                                    </SelectItem>
+                                  ))}
+                                  {user?.role === "admin" && (
+                                    <SelectItem value="custom">
+                                      + Adicionar nova empresa
+                                    </SelectItem>
+                                  )}
+                                </>
                               ) : (
-                                <SelectItem value="none" disabled>Nenhuma empresa disponível</SelectItem>
+                                <>
+                                  <SelectItem value="none" disabled>Nenhuma empresa disponível</SelectItem>
+                                  {user?.role === "admin" && (
+                                    <SelectItem value="custom">
+                                      + Adicionar nova empresa
+                                    </SelectItem>
+                                  )}
+                                </>
                               )}
                             </SelectContent>
                           </Select>
+                          {isCustomCompany && (
+                            <div className="mt-2">
+                              <Input
+                                placeholder="Digite o nome da nova empresa"
+                                value={customCompanyName}
+                                onChange={(e) => setCustomCompanyName(e.target.value)}
+                              />
+                            </div>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}
