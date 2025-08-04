@@ -130,8 +130,9 @@ export default function AnalystReferrals() {
     },
   });
 
-  // Check permissions
-  const canEdit = user?.permissions?.includes("edit_referral_status");
+  // Check permissions - Allow analysts level 1+ to edit referral status
+  const canEdit = user?.permissions?.includes("edit_referral_status") || 
+    (user?.role === "analista" && user?.analystLevel && user.analystLevel >= 1);
 
   // Filter referrals
   const filteredReferrals = referrals.filter((referral) => {
@@ -257,7 +258,7 @@ export default function AnalystReferrals() {
           <CardTitle>Indicações ({filteredReferrals.length})</CardTitle>
           <CardDescription>
             {canEdit
-              ? "Clique em uma indicação para validar ou editar"
+              ? "Clique em uma indicação para validar ou editar o status"
               : "Você tem permissão apenas para visualizar"}
           </CardDescription>
         </CardHeader>
