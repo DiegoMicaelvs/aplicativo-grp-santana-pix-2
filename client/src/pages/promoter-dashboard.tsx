@@ -121,6 +121,9 @@ export default function PromoterDashboard() {
       cpf: "",
       phone: "",
       address: "",
+      city: "",
+      state: "",
+      zipCode: "",
       shirtSize: "M",
       pixKey: "",
     },
@@ -300,6 +303,50 @@ export default function PromoterDashboard() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cidade</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estado (UF)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="BA" maxLength={2} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CEP</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="00000-000" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
