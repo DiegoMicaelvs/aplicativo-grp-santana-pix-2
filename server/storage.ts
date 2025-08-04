@@ -550,11 +550,12 @@ class DatabaseStorage implements IStorage {
       return [];
     }
     
+    // Create OR conditions for all user IDs
+    const userIdConditions = userIds.map(id => eq(referrals.userId, id));
+    const createdByConditions = userIds.map(id => eq(referrals.createdBy, id));
+    
     return await db.query.referrals.findMany({
-      where: or(
-        sql`${referrals.userId} = ANY(${userIds})`,
-        sql`${referrals.createdBy} = ANY(${userIds})`
-      ),
+      where: or(...userIdConditions, ...createdByConditions),
       with: {
         user: true,
         company: true
