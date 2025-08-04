@@ -206,7 +206,7 @@ export default function AnalystDashboard() {
             </CardHeader>
             <CardContent>
               <Button 
-                onClick={() => setLocation("/admin/indicators")}
+                onClick={() => setLocation("/analyst/users")}
                 className="w-full"
                 variant="outline"
               >
