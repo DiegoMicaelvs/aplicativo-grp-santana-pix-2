@@ -969,7 +969,7 @@ export default function AdminProfiles() {
               <Input
                 id="cpf"
                 {...form.register("cpf", {
-                  onChange: (e) => {
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                     const formatted = formatCPF(e.target.value);
                     form.setValue("cpf", formatted);
                   }

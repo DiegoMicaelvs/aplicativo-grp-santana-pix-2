@@ -124,7 +124,7 @@ export default function AnalystAnalyticsPage() {
   if (usersLoading || referralsLoading || auditLoading) {
     return (
       <div className="container mx-auto p-6">
-        <BackButton href="/analyst/dashboard" />
+        <BackButton to="/analyst/dashboard" />
         <div className="flex items-center justify-center h-64">
           <p>Carregando dados de análise...</p>
         </div>
@@ -134,7 +134,7 @@ export default function AnalystAnalyticsPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <BackButton href="/analyst/dashboard" />
+      <BackButton to="/analyst/dashboard" />
       
       {/* Header */}
       <div className="mb-6">

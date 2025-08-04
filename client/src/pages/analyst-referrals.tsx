@@ -208,7 +208,7 @@ export default function AnalystReferrals() {
   const handleValidateClick = (referral: Referral) => {
     setSelectedReferral(referral);
     form.reset({
-      vehicleBrand: referral.vehicleBrand || "",
+      // vehicleBrand: referral.vehicleBrand || "",
       vehicleModel: referral.vehicleModel || "",
       vehicleYear: referral.vehicleYear || "",
       nameCorrect: referral.nameCorrect ?? true,
@@ -227,7 +227,7 @@ export default function AnalystReferrals() {
       phone: referral.phone,
       licensePlate: referral.licensePlate,
       hasInsurance: referral.hasInsurance || false,
-      vehicleBrand: referral.vehicleBrand || "",
+      // vehicleBrand: referral.vehicleBrand || "",
       vehicleModel: referral.vehicleModel || "",
       vehicleYear: referral.vehicleYear || "",
       notes: referral.notes || "",
