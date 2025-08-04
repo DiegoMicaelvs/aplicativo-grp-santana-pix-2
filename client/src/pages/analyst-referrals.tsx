@@ -92,9 +92,9 @@ export default function AnalystReferrals() {
     queryKey: ["/api/analyst/referrals"],
   });
 
-  // Fetch users for display
+  // Fetch users for display - use analyst endpoint for proper permissions
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/admin/users"],
+    queryKey: ["/api/analyst/users"],
   });
 
   // Fetch companies for display
