@@ -1105,7 +1105,7 @@ export default function AdminReferralsDetailedPage() {
                     <TableCell className="text-xs">
                       {referral.city && referral.state ? (
                         <div className="truncate max-w-[90px]" title={`${referral.city}/${referral.state}`}>
-                          {referral.city}
+                          {referral.city}/{referral.state}
                         </div>
                       ) : (
                         <span className="text-gray-400">-</span>
