@@ -1078,11 +1078,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Edit referral (for analysts level 1+ and admins)
-  app.patch("/api/referrals/:id", requireAnalyst, async (req, res) => {
+  app.patch("/api/referrals/:id", requireAuth, async (req, res) => {
     try {
-      // Check if analyst has level 1 or higher
-      if (req.user!.role === "analista" && (!req.user!.analystLevel || req.user!.analystLevel < 1)) {
-        return res.status(403).json({ error: "Você precisa ser analista nível 1 ou superior para editar indicações" });
+      // Check if user is admin or analyst level 1+
+      if (req.user!.role === "admin") {
+        // Admin can edit all referrals
+      } else if (req.user!.role === "analista") {
+        // Check analyst level
+        if (!req.user!.analystLevel || req.user!.analystLevel < 1) {
+          return res.status(403).json({ error: "Você precisa ser analista nível 1 ou superior para editar indicações" });
+        }
+      } else {
+        return res.status(403).json({ error: "Acesso negado" });
       }
 
       const referralId = parseInt(req.params.id);
