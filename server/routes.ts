@@ -752,6 +752,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get users for analysts with view_users permission
+  app.get("/api/analyst/users", requireAnalyst, async (req, res) => {
+    try {
+      // Check if analyst has view_users permission
+      const user = await storage.getUserById(req.user!.id);
+      const userPermissions = user?.permissions as string[] || [];
+      if (req.user!.role === "analista" && !userPermissions.includes("view_users")) {
+        return res.status(403).json({ error: "Você não tem permissão para visualizar usuários" });
+      }
+      
+      // If analyst is level 3, only show users under supervision
+      let allUsers;
+      if (user?.analystLevel === 3) {
+        allUsers = await storage.getAllUsersBySupervisor(req.user!.id);
+      } else {
+        allUsers = await storage.getAllUsers();
+      }
+      
+      // Remove passwords from the response
+      const usersWithoutPasswords = allUsers.map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      });
+      
+      return res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Error fetching users for analyst:", error);
+      return res.status(500).json({ error: "Erro ao buscar usuários" });
+    }
+  });
+
   // Analytics routes for analysts with view_reports permission
   app.get("/api/analyst/analytics/users", requireAnalyst, async (req, res) => {
     try {

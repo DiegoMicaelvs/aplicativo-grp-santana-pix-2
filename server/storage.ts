@@ -255,9 +255,12 @@ class DatabaseStorage implements IStorage {
   }
 
   async getAllUsersBySupervisor(supervisorId: number) {
-    // Get all users directly supervised
+    // Get all users directly supervised or created by the supervisor
     const directUsers = await db.query.users.findMany({
-      where: eq(users.supervisorId, supervisorId),
+      where: or(
+        eq(users.supervisorId, supervisorId),
+        eq(users.createdBy, supervisorId)
+      ),
       orderBy: desc(users.createdAt)
     });
 
@@ -270,7 +273,13 @@ class DatabaseStorage implements IStorage {
       indirectUsers.push(...indicadores);
     }
 
-    return [...directUsers, ...indirectUsers];
+    // Deduplicate users (in case some are both created by and supervised by the analyst)
+    const allUsersMap = new Map();
+    [...directUsers, ...indirectUsers].forEach(user => {
+      allUsersMap.set(user.id, user);
+    });
+
+    return Array.from(allUsersMap.values());
   }
   
   async updateUserBalance(userId: number, amount: number) {

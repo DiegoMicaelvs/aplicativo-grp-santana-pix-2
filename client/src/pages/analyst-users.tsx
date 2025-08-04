@@ -43,7 +43,7 @@ export default function AnalystUsers() {
 
   // Fetch users - analysts can view users based on their permissions
   const { data: users, isLoading } = useQuery<User[]>({
-    queryKey: ['/api/admin/users'],
+    queryKey: ['/api/analyst/users'],
     enabled: user?.permissions?.includes("view_users") || false,
   });
 
