@@ -37,6 +37,7 @@ import AnalystCreatePromotor from "@/pages/analyst-create-promotor";
 import AnalystPermissions from "@/pages/analyst-permissions";
 import AnalystReferrals from "@/pages/analyst-referrals";
 import AnalystUsers from "@/pages/analyst-users";
+import AnalystAnalytics from "@/pages/analyst-analytics";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AdminRoute, PromoterRoute, VendedorRoute, ManagerRoute, AnalystRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
@@ -81,6 +82,7 @@ function Router() {
       <AnalystRoute path="/analyst/permissions" component={AnalystPermissions} />
       <AnalystRoute path="/analyst/referrals" component={AnalystReferrals} />
       <AnalystRoute path="/analyst/users" component={AnalystUsers} />
+      <AnalystRoute path="/analyst/analytics" component={AnalystAnalytics} />
       <Route path="/team-dashboard" component={TeamDashboard} />
       <Route component={NotFound} />
     </Switch>

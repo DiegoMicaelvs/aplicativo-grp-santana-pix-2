@@ -740,6 +740,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics routes for analysts with view_reports permission
+  app.get("/api/analyst/analytics/users", requireAnalyst, async (req, res) => {
+    try {
+      // Check if analyst has view_reports permission
+      const user = await storage.getUserById(req.user!.id);
+      const userPermissions = user?.permissions as string[] || [];
+      if (req.user!.role === "analista" && !userPermissions.includes("view_reports")) {
+        return res.status(403).json({ error: "Você não tem permissão para visualizar relatórios" });
+      }
+      
+      const allUsers = await storage.getAllUsers();
+      return res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users for analytics:", error);
+      return res.status(500).json({ error: "Erro ao buscar usuários" });
+    }
+  });
+
+  app.get("/api/analyst/analytics/referrals", requireAnalyst, async (req, res) => {
+    try {
+      // Check if analyst has view_reports permission
+      const user = await storage.getUserById(req.user!.id);
+      const userPermissions = user?.permissions as string[] || [];
+      if (req.user!.role === "analista" && !userPermissions.includes("view_reports")) {
+        return res.status(403).json({ error: "Você não tem permissão para visualizar relatórios" });
+      }
+      
+      const allReferrals = await storage.getAllReferrals();
+      return res.json(allReferrals);
+    } catch (error) {
+      console.error("Error fetching referrals for analytics:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicações" });
+    }
+  });
+
+  app.get("/api/analyst/analytics/audit-log", requireAnalyst, async (req, res) => {
+    try {
+      // Check if analyst has view_reports permission
+      const user = await storage.getUserById(req.user!.id);
+      const userPermissions = user?.permissions as string[] || [];
+      if (req.user!.role === "analista" && !userPermissions.includes("view_reports")) {
+        return res.status(403).json({ error: "Você não tem permissão para visualizar relatórios" });
+      }
+      
+      const auditLog = await storage.getRecentAuditLog();
+      return res.json(auditLog);
+    } catch (error) {
+      console.error("Error fetching audit log for analytics:", error);
+      return res.status(500).json({ error: "Erro ao buscar log de auditoria" });
+    }
+  });
+
   // Get basic stats (accessible by admin and analyst)
   app.get("/api/admin/stats", requireAuth, async (req, res) => {
     try {
