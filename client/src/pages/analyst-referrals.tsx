@@ -398,7 +398,7 @@ export default function AnalystReferrals() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleValidateClick(referral)}
-                                disabled={referral.status === "validated" || referral.status === "paid"}
+                                disabled={referral.status === "paid"}
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
                                 Validar
