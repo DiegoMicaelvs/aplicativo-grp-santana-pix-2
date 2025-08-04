@@ -900,9 +900,9 @@ export default function AdminProfiles() {
   const handlePermissionChange = (permission: string, checked: boolean) => {
     const currentPermissions = form.getValues("permissions") || [];
     if (checked) {
-      form.setValue("permissions", [...currentPermissions, permission]);
+      form.setValue("permissions", [...currentPermissions, permission], { shouldValidate: false, shouldDirty: true });
     } else {
-      form.setValue("permissions", currentPermissions.filter((p: string) => p !== permission));
+      form.setValue("permissions", currentPermissions.filter((p: string) => p !== permission), { shouldValidate: false, shouldDirty: true });
     }
   };
 
@@ -910,9 +910,9 @@ export default function AdminProfiles() {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="basic">Dados Básicos</TabsTrigger>
-          <TabsTrigger value="role">Papel e Permissões</TabsTrigger>
-          <TabsTrigger value="settings">Configurações</TabsTrigger>
+          <TabsTrigger value="basic" type="button">Dados Básicos</TabsTrigger>
+          <TabsTrigger value="role" type="button">Papel e Permissões</TabsTrigger>
+          <TabsTrigger value="settings" type="button">Configurações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-4">
