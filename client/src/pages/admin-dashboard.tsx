@@ -264,39 +264,56 @@ export default function AdminDashboard() {
       
       <div className="bg-gray-100 flex-grow py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 font-heading">Painel Administrativo</h1>
-              <p className="mt-1 text-gray-600">Gerenciamento de indicadores e indicações</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 font-heading">Painel Administrativo</h1>
+              <p className="mt-1 text-sm md:text-base text-gray-600">Gerenciamento de indicadores e indicações</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 mt-4 md:mt-0">
               <Button 
-                variant="outline" 
+                variant="outline"
+                size="sm"
+                className="w-full md:w-auto text-xs sm:text-sm"
+                onClick={() => window.location.href = '/admin/referrals-detailed'}
+              >
+                <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Gestão de</span> Indicações
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="w-full md:w-auto text-xs sm:text-sm"
                 onClick={() => window.location.href = '/admin/profiles'}
               >
-                <Users className="h-4 w-4 mr-2" />
-                Gerenciar Perfis
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Gerenciar</span> Perfis
               </Button>
               <Button 
-                variant="outline" 
+                variant="outline"
+                size="sm"
+                className="w-full md:w-auto text-xs sm:text-sm"
                 onClick={() => window.location.href = '/admin/analysts'}
               >
-                <Users className="h-4 w-4 mr-2" />
-                Gerenciar Analistas
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Gerenciar</span> Analistas
               </Button>
               <Button 
-                variant="outline" 
+                variant="outline"
+                size="sm"
+                className="w-full md:w-auto text-xs sm:text-sm"
                 onClick={() => window.location.href = '/admin/withdrawals'}
               >
-                <DollarSign className="h-4 w-4 mr-2" />
-                Gerenciar Saques
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Gerenciar</span> Saques
               </Button>
               <Button 
-                variant="outline" 
+                variant="outline"
+                size="sm"
+                className="w-full md:w-auto text-xs sm:text-sm"
                 onClick={() => window.location.href = '/admin/audit-log'}
               >
-                <ClipboardList className="h-4 w-4 mr-2" />
-                Log de Auditoria
+                <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Log de</span> Auditoria
               </Button>
             </div>
           </div>

@@ -143,16 +143,16 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <div className="flex-grow flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="flex-grow flex items-center justify-center bg-gray-50 py-6 md:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl w-full flex flex-col lg:flex-row">
           {/* Left column - Auth forms */}
           <div className="flex-1 max-w-md w-full mx-auto">
             <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-2xl font-heading text-center">
+              <CardHeader className="px-4 md:px-6">
+                <CardTitle className="text-lg md:text-xl lg:text-2xl font-heading text-center">
                   {activeTab === "login" ? "Acesso de Indicadores" : "Cadastre-se como Indicador"}
                 </CardTitle>
-                <CardDescription className="text-center">
+                <CardDescription className="text-xs md:text-sm text-center mt-1 md:mt-2">
                   {activeTab === "login" 
                     ? "Entre na sua conta para gerenciar suas indicações" 
                     : "Preencha seus dados para começar a indicar e ganhar"}

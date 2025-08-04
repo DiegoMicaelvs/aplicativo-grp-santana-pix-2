@@ -548,55 +548,55 @@ export default function AdminReferralsDetailedPage() {
 
   return (
     <div className="w-full px-4 md:px-6 py-6 max-w-[100vw] overflow-hidden">
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="mb-4 md:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
           <BackButton />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Gestão Detalhada de Indicações</h1>
-            <p className="text-gray-600 mt-2">Visualize, analise e gerencie todas as indicações do sistema</p>
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Gestão Detalhada de Indicações</h1>
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1 md:mt-2">Visualize, analise e gerencie todas as indicações do sistema</p>
           </div>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Indicações</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Total de Indicações</CardTitle>
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalReferrals}</div>
+          <CardContent className="px-3 md:px-6">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold">{stats.totalReferrals}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Pendentes</CardTitle>
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pendingReferrals}</div>
+          <CardContent className="px-3 md:px-6">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-600">{stats.pendingReferrals}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Validadas</CardTitle>
-            <Check className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Validadas</CardTitle>
+            <Check className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.validatedReferrals}</div>
+          <CardContent className="px-3 md:px-6">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{stats.validatedReferrals}</div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Comissões Totais</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+        <Card className="col-span-2 md:col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Comissões Totais</CardTitle>
+            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">R$ {stats.totalCommissions.toFixed(2)}</div>
+          <CardContent className="px-3 md:px-6">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">R$ {stats.totalCommissions.toFixed(2)}</div>
           </CardContent>
         </Card>
       </div>
@@ -609,110 +609,113 @@ export default function AdminReferralsDetailedPage() {
             Filtros Avançados
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-                <Input
-                  placeholder="Buscar por cliente, telefone, placa ou indicador..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <CardContent className="px-3 md:px-6 pb-4 md:pb-6">
+          <div className="space-y-4">
+            {/* Search Bar - Full Width on All Screens */}
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+              <Input
+                placeholder="Buscar por cliente, telefone, placa ou indicador..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 text-sm md:text-base"
+              />
             </div>
             
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_statuses">Todos os Status</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="analyzing">Em Análise</SelectItem>
-                <SelectItem value="converted">Convertida</SelectItem>
-                <SelectItem value="rejected">Rejeitada</SelectItem>
-                <SelectItem value="validated">Validada</SelectItem>
-                <SelectItem value="paid">Paga</SelectItem>
-                <SelectItem value="false">Falso</SelectItem>
-                <SelectItem value="not_validated">Não validado</SelectItem>
-                <SelectItem value="not_converted">Não convertido</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={userFilter} onValueChange={setUserFilter}>
-              <SelectTrigger className="w-full md:w-60">
-                <SelectValue placeholder="Indicador" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_users">Todos os Indicadores</SelectItem>
-                {users.filter(u => u.role === "indicador").map(user => (
-                  <SelectItem key={user.id} value={user.id.toString()}>
-                    {user.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={companyFilter} onValueChange={setCompanyFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Seguradora" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_companies">Todas as Seguradoras</SelectItem>
-                {companies.map(company => (
-                  <SelectItem key={company.id} value={company.id.toString()}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={monthFilter} onValueChange={setMonthFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Mês" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_months">Todos os Meses</SelectItem>
-                {(() => {
-                  const months = [];
-                  const currentDate = new Date();
-                  for (let i = 0; i < 12; i++) {
-                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-                    const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                    const monthName = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-                    months.push({ value: monthYear, label: monthName });
-                  }
-                  return months.map(month => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
+            {/* Filter Selects - Responsive Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full text-sm md:text-base">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_statuses">Todos os Status</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="analyzing">Em Análise</SelectItem>
+                  <SelectItem value="converted">Convertida</SelectItem>
+                  <SelectItem value="rejected">Rejeitada</SelectItem>
+                  <SelectItem value="validated">Validada</SelectItem>
+                  <SelectItem value="paid">Paga</SelectItem>
+                  <SelectItem value="false">Falso</SelectItem>
+                  <SelectItem value="not_validated">Não validado</SelectItem>
+                  <SelectItem value="not_converted">Não convertido</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={userFilter} onValueChange={setUserFilter}>
+                <SelectTrigger className="w-full text-sm md:text-base">
+                  <SelectValue placeholder="Indicador" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_users">Todos os Indicadores</SelectItem>
+                  {users.filter(u => u.role === "indicador").map(user => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.fullName}
                     </SelectItem>
-                  ));
-                })()}
-              </SelectContent>
-            </Select>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={companyFilter} onValueChange={setCompanyFilter}>
+                <SelectTrigger className="w-full text-sm md:text-base">
+                  <SelectValue placeholder="Seguradora" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_companies">Todas as Seguradoras</SelectItem>
+                  {companies.map(company => (
+                    <SelectItem key={company.id} value={company.id.toString()}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={monthFilter} onValueChange={setMonthFilter}>
+                <SelectTrigger className="w-full text-sm md:text-base">
+                  <SelectValue placeholder="Mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_months">Todos os Meses</SelectItem>
+                  {(() => {
+                    const months = [];
+                    const currentDate = new Date();
+                    for (let i = 0; i < 12; i++) {
+                      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                      const monthName = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                      months.push({ value: monthYear, label: monthName });
+                    }
+                    return months.map(month => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ));
+                  })()}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Referrals Table */}
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
+        <CardHeader className="px-3 md:px-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
             <div>
-              <CardTitle>Lista Detalhada de Indicações</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg md:text-xl">Lista Detalhada de Indicações</CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 {filteredReferrals.length} de {referrals.length} indicações encontradas
               </CardDescription>
             </div>
             <Button 
               onClick={handleExportExcel}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 text-sm md:text-base w-full sm:w-auto"
               variant="outline"
+              size="sm"
             >
-              <Download className="h-4 w-4" />
-              Exportar Excel
+              <Download className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Exportar</span> Excel
             </Button>
           </div>
         </CardHeader>
