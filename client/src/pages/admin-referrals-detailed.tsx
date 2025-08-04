@@ -364,8 +364,11 @@ export default function AdminReferralsDetailedPage() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("[updateReferralMutation] Dados atualizados:", data);
+      // Invalidar cache para forçar atualização
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
       toast({ title: "Indicação atualizada com sucesso!" });
       setIsDialogOpen(false);
       setSelectedReferral(null);
@@ -867,6 +870,8 @@ export default function AdminReferralsDetailedPage() {
                               
                               <Button 
                                 onClick={() => {
+                                  console.log("[Update Referral Mobile] Enviando dados:", editFormData);
+                                  console.log("[Update Referral Mobile] CompanyId:", editFormData.companyId);
                                   updateReferralMutation.mutate({
                                     referralId: selectedReferral.id,
                                     data: editFormData
@@ -1286,6 +1291,8 @@ export default function AdminReferralsDetailedPage() {
                                   
                                   <Button 
                                     onClick={() => {
+                                      console.log("[Update Referral] Enviando dados:", editFormData);
+                                      console.log("[Update Referral] CompanyId:", editFormData.companyId);
                                       updateReferralMutation.mutate({
                                         referralId: selectedReferral.id,
                                         data: editFormData
