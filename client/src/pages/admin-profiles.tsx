@@ -1125,7 +1125,6 @@ export default function AdminProfiles() {
                 <SelectContent>
                   <SelectItem value="indicador">Indicador</SelectItem>
                   <SelectItem value="promotor">Promotor</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
                   <SelectItem value="analista">Analista</SelectItem>
                   <SelectItem value="vendedor">Vendedor</SelectItem>
                   <SelectItem value="gerente">Gerente</SelectItem>
