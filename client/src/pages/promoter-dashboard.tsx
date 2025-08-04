@@ -642,7 +642,7 @@ export default function PromoterDashboard() {
                         return (
                           <TableRow key={referral.id}>
                             <TableCell>
-                              {indicadores.find(i => i.id === referral.userId)?.fullName || 'Indicador'}
+                              {indicadores.find(i => i.id === referral.createdBy)?.fullName || 'Indicador'}
                             </TableCell>
                             <TableCell>{referral.fullName}</TableCell>
                             <TableCell>{referral.phone}</TableCell>

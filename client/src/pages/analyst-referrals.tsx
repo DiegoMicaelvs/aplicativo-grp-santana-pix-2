@@ -359,7 +359,7 @@ export default function AnalystReferrals() {
                 </TableHeader>
                 <TableBody>
                   {filteredReferrals.map((referral) => {
-                    const indicador = users.find((u) => u.id === referral.userId);
+                    const indicador = users.find((u) => u.id === referral.createdBy);
                     const company = companies.find((c) => c.id === referral.companyId);
                     return (
                       <TableRow key={referral.id}>

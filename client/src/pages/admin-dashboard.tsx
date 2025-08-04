@@ -57,6 +57,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 // Interface estendida para incluir a relação com o usuário
 interface Referral extends BaseReferral {
   user?: Pick<User, 'id' | 'fullName' | 'username'>;
+  createdByUser?: Pick<User, 'id' | 'fullName' | 'username'>;
 }
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -435,10 +436,10 @@ export default function AdminDashboard() {
                                   <TableCell>{referral.id}</TableCell>
                                   <TableCell>
                                     <div>
-                                      {referral.user?.fullName}
+                                      {referral.createdByUser?.fullName || "N/A"}
                                     </div>
                                     <div className="text-xs text-gray-500 mt-1">
-                                      {referral.user?.username}
+                                      {referral.createdByUser?.username || ""}
                                     </div>
                                   </TableCell>
                                   <TableCell className="font-medium">

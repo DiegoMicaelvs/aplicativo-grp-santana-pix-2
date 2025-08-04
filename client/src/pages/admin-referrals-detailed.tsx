@@ -690,7 +690,7 @@ export default function AdminReferralsDetailedPage() {
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{getUserName(referral.userId)}</TableCell>
+                    <TableCell>{getUserName(referral.createdBy)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(referral.status)}>
                         {getStatusLabel(referral.status)}

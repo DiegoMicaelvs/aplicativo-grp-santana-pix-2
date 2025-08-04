@@ -512,7 +512,8 @@ class DatabaseStorage implements IStorage {
     return await db.query.referrals.findMany({
       where: eq(referrals.userId, userId),
       with: {
-        company: true
+        company: true,
+        createdByUser: true
       },
       orderBy: desc(referrals.createdAt)
     });
@@ -522,7 +523,8 @@ class DatabaseStorage implements IStorage {
     return await db.query.referrals.findMany({
       where: eq(referrals.createdBy, creatorId),
       with: {
-        company: true
+        company: true,
+        createdByUser: true
       },
       orderBy: desc(referrals.createdAt)
     });
@@ -545,7 +547,8 @@ class DatabaseStorage implements IStorage {
     return await db.query.referrals.findMany({
       with: {
         user: true,
-        company: true
+        company: true,
+        createdByUser: true
       },
       orderBy: desc(referrals.createdAt)
     });
@@ -568,7 +571,8 @@ class DatabaseStorage implements IStorage {
       where: or(...userIdConditions, ...createdByConditions),
       with: {
         user: true,
-        company: true
+        company: true,
+        createdByUser: true
       },
       orderBy: desc(referrals.createdAt)
     });
