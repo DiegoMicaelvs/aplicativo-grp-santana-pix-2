@@ -51,6 +51,12 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-02-03 - Withdrawal System Improvements
+- Removed restrictive PIX key validation that required exact match with profile
+- Users can now use any valid PIX key for withdrawals
+- Removed CPF validation that forced users to use only their registered CPF
+- Improved user experience allowing flexibility in withdrawal requests
+
 ### 2025-02-03 - Simplified Company Selection for Non-Admin Users
 - Modified new referral page to show only "Kong Pix" for non-admin users
 - Admin users retain full company selection capabilities

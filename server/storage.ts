@@ -919,11 +919,8 @@ class DatabaseStorage implements IStorage {
   
   // Withdrawal methods
   async createWithdrawalRequest(request: CreateWithdrawalRequest & { userId: number; cpfKey: string; requestType: "indicador" | "promotor" }) {
-    // Validate CPF matches user's registered CPF
-    const isValidCpf = await this.validateCpfForWithdrawal(request.userId, request.cpfKey);
-    if (!isValidCpf) {
-      throw new Error('A chave PIX (CPF) deve corresponder ao CPF cadastrado no perfil');
-    }
+    // Permitir que o usuário informe o CPF do titular da conta
+    // Removida validação restritiva que exigia CPF idêntico ao do perfil
     
     const [withdrawal] = await db.insert(withdrawalRequests)
       .values({

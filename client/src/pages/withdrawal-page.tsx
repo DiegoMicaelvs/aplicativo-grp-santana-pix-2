@@ -218,7 +218,7 @@ export default function WithdrawalPage() {
                               />
                             </FormControl>
                             <FormDescription>
-                              Chave PIX para recebimento (CPF, telefone, e-mail ou chave aleatória)
+                              Informe qualquer chave PIX válida para recebimento (CPF, telefone, e-mail ou chave aleatória)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -238,7 +238,7 @@ export default function WithdrawalPage() {
                               />
                             </FormControl>
                             <FormDescription>
-                              Deve ser o mesmo CPF cadastrado no seu perfil
+                              CPF do titular da conta PIX
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

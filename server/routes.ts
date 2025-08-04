@@ -498,12 +498,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Check if PIX key matches user's registered PIX
-      if (validatedData.pixKey !== user.pixKey) {
-        return res.status(400).json({ 
-          error: "Chave PIX deve ser a mesma cadastrada no perfil" 
-        });
-      }
+      // Permitir que o usuário use qualquer chave PIX válida
+      // Removida validação restritiva que forçava usar apenas a chave cadastrada no perfil
       
       const withdrawal = await storage.createWithdrawalRequest({
         ...validatedData,
