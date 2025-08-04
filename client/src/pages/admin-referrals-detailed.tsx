@@ -422,6 +422,12 @@ export default function AdminReferralsDetailedPage() {
     return matchesSearch && matchesStatus && matchesUser;
   });
 
+  // Helper function to get company name by ID
+  const getCompanyName = (companyId: number) => {
+    const company = companies.find((c: any) => c.id === companyId);
+    return company?.name || "N/A";
+  };
+
   // Export to Excel function
   const handleExportExcel = async () => {
     try {
@@ -688,9 +694,16 @@ export default function AdminReferralsDetailedPage() {
                 
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
+                    <span className="text-gray-500">Seguradora:</span> 
+                    <span className="ml-1">{getCompanyName(referral.companyId)}</span>
+                  </div>
+                  <div>
                     <span className="text-gray-500">Indicador:</span>
                     <span className="ml-1">{getUserName(referral.createdBy)}</span>
                   </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-gray-500">Data:</span>
                     <span className="ml-1">{format(new Date(referral.createdAt), "dd/MM/yy", { locale: ptBR })}</span>
@@ -1065,6 +1078,7 @@ export default function AdminReferralsDetailedPage() {
                   <TableHead className="min-w-[150px]">Cliente</TableHead>
                   <TableHead className="min-w-[110px]">Telefone</TableHead>
                   <TableHead className="min-w-[80px]">Placa</TableHead>
+                  <TableHead className="min-w-[120px]">Seguradora</TableHead>
                   <TableHead className="min-w-[90px]">Local</TableHead>
                   <TableHead className="min-w-[110px]">Indicador</TableHead>
                   <TableHead className="min-w-[90px]">Status</TableHead>
@@ -1083,6 +1097,11 @@ export default function AdminReferralsDetailedPage() {
                     </TableCell>
                     <TableCell className="text-xs">{referral.phone}</TableCell>
                     <TableCell className="font-mono text-xs">{referral.licensePlate}</TableCell>
+                    <TableCell className="text-xs">
+                      <div className="truncate max-w-[120px]" title={getCompanyName(referral.companyId)}>
+                        {getCompanyName(referral.companyId)}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-xs">
                       {referral.city && referral.state ? (
                         <span title={`${referral.city}/${referral.state}`}>
