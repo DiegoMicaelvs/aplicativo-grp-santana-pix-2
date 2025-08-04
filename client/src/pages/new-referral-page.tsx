@@ -79,7 +79,7 @@ const referralSchema = z.object({
   phone: z.string().min(10, "Número é obrigatório").max(15, "Número inválido"),
   licensePlate: z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
   hasInsurance: z.boolean(),
-  companyId: z.string().optional().transform(val => val && val !== "" ? Number(val) : 0),
+  companyId: z.string().transform(val => val && val !== "" ? Number(val) : 1), // Padrão para Kong Pix (ID 1)
   city: z.string().min(2, "Cidade é obrigatória"),
   state: z.string().length(2, "Selecione um estado"),
 });
@@ -119,18 +119,18 @@ export default function NewReferralPage() {
   });
 
   // Mutation para verificar duplicatas
-  const checkDuplicateMutation = useMutation({
-    mutationFn: async (data: { phone: string, licensePlate: string }) => {
-      const res = await apiRequest("POST", "/api/referrals/check-duplicate", data);
+  const checkDuplicateMutation = useMutation<any, Error, { phone: string; licensePlate: string; formData: ReferralFormValues }>({
+    mutationFn: async ({ phone, licensePlate }) => {
+      const res = await apiRequest("POST", "/api/referrals/check-duplicate", { phone, licensePlate });
       return await res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       if (data.isDuplicate) {
         setDuplicateInfo(data.duplicates);
       } else {
         setDuplicateInfo(null);
-        // Se não há duplicatas, proceder com o cadastro
-        mutation.mutate(form.getValues());
+        // Se não há duplicatas, proceder com o cadastro usando os dados modificados
+        mutation.mutate(variables.formData as any);
       }
     },
     onError: (error: Error) => {
@@ -231,10 +231,11 @@ export default function NewReferralPage() {
     if (duplicateInfo && duplicateInfo.length > 0) {
       mutation.mutate(data as any);
     } else {
-      // Primeiro verifica se há duplicatas
+      // Primeiro verifica se há duplicatas, passando os dados modificados
       checkDuplicateMutation.mutate({
         phone: data.phone,
-        licensePlate: data.licensePlate
+        licensePlate: data.licensePlate,
+        formData: data
       });
     }
   };
