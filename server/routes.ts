@@ -1029,59 +1029,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update referral data (admin only)
-  app.patch("/api/referrals/:id", requireAdmin, async (req, res) => {
-    try {
-      const referralId = parseInt(req.params.id);
-      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter } = req.body;
-      
-      // Check if referral exists
-      const existingReferral = await storage.getReferralById(referralId);
-      if (!existingReferral) {
-        return res.status(404).json({ error: "Indicação não encontrada" });
-      }
-      
-      // Check for duplicates if phone or licensePlate changed
-      if (phone !== existingReferral.phone || licensePlate !== existingReferral.licensePlate) {
-        const duplicates = await storage.checkDuplicateReferral(phone, licensePlate);
-        const filteredDuplicates = duplicates.filter(d => d.id !== referralId);
-        
-        if (filteredDuplicates.length > 0) {
-          return res.status(400).json({ 
-            error: "Duplicata encontrada",
-            details: "Já existe uma indicação com este telefone ou placa"
-          });
-        }
-      }
-      
-      // Update the referral
-      const updatedReferral = await storage.updateReferral(referralId, {
-        fullName,
-        phone,
-        licensePlate,
-        companyId,
-        userId, // This allows reassigning to another indicador
-        commissionIndicator: commissionIndicator !== undefined ? commissionIndicator : existingReferral.commissionIndicator,
-        commissionPromoter: commissionPromoter !== undefined ? commissionPromoter : existingReferral.commissionPromoter,
-        updatedAt: new Date()
-      });
-      
-      // Log the update
-      await storage.logUserAction({
-        userId: req.user!.id,
-        action: "update_referral",
-        entityType: "referral",
-        entityId: referralId,
-        oldValues: existingReferral,
-        newValues: updatedReferral,
-        details: `Dados da indicação ${referralId} atualizados`
-      });
-      
-      return res.json(updatedReferral);
-    } catch (error) {
-      console.error("Error updating referral:", error);
-      return res.status(500).json({ error: "Erro ao atualizar indicação" });
-    }
-  });
+  // This route was moved to line 1219 to allow both admin and analysts to edit referrals
 
   // Get all indicadores for reassignment dropdown
   app.get("/api/admin/indicadores", requireAdmin, async (req, res) => {
@@ -1215,24 +1163,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Edit referral (for analysts and admins)
   app.patch("/api/referrals/:id", requireAuth, async (req, res) => {
     try {
-      console.log("PATCH /api/referrals/:id - User:", req.user);
-      console.log("User role:", req.user?.role);
-      console.log("Request body:", req.body);
-      
       // Check if user is admin or analyst - all analysts can edit referrals
-      if (req.user!.role === "admin") {
-        console.log("User is admin, allowing edit");
-        // Admin can edit all referrals
-      } else if (req.user!.role === "analista") {
-        console.log("User is analyst, allowing edit");
-        // All analysts can edit referrals
-      } else {
-        console.log("User role not allowed:", req.user!.role);
+      if (req.user!.role !== "admin" && req.user!.role !== "analista") {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
       const referralId = parseInt(req.params.id);
-      const updatedReferral = await storage.updateReferral(referralId, req.body, req.user!.id);
+      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes } = req.body;
+      
+      // Check if referral exists
+      const existingReferral = await storage.getReferralById(referralId);
+      if (!existingReferral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Prepare update data
+      const updateData: any = {};
+      
+      // Only include fields that were sent in the request
+      if (fullName !== undefined) updateData.fullName = fullName;
+      if (phone !== undefined) updateData.phone = phone;
+      if (licensePlate !== undefined) updateData.licensePlate = licensePlate;
+      if (companyId !== undefined) updateData.companyId = companyId;
+      if (userId !== undefined) updateData.userId = userId;
+      if (status !== undefined) updateData.status = status;
+      if (notes !== undefined) updateData.notes = notes;
+      if (commissionIndicator !== undefined) updateData.commissionIndicator = commissionIndicator;
+      if (commissionPromoter !== undefined) updateData.commissionPromoter = commissionPromoter;
+      
+      updateData.updatedAt = new Date();
+      
+      // Check for duplicates if phone or licensePlate changed
+      if ((phone && phone !== existingReferral.phone) || (licensePlate && licensePlate !== existingReferral.licensePlate)) {
+        const duplicates = await storage.checkDuplicateReferral(phone || existingReferral.phone, licensePlate || existingReferral.licensePlate);
+        const filteredDuplicates = duplicates.filter(d => d.id !== referralId);
+        
+        if (filteredDuplicates.length > 0) {
+          return res.status(400).json({ 
+            error: "Duplicata encontrada",
+            details: "Já existe uma indicação com este telefone ou placa"
+          });
+        }
+      }
+      
+      // Update the referral
+      const updatedReferral = await storage.updateReferral(referralId, updateData, req.user!.id);
+      
+      // Log the update
+      await storage.logUserAction({
+        userId: req.user!.id,
+        action: "update_referral",
+        entityType: "referral",
+        entityId: referralId,
+        oldValues: existingReferral,
+        newValues: updatedReferral,
+        details: `Dados da indicação ${referralId} atualizados por ${req.user!.role}`
+      });
       
       return res.json(updatedReferral);
     } catch (error) {
