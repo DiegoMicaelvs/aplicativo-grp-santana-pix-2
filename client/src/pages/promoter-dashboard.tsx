@@ -127,6 +127,7 @@ export default function PromoterDashboard() {
   });
 
   const onSubmit = (data: CreateIndicador) => {
+    console.log("Form submitted with data:", data);
     createIndicadorMutation.mutate(data);
   };
 
@@ -379,7 +380,14 @@ export default function PromoterDashboard() {
                     >
                       Cancelar
                     </Button>
-                    <Button type="submit" disabled={createIndicadorMutation.isPending}>
+                    <Button 
+                      type="submit" 
+                      disabled={createIndicadorMutation.isPending}
+                      onClick={() => {
+                        console.log("Button clicked, form errors:", form.formState.errors);
+                        console.log("Form isValid:", form.formState.isValid);
+                      }}
+                    >
                       {createIndicadorMutation.isPending ? "Criando..." : "Criar Indicador"}
                     </Button>
                   </div>
