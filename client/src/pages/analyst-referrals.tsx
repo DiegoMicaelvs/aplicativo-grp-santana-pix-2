@@ -54,9 +54,6 @@ const editSchema = z.object({
   phone: z.string().min(1, "Telefone é obrigatório"),
   licensePlate: z.string().min(1, "Placa é obrigatória"),
   hasInsurance: z.boolean(),
-  vehicleBrand: z.string().optional(),
-  vehicleModel: z.string().optional(),
-  vehicleYear: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted"]),
 });
@@ -126,9 +123,6 @@ export default function AnalystReferrals() {
       phone: "",
       licensePlate: "",
       hasInsurance: false,
-      vehicleBrand: "",
-      vehicleModel: "",
-      vehicleYear: "",
       notes: "",
       status: "pending",
     },
@@ -628,36 +622,6 @@ export default function AnalystReferrals() {
                   className="rounded"
                 />
                 <Label htmlFor="edit-hasInsurance">Tem Seguro?</Label>
-              </div>
-            </div>
-
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="font-semibold">Informações do Veículo</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="edit-vehicleBrand">Marca</Label>
-                  <Input
-                    id="edit-vehicleBrand"
-                    {...editForm.register("vehicleBrand")}
-                    placeholder="Ex: Toyota"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-vehicleModel">Modelo</Label>
-                  <Input
-                    id="edit-vehicleModel"
-                    {...editForm.register("vehicleModel")}
-                    placeholder="Ex: Corolla"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-vehicleYear">Ano</Label>
-                  <Input
-                    id="edit-vehicleYear"
-                    {...editForm.register("vehicleYear")}
-                    placeholder="Ex: 2022"
-                  />
-                </div>
               </div>
             </div>
 
