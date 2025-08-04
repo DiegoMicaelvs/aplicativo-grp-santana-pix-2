@@ -15,6 +15,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { formatCPF } from "@/lib/utils";
 
 // Validation schema for indicator registration
 const indicatorSchema = z.object({
@@ -144,7 +145,14 @@ export default function RegisterIndicator() {
                         <FormItem>
                           <FormLabel>CPF</FormLabel>
                           <FormControl>
-                            <Input placeholder="000.000.000-00" {...field} />
+                            <Input 
+                              placeholder="000.000.000-00" 
+                              {...field}
+                              onChange={(e) => {
+                                const formatted = formatCPF(e.target.value);
+                                field.onChange(formatted);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

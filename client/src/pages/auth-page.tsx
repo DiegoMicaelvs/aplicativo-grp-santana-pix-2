@@ -40,6 +40,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import { formatCPF } from "@/lib/utils";
 
 // Login schema
 const loginSchema = z.object({
@@ -313,7 +314,14 @@ export default function AuthPage() {
                               <FormItem>
                                 <FormLabel>CPF</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="xxx.xxx.xxx-xx" {...field} />
+                                  <Input 
+                                    placeholder="xxx.xxx.xxx-xx" 
+                                    {...field}
+                                    onChange={(e) => {
+                                      const formatted = formatCPF(e.target.value);
+                                      field.onChange(formatted);
+                                    }}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

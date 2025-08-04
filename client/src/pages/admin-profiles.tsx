@@ -63,6 +63,7 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { formatCPF } from "@/lib/utils";
 import {
   User,
   UserRole,
@@ -967,7 +968,12 @@ export default function AdminProfiles() {
               <Label htmlFor="cpf">CPF</Label>
               <Input
                 id="cpf"
-                {...form.register("cpf")}
+                {...form.register("cpf", {
+                  onChange: (e) => {
+                    const formatted = formatCPF(e.target.value);
+                    form.setValue("cpf", formatted);
+                  }
+                })}
                 placeholder="000.000.000-00"
               />
               {form.formState.errors.cpf && (
