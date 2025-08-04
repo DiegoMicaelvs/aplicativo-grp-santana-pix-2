@@ -1212,15 +1212,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Edit referral (for analysts level 1+ and admins)
+  // Edit referral (for analysts and admins)
   app.patch("/api/referrals/:id", requireAuth, async (req, res) => {
     try {
+      console.log("PATCH /api/referrals/:id - User:", req.user);
+      console.log("User role:", req.user?.role);
+      console.log("Request body:", req.body);
+      
       // Check if user is admin or analyst - all analysts can edit referrals
       if (req.user!.role === "admin") {
+        console.log("User is admin, allowing edit");
         // Admin can edit all referrals
       } else if (req.user!.role === "analista") {
+        console.log("User is analyst, allowing edit");
         // All analysts can edit referrals
       } else {
+        console.log("User role not allowed:", req.user!.role);
         return res.status(403).json({ error: "Acesso negado" });
       }
 
