@@ -272,6 +272,8 @@ export default function AdminReferralsDetailedPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all_statuses");
   const [userFilter, setUserFilter] = useState<string>("all_users");
+  const [companyFilter, setCompanyFilter] = useState<string>("all_companies");
+  const [monthFilter, setMonthFilter] = useState<string>("all_months");
   const [selectedReferral, setSelectedReferral] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<ReferralStatus>("pending");
@@ -421,8 +423,19 @@ export default function AdminReferralsDetailedPage() {
                          user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all_statuses" || referral.status === statusFilter;
     const matchesUser = userFilter === "all_users" || referral.userId.toString() === userFilter;
+    const matchesCompany = companyFilter === "all_companies" || referral.companyId?.toString() === companyFilter;
     
-    return matchesSearch && matchesStatus && matchesUser;
+    // Month filter
+    let matchesMonth = true;
+    if (monthFilter !== "all_months") {
+      const referralDate = new Date(referral.createdAt);
+      const referralMonth = referralDate.getMonth();
+      const referralYear = referralDate.getFullYear();
+      const [filterYear, filterMonth] = monthFilter.split("-").map(Number);
+      matchesMonth = referralYear === filterYear && referralMonth === filterMonth - 1; // JavaScript months are 0-indexed
+    }
+    
+    return matchesSearch && matchesStatus && matchesUser && matchesCompany && matchesMonth;
   });
 
   // Helper function to get company name by ID
@@ -639,6 +652,44 @@ export default function AdminReferralsDetailedPage() {
                     {user.fullName}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={companyFilter} onValueChange={setCompanyFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Seguradora" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all_companies">Todas as Seguradoras</SelectItem>
+                {companies.map(company => (
+                  <SelectItem key={company.id} value={company.id.toString()}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={monthFilter} onValueChange={setMonthFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all_months">Todos os Meses</SelectItem>
+                {(() => {
+                  const months = [];
+                  const currentDate = new Date();
+                  for (let i = 0; i < 12; i++) {
+                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                    const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    const monthName = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                    months.push({ value: monthYear, label: monthName });
+                  }
+                  return months.map(month => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ));
+                })()}
               </SelectContent>
             </Select>
           </div>
