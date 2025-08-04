@@ -181,8 +181,12 @@ export default function AnalystReferrals() {
   });
 
   // Check permissions - Allow analysts level 1+ to edit referral status
-  const canEdit = user?.permissions?.includes("edit_referral_status") || 
-    (user?.role === "analista" && user?.analystLevel && user.analystLevel >= 1);
+  // Analistas nível 3 sempre podem editar e validar
+  // Outros analistas precisam ter nível >= 1 ou permissão específica
+  const canEdit = (user?.role === "analista" && user?.analystLevel === 3) ||
+    user?.permissions?.includes("edit_referral_status") || 
+    (user?.role === "analista" && user?.analystLevel && user.analystLevel >= 1) ||
+    user?.role === "admin";
 
   // Filter referrals
   const filteredReferrals = referrals.filter((referral) => {

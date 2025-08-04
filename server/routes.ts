@@ -1219,8 +1219,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user!.role === "admin") {
         // Admin can edit all referrals
       } else if (req.user!.role === "analista") {
-        // Check analyst level
-        if (!req.user!.analystLevel || req.user!.analystLevel < 1) {
+        // Check analyst level - Level 3 analysts always have permission
+        if (req.user!.analystLevel === 3) {
+          // Level 3 analysts can always edit
+        } else if (!req.user!.analystLevel || req.user!.analystLevel < 1) {
           return res.status(403).json({ error: "Você precisa ser analista nível 1 ou superior para editar indicações" });
         }
       } else {
