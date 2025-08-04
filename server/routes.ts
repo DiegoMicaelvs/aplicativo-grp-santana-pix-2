@@ -162,26 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new indicador (for promoters)
-  app.post("/api/users/indicador", requirePromoter, async (req, res) => {
-    try {
-      const validatedData = createIndicadorSchema.parse(req.body);
-      const userData = {
-        ...validatedData,
-        createdBy: req.user!.id,
-        promoterId: req.user!.id, // Link indicador to promoter
-        analystId: undefined, // Explicitly set to undefined
-        role: "indicador" as const
-      };
-      
-      const user = await storage.createUser(userData);
-      const { password, ...userWithoutPassword } = user;
-      return res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      console.error("Error creating indicador:", error);
-      return res.status(400).json({ error: "Erro ao criar indicador" });
-    }
-  });
+
 
   // Get indicadores under a promoter
   app.get("/api/users/indicadores", requirePromoter, async (req, res) => {
