@@ -599,6 +599,7 @@ export default function AdminProfiles() {
                                   promoters={promoters}
                                   analysts={analystLevel3}
                                   isCreate={false}
+                                  onCancel={() => setDialogOpen(false)}
                                 />
                               </DialogContent>
                             </Dialog>
@@ -881,7 +882,8 @@ export default function AdminProfiles() {
   isLoading, 
   promoters,
   analysts, 
-  isCreate 
+  isCreate,
+  onCancel 
 }: {
   form: any;
   onSubmit: (data: ProfileFormValues) => void;
@@ -889,6 +891,7 @@ export default function AdminProfiles() {
   promoters?: User[];
   analysts?: User[];
   isCreate: boolean;
+  onCancel?: () => void;
 }) {
   const [activeTab, setActiveTab] = useState("basic");
   const watchedRole = form.watch("role");
@@ -1269,6 +1272,11 @@ export default function AdminProfiles() {
       </Tabs>
 
       <div className="flex justify-end space-x-2 pt-4 border-t">
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+        )}
         <Button type="submit" disabled={isLoading}>
           {isLoading ? (
             <>
