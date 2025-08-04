@@ -764,6 +764,12 @@ class DatabaseStorage implements IStorage {
     if (updates.vehicleModel !== undefined) updateData.vehicleModel = updates.vehicleModel;
     if (updates.vehicleYear !== undefined) updateData.vehicleYear = updates.vehicleYear;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
+    
+    // Handle status update separately to ensure commission calculations
+    if (updates.status !== undefined && updates.status !== currentReferral.status) {
+      // Use updateReferralStatus for status changes to handle commissions
+      return await this.updateReferralStatus(id, updates.status, editorUserId, updates.notes);
+    }
 
     // Update referral
     const [updatedReferral] = await db.update(referrals)

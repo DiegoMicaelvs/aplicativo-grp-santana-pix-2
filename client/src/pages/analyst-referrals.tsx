@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Edit, CheckCircle, XCircle, Info } from "lucide-react";
+import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -58,6 +58,7 @@ const editSchema = z.object({
   vehicleModel: z.string().optional(),
   vehicleYear: z.string().optional(),
   notes: z.string().optional(),
+  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted"]),
 });
 
 type EditFormValues = z.infer<typeof editSchema>;
@@ -129,6 +130,7 @@ export default function AnalystReferrals() {
       vehicleModel: "",
       vehicleYear: "",
       notes: "",
+      status: "pending",
     },
   });
 
@@ -226,6 +228,7 @@ export default function AnalystReferrals() {
       vehicleModel: referral.vehicleModel || "",
       vehicleYear: referral.vehicleYear || "",
       notes: referral.notes || "",
+      status: referral.status,
     });
     setIsEditDialogOpen(true);
   };
@@ -659,6 +662,74 @@ export default function AnalystReferrals() {
             </div>
 
             <div className="space-y-4 border-t pt-4">
+              <div>
+                <Label htmlFor="edit-status">Status da Indicação</Label>
+                <Select
+                  value={editForm.watch("status")}
+                  onValueChange={(value: any) => editForm.setValue("status", value)}
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                        Pendente
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="analyzing">
+                      <div className="flex items-center">
+                        <Search className="h-4 w-4 mr-2 text-blue-500" />
+                        Em Análise
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="validated">
+                      <div className="flex items-center">
+                        <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                        Validado
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="converted">
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 mr-2 text-green-700" />
+                        Convertido
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="rejected">
+                      <div className="flex items-center">
+                        <XCircle className="h-4 w-4 mr-2 text-red-600" />
+                        Rejeitado
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="paid">
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 mr-2 text-green-800" />
+                        Pago
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="false">
+                      <div className="flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-2 text-orange-600" />
+                        Falso
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="not_validated">
+                      <div className="flex items-center">
+                        <XCircle className="h-4 w-4 mr-2 text-gray-600" />
+                        Não Validado
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="not_converted">
+                      <div className="flex items-center">
+                        <XCircle className="h-4 w-4 mr-2 text-gray-700" />
+                        Não Convertido
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div>
                 <Label htmlFor="edit-notes">Observações</Label>
                 <textarea
