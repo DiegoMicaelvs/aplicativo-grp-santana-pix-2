@@ -73,9 +73,28 @@ export default function AdminIndicatorsPage() {
     const user = (users as any[]).find((u: any) => u.id === userId);
     if (user?.createdBy) {
       const creator = (users as any[]).find((u: any) => u.id === user.createdBy);
-      return creator?.fullName || "Sistema";
+      if (creator) {
+        const roleLabel = creator.role === "analista" ? " (Analista)" : 
+                         creator.role === "admin" ? " (Admin)" : 
+                         creator.role === "promotor" ? " (Promotor)" : "";
+        return creator.fullName + roleLabel;
+      }
+      return "Sistema";
     }
     return "Auto-cadastro";
+  };
+
+  // Get analyst assignment for promoters
+  const getAnalystAssignment = (userId: number) => {
+    const user = (users as any[]).find((u: any) => u.id === userId);
+    if (user?.role !== "promotor") return null;
+    
+    // Find if any analyst has this promoter assigned
+    const analyst = (users as any[]).find((u: any) => 
+      u.role === "analista" && u.assignedPromoters?.includes(userId)
+    );
+    
+    return analyst ? analyst.fullName : null;
   };
 
   // Assignment mutation
@@ -286,7 +305,7 @@ export default function AdminIndicatorsPage() {
                   <TableHead>CPF</TableHead>
                   <TableHead>Função</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Promotor Responsável</TableHead>
+                  <TableHead>Atribuição</TableHead>
                   <TableHead>Cadastrado por</TableHead>
                   <TableHead>Indicações</TableHead>
                   <TableHead>Ganhos Totais</TableHead>
@@ -311,22 +330,36 @@ export default function AdminIndicatorsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className={user.promoterId ? "text-green-600 font-medium" : "text-gray-500"}>
-                          {getPromoterName(user.promoterId)}
-                        </span>
-                        {user.role === "indicador" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setSelectedPromoterId(user.promoterId?.toString() || "");
-                              setIsAssignDialogOpen(true);
-                            }}
-                          >
-                            <UserPlus className="h-3 w-3" />
-                          </Button>
+                      <div className="flex flex-col gap-1">
+                        {user.role === "indicador" ? (
+                          <div className="flex items-center gap-2">
+                            <span className={user.promoterId ? "text-green-600 font-medium" : "text-gray-500"}>
+                              {getPromoterName(user.promoterId)}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setSelectedPromoterId(user.promoterId?.toString() || "");
+                                setIsAssignDialogOpen(true);
+                              }}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : user.role === "promotor" ? (
+                          <div>
+                            {getAnalystAssignment(user.id) ? (
+                              <span className="text-blue-600 font-medium">
+                                Analista: {getAnalystAssignment(user.id)}
+                              </span>
+                            ) : (
+                              <span className="text-gray-500">Sem atribuição</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
                         )}
                       </div>
                     </TableCell>
