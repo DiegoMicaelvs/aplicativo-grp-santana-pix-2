@@ -9,7 +9,8 @@ import {
   Settings, 
   UserPlus,
   Shield,
-  CheckCircle
+  CheckCircle,
+  ArrowLeft
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -62,6 +63,17 @@ export default function AnalystDashboard() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* Back Button */}
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={() => setLocation("/")}
+        className="mb-4"
+      >
+        <ArrowLeft className="h-4 w-4 mr-1" />
+        Voltar
+      </Button>
+
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
