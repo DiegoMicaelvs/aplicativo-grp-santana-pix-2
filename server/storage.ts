@@ -255,12 +255,9 @@ class DatabaseStorage implements IStorage {
   }
 
   async getAllUsersBySupervisor(supervisorId: number) {
-    // Get all users directly supervised or created by the supervisor
+    // Get only users currently supervised by this analyst (supervisorId match)
     const directUsers = await db.query.users.findMany({
-      where: or(
-        eq(users.supervisorId, supervisorId),
-        eq(users.createdBy, supervisorId)
-      ),
+      where: eq(users.supervisorId, supervisorId),
       orderBy: desc(users.createdAt)
     });
 
@@ -269,11 +266,18 @@ class DatabaseStorage implements IStorage {
     const indirectUsers: any[] = [];
     
     for (const promoter of promotersUnderSupervision) {
-      const indicadores = await this.getIndicadoresByPromoter(promoter.id);
+      // Get indicadores that belong to this promoter AND are still supervised by the analyst
+      const indicadores = await db.query.users.findMany({
+        where: and(
+          eq(users.promoterId, promoter.id),
+          eq(users.role, 'indicador'),
+          eq(users.supervisorId, supervisorId) // Ensure they're still supervised
+        )
+      });
       indirectUsers.push(...indicadores);
     }
 
-    // Deduplicate users (in case some are both created by and supervised by the analyst)
+    // Deduplicate users
     const allUsersMap = new Map();
     [...directUsers, ...indirectUsers].forEach(user => {
       allUsersMap.set(user.id, user);
@@ -575,7 +579,7 @@ class DatabaseStorage implements IStorage {
   }
 
   async getReferralsBySupervisor(supervisorId: number) {
-    // Get all users under supervision (direct and indirect)
+    // Get all users currently under supervision
     const allUsers = await this.getAllUsersBySupervisor(supervisorId);
     const userIds = allUsers.map(u => u.id);
     
@@ -583,12 +587,12 @@ class DatabaseStorage implements IStorage {
       return [];
     }
     
-    // Create OR conditions for all user IDs
+    // Get referrals where userId is one of the supervised users
+    // This ensures we only see referrals assigned to currently supervised users
     const userIdConditions = userIds.map(id => eq(referrals.userId, id));
-    const createdByConditions = userIds.map(id => eq(referrals.createdBy, id));
     
     return await db.query.referrals.findMany({
-      where: or(...userIdConditions, ...createdByConditions),
+      where: or(...userIdConditions),
       with: {
         user: true,
         company: true,
