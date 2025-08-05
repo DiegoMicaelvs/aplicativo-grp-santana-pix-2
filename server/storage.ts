@@ -256,34 +256,12 @@ class DatabaseStorage implements IStorage {
 
   async getAllUsersBySupervisor(supervisorId: number) {
     // Get only users currently supervised by this analyst (supervisorId match)
-    const directUsers = await db.query.users.findMany({
+    const supervisedUsers = await db.query.users.findMany({
       where: eq(users.supervisorId, supervisorId),
       orderBy: desc(users.createdAt)
     });
 
-    // Get all users created by promoters under supervision
-    const promotersUnderSupervision = directUsers.filter(u => u.role === 'promotor');
-    const indirectUsers: any[] = [];
-    
-    for (const promoter of promotersUnderSupervision) {
-      // Get indicadores that belong to this promoter AND are still supervised by the analyst
-      const indicadores = await db.query.users.findMany({
-        where: and(
-          eq(users.promoterId, promoter.id),
-          eq(users.role, 'indicador'),
-          eq(users.supervisorId, supervisorId) // Ensure they're still supervised
-        )
-      });
-      indirectUsers.push(...indicadores);
-    }
-
-    // Deduplicate users
-    const allUsersMap = new Map();
-    [...directUsers, ...indirectUsers].forEach(user => {
-      allUsersMap.set(user.id, user);
-    });
-
-    return Array.from(allUsersMap.values());
+    return supervisedUsers;
   }
   
   async updateUserBalance(userId: number, amount: number) {
@@ -591,7 +569,7 @@ class DatabaseStorage implements IStorage {
     // This ensures we only see referrals assigned to currently supervised users
     const userIdConditions = userIds.map(id => eq(referrals.userId, id));
     
-    return await db.query.referrals.findMany({
+    const result = await db.query.referrals.findMany({
       where: or(...userIdConditions),
       with: {
         user: true,
@@ -600,6 +578,8 @@ class DatabaseStorage implements IStorage {
       },
       orderBy: desc(referrals.createdAt)
     });
+    
+    return result;
   }
   
   async getReferralsByStatus(status: ReferralStatus) {
