@@ -149,7 +149,7 @@ export default function AnalystCreateIndicadorPage() {
                   id="username"
                   type="email"
                   {...register("username")}
-                  placeholder="Se vazio, usará o email de contato"
+                  placeholder="email@exemplo.com"
                 />
                 {errors.username && (
                   <p className="text-sm text-red-600">{errors.username.message}</p>
