@@ -295,7 +295,6 @@ class DatabaseStorage implements IStorage {
       await db.update(users)
         .set({ 
           balance: sql`balance + ${amount}`,
-          totalEarnings: amount > 0 ? sql`total_earnings + ${amount}` : sql`total_earnings`,
           updatedAt: new Date()
         })
         .where(eq(users.id, userId));
@@ -307,6 +306,27 @@ class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error(`[updateUserBalance] Erro ao atualizar saldo do usuário ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async updateUserTotalEarnings(userId: number, amount: number) {
+    try {
+      console.log(`[updateUserTotalEarnings] Atualizando total de ganhos do usuário ${userId} com valor: ${amount}`);
+      
+      await db.update(users)
+        .set({ 
+          totalEarnings: sql`total_earnings + ${amount}`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      
+      const updatedUser = await this.getUserById(userId);
+      if (updatedUser) {
+        console.log(`[updateUserTotalEarnings] Novo total de ganhos: ${updatedUser.totalEarnings}`);
+      }
+    } catch (error) {
+      console.error(`[updateUserTotalEarnings] Erro ao atualizar total de ganhos do usuário ${userId}:`, error);
       throw error;
     }
   }
@@ -713,6 +733,19 @@ class DatabaseStorage implements IStorage {
       if (user?.promoterId && commissionDifferencePromoter !== 0) {
         await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
         console.log(`[updateReferralStatus] Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
+      }
+      
+      // Update totalEarnings only when status changes to paid
+      if (status === 'paid' && previousStatus !== 'paid') {
+        if (user && newCommissionIndicator > 0) {
+          await this.updateUserTotalEarnings(user.id, newCommissionIndicator);
+          console.log(`[updateReferralStatus] Updated total earnings for user ${user.id}: +${newCommissionIndicator}`);
+        }
+        
+        if (user?.promoterId && newCommissionPromoter > 0) {
+          await this.updateUserTotalEarnings(user.promoterId, newCommissionPromoter);
+          console.log(`[updateReferralStatus] Updated total earnings for promoter ${user.promoterId}: +${newCommissionPromoter}`);
+        }
       }
       
       const [updatedReferral] = await db.update(referrals)

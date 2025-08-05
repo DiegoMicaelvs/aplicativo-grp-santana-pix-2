@@ -117,9 +117,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userReferrals = await storage.getReferralsByUserId(user.id);
       let realTotalEarnings = 0;
       
-      // Sum commissions only from converted or paid referrals
+      // Sum commissions only from paid referrals
       for (const referral of userReferrals) {
-        if (referral.status === 'converted' || referral.status === 'paid') {
+        if (referral.status === 'paid') {
           realTotalEarnings += parseFloat(referral.commissionIndicator || '0');
         }
       }
