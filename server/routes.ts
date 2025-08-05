@@ -1181,6 +1181,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const referralId = parseInt(req.params.id);
       const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes } = req.body;
       
+      console.log("[PATCH /api/referrals/:id] Dados recebidos:", req.body);
+      
       // Check if referral exists
       const existingReferral = await storage.getReferralById(referralId);
       if (!existingReferral) {
@@ -1194,14 +1196,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (fullName !== undefined) updateData.fullName = fullName;
       if (phone !== undefined) updateData.phone = phone;
       if (licensePlate !== undefined) updateData.licensePlate = licensePlate;
-      if (companyId !== undefined) updateData.companyId = companyId;
-      if (userId !== undefined) updateData.userId = userId;
+      if (companyId !== undefined) updateData.companyId = parseInt(companyId);
+      if (userId !== undefined) updateData.userId = parseInt(userId);
       if (status !== undefined) updateData.status = status;
       if (notes !== undefined) updateData.notes = notes;
       if (commissionIndicator !== undefined) updateData.commissionIndicator = commissionIndicator;
       if (commissionPromoter !== undefined) updateData.commissionPromoter = commissionPromoter;
       
       updateData.updatedAt = new Date();
+      
+      console.log("[PATCH /api/referrals/:id] updateData preparado:", updateData);
       
       // Check for duplicates if phone or licensePlate changed
       if ((phone && phone !== existingReferral.phone) || (licensePlate && licensePlate !== existingReferral.licensePlate)) {
