@@ -42,7 +42,7 @@ import { BackButton } from "@/components/ui/back-button";
 import { CreateReferral, Company } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 
-// Lista de estados brasileiros
+// Lista de estados brasileiros em ordem alfabética
 const BRAZILIAN_STATES = [
   { value: "AC", label: "Acre" },
   { value: "AL", label: "Alagoas" },
