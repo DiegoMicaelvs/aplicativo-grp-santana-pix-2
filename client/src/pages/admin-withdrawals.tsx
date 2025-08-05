@@ -153,11 +153,7 @@ export default function AdminWithdrawals() {
     });
   };
 
-  const validateCpfMatch = (withdrawal: WithdrawalRequest) => {
-    const userCpf = withdrawal.user.cpf?.replace(/\D/g, '');
-    const pixCpf = withdrawal.pixKey?.replace(/\D/g, '');
-    return userCpf === pixCpf;
-  };
+
 
   return (
     <div className="space-y-6">
@@ -299,11 +295,6 @@ export default function AdminWithdrawals() {
                         <div className="flex items-center gap-2">
                           <CreditCardIcon className="w-4 h-4 text-gray-400" />
                           <div className="font-mono text-sm">{withdrawal.pixKey}</div>
-                          {!validateCpfMatch(withdrawal) && (
-                            <div title="CPF da chave PIX não confere com o cadastro">
-                              <AlertTriangleIcon className="w-4 h-4 text-red-500" />
-                            </div>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
@@ -363,17 +354,6 @@ export default function AdminWithdrawals() {
                                       </div>
                                     </div>
                                   </div>
-
-                                  {/* Validação de CPF */}
-                                  {!validateCpfMatch(selectedWithdrawal) && (
-                                    <Alert variant="destructive">
-                                      <AlertTriangleIcon className="w-4 h-4" />
-                                      <AlertDescription>
-                                        <strong>Atenção:</strong> A chave PIX (CPF) não confere com o CPF cadastrado do usuário. 
-                                        Verifique antes de aprovar o pagamento.
-                                      </AlertDescription>
-                                    </Alert>
-                                  )}
 
                                   {/* Chave PIX */}
                                   <div className="border rounded-lg p-4">
