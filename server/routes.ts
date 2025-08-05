@@ -1950,6 +1950,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: "Erro ao atribuir promotor" });
     }
   });
+  
+  // Assign user to supervisor (admin only)
+  app.patch("/api/admin/users/:id/supervisor", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { supervisorId } = req.body;
+      
+      // Update user with new supervisor assignment
+      const updatedUser = await storage.assignUserToSupervisor(parseInt(id), supervisorId);
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      // Log audit trail
+      try {
+        const action = supervisorId ? "assign_supervisor" : "unassign_supervisor";
+        const details = supervisorId 
+          ? `Usuário ${updatedUser.fullName} atribuído ao supervisor ID: ${supervisorId}`
+          : `Usuário ${updatedUser.fullName} removido de supervisor`;
+          
+        await storage.logUserAction({
+          userId: req.user!.id,
+          action,
+          entityType: 'user',
+          entityId: parseInt(id),
+          details
+        });
+      } catch (error) {
+        console.warn('Failed to log supervisor assignment:', error);
+      }
+      
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error assigning supervisor:", error);
+      return res.status(500).json({ error: "Erro ao atribuir supervisor" });
+    }
+  });
 
   // SMS Configuration and Testing Routes
   // Get SMS status and configuration

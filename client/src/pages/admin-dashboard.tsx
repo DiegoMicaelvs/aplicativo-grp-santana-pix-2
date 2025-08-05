@@ -49,7 +49,7 @@ import {
 } from "@/components/ui/dialog";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import { Users, ClipboardList, DollarSign, CheckCircle, XCircle, Clock, Loader2, Filter } from "lucide-react";
+import { Users, ClipboardList, DollarSign, CheckCircle, XCircle, Clock, Loader2, Filter, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Referral as BaseReferral, ReferralStatus, User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -148,6 +148,9 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedPromoter, setSelectedPromoter] = useState<any>(null);
+  const [selectedAnalystId, setSelectedAnalystId] = useState("");
   
   const itemsPerPage = 10;
   
@@ -160,6 +163,14 @@ export default function AdminDashboard() {
   const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
   });
+  
+  // Fetch promoters
+  const { data: promoters, isLoading: isLoadingPromoters } = useQuery<User[]>({
+    queryKey: ['/api/admin/promoters'],
+  });
+  
+  // Get analysts level 3
+  const analystsLevel3 = users?.filter(u => u.role === 'analista' && u.analystLevel === 3) || [];
   
   // Filter referrals based on status
   const filteredReferrals = referrals?.filter(referral => 
@@ -204,6 +215,32 @@ export default function AdminDashboard() {
     }
   });
   
+  // Assign promoter mutation
+  const assignPromoterMutation = useMutation({
+    mutationFn: async ({ userId, supervisorId }: { userId: number, supervisorId: number | null }) => {
+      const res = await apiRequest("PATCH", `/api/admin/users/${userId}/supervisor`, { supervisorId });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/promoters'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setAssignDialogOpen(false);
+      toast({
+        title: "Atribuição realizada",
+        description: "Promotor atribuído com sucesso.",
+      });
+      setSelectedPromoter(null);
+      setSelectedAnalystId("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atribuir promotor. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Handle opening the referral status dialog
   const handleOpenStatusDialog = (referral: Referral) => {
     setSelectedReferral(referral);
@@ -231,6 +268,17 @@ export default function AdminDashboard() {
     if (selectedReferral) {
       updateReferralMutation.mutate({ id: selectedReferral.id, data });
     }
+  };
+  
+  // Handle assigning promoter
+  const handleAssignPromoter = () => {
+    if (!selectedPromoter) return;
+    
+    const supervisorId = selectedAnalystId === "unassign" ? null : parseInt(selectedAnalystId);
+    assignPromoterMutation.mutate({ 
+      userId: selectedPromoter.id, 
+      supervisorId 
+    });
   };
   
   // Calculate dashboard stats
@@ -389,9 +437,10 @@ export default function AdminDashboard() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsList className="grid w-full grid-cols-3 max-w-md">
                 <TabsTrigger value="referrals">Indicações</TabsTrigger>
                 <TabsTrigger value="users">Indicadores</TabsTrigger>
+                <TabsTrigger value="promoters">Promotores</TabsTrigger>
               </TabsList>
               
               <TabsContent value="referrals" className="mt-6">
@@ -604,6 +653,86 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               </TabsContent>
+              
+              {/* Promoters Tab */}
+              <TabsContent value="promoters" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Gerenciar Promotores</CardTitle>
+                    <CardDescription>
+                      Visualize e atribua promotores a analistas nível 3
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingPromoters ? (
+                      <div className="flex justify-center items-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </div>
+                    ) : promoters && promoters.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>ID</TableHead>
+                              <TableHead>Nome</TableHead>
+                              <TableHead>Email</TableHead>
+                              <TableHead>Telefone</TableHead>
+                              <TableHead>Atribuição</TableHead>
+                              <TableHead>Data de Cadastro</TableHead>
+                              <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {promoters.map((promoter) => (
+                              <TableRow key={promoter.id}>
+                                <TableCell>{promoter.id}</TableCell>
+                                <TableCell className="font-medium">
+                                  {promoter.fullName}
+                                </TableCell>
+                                <TableCell>{promoter.username}</TableCell>
+                                <TableCell>{promoter.phone}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {promoter.supervisorId ? (
+                                      <div className="flex items-center gap-1">
+                                        <UserCheck className="h-4 w-4 text-green-600" />
+                                        <span className="text-sm text-green-600 font-medium">
+                                          Analista: {users?.find(u => u.id === promoter.supervisorId)?.fullName || 'N/A'}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-sm text-gray-500">Não atribuído</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{formatDate(promoter.createdAt)}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => {
+                                      setSelectedPromoter(promoter);
+                                      setSelectedAnalystId(promoter.supervisorId?.toString() || "");
+                                      setAssignDialogOpen(true);
+                                    }}
+                                  >
+                                    <UserCheck className="h-4 w-4 mr-1" />
+                                    Atribuir
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <p className="text-gray-500">Nenhum promotor cadastrado.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
           
@@ -756,6 +885,81 @@ export default function AdminDashboard() {
                   </DialogFooter>
                 </form>
               </Form>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Promoter Assignment Dialog */}
+          <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-heading">Atribuir Promotor</DialogTitle>
+                <DialogDescription>
+                  {selectedPromoter && (
+                    <span>
+                      Atribuir {selectedPromoter.fullName} a um analista nível 3
+                    </span>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Analista Nível 3</label>
+                  <Select value={selectedAnalystId} onValueChange={setSelectedAnalystId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um analista nível 3" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassign">Desatribuir</SelectItem>
+                      {analystsLevel3.map((analyst) => (
+                        <SelectItem key={analyst.id} value={analyst.id.toString()}>
+                          {analyst.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {selectedAnalystId && selectedAnalystId !== "unassign" && (
+                  <div className="p-3 bg-blue-50 rounded-md">
+                    <p className="text-sm text-blue-800">
+                      O promotor será supervisionado pelo analista selecionado e aparecerá apenas na visão deste analista.
+                    </p>
+                  </div>
+                )}
+                
+                {selectedAnalystId === "unassign" && (
+                  <div className="p-3 bg-yellow-50 rounded-md">
+                    <p className="text-sm text-yellow-800">
+                      O promotor será desatribuído e ficará visível para todos os analistas e administradores.
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setAssignDialogOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={() => handleAssignPromoter()}
+                  disabled={!selectedAnalystId || assignPromoterMutation.isPending}
+                >
+                  {assignPromoterMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                      Atribuindo...
+                    </>
+                  ) : (
+                    "Confirmar Atribuição"
+                  )}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
