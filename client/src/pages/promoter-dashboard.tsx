@@ -74,8 +74,19 @@ export default function PromoterDashboard() {
   });
 
   // Fetch current user info
-  const { data: currentUser } = useQuery({
+  const { data: currentUser } = useQuery<User>({
     queryKey: ["/api/user"],
+  });
+
+  // Fetch supervisor details if assigned
+  const { data: supervisor } = useQuery<User>({
+    queryKey: ["/api/users", currentUser?.supervisorId],
+    enabled: !!currentUser?.supervisorId,
+    queryFn: async () => {
+      const response = await fetch(`/api/users/${currentUser?.supervisorId}`);
+      if (!response.ok) throw new Error('Failed to fetch supervisor');
+      return response.json();
+    }
   });
 
   // Create indicador mutation
@@ -448,6 +459,42 @@ export default function PromoterDashboard() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Profile Card */}
+            {currentUser && currentUser.role === 'promotor' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Meu Perfil</CardTitle>
+                  <CardDescription>Informações do seu perfil de promotor</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Nome</p>
+                      <p className="font-medium">{currentUser.fullName}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium">{currentUser.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Telefone</p>
+                      <p className="font-medium">{currentUser.phone || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Atribuído a</p>
+                      {currentUser.supervisorId ? (
+                        <p className="font-medium text-blue-600">
+                          {supervisor ? supervisor.fullName : `Analista Nível 3 (ID: ${currentUser.supervisorId})`}
+                        </p>
+                      ) : (
+                        <p className="text-gray-400">Sem atribuição</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card>
