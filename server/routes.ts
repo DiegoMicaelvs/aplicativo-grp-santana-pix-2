@@ -1960,6 +1960,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: "Erro ao atribuir promotor" });
     }
   });
+
+  // New endpoint for assigning indicators to either promoters or analysts
+  app.patch("/api/admin/users/:id/assign", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { promoterId, supervisorId } = req.body;
+      
+      // Can't have both promoter and supervisor
+      if (promoterId && supervisorId) {
+        return res.status(400).json({ error: "Indicador pode ser atribuído a promotor OU analista, não ambos" });
+      }
+      
+      // Update user with new assignment
+      const updatedUser = await storage.assignIndicator(parseInt(id), promoterId, supervisorId);
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      // Log audit trail
+      try {
+        let action, details;
+        if (promoterId) {
+          action = "assign_promoter";
+          details = `Indicador ${updatedUser.fullName} atribuído ao promotor ID: ${promoterId}`;
+        } else if (supervisorId) {
+          action = "assign_analyst";
+          details = `Indicador ${updatedUser.fullName} atribuído ao analista nível 3 ID: ${supervisorId}`;
+        } else {
+          action = "unassign_indicator";
+          details = `Indicador ${updatedUser.fullName} removido de atribuição`;
+        }
+          
+        await storage.logUserAction({
+          userId: req.user!.id,
+          action,
+          entityType: 'user',
+          entityId: parseInt(id),
+          details
+        });
+      } catch (error) {
+        console.warn('Failed to log assignment:', error);
+      }
+      
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error assigning indicator:", error);
+      return res.status(500).json({ error: "Erro ao atribuir indicador" });
+    }
+  });
   
   // Assign user to supervisor (admin only)
   app.patch("/api/admin/users/:id/supervisor", requireAdmin, async (req, res) => {

@@ -21,6 +21,8 @@ export default function AdminIndicatorsPage() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedPromoterId, setSelectedPromoterId] = useState<string>("");
+  const [assignmentType, setAssignmentType] = useState<"promotor" | "analista">("promotor");
+  const [selectedAnalystId, setSelectedAnalystId] = useState<string>("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -36,6 +38,11 @@ export default function AdminIndicatorsPage() {
   const { data: promoters = [] } = useQuery({
     queryKey: ["/api/admin/promoters"]
   });
+
+  // Get analysts level 3
+  const analysts = (users as any[]).filter((u: any) => 
+    u.role === "analista" && u.analystLevel === 3
+  );
 
   // Filter indicators based on search and filters
   const filteredIndicators = (users as any[]).filter((user: any) => {
@@ -100,25 +107,41 @@ export default function AdminIndicatorsPage() {
     return analyst ? analyst.fullName : null;
   };
 
+  // Get assignment for indicators (can be promoter or analyst)
+  const getIndicatorAssignment = (user: any) => {
+    if (user.promoterId) {
+      const promoter = (users as any[]).find((u: any) => u.id === user.promoterId);
+      return promoter ? { type: 'promotor', name: promoter.fullName } : null;
+    } else if (user.supervisorId) {
+      const analyst = (users as any[]).find((u: any) => 
+        u.id === user.supervisorId && u.role === "analista" && u.analystLevel === 3
+      );
+      return analyst ? { type: 'analista', name: analyst.fullName } : null;
+    }
+    return null;
+  };
+
   // Assignment mutation
   const assignIndicatorMutation = useMutation({
-    mutationFn: async ({ userId, promoterId }: { userId: number; promoterId: number | null }) => {
-      const response = await fetch(`/api/admin/users/${userId}/assign-promoter`, {
+    mutationFn: async ({ userId, promoterId, supervisorId }: { userId: number; promoterId: number | null; supervisorId: number | null }) => {
+      const response = await fetch(`/api/admin/users/${userId}/assign`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ promoterId })
+        body: JSON.stringify({ promoterId, supervisorId })
       });
       
       if (!response.ok) {
-        throw new Error('Erro ao atribuir promotor');
+        throw new Error('Erro ao atribuir');
       }
       
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
       toast({
         title: "Sucesso",
         description: "Indicador atribuído com sucesso!"
@@ -126,6 +149,7 @@ export default function AdminIndicatorsPage() {
       setIsAssignDialogOpen(false);
       setSelectedUser(null);
       setSelectedPromoterId("");
+      setSelectedAnalystId("");
     },
     onError: () => {
       toast({
@@ -139,11 +163,21 @@ export default function AdminIndicatorsPage() {
   const handleAssignIndicator = () => {
     if (!selectedUser) return;
     
-    const promoterId = selectedPromoterId === "unassign" ? null : parseInt(selectedPromoterId);
-    assignIndicatorMutation.mutate({ 
-      userId: selectedUser.id, 
-      promoterId 
-    });
+    if (assignmentType === "promotor") {
+      const promoterId = selectedPromoterId === "unassign" ? null : parseInt(selectedPromoterId);
+      assignIndicatorMutation.mutate({ 
+        userId: selectedUser.id, 
+        promoterId,
+        supervisorId: null 
+      });
+    } else {
+      const supervisorId = selectedAnalystId === "unassign" ? null : parseInt(selectedAnalystId);
+      assignIndicatorMutation.mutate({ 
+        userId: selectedUser.id, 
+        promoterId: null,
+        supervisorId 
+      });
+    }
   };
 
   // Get promoter name
@@ -336,15 +370,25 @@ export default function AdminIndicatorsPage() {
                       <div className="flex flex-col gap-1">
                         {user.role === "indicador" ? (
                           <div className="flex items-center gap-2">
-                            <span className={user.promoterId ? "text-green-600 font-medium" : "text-gray-500"}>
-                              {getPromoterName(user.promoterId)}
-                            </span>
+                            {(() => {
+                              const assignment = getIndicatorAssignment(user);
+                              if (assignment) {
+                                return (
+                                  <span className={assignment.type === "promotor" ? "text-green-600 font-medium" : "text-blue-600 font-medium"}>
+                                    {assignment.type === "promotor" ? "" : "Analista: "}{assignment.name}
+                                  </span>
+                                );
+                              }
+                              return <span className="text-gray-500">Não atribuído</span>;
+                            })()}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => {
                                 setSelectedUser(user);
                                 setSelectedPromoterId(user.promoterId?.toString() || "");
+                                setSelectedAnalystId(user.supervisorId?.toString() || "");
+                                setAssignmentType(user.supervisorId ? "analista" : "promotor");
                                 setIsAssignDialogOpen(true);
                               }}
                             >
@@ -402,48 +446,103 @@ export default function AdminIndicatorsPage() {
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Atribuir Indicador a Promotor</DialogTitle>
+            <DialogTitle>Atribuir Indicador</DialogTitle>
             <DialogDescription>
-              Selecione um promotor para gerenciar este indicador: <strong>{selectedUser?.fullName}</strong>
+              Atribua o indicador <strong>{selectedUser?.fullName}</strong> a um promotor ou analista nível 3
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
+            {/* Assignment Type Selection */}
             <div>
-              <label className="text-sm font-medium">Promotor Responsável</label>
+              <label className="text-sm font-medium">Tipo de Atribuição</label>
               <Select 
-                value={selectedPromoterId} 
-                onValueChange={setSelectedPromoterId}
+                value={assignmentType} 
+                onValueChange={(value: "promotor" | "analista") => setAssignmentType(value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione um promotor" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unassign">Remover atribuição</SelectItem>
-                  {(promoters as any[]).map((promoter: any) => (
-                    <SelectItem key={promoter.id} value={promoter.id.toString()}>
-                      {promoter.fullName} ({promoter.email})
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="promotor">Atribuir a Promotor</SelectItem>
+                  <SelectItem value="analista">Atribuir a Analista Nível 3</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
-            {selectedPromoterId && selectedPromoterId !== "unassign" && (
-              <div className="p-3 bg-blue-50 rounded-md">
-                <p className="text-sm text-blue-700">
-                  <strong>Promotor selecionado:</strong> {(promoters as any[]).find((p: any) => p.id.toString() === selectedPromoterId)?.fullName}
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  O promotor receberá comissões pelas vendas fechadas por este indicador.
-                </p>
+
+            {/* Promoter Selection */}
+            {assignmentType === "promotor" && (
+              <div>
+                <label className="text-sm font-medium">Promotor Responsável</label>
+                <Select 
+                  value={selectedPromoterId} 
+                  onValueChange={setSelectedPromoterId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um promotor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassign">Remover atribuição</SelectItem>
+                    {(promoters as any[]).map((promoter: any) => (
+                      <SelectItem key={promoter.id} value={promoter.id.toString()}>
+                        {promoter.fullName} ({promoter.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {selectedPromoterId && selectedPromoterId !== "unassign" && (
+                  <div className="p-3 bg-green-50 rounded-md mt-2">
+                    <p className="text-sm text-green-700">
+                      <strong>Promotor selecionado:</strong> {(promoters as any[]).find((p: any) => p.id.toString() === selectedPromoterId)?.fullName}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      O promotor receberá comissões pelas vendas fechadas por este indicador.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Analyst Selection */}
+            {assignmentType === "analista" && (
+              <div>
+                <label className="text-sm font-medium">Analista Nível 3 Responsável</label>
+                <Select 
+                  value={selectedAnalystId} 
+                  onValueChange={setSelectedAnalystId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um analista" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassign">Remover atribuição</SelectItem>
+                    {analysts.map((analyst: any) => (
+                      <SelectItem key={analyst.id} value={analyst.id.toString()}>
+                        {analyst.fullName} ({analyst.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {selectedAnalystId && selectedAnalystId !== "unassign" && (
+                  <div className="p-3 bg-blue-50 rounded-md mt-2">
+                    <p className="text-sm text-blue-700">
+                      <strong>Analista selecionado:</strong> {analysts.find((a: any) => a.id.toString() === selectedAnalystId)?.fullName}
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      O analista nível 3 supervisionará este indicador diretamente.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             
-            {selectedPromoterId === "unassign" && (
+            {((assignmentType === "promotor" && selectedPromoterId === "unassign") || 
+              (assignmentType === "analista" && selectedAnalystId === "unassign")) && (
               <div className="p-3 bg-orange-50 rounded-md">
                 <p className="text-sm text-orange-700">
-                  Este indicador ficará sem promotor responsável.
+                  Este indicador ficará sem atribuição.
                 </p>
               </div>
             )}
@@ -456,6 +555,7 @@ export default function AdminIndicatorsPage() {
                 setIsAssignDialogOpen(false);
                 setSelectedUser(null);
                 setSelectedPromoterId("");
+                setSelectedAnalystId("");
               }}
             >
               Cancelar

@@ -255,13 +255,35 @@ class DatabaseStorage implements IStorage {
   }
 
   async getAllUsersBySupervisor(supervisorId: number) {
-    // Get only users currently supervised by this analyst (supervisorId match)
-    const supervisedUsers = await db.query.users.findMany({
+    // Get all users directly supervised by this analyst
+    const directlySupervisedUsers = await db.query.users.findMany({
       where: eq(users.supervisorId, supervisorId),
       orderBy: desc(users.createdAt)
     });
 
-    return supervisedUsers;
+    // Get all promoters supervised by this analyst
+    const supervisedPromoters = directlySupervisedUsers.filter(u => u.role === 'promotor');
+    const promoterIds = supervisedPromoters.map(p => p.id);
+
+    // Get all indicators assigned to those promoters
+    let indicatorsFromPromoters: any[] = [];
+    if (promoterIds.length > 0) {
+      const promoterConditions = promoterIds.map(id => eq(users.promoterId, id));
+      indicatorsFromPromoters = await db.query.users.findMany({
+        where: or(...promoterConditions),
+        orderBy: desc(users.createdAt)
+      });
+    }
+
+    // Combine both lists and remove duplicates
+    const allUsers = [...directlySupervisedUsers];
+    indicatorsFromPromoters.forEach(indicator => {
+      if (!allUsers.find(u => u.id === indicator.id)) {
+        allUsers.push(indicator);
+      }
+    });
+
+    return allUsers;
   }
   
   async updateUserBalance(userId: number, amount: number, updateEarnings: boolean = true) {
@@ -407,6 +429,29 @@ class DatabaseStorage implements IStorage {
         supervisorId,
         updatedAt: new Date()
       })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
+
+  async assignIndicator(userId: number, promoterId: number | null, supervisorId: number | null) {
+    // Clear both fields first, then set the appropriate one
+    const updateData: any = {
+      promoterId: null,
+      supervisorId: null,
+      updatedAt: new Date()
+    };
+    
+    // Set the appropriate field
+    if (promoterId) {
+      updateData.promoterId = promoterId;
+    } else if (supervisorId) {
+      updateData.supervisorId = supervisorId;
+    }
+    
+    const [updatedUser] = await db.update(users)
+      .set(updateData)
       .where(eq(users.id, userId))
       .returning();
     
