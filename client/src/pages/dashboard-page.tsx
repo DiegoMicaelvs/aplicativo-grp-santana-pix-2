@@ -29,6 +29,7 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { formatCPF } from "@/lib/utils";
 
 // Validation schema for indicator registration
 const indicatorSchema = z.object({
@@ -422,7 +423,14 @@ export default function DashboardPage() {
                                         <FormItem>
                                           <FormLabel>CPF</FormLabel>
                                           <FormControl>
-                                            <Input placeholder="000.000.000-00" {...field} />
+                                            <Input 
+                                              placeholder="000.000.000-00" 
+                                              {...field}
+                                              onChange={(e) => {
+                                                const formatted = formatCPF(e.target.value);
+                                                field.onChange(formatted);
+                                              }}
+                                            />
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>
