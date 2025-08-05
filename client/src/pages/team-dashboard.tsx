@@ -90,7 +90,16 @@ export default function TeamDashboard() {
           Rejeitado
         </Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        // Traduzir status não cobertos
+        const statusTranslation: Record<string, string> = {
+          'paid': 'Pago',
+          'approved': 'Aprovado',
+          'cancelled': 'Cancelado',
+          'processing': 'Processando'
+        };
+        return <Badge variant="secondary">
+          {statusTranslation[status] || status}
+        </Badge>;
     }
   };
 
