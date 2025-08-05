@@ -1435,6 +1435,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get analyst info to check if level 3
       const analyst = await storage.getUserById(req.user!.id);
       
+      console.log(`[CREATE INDICADOR] Analyst info:`, {
+        id: analyst?.id,
+        role: analyst?.role,
+        level: analyst?.analystLevel,
+        willSetSupervisor: analyst?.role === "analista" && analyst?.analystLevel === 3
+      });
+      
       // Force role to be indicador and set analyst as creator
       const userData = {
         ...req.body,
@@ -1444,6 +1451,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If analyst is level 3, set them as supervisor
         supervisorId: (analyst?.role === "analista" && analyst?.analystLevel === 3) ? req.user!.id : undefined
       };
+      
+      console.log(`[CREATE INDICADOR] Creating with supervisorId:`, userData.supervisorId);
       
       const newUser = await storage.createUser(userData);
       const { password, ...userWithoutPassword } = newUser;
@@ -1475,6 +1484,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get analyst info to check if level 3
       const analyst = await storage.getUserById(req.user!.id);
       
+      console.log(`[CREATE PROMOTOR] Analyst info:`, {
+        id: analyst?.id,
+        role: analyst?.role,
+        level: analyst?.analystLevel,
+        willSetSupervisor: analyst?.role === "analista" && analyst?.analystLevel === 3
+      });
+      
       // Force role to be promotor and set analyst as creator
       const userData = {
         ...req.body,
@@ -1484,6 +1500,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If analyst is level 3, set them as supervisor
         supervisorId: (analyst?.role === "analista" && analyst?.analystLevel === 3) ? req.user!.id : undefined
       };
+      
+      console.log(`[CREATE PROMOTOR] Creating with supervisorId:`, userData.supervisorId);
       
       const newUser = await storage.createUser(userData);
       const { password, ...userWithoutPassword } = newUser;

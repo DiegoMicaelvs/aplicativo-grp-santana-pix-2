@@ -255,15 +255,21 @@ class DatabaseStorage implements IStorage {
   }
 
   async getAllUsersBySupervisor(supervisorId: number) {
+    console.log(`[getAllUsersBySupervisor] Fetching users for supervisor ID: ${supervisorId}`);
+    
     // Get all users directly supervised by this analyst
     const directlySupervisedUsers = await db.query.users.findMany({
       where: eq(users.supervisorId, supervisorId),
       orderBy: desc(users.createdAt)
     });
 
+    console.log(`[getAllUsersBySupervisor] Found ${directlySupervisedUsers.length} directly supervised users`);
+
     // Get all promoters supervised by this analyst
     const supervisedPromoters = directlySupervisedUsers.filter(u => u.role === 'promotor');
     const promoterIds = supervisedPromoters.map(p => p.id);
+    
+    console.log(`[getAllUsersBySupervisor] Found ${supervisedPromoters.length} supervised promoters with IDs:`, promoterIds);
 
     // Get all indicators assigned to those promoters
     let indicatorsFromPromoters: any[] = [];
@@ -274,6 +280,8 @@ class DatabaseStorage implements IStorage {
         orderBy: desc(users.createdAt)
       });
     }
+    
+    console.log(`[getAllUsersBySupervisor] Found ${indicatorsFromPromoters.length} indicators from promoters`);
 
     // Combine both lists and remove duplicates
     const allUsers = [...directlySupervisedUsers];
@@ -283,6 +291,8 @@ class DatabaseStorage implements IStorage {
       }
     });
 
+    console.log(`[getAllUsersBySupervisor] Returning total of ${allUsers.length} users`);
+    
     return allUsers;
   }
   
