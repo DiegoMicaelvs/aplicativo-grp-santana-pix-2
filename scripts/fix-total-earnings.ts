@@ -1,53 +1,63 @@
 import { db } from "../db";
-import { users, referrals } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { users, referrals } from "@shared/schema.ts";
+import { eq, sql, and, or } from "drizzle-orm";
 
 async function fixTotalEarnings() {
-  console.log("=== Corrigindo Total de Ganhos ===\n");
+  console.log("=== Corrigindo Total de Ganhos dos Promotores ===");
   
-  // Buscar todos os usuários
-  const allUsers = await db.query.users.findMany();
-  
-  for (const user of allUsers) {
-    // Calcular o total correto baseado apenas em comissões PAGAS
-    const userReferrals = await db.query.referrals.findMany({
-      where: eq(referrals.userId, user.id)
+  try {
+    // Buscar todos os promotores
+    const promoters = await db.query.users.findMany({
+      where: eq(users.role, 'promotor')
     });
     
-    const promoterReferrals = await db.query.referrals.findMany({
-      where: eq(referrals.promoterId, user.id)
-    });
+    console.log(`Encontrados ${promoters.length} promotores`);
     
-    // Somar apenas comissões de indicações com status "paid"
-    const paidCommissionIndicator = userReferrals
-      .filter(r => r.status === 'paid')
-      .reduce((sum, r) => sum + parseFloat(r.commissionIndicator || '0'), 0);
-    
-    const paidCommissionPromoter = promoterReferrals
-      .filter(r => r.status === 'paid')
-      .reduce((sum, r) => sum + parseFloat(r.commissionPromoter || '0'), 0);
-    
-    const totalPaidCommissions = paidCommissionIndicator + paidCommissionPromoter;
-    
-    console.log(`\nUsuário: ${user.fullName} (ID: ${user.id})`);
-    console.log(`- Total atual (incorreto): R$ ${user.totalEarnings}`);
-    console.log(`- Comissões pagas como indicador: R$ ${paidCommissionIndicator.toFixed(2)}`);
-    console.log(`- Comissões pagas como promotor: R$ ${paidCommissionPromoter.toFixed(2)}`);
-    console.log(`- Total correto: R$ ${totalPaidCommissions.toFixed(2)}`);
-    
-    // Atualizar apenas se houver diferença
-    if (parseFloat(user.totalEarnings) !== totalPaidCommissions) {
-      await db.update(users)
-        .set({ totalEarnings: totalPaidCommissions.toFixed(2) })
-        .where(eq(users.id, user.id));
-      console.log(`✓ Atualizado!`);
-    } else {
-      console.log(`✓ Já está correto`);
+    for (const promoter of promoters) {
+      // Calcular o total de comissões do promotor
+      const promoterReferrals = await db.query.referrals.findMany({
+        where: eq(referrals.promoterId, promoter.id)
+      });
+      
+      let totalCommissions = 0;
+      
+      for (const referral of promoterReferrals) {
+        if (referral.commissionPromoter) {
+          totalCommissions += parseFloat(referral.commissionPromoter.toString());
+        }
+      }
+      
+      // Verificar se o totalEarnings está correto
+      const currentTotalEarnings = parseFloat(promoter.totalEarnings?.toString() || '0');
+      
+      if (Math.abs(currentTotalEarnings - totalCommissions) > 0.01) {
+        console.log(`\nPromotor: ${promoter.fullName} (${promoter.username})`);
+        console.log(`Total de ganhos atual: R$ ${currentTotalEarnings.toFixed(2)}`);
+        console.log(`Total de comissões calculado: R$ ${totalCommissions.toFixed(2)}`);
+        console.log(`Diferença: R$ ${(totalCommissions - currentTotalEarnings).toFixed(2)}`);
+        
+        // Atualizar o totalEarnings para o valor correto
+        await db.update(users)
+          .set({ 
+            totalEarnings: totalCommissions.toString(),
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, promoter.id));
+        
+        console.log("✓ Total de ganhos corrigido!");
+      } else {
+        console.log(`\n✓ Promotor ${promoter.fullName} já tem total de ganhos correto: R$ ${currentTotalEarnings.toFixed(2)}`);
+      }
     }
+    
+    console.log("\n=== Correção concluída ===");
+    
+  } catch (error) {
+    console.error("Erro ao corrigir total de ganhos:", error);
+    process.exit(1);
   }
   
-  console.log("\n=== Correção concluída ===");
   process.exit(0);
 }
 
-fixTotalEarnings().catch(console.error);
+fixTotalEarnings();

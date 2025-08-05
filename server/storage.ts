@@ -264,9 +264,9 @@ class DatabaseStorage implements IStorage {
     return supervisedUsers;
   }
   
-  async updateUserBalance(userId: number, amount: number) {
+  async updateUserBalance(userId: number, amount: number, updateEarnings: boolean = true) {
     try {
-      console.log(`[updateUserBalance] Atualizando saldo do usuário ${userId} com valor: ${amount}`);
+      console.log(`[updateUserBalance] Atualizando saldo do usuário ${userId} com valor: ${amount}, updateEarnings: ${updateEarnings}`);
       
       // Buscar saldo atual para debug
       const currentUser = await this.getUserById(userId);
@@ -274,12 +274,24 @@ class DatabaseStorage implements IStorage {
         console.log(`[updateUserBalance] Saldo atual: ${currentUser.balance}, Total ganhos: ${currentUser.totalEarnings}`);
       }
       
-      await db.update(users)
-        .set({ 
-          balance: sql`balance + ${amount}`,
-          updatedAt: new Date()
-        })
-        .where(eq(users.id, userId));
+      // Se o valor for positivo (ganho) e updateEarnings for true, atualiza tanto o saldo quanto o total de ganhos
+      // Se for negativo (saque) ou updateEarnings for false, atualiza apenas o saldo
+      if (amount > 0 && updateEarnings) {
+        await db.update(users)
+          .set({ 
+            balance: sql`balance + ${amount}`,
+            totalEarnings: sql`total_earnings + ${amount}`,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, userId));
+      } else {
+        await db.update(users)
+          .set({ 
+            balance: sql`balance + ${amount}`,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, userId));
+      }
       
       // Verificar saldo após atualização
       const updatedUser = await this.getUserById(userId);
@@ -1015,7 +1027,8 @@ class DatabaseStorage implements IStorage {
     // Se o saque foi rejeitado, devolver o valor ao saldo do usuário
     if (status === 'rejected' && updated) {
       const amount = parseFloat(updated.amount);
-      await this.updateUserBalance(updated.userId, amount);
+      // Ao rejeitar saque, devolver o valor ao saldo mas não atualizar totalEarnings
+      await this.updateUserBalance(updated.userId, amount, false);
       
       // Log audit trail
       await this.logUserAction({
