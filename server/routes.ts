@@ -128,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.role === 'promotor') {
         const promoterReferrals = await storage.getReferralsByTeam(user.id);
         for (const referral of promoterReferrals) {
-          if (referral.status === 'converted' || referral.status === 'paid') {
+          if (referral.status === 'paid') {
             realTotalEarnings += parseFloat(referral.commissionPromoter || '0');
           }
         }
