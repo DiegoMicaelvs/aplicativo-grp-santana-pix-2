@@ -1,20 +1,24 @@
-import dotenv from 'dotenv';
-import { db } from '../db';
+import { createClient } from '@neondatabase/serverless';
 
-dotenv.config();
+// Script para limpar o rate limiting de login
+// Útil quando usuários legítimos são bloqueados
 
-console.log('Script para limpar bloqueios de rate limit');
-console.log('=========================================');
-console.log('');
-console.log('Este script vai limpar todos os bloqueios de tentativas de login.');
-console.log('');
-console.log('NOTA: O sistema de rate limit é armazenado em memória,');
-console.log('então será necessário reiniciar o servidor para limpar os bloqueios.');
-console.log('');
-console.log('Para evitar futuros bloqueios, lembre-se:');
-console.log('- Máximo de 10 tentativas de login a cada 15 minutos');
-console.log('- Use a senha correta ou resete a senha se esqueceu');
-console.log('');
-console.log('Script concluído! Reinicie o servidor para aplicar as mudanças.');
+async function clearRateLimit() {
+  console.log("=== Limpeza de Rate Limiting ===\n");
+  
+  console.log("NOTA: O rate limiting é armazenado em memória no servidor.");
+  console.log("Para limpar o rate limiting, você precisa:");
+  console.log("1. Reiniciar o servidor");
+  console.log("2. Ou aguardar 15 minutos para o reset automático");
+  console.log("\nO sistema permite 10 tentativas de login a cada 15 minutos por IP.");
+  
+  console.log("\n=== Recomendações ===");
+  console.log("- Verifique se o usuário está digitando a senha corretamente");
+  console.log("- Confirme que o email/username está em minúsculas");
+  console.log("- Considere resetar a senha do usuário se necessário");
+  console.log("- Verifique se o usuário não está desativado");
+  
+  process.exit(0);
+}
 
-process.exit(0);
+clearRateLimit();

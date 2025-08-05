@@ -1,45 +1,45 @@
-import dotenv from 'dotenv';
-import { users } from '../shared/schema';
-import { db } from '../db';
-import { eq } from 'drizzle-orm';
+// Script para orientar sobre reset de tentativas de login
+console.log("=== Reset de Tentativas de Login ===\n");
 
-dotenv.config();
+console.log("O sistema de rate limiting está configurado para:");
+console.log("- Permitir 10 tentativas de login por IP");
+console.log("- Bloquear por 15 minutos após exceder o limite");
+console.log("- Reset automático após 15 minutos\n");
 
-async function resetLoginAttempts(username?: string) {
-  console.log('Script para Resetar Tentativas de Login');
-  console.log('=======================================');
-  console.log('');
-  
-  if (username) {
-    console.log(`Procurando usuário: ${username}`);
-    
-    const user = await db.query.users.findFirst({
-      where: eq(users.username, username.toLowerCase())
-    });
-    
-    if (user) {
-      console.log(`✓ Usuário encontrado: ${user.fullName} (${user.username})`);
-      console.log('');
-      console.log('O sistema de rate limit foi reiniciado.');
-      console.log('O usuário pode tentar fazer login novamente.');
-    } else {
-      console.log(`✗ Usuário não encontrado: ${username}`);
-    }
-  } else {
-    console.log('NOTA: O sistema de rate limit foi reiniciado para todos os usuários.');
-    console.log('Todos os bloqueios de tentativas foram limpos.');
-  }
-  
-  console.log('');
-  console.log('Dicas para evitar bloqueios futuros:');
-  console.log('- Máximo de 10 tentativas de login a cada 15 minutos');
-  console.log('- Se esqueceu a senha, use o script reset-admin-password.ts');
-  console.log('');
-  console.log('Script concluído!');
-  
-  process.exit(0);
-}
+console.log("=== Possíveis Causas de 'Credenciais Inválidas' ===\n");
 
-// Executar o script
-const username = process.argv[2];
-resetLoginAttempts(username).catch(console.error);
+console.log("1. SENHA INCORRETA");
+console.log("   - Verifique se o usuário está digitando a senha corretamente");
+console.log("   - Senhas são case-sensitive (maiúsculas e minúsculas importam)");
+console.log("   - Verifique espaços extras no início ou fim\n");
+
+console.log("2. EMAIL/USERNAME INCORRETO");
+console.log("   - O sistema converte automaticamente para minúsculas");
+console.log("   - Remove espaços no início e fim");
+console.log("   - Exemplo: 'USUARIO@Gmail.com ' → 'usuario@gmail.com'\n");
+
+console.log("3. RATE LIMITING");
+console.log("   - Após 10 tentativas falhas, o IP é bloqueado por 15 minutos");
+console.log("   - Mensagem de erro será diferente: 'Muitas tentativas de login'\n");
+
+console.log("4. CONTA DESATIVADA");
+console.log("   - Verifique se o usuário está ativo no sistema");
+console.log("   - Use o script diagnose-login-issues.ts para verificar\n");
+
+console.log("=== Soluções Recomendadas ===\n");
+
+console.log("1. Para resetar a senha de um usuário:");
+console.log("   npm run script scripts/reset-user-password.ts\n");
+
+console.log("2. Para diagnosticar problemas gerais:");
+console.log("   npm run script scripts/diagnose-login-issues.ts\n");
+
+console.log("3. Para limpar rate limiting:");
+console.log("   - Reinicie o servidor");
+console.log("   - Ou aguarde 15 minutos\n");
+
+console.log("4. Verificar logs do servidor:");
+console.log("   - Os logs mostram tentativas de login");
+console.log("   - Procure por '[AUTH]' nos logs para detalhes\n");
+
+process.exit(0);
