@@ -72,6 +72,9 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
       toast({ title: "Indicação validada com sucesso!" });
       setIsOpen(false);
       onValidate();
+      // Also invalidate user and referrals queries
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: () => {
       toast({ title: "Erro ao validar indicação", variant: "destructive" });
@@ -332,8 +335,13 @@ export default function AdminReferralsDetailedPage() {
     },
     onSuccess: (data) => {
       console.log(`[updateStatusMutation] onSuccess - dados recebidos:`, data);
+      // Invalidate all related queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/team/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
       toast({ title: "Status atualizado com sucesso!" });
       setIsDialogOpen(false);
       setStatusNotes("");
@@ -371,6 +379,9 @@ export default function AdminReferralsDetailedPage() {
       // Invalidar cache para forçar atualização
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({ title: "Indicação atualizada com sucesso!" });
       setIsDialogOpen(false);
       setSelectedReferral(null);
