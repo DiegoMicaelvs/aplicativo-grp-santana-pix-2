@@ -1203,14 +1203,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       updateData.updatedAt = new Date();
       
-      // Check for duplicates if phone or licensePlate changed - only warn, don't block
+      // Check for duplicates if phone or licensePlate changed
       if ((phone && phone !== existingReferral.phone) || (licensePlate && licensePlate !== existingReferral.licensePlate)) {
         const duplicates = await storage.checkDuplicateReferral(phone || existingReferral.phone, licensePlate || existingReferral.licensePlate);
         const filteredDuplicates = duplicates.filter(d => d.id !== referralId);
         
         if (filteredDuplicates.length > 0) {
-          console.log(`[Edição] Aviso: Indicação ${referralId} editada com dados duplicados por ${req.user!.username}`);
-          // Permitir edição mesmo com duplicatas - apenas registrar no log
+          return res.status(400).json({ 
+            error: "Duplicata encontrada",
+            details: "Já existe uma indicação com este telefone ou placa"
+          });
         }
       }
       
