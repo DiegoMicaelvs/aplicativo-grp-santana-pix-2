@@ -983,6 +983,22 @@ class DatabaseStorage implements IStorage {
       .where(eq(withdrawalRequests.id, id))
       .returning();
     
+    // Se o saque foi rejeitado, devolver o valor ao saldo do usuário
+    if (status === 'rejected' && updated) {
+      const amount = parseFloat(updated.amount);
+      await this.updateUserBalance(updated.userId, amount);
+      
+      // Log audit trail
+      await this.logUserAction({
+        userId: processedBy,
+        action: 'reject_withdrawal',
+        entityType: 'withdrawal_request',
+        entityId: id,
+        newValues: { status: 'rejected', amount },
+        details: `Saque rejeitado. Valor de R$ ${amount} devolvido ao saldo do usuário.`
+      });
+    }
+    
     // Se o saque foi aprovado mas ainda não pago, não fazer nada com o saldo
     // O saldo já foi descontado quando a solicitação foi criada
     
@@ -991,7 +1007,6 @@ class DatabaseStorage implements IStorage {
       const amount = parseFloat(updated.amount);
       
       // Criar entrada no fluxo de caixa
-      const currentBalance = await this.getCurrentBalance();
       await this.createCashFlowEntry({
         type: 'outflow',
         amount,
