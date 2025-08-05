@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -94,6 +94,7 @@ export default function NewReferralPage() {
   const [duplicateInfo, setDuplicateInfo] = useState<any>(null);
   const [isCustomCompany, setIsCustomCompany] = useState(false);
   const [customCompanyName, setCustomCompanyName] = useState("");
+  const duplicateAlertRef = useRef<HTMLDivElement>(null);
   
   const form = useForm<ReferralFormValues>({
     resolver: zodResolver(referralSchema),
@@ -107,6 +108,27 @@ export default function NewReferralPage() {
       state: "",
     },
   });
+
+  // Scroll para o alerta de duplicata quando detectado
+  useEffect(() => {
+    if (duplicateInfo && duplicateInfo.length > 0 && duplicateAlertRef.current) {
+      // Aguarda um momento para o DOM renderizar
+      setTimeout(() => {
+        duplicateAlertRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        
+        // Adiciona uma animação de destaque
+        duplicateAlertRef.current?.classList.add('animate-pulse');
+        
+        // Remove a animação após 3 segundos
+        setTimeout(() => {
+          duplicateAlertRef.current?.classList.remove('animate-pulse');
+        }, 3000);
+      }, 100);
+    }
+  }, [duplicateInfo]);
 
   // Fetch available companies for selection
   const { data: companies, isLoading: isLoadingCompanies } = useQuery<Company[]>({
@@ -348,9 +370,10 @@ export default function NewReferralPage() {
 
               {/* Alerta de duplicatas */}
               {duplicateInfo && duplicateInfo.length > 0 && (
-                <Alert className="mb-6 border-red-200 bg-red-50">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">
+                <div ref={duplicateAlertRef}>
+                  <Alert className="mb-6 border-red-200 bg-red-50 shadow-lg">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800">
                     <div className="font-semibold mb-2">⚠️ Cadastro já existe!</div>
                     {duplicateInfo.map((duplicate: any, index: number) => (
                       <div key={index} className="mb-2">
@@ -381,6 +404,7 @@ export default function NewReferralPage() {
                     </p>
                   </AlertDescription>
                 </Alert>
+                </div>
               )}
 
               <Form {...form}>
