@@ -906,20 +906,34 @@ export default function AdminReferralsDetailedPage() {
                                   Atribuir a outro Indicador
                                 </label>
                                 <Select 
-                                  value={editFormData.userId.toString()} 
-                                  onValueChange={(value) => setEditFormData({...editFormData, userId: parseInt(value)})}
+                                  value={editFormData.userId?.toString() || ""} 
+                                  onValueChange={(value) => {
+                                    console.log("[Select onChange Mobile] Novo userId selecionado:", value);
+                                    setEditFormData({...editFormData, userId: parseInt(value)});
+                                  }}
                                 >
                                   <SelectTrigger>
-                                    <SelectValue />
+                                    <SelectValue placeholder="Selecione um indicador" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {indicadores.map((indicador) => (
-                                      <SelectItem key={indicador.id} value={indicador.id.toString()}>
-                                        {indicador.fullName} ({indicador.username})
+                                    {indicadores.length === 0 ? (
+                                      <SelectItem value="0" disabled>
+                                        Nenhum indicador disponível
                                       </SelectItem>
-                                    ))}
+                                    ) : (
+                                      indicadores.map((indicador) => (
+                                        <SelectItem key={indicador.id} value={indicador.id.toString()}>
+                                          {indicador.fullName} ({indicador.username})
+                                        </SelectItem>
+                                      ))
+                                    )}
                                   </SelectContent>
                                 </Select>
+                                {editFormData.userId > 0 && (
+                                  <p className="text-xs text-gray-500">
+                                    Indicador atual: {indicadores.find(i => i.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
+                                  </p>
+                                )}
                               </div>
                               
                               <Button 
@@ -1319,20 +1333,34 @@ export default function AdminReferralsDetailedPage() {
                                       Atribuir a outro Indicador
                                     </label>
                                     <Select 
-                                      value={editFormData.userId.toString()} 
-                                      onValueChange={(value) => setEditFormData({...editFormData, userId: parseInt(value)})}
+                                      value={editFormData.userId?.toString() || ""} 
+                                      onValueChange={(value) => {
+                                        console.log("[Select onChange] Novo userId selecionado:", value);
+                                        setEditFormData({...editFormData, userId: parseInt(value)});
+                                      }}
                                     >
                                       <SelectTrigger>
-                                        <SelectValue />
+                                        <SelectValue placeholder="Selecione um indicador" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {indicadores.map((indicador) => (
-                                          <SelectItem key={indicador.id} value={indicador.id.toString()}>
-                                            {indicador.fullName} ({indicador.username})
+                                        {indicadores.length === 0 ? (
+                                          <SelectItem value="0" disabled>
+                                            Nenhum indicador disponível
                                           </SelectItem>
-                                        ))}
+                                        ) : (
+                                          indicadores.map((indicador) => (
+                                            <SelectItem key={indicador.id} value={indicador.id.toString()}>
+                                              {indicador.fullName} ({indicador.username})
+                                            </SelectItem>
+                                          ))
+                                        )}
                                       </SelectContent>
                                     </Select>
+                                    {editFormData.userId > 0 && (
+                                      <p className="text-xs text-gray-500">
+                                        Indicador atual: {indicadores.find(i => i.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
+                                      </p>
+                                    )}
                                   </div>
                                   
                                   <Button 

@@ -1042,8 +1042,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // This route was moved to line 1219 to allow both admin and analysts to edit referrals
 
   // Get all indicadores for reassignment dropdown
-  app.get("/api/admin/indicadores", requireAdmin, async (req, res) => {
+  app.get("/api/admin/indicadores", requireAuth, async (req, res) => {
     try {
+      // Allow admin and analyst to get indicadores list
+      if (req.user!.role !== "admin" && req.user!.role !== "analista") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      
       const indicadores = await storage.getUsersByRole("indicador");
       return res.json(indicadores.map(u => ({
         id: u.id,
