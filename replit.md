@@ -51,6 +51,12 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-08-05 - Promoter Profile Display Enhancement
+- Updated admin-indicators.tsx to correctly display analyst level 3 assignments for promoters
+- Modified getAnalystAssignment function to check promoter's supervisorId field
+- Promoters now show the name of their assigned analyst level 3 in the "Atribuição" column
+- Added profile card in promoter dashboard showing assigned analyst information
+
 ### 2025-02-03 - Withdrawal System Improvements
 - Removed restrictive PIX key validation that required exact match with profile
 - Users can now use any valid PIX key for withdrawals

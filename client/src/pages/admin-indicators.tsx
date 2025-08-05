@@ -89,9 +89,12 @@ export default function AdminIndicatorsPage() {
     const user = (users as any[]).find((u: any) => u.id === userId);
     if (user?.role !== "promotor") return null;
     
-    // Find if any analyst has this promoter assigned
+    // Check if promoter has a supervisorId
+    if (!user.supervisorId) return null;
+    
+    // Find the analyst with that ID
     const analyst = (users as any[]).find((u: any) => 
-      u.role === "analista" && u.assignedPromoters?.includes(userId)
+      u.id === user.supervisorId && u.role === "analista" && u.analystLevel === 3
     );
     
     return analyst ? analyst.fullName : null;
