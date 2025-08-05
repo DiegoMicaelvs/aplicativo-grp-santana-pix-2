@@ -185,13 +185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       let userReferrals;
       
-      // Se for indicador, mostrar apenas as indicações criadas por ele
-      if (req.user!.role === "indicador") {
-        userReferrals = await storage.getReferralsByCreator(req.user!.id);
-      } else {
-        // Para outros perfis, mostrar indicações pelo userId
-        userReferrals = await storage.getReferralsByUserId(req.user!.id);
-      }
+      // Para todos os perfis, mostrar indicações atribuídas a eles (userId)
+      userReferrals = await storage.getReferralsByUserId(req.user!.id);
       
       return res.json(userReferrals);
     } catch (error) {
