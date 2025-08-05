@@ -92,8 +92,7 @@ export default function AdminIndicatorsPage() {
   };
 
   // Get analyst assignment for promoters
-  const getAnalystAssignment = (userId: number) => {
-    const user = (users as any[]).find((u: any) => u.id === userId);
+  const getAnalystAssignment = (user: any) => {
     if (user?.role !== "promotor") return null;
     
     // Check if promoter has a supervisorId
@@ -103,6 +102,16 @@ export default function AdminIndicatorsPage() {
     const analyst = (users as any[]).find((u: any) => 
       u.id === user.supervisorId && u.role === "analista" && u.analystLevel === 3
     );
+    
+    // If not found as analyst level 3, check if it's any analyst
+    if (!analyst) {
+      const anyAnalyst = (users as any[]).find((u: any) => 
+        u.id === user.supervisorId && u.role === "analista"
+      );
+      if (anyAnalyst) {
+        return `${anyAnalyst.fullName} (Nível ${anyAnalyst.analystLevel || '?'})`;
+      }
+    }
     
     return analyst ? analyst.fullName : null;
   };
@@ -396,14 +405,26 @@ export default function AdminIndicatorsPage() {
                             </Button>
                           </div>
                         ) : user.role === "promotor" ? (
-                          <div>
-                            {getAnalystAssignment(user.id) ? (
+                          <div className="flex items-center gap-2">
+                            {getAnalystAssignment(user) ? (
                               <span className="text-blue-600 font-medium">
-                                Analista: {getAnalystAssignment(user.id)}
+                                Analista: {getAnalystAssignment(user)}
                               </span>
                             ) : (
                               <span className="text-gray-500">Sem atribuição</span>
                             )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setSelectedAnalystId(user.supervisorId?.toString() || "");
+                                setAssignmentType("analista");
+                                setIsAssignDialogOpen(true);
+                              }}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                            </Button>
                           </div>
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -446,29 +467,35 @@ export default function AdminIndicatorsPage() {
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Atribuir Indicador</DialogTitle>
+            <DialogTitle>Atribuir {selectedUser?.role === "promotor" ? "Promotor" : "Indicador"}</DialogTitle>
             <DialogDescription>
-              Atribua o indicador <strong>{selectedUser?.fullName}</strong> a um promotor ou analista nível 3
+              {selectedUser?.role === "promotor" ? (
+                <>Atribua o promotor <strong>{selectedUser?.fullName}</strong> a um analista nível 3</>
+              ) : (
+                <>Atribua o indicador <strong>{selectedUser?.fullName}</strong> a um promotor ou analista nível 3</>
+              )}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            {/* Assignment Type Selection */}
-            <div>
-              <label className="text-sm font-medium">Tipo de Atribuição</label>
-              <Select 
-                value={assignmentType} 
-                onValueChange={(value: "promotor" | "analista") => setAssignmentType(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="promotor">Atribuir a Promotor</SelectItem>
-                  <SelectItem value="analista">Atribuir a Analista Nível 3</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Assignment Type Selection - only for indicators */}
+            {selectedUser?.role === "indicador" && (
+              <div>
+                <label className="text-sm font-medium">Tipo de Atribuição</label>
+                <Select 
+                  value={assignmentType} 
+                  onValueChange={(value: "promotor" | "analista") => setAssignmentType(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="promotor">Atribuir a Promotor</SelectItem>
+                    <SelectItem value="analista">Atribuir a Analista Nível 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Promoter Selection */}
             {assignmentType === "promotor" && (
@@ -504,8 +531,8 @@ export default function AdminIndicatorsPage() {
               </div>
             )}
 
-            {/* Analyst Selection */}
-            {assignmentType === "analista" && (
+            {/* Analyst Selection - for indicators with analyst assignment or all promoters */}
+            {(assignmentType === "analista" || selectedUser?.role === "promotor") && (
               <div>
                 <label className="text-sm font-medium">Analista Nível 3 Responsável</label>
                 <Select 

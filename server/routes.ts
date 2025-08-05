@@ -1967,9 +1967,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { promoterId, supervisorId } = req.body;
       
-      // Can't have both promoter and supervisor
-      if (promoterId && supervisorId) {
-        return res.status(400).json({ error: "Indicador pode ser atribuído a promotor OU analista, não ambos" });
+      // Get user to check their role
+      const user = await storage.getUserById(parseInt(id));
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+      
+      // Validation based on user role
+      if (user.role === "promotor") {
+        // Promoters can only be assigned to analysts, not other promoters
+        if (promoterId) {
+          return res.status(400).json({ error: "Promotores só podem ser atribuídos a analistas nível 3" });
+        }
+      } else if (user.role === "indicador") {
+        // Indicators can't have both promoter and supervisor
+        if (promoterId && supervisorId) {
+          return res.status(400).json({ error: "Indicador pode ser atribuído a promotor OU analista, não ambos" });
+        }
       }
       
       // Update user with new assignment
@@ -1979,15 +1993,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log audit trail
       try {
         let action, details;
+        const userType = user.role === "promotor" ? "Promotor" : "Indicador";
+        
         if (promoterId) {
           action = "assign_promoter";
-          details = `Indicador ${updatedUser.fullName} atribuído ao promotor ID: ${promoterId}`;
+          details = `${userType} ${updatedUser.fullName} atribuído ao promotor ID: ${promoterId}`;
         } else if (supervisorId) {
           action = "assign_analyst";
-          details = `Indicador ${updatedUser.fullName} atribuído ao analista nível 3 ID: ${supervisorId}`;
+          details = `${userType} ${updatedUser.fullName} atribuído ao analista nível 3 ID: ${supervisorId}`;
         } else {
-          action = "unassign_indicator";
-          details = `Indicador ${updatedUser.fullName} removido de atribuição`;
+          action = "unassign_user";
+          details = `${userType} ${updatedUser.fullName} removido de atribuição`;
         }
           
         await storage.logUserAction({
