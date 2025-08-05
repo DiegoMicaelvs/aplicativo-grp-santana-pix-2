@@ -32,9 +32,11 @@ export function setupSecurity(app: Express) {
     
     if (attempts) {
       if (now < attempts.resetTime) {
-        if (attempts.count >= 5) {
+        if (attempts.count >= 10) { // Aumentado de 5 para 10 tentativas
+          const minutesLeft = Math.ceil((attempts.resetTime - now) / 60000);
           return res.status(429).json({ 
-            error: 'Muitas tentativas de login. Tente novamente em alguns minutos.' 
+            error: `Muitas tentativas de login. Tente novamente em ${minutesLeft} minutos.`,
+            minutesLeft
           });
         }
         attempts.count++;

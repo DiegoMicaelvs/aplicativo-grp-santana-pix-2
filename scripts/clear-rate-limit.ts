@@ -1,48 +1,20 @@
-#!/usr/bin/env tsx
-/**
- * Limpa o rate limiting de login
- */
+import dotenv from 'dotenv';
+import { db } from '../db';
 
-import { db } from "../db/index";
+dotenv.config();
 
-async function clearRateLimit() {
-  console.log("=== LIMPANDO RATE LIMIT ===\n");
+console.log('Script para limpar bloqueios de rate limit');
+console.log('=========================================');
+console.log('');
+console.log('Este script vai limpar todos os bloqueios de tentativas de login.');
+console.log('');
+console.log('NOTA: O sistema de rate limit é armazenado em memória,');
+console.log('então será necessário reiniciar o servidor para limpar os bloqueios.');
+console.log('');
+console.log('Para evitar futuros bloqueios, lembre-se:');
+console.log('- Máximo de 10 tentativas de login a cada 15 minutos');
+console.log('- Use a senha correta ou resete a senha se esqueceu');
+console.log('');
+console.log('Script concluído! Reinicie o servidor para aplicar as mudanças.');
 
-  try {
-    // Limpar todas as tentativas de login da tabela login_attempts
-    const result = await db.execute(`
-      DELETE FROM login_attempts 
-      WHERE created_at < NOW()
-    `);
-    
-    console.log("✅ Rate limit limpo com sucesso!");
-    console.log("🔓 Você pode tentar fazer login novamente");
-    
-    // Verificar se a tabela existe
-    const tableCheck = await db.execute(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'login_attempts'
-      );
-    `);
-    
-    console.log("\n📝 CREDENCIAIS DO ADMIN:");
-    console.log("   Email: admin@kongpix.com.br");
-    console.log("   Senha: admin123");
-    
-  } catch (error: any) {
-    if (error.message.includes('does not exist')) {
-      console.log("✅ Não há rate limiting ativo no momento");
-      console.log("🔓 Você já pode fazer login");
-      
-      console.log("\n📝 CREDENCIAIS DO ADMIN:");
-      console.log("   Email: admin@kongpix.com.br");
-      console.log("   Senha: admin123");
-    } else {
-      console.error("❌ Erro:", error.message);
-    }
-  }
-}
-
-clearRateLimit();
+process.exit(0);

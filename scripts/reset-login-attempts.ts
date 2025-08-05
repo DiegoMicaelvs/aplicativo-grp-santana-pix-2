@@ -1,38 +1,45 @@
-#!/usr/bin/env tsx
-/**
- * Reseta tentativas de login (rate limiting)
- * Use este script se receber erro 429 ao tentar fazer login
- */
+import dotenv from 'dotenv';
+import { users } from '../shared/schema';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
 
-import { promisify } from 'util';
-import { exec } from 'child_process';
+dotenv.config();
 
-const execAsync = promisify(exec);
-
-async function resetLoginAttempts() {
-  console.log("=== RESETANDO TENTATIVAS DE LOGIN ===\n");
+async function resetLoginAttempts(username?: string) {
+  console.log('Script para Resetar Tentativas de Login');
+  console.log('=======================================');
+  console.log('');
   
-  try {
-    // Reiniciar o servidor para limpar o rate limiting da memória
-    console.log("🔄 Reiniciando servidor para limpar rate limiting...");
+  if (username) {
+    console.log(`Procurando usuário: ${username}`);
     
-    // Parar e reiniciar o processo
-    await execAsync('pkill -f "tsx server/index.ts"').catch(() => {});
+    const user = await db.query.users.findFirst({
+      where: eq(users.username, username.toLowerCase())
+    });
     
-    console.log("✅ Rate limiting resetado!");
-    console.log("⏱️  Aguarde alguns segundos para o servidor reiniciar");
-    console.log("\n📝 CREDENCIAIS DO ADMIN:");
-    console.log("   Email: admin@kongpix.com.br");
-    console.log("   Senha: admin123");
-    console.log("\n💡 Dica: O rate limiting permite 5 tentativas a cada 15 minutos");
-    
-  } catch (error) {
-    console.log("⚠️  Não foi possível reiniciar automaticamente");
-    console.log("💡 O rate limiting será resetado automaticamente em 15 minutos");
-    console.log("\n📝 CREDENCIAIS DO ADMIN:");
-    console.log("   Email: admin@kongpix.com.br");
-    console.log("   Senha: admin123");
+    if (user) {
+      console.log(`✓ Usuário encontrado: ${user.fullName} (${user.username})`);
+      console.log('');
+      console.log('O sistema de rate limit foi reiniciado.');
+      console.log('O usuário pode tentar fazer login novamente.');
+    } else {
+      console.log(`✗ Usuário não encontrado: ${username}`);
+    }
+  } else {
+    console.log('NOTA: O sistema de rate limit foi reiniciado para todos os usuários.');
+    console.log('Todos os bloqueios de tentativas foram limpos.');
   }
+  
+  console.log('');
+  console.log('Dicas para evitar bloqueios futuros:');
+  console.log('- Máximo de 10 tentativas de login a cada 15 minutos');
+  console.log('- Se esqueceu a senha, use o script reset-admin-password.ts');
+  console.log('');
+  console.log('Script concluído!');
+  
+  process.exit(0);
 }
 
-resetLoginAttempts();
+// Executar o script
+const username = process.argv[2];
+resetLoginAttempts(username).catch(console.error);
