@@ -29,7 +29,9 @@ import {
   type SalesActivity,
   type CreateSalesActivity,
   type SalesReminder,
-  type CreateSalesReminder
+  type CreateSalesReminder,
+  type AnalystPermission,
+  type ManagerPermission
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -173,7 +175,7 @@ class DatabaseStorage implements IStorage {
         shirtSize: userData.shirtSize,
         pixKey: userData.pixKey,
         role: (userData.role || "indicador") as "indicador" | "promotor" | "admin" | "analista" | "gerente" | "vendedor",
-        permissions: userData.permissions || null,
+        permissions: userData.permissions ? userData.permissions as (AnalystPermission[] | ManagerPermission[]) : null,
         analystLevel: userData.analystLevel as 1 | 2 | 3 | null,
         createdBy: userData.createdBy || null,
         promoterId: userData.promoterId || null,
