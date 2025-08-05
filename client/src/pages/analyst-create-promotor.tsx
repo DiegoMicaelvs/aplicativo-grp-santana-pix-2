@@ -19,6 +19,7 @@ import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
+import { formatCPF } from "@/lib/utils";
 
 export default function AnalystCreatePromotorPage() {
   const [, setLocation] = useLocation();
@@ -115,7 +116,12 @@ export default function AnalystCreatePromotorPage() {
                 <Label htmlFor="cpf">CPF *</Label>
                 <Input
                   id="cpf"
-                  {...register("cpf")}
+                  {...register("cpf", {
+                    onChange: (e) => {
+                      const formatted = formatCPF(e.target.value);
+                      e.target.value = formatted;
+                    }
+                  })}
                   placeholder="000.000.000-00"
                   maxLength={14}
                 />
