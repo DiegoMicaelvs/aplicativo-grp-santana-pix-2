@@ -485,16 +485,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
       
-      // Check for pending or approved withdrawals
+      // Check for pending or approved withdrawals with the same amount
       const existingWithdrawals = await storage.getWithdrawalRequestsByUserId(req.user!.id);
       const pendingWithdrawals = existingWithdrawals.filter(w => 
-        w.status === 'pending' || w.status === 'approved'
+        (w.status === 'pending' || w.status === 'approved') && 
+        parseFloat(w.amount) === validatedData.amount
       );
       
       if (pendingWithdrawals.length > 0) {
         return res.status(400).json({ 
-          error: "Você já possui uma solicitação de saque em andamento",
-          details: "Aguarde o processamento do saque anterior antes de solicitar um novo"
+          error: "Você já possui uma solicitação de saque com esse valor em andamento",
+          details: "Você pode solicitar saques com valores diferentes"
         });
       }
       
