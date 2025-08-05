@@ -113,24 +113,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
       
-      // Calculate real total earnings from all approved referrals (validated, converted, paid)
-      const userReferrals = await storage.getReferralsByUserId(user.id);
+      // Calculate total earnings based on paid withdrawals
+      const withdrawalRequests = await storage.getWithdrawalRequestsByUserId(user.id);
       let realTotalEarnings = 0;
       
-      // Sum commissions from validated, converted and paid referrals
-      for (const referral of userReferrals) {
-        if (referral.status === 'validated' || referral.status === 'converted' || referral.status === 'paid') {
-          realTotalEarnings += parseFloat(referral.commissionIndicator || '0');
-        }
-      }
-      
-      // If user is a promoter, also calculate promoter commissions
-      if (user.role === 'promotor') {
-        const promoterReferrals = await storage.getReferralsByTeam(user.id);
-        for (const referral of promoterReferrals) {
-          if (referral.status === 'validated' || referral.status === 'converted' || referral.status === 'paid') {
-            realTotalEarnings += parseFloat(referral.commissionPromoter || '0');
-          }
+      // Sum only paid withdrawals
+      for (const withdrawal of withdrawalRequests) {
+        if (withdrawal.status === 'paid') {
+          realTotalEarnings += parseFloat(withdrawal.amount || '0');
         }
       }
       
