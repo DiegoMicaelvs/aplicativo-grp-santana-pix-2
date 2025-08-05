@@ -311,11 +311,7 @@ export default function AdminWithdrawals() {
                         {formatDateTime(withdrawal.requestedAt)}
                       </TableCell>
                       <TableCell>
-                        <span className={`font-semibold ${
-                          parseFloat(withdrawal.user.balance) >= parseFloat(withdrawal.amount)
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-red-600 dark:text-red-400'
-                        }`}>
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">
                           {formatCurrency(withdrawal.user.balance)}
                         </span>
                       </TableCell>
@@ -386,16 +382,6 @@ export default function AdminWithdrawals() {
                                       <span className="font-mono text-lg">{selectedWithdrawal.pixKey}</span>
                                     </div>
                                   </div>
-
-                                  {/* Verificação de saldo */}
-                                  {parseFloat(selectedWithdrawal.user.balance) < parseFloat(selectedWithdrawal.amount) && (
-                                    <Alert variant="destructive">
-                                      <AlertTriangleIcon className="w-4 h-4" />
-                                      <AlertDescription>
-                                        <strong>Saldo Insuficiente:</strong> O usuário não possui saldo suficiente para este saque.
-                                      </AlertDescription>
-                                    </Alert>
-                                  )}
 
                                   {/* Notas */}
                                   <div className="space-y-2">
