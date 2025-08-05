@@ -143,7 +143,7 @@ class DatabaseStorage implements IStorage {
   }
   
   // User methods
-  async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number; analystId?: number }) {
+  async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number; analystId?: number; supervisorId?: number }) {
     try {
       // Prepare user data with proper typing
       // Normalizar username e email
@@ -151,6 +151,13 @@ class DatabaseStorage implements IStorage {
       const normalizedEmail = (userData.email || userData.username).trim().toLowerCase();
       
       console.log(`[STORAGE] Criando usuário com username normalizado: ${normalizedUsername}`);
+      console.log(`[STORAGE] Dados recebidos:`, {
+        role: userData.role,
+        createdBy: userData.createdBy,
+        promoterId: userData.promoterId,
+        analystId: userData.analystId,
+        supervisorId: userData.supervisorId
+      });
       
       const insertData = {
         username: normalizedUsername,
@@ -171,6 +178,7 @@ class DatabaseStorage implements IStorage {
         createdBy: userData.createdBy || null,
         promoterId: userData.promoterId || null,
         analystId: userData.analystId || null,
+        supervisorId: userData.supervisorId || null,
         balance: "0",
         totalEarnings: "0",
         isActive: true,
