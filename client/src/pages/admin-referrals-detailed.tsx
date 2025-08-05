@@ -756,7 +756,7 @@ export default function AdminReferralsDetailedPage() {
                   </div>
                   <div>
                     <span className="text-gray-500">Indicador:</span>
-                    <span className="ml-1">{getUserName(referral.createdBy)}</span>
+                    <span className="ml-1">{getUserName(referral.userId)}</span>
                   </div>
                 </div>
                 
@@ -1179,7 +1179,7 @@ export default function AdminReferralsDetailedPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-xs">
-                      {getUserName(referral.createdBy)}
+                      {getUserName(referral.userId)}
                     </TableCell>
                     <TableCell>
                       <Badge className={`${getStatusBadgeColor(referral.status)} text-xs`}>
