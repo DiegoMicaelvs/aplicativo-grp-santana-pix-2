@@ -15,6 +15,7 @@ import {
   X,
   Plus,
   Trash2,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -141,6 +142,7 @@ export default function AdminProfiles() {
   const [activeTab, setActiveTab] = useState("users");
   const [roleFilter, setRoleFilter] = useState<string>("all_roles");
   const [statusFilter, setStatusFilter] = useState<string>("all_status");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<User | null>(null);
@@ -358,13 +360,23 @@ export default function AdminProfiles() {
     }
   }, [selectedUser, form]);
 
-  // Filter users based on role and status
+  // Filter users based on role, status, and search term
   const filteredUsers = users?.filter(user => {
     const roleMatch = roleFilter === "all_roles" || user.role === roleFilter;
     const statusMatch = statusFilter === "all_status" || 
       (statusFilter === "active" && user.isActive) ||
       (statusFilter === "inactive" && !user.isActive);
-    return roleMatch && statusMatch;
+    
+    // Search in multiple fields
+    const searchLower = searchTerm.toLowerCase();
+    const searchMatch = searchTerm === "" || 
+      user.fullName.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower) ||
+      user.username.toLowerCase().includes(searchLower) ||
+      (user.cpf && user.cpf.includes(searchTerm)) ||
+      (user.phone && user.phone.includes(searchTerm));
+    
+    return roleMatch && statusMatch && searchMatch;
   }) || [];
 
   const onSubmit = (data: ProfileFormValues) => {
@@ -431,8 +443,20 @@ export default function AdminProfiles() {
 
         <div className="space-y-6">
           {/* Actions Bar */}
-          <div className="flex justify-between items-center">
-            <div className="flex space-x-4">
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex flex-1 flex-wrap gap-4">
+              {/* Search Input */}
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Pesquisar por nome, email, CPF ou telefone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
               {/* Role Filter */}
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger className="w-[180px]">
