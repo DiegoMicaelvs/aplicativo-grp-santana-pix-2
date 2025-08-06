@@ -15,6 +15,7 @@ import {
   X,
   Plus,
   Trash2,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -359,13 +360,20 @@ export default function AdminProfiles() {
     }
   }, [selectedUser, form]);
 
-  // Filter users based on role and status
+  // Filter users based on search, role and status
   const filteredUsers = users?.filter(user => {
+    // Search filter
+    const searchLower = searchTerm.toLowerCase();
+    const searchMatch = searchTerm === "" || 
+      user.fullName.toLowerCase().includes(searchLower) ||
+      user.username.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower);
+    
     const roleMatch = roleFilter === "all_roles" || user.role === roleFilter;
     const statusMatch = statusFilter === "all_status" || 
       (statusFilter === "active" && user.isActive) ||
       (statusFilter === "inactive" && !user.isActive);
-    return roleMatch && statusMatch;
+    return searchMatch && roleMatch && statusMatch;
   }) || [];
 
   const onSubmit = (data: ProfileFormValues) => {
@@ -434,6 +442,18 @@ export default function AdminProfiles() {
           {/* Actions Bar */}
           <div className="flex justify-between items-center">
             <div className="flex space-x-4">
+              {/* Search Field */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Buscar por nome, usuário ou email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-[300px]"
+                />
+              </div>
+              
               {/* Role Filter */}
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger className="w-[180px]">
