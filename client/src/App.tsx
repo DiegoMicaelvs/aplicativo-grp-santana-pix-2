@@ -76,7 +76,7 @@ function Router() {
       <PromoterRoute path="/team" component={TeamDashboard} />
       <VendedorRoute path="/vendedor" component={VendedorDashboard} />
       <ManagerRoute path="/manager" component={ManagerDashboard} />
-      <AnalystRoute path="/analyst" component={AnalystDashboard} />
+      <Route path="/analyst" component={AnalystDashboard} />
       <AnalystRoute path="/analyst/create-indicador" component={AnalystCreateIndicador} />
       <AnalystRoute path="/analyst/create-promotor" component={AnalystCreatePromotor} />
       <AnalystRoute path="/analyst/permissions" component={AnalystPermissions} />

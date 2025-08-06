@@ -180,7 +180,7 @@ export function AnalystRoute({
     );
   }
 
-  if (!user || (user.role !== "analista" && user.role !== "admin")) {
+  if (!user || (user.role !== "analista" && user.role !== "admin" && user.role !== "gerente")) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />
