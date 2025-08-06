@@ -121,8 +121,11 @@ export default function DashboardPage() {
       } else if (user.role === "gerente") {
         setLocation("/manager");
         return;
+      } else if (user.role === "analista") {
+        setLocation("/analyst");
+        return;
       }
-      // promotor, indicador and analista users stay on main dashboard
+      // promotor and indicador users stay on main dashboard
     }
   }, [user, setLocation]);
   

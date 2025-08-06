@@ -88,10 +88,29 @@ export default function AuthPage() {
   const [, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
   
-  // Redirect if user is already logged in
+  // Redirect if user is already logged in based on role
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      // Redirect based on user role
+      switch (user.role) {
+        case "admin":
+          navigate("/admin");
+          break;
+        case "analista":
+          navigate("/analyst");
+          break;
+        case "promotor":
+          navigate("/promoter");
+          break;
+        case "vendedor":
+          navigate("/vendedor");
+          break;
+        case "gerente":
+          navigate("/manager");
+          break;
+        default:
+          navigate("/dashboard");
+      }
     }
   }, [user, navigate]);
 
