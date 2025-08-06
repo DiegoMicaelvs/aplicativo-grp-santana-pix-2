@@ -51,6 +51,13 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-08-06 - Analyst Edit Permissions Fix
+- Fixed issue where analysts (especially level 1) couldn't edit referral status
+- Added `edit_referral_status` permission to all analysts automatically
+- Created ensure-analyst-permissions.ts script to manage analyst permissions by level
+- Modified storage.createUser to automatically assign correct permissions when creating analysts
+- All analysts now have proper permissions to edit referral status
+
 ### 2025-08-05 - Promoter Profile Display Enhancement
 - Updated admin-indicators.tsx to correctly display analyst level 3 assignments for promoters
 - Modified getAnalystAssignment function to check promoter's supervisorId field

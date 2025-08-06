@@ -193,6 +193,21 @@ class DatabaseStorage implements IStorage {
         .values([insertData])
         .returning();
       
+      // Se é um analista, garantir que tenha as permissões corretas
+      if (user.role === 'analista') {
+        const { ensureAnalystPermissions } = await import('../scripts/ensure-analyst-permissions');
+        await ensureAnalystPermissions(user.id);
+        
+        // Buscar o usuário atualizado com as permissões
+        const updatedUser = await db.query.users.findFirst({
+          where: eq(users.id, user.id)
+        });
+        
+        if (updatedUser) {
+          return updatedUser;
+        }
+      }
+      
       return user;
     } catch (error) {
       console.error('[STORAGE] Erro ao criar usuário:', error);
