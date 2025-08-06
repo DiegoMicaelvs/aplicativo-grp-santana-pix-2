@@ -63,16 +63,7 @@ export default function AnalystDashboard() {
 
   return (
     <div className="container mx-auto p-6">
-      {/* Back Button */}
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        onClick={() => setLocation("/")}
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        Voltar
-      </Button>
+      {/* Back Button - Removed since this is the main dashboard for analysts */}
 
       {/* Header */}
       <div className="mb-6">
