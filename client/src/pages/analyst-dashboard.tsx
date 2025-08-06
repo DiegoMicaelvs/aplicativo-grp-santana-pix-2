@@ -36,8 +36,8 @@ export default function AnalystDashboard() {
     queryKey: ["/api/analyst/stats"]
   });
 
-  const hasPermission = (permission: AnalystPermission) => {
-    return user?.permissions?.includes(permission);
+  const hasPermission = (permission: string) => {
+    return user?.permissions?.includes(permission as any);
   };
 
   const getAnalystLevelBadge = (level?: number) => {
