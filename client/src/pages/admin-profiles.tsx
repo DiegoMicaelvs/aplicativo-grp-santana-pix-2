@@ -922,7 +922,13 @@ export default function AdminProfiles() {
   const watchedRole = form.watch("role");
   const watchedPermissions = form.watch("permissions") || [];
 
-  const handlePermissionChange = (permission: string, checked: boolean) => {
+  const handlePermissionChange = (permission: string, checked: boolean, e?: React.MouseEvent) => {
+    // Prevent any default behavior and propagation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     const currentPermissions = form.getValues("permissions") || [];
     if (checked) {
       form.setValue("permissions", [...currentPermissions, permission], { shouldValidate: false, shouldDirty: true });
@@ -932,7 +938,14 @@ export default function AdminProfiles() {
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form 
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit(onSubmit)(e);
+      }} 
+      className="space-y-6"
+    >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="basic" type="button">Dados Básicos</TabsTrigger>
@@ -1237,15 +1250,33 @@ export default function AdminProfiles() {
                     <h4 className="font-medium text-sm mb-2">{groupName}</h4>
                     <div className="space-y-2 ml-4">
                       {permissions.map(({ key, label }) => (
-                        <div key={key} className="flex items-center space-x-2">
+                        <div 
+                          key={key} 
+                          className="flex items-center space-x-2"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                        >
                           <Checkbox
-                            id={key}
+                            id={`analyst-${key}`}
                             checked={watchedPermissions.includes(key)}
-                            onCheckedChange={(checked) =>
-                              handlePermissionChange(key, !!checked)
-                            }
+                            onCheckedChange={(checked) => {
+                              handlePermissionChange(key, !!checked);
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
                           />
-                          <label htmlFor={key} className="text-sm">
+                          <label 
+                            htmlFor={`analyst-${key}`} 
+                            className="text-sm cursor-pointer select-none"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handlePermissionChange(key, !watchedPermissions.includes(key));
+                            }}
+                          >
                             {label}
                           </label>
                         </div>
@@ -1266,15 +1297,33 @@ export default function AdminProfiles() {
                     <h4 className="font-medium text-sm mb-2">{groupName}</h4>
                     <div className="space-y-2 ml-4">
                       {permissions.map(({ key, label }) => (
-                        <div key={key} className="flex items-center space-x-2">
+                        <div 
+                          key={key} 
+                          className="flex items-center space-x-2"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                        >
                           <Checkbox
-                            id={key}
+                            id={`manager-${key}`}
                             checked={watchedPermissions.includes(key)}
-                            onCheckedChange={(checked) =>
-                              handlePermissionChange(key, !!checked)
-                            }
+                            onCheckedChange={(checked) => {
+                              handlePermissionChange(key, !!checked);
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
                           />
-                          <label htmlFor={key} className="text-sm">
+                          <label 
+                            htmlFor={`manager-${key}`} 
+                            className="text-sm cursor-pointer select-none"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handlePermissionChange(key, !watchedPermissions.includes(key));
+                            }}
+                          >
                             {label}
                           </label>
                         </div>
