@@ -141,6 +141,7 @@ export default function AdminProfiles() {
   const [activeTab, setActiveTab] = useState("users");
   const [roleFilter, setRoleFilter] = useState<string>("all_roles");
   const [statusFilter, setStatusFilter] = useState<string>("all_status");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<User | null>(null);
@@ -530,6 +531,7 @@ export default function AdminProfiles() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
+                      <TableHead>Nome de Usuário</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Papel</TableHead>
                       <TableHead>Status</TableHead>
@@ -543,6 +545,7 @@ export default function AdminProfiles() {
                         <TableCell className="font-medium">
                           {user.fullName}
                         </TableCell>
+                        <TableCell>{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <Badge className={getRoleBadgeColor(user.role)}>
