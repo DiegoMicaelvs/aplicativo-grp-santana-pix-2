@@ -1,0 +1,124 @@
+import { db } from "../db";
+import { 
+  users, 
+  referrals, 
+  withdrawalRequests, 
+  auditLog, 
+  cashFlow,
+  supportTickets,
+  referralConversations,
+  ticketResponses,
+  salesLeads,
+  salesActivities,
+  salesReminders
+} from "@shared/schema";
+import { ne, eq } from "drizzle-orm";
+
+async function cleanForProduction() {
+  try {
+    console.log("🧹 Iniciando limpeza para produção...");
+    console.log("=====================================");
+    
+    // 1. Limpar cash flow primeiro (tem referências para withdrawal_requests)
+    console.log("\n1. Limpando fluxo de caixa...");
+    const deletedCashFlow = await db.delete(cashFlow).returning();
+    console.log(`   ✅ ${deletedCashFlow.length} entradas de fluxo removidas`);
+    
+    // 2. Limpar audit log
+    console.log("\n2. Limpando logs de auditoria...");
+    const deletedAuditLogs = await db.delete(auditLog).returning();
+    console.log(`   ✅ ${deletedAuditLogs.length} logs removidos`);
+    
+    // 3. Agora pode limpar saques
+    console.log("\n3. Limpando saques...");
+    const deletedWithdrawals = await db.delete(withdrawalRequests).returning();
+    console.log(`   ✅ ${deletedWithdrawals.length} saques removidos`);
+    
+    // 4. Limpar conversas de indicações (antes de limpar indicações)
+    console.log("\n4. Limpando conversas de indicações...");
+    const deletedConversations = await db.delete(referralConversations).returning();
+    console.log(`   ✅ ${deletedConversations.length} conversas removidas`);
+    
+    // 5. Limpar indicações
+    console.log("\n5. Limpando indicações...");
+    const deletedReferrals = await db.delete(referrals).returning();
+    console.log(`   ✅ ${deletedReferrals.length} indicações removidas`);
+    
+    // 6. Limpar tickets de suporte e respostas
+    console.log("\n6. Limpando tickets de suporte...");
+    const deletedTicketResponses = await db.delete(ticketResponses).returning();
+    console.log(`   ✅ ${deletedTicketResponses.length} respostas de tickets removidas`);
+    const deletedTickets = await db.delete(supportTickets).returning();
+    console.log(`   ✅ ${deletedTickets.length} tickets removidos`);
+    
+    // 7. Limpar dados de vendas
+    console.log("\n7. Limpando dados de vendas...");
+    const deletedReminders = await db.delete(salesReminders).returning();
+    console.log(`   ✅ ${deletedReminders.length} lembretes removidos`);
+    const deletedActivities = await db.delete(salesActivities).returning();
+    console.log(`   ✅ ${deletedActivities.length} atividades removidas`);
+    const deletedLeads = await db.delete(salesLeads).returning();
+    console.log(`   ✅ ${deletedLeads.length} leads removidos`);
+    
+    // 8. Buscar todos os administradores antes de deletar
+    console.log("\n8. Identificando administradores...");
+    const admins = await db.query.users.findMany({
+      where: (users, { eq }) => eq(users.role, "admin")
+    });
+    console.log(`   ℹ️ ${admins.length} administradores encontrados:`);
+    admins.forEach(admin => {
+      console.log(`      - ${admin.username} (${admin.fullName})`);
+    });
+    
+    // 9. Limpar todos os usuários exceto admins
+    console.log("\n9. Limpando usuários não-admin...");
+    const deletedUsers = await db.delete(users)
+      .where(ne(users.role, "admin"))
+      .returning();
+    console.log(`   ✅ ${deletedUsers.length} usuários removidos`);
+    
+    // 10. Resetar saldos e ganhos dos admins
+    console.log("\n10. Resetando saldos dos administradores...");
+    const updatedAdmins = await db.update(users)
+      .set({
+        balance: "0.00",
+        totalEarnings: "0.00"
+      })
+      .where(eq(users.role, "admin"))
+      .returning();
+    console.log(`   ✅ ${updatedAdmins.length} administradores resetados`);
+    
+    // 11. Resumo final
+    console.log("\n=====================================");
+    console.log("🎉 LIMPEZA CONCLUÍDA COM SUCESSO!");
+    console.log("=====================================");
+    console.log("\n📊 Resumo:");
+    console.log(`   • Saques removidos: ${deletedWithdrawals.length}`);
+    console.log(`   • Indicações removidas: ${deletedReferrals.length}`);
+    console.log(`   • Logs removidos: ${deletedAuditLogs.length}`);
+    console.log(`   • Fluxo de caixa limpo: ${deletedCashFlow.length} entradas`);
+    console.log(`   • Tickets removidos: ${deletedTickets.length}`);
+    console.log(`   • Respostas de tickets removidas: ${deletedTicketResponses.length}`);
+    console.log(`   • Conversas removidas: ${deletedConversations.length}`);
+    console.log(`   • Leads removidos: ${deletedLeads.length}`);
+    console.log(`   • Atividades removidas: ${deletedActivities.length}`);
+    console.log(`   • Lembretes removidos: ${deletedReminders.length}`);
+    console.log(`   • Usuários removidos: ${deletedUsers.length}`);
+    console.log(`   • Administradores mantidos: ${admins.length}`);
+    
+    console.log("\n✅ Sistema pronto para produção!");
+    console.log("\n🔑 Administradores disponíveis:");
+    admins.forEach(admin => {
+      console.log(`   • ${admin.username}`);
+    });
+    
+  } catch (error) {
+    console.error("\n❌ Erro durante a limpeza:", error);
+    process.exit(1);
+  } finally {
+    process.exit(0);
+  }
+}
+
+// Executar imediatamente
+cleanForProduction();
