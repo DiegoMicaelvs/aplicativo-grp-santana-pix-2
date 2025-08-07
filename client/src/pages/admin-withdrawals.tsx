@@ -30,7 +30,7 @@ interface WithdrawalRequest {
   userId: number;
   amount: string;
   pixKey: string;
-  status: 'pending' | 'paid' | 'rejected';
+  status: 'pending' | 'approved' | 'paid' | 'rejected';
   requestedAt: string;
   processedAt?: string;
   notes?: string;
