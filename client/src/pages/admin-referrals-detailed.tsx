@@ -294,6 +294,8 @@ export default function AdminReferralsDetailedPage() {
     commissionIndicator: "0",
     commissionPromoter: "0"
   });
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [userDropdownOpenMobile, setUserDropdownOpenMobile] = useState(false);
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -925,60 +927,53 @@ export default function AdminReferralsDetailedPage() {
                                   <UserCheck className="h-4 w-4" />
                                   Atribuir a outro Usuário
                                 </label>
-                                {(() => {
-                                  const [open, setOpen] = React.useState(false);
-                                  const selectedUser = sortedUsers.find(u => u.id === editFormData.userId);
-                                  
-                                  return (
-                                    <Popover open={open} onOpenChange={setOpen}>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          role="combobox"
-                                          aria-expanded={open}
-                                          className="w-full justify-between font-normal"
-                                        >
-                                          {selectedUser 
-                                            ? `${selectedUser.fullName} (${selectedUser.username}) - ${selectedUser.role}`
-                                            : "Selecione um usuário"}
-                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-full p-0" align="start">
-                                        <Command>
-                                          <CommandInput placeholder="Pesquisar usuário..." />
-                                          <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
-                                          <CommandGroup className="max-h-[200px] overflow-y-auto">
-                                            {sortedUsers.map((user) => (
-                                              <CommandItem
-                                                key={user.id}
-                                                value={`${user.fullName} ${user.username} ${user.role}`}
-                                                onSelect={() => {
-                                                  console.log("[Select onChange Mobile] Novo userId selecionado:", user.id);
-                                                  setEditFormData({...editFormData, userId: user.id});
-                                                  setOpen(false);
-                                                }}
-                                              >
-                                                <Check
-                                                  className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    editFormData.userId === user.id ? "opacity-100" : "opacity-0"
-                                                  )}
-                                                />
-                                                <div className="flex-1">
-                                                  <div className="font-medium">{user.fullName}</div>
-                                                  <div className="text-xs text-gray-500">
-                                                    {user.username} - {user.role}
-                                                  </div>
-                                                </div>
-                                              </CommandItem>
-                                            ))}
-                                          </CommandGroup>
-                                        </Command>
-                                      </PopoverContent>
-                                    </Popover>
-                                  );
-                                })()}
+                                <Popover open={userDropdownOpenMobile} onOpenChange={setUserDropdownOpenMobile}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={userDropdownOpenMobile}
+                                      className="w-full justify-between font-normal"
+                                    >
+                                      {sortedUsers.find(u => u.id === editFormData.userId) 
+                                        ? `${sortedUsers.find(u => u.id === editFormData.userId)?.fullName} (${sortedUsers.find(u => u.id === editFormData.userId)?.username}) - ${sortedUsers.find(u => u.id === editFormData.userId)?.role}`
+                                        : "Selecione um usuário"}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-full p-0" align="start">
+                                    <Command>
+                                      <CommandInput placeholder="Pesquisar usuário..." />
+                                      <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                                      <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                        {sortedUsers.map((user) => (
+                                          <CommandItem
+                                            key={user.id}
+                                            value={`${user.fullName} ${user.username} ${user.role}`}
+                                            onSelect={() => {
+                                              console.log("[Select onChange Mobile] Novo userId selecionado:", user.id);
+                                              setEditFormData({...editFormData, userId: user.id});
+                                              setUserDropdownOpenMobile(false);
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                editFormData.userId === user.id ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            <div className="flex-1">
+                                              <div className="font-medium">{user.fullName}</div>
+                                              <div className="text-xs text-gray-500">
+                                                {user.username} - {user.role}
+                                              </div>
+                                            </div>
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
                                 {editFormData.userId > 0 && (
                                   <p className="text-xs text-gray-500">
                                     Usuário selecionado: {sortedUsers.find(u => u.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
@@ -1382,60 +1377,53 @@ export default function AdminReferralsDetailedPage() {
                                       <UserCheck className="h-4 w-4" />
                                       Atribuir a outro Usuário
                                     </label>
-                                    {(() => {
-                                      const [open, setOpen] = React.useState(false);
-                                      const selectedUser = sortedUsers.find(u => u.id === editFormData.userId);
-                                      
-                                      return (
-                                        <Popover open={open} onOpenChange={setOpen}>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              variant="outline"
-                                              role="combobox"
-                                              aria-expanded={open}
-                                              className="w-full justify-between font-normal"
-                                            >
-                                              {selectedUser 
-                                                ? `${selectedUser.fullName} (${selectedUser.username}) - ${selectedUser.role}`
-                                                : "Selecione um usuário"}
-                                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-full p-0" align="start">
-                                            <Command>
-                                              <CommandInput placeholder="Pesquisar usuário..." />
-                                              <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
-                                              <CommandGroup className="max-h-[200px] overflow-y-auto">
-                                                {sortedUsers.map((user) => (
-                                                  <CommandItem
-                                                    key={user.id}
-                                                    value={`${user.fullName} ${user.username} ${user.role}`}
-                                                    onSelect={() => {
-                                                      console.log("[Select onChange] Novo userId selecionado:", user.id);
-                                                      setEditFormData({...editFormData, userId: user.id});
-                                                      setOpen(false);
-                                                    }}
-                                                  >
-                                                    <Check
-                                                      className={cn(
-                                                        "mr-2 h-4 w-4",
-                                                        editFormData.userId === user.id ? "opacity-100" : "opacity-0"
-                                                      )}
-                                                    />
-                                                    <div className="flex-1">
-                                                      <div className="font-medium">{user.fullName}</div>
-                                                      <div className="text-xs text-gray-500">
-                                                        {user.username} - {user.role}
-                                                      </div>
-                                                    </div>
-                                                  </CommandItem>
-                                                ))}
-                                              </CommandGroup>
-                                            </Command>
-                                          </PopoverContent>
-                                        </Popover>
-                                      );
-                                    })()}
+                                    <Popover open={userDropdownOpen} onOpenChange={setUserDropdownOpen}>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          role="combobox"
+                                          aria-expanded={userDropdownOpen}
+                                          className="w-full justify-between font-normal"
+                                        >
+                                          {sortedUsers.find(u => u.id === editFormData.userId) 
+                                            ? `${sortedUsers.find(u => u.id === editFormData.userId)?.fullName} (${sortedUsers.find(u => u.id === editFormData.userId)?.username}) - ${sortedUsers.find(u => u.id === editFormData.userId)?.role}`
+                                            : "Selecione um usuário"}
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-full p-0" align="start">
+                                        <Command>
+                                          <CommandInput placeholder="Pesquisar usuário..." />
+                                          <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                                          <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                            {sortedUsers.map((user) => (
+                                              <CommandItem
+                                                key={user.id}
+                                                value={`${user.fullName} ${user.username} ${user.role}`}
+                                                onSelect={() => {
+                                                  console.log("[Select onChange] Novo userId selecionado:", user.id);
+                                                  setEditFormData({...editFormData, userId: user.id});
+                                                  setUserDropdownOpen(false);
+                                                }}
+                                              >
+                                                <Check
+                                                  className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    editFormData.userId === user.id ? "opacity-100" : "opacity-0"
+                                                  )}
+                                                />
+                                                <div className="flex-1">
+                                                  <div className="font-medium">{user.fullName}</div>
+                                                  <div className="text-xs text-gray-500">
+                                                    {user.username} - {user.role}
+                                                  </div>
+                                                </div>
+                                              </CommandItem>
+                                            ))}
+                                          </CommandGroup>
+                                        </Command>
+                                      </PopoverContent>
+                                    </Popover>
                                     {editFormData.userId > 0 && (
                                       <p className="text-xs text-gray-500">
                                         Usuário selecionado: {sortedUsers.find(u => u.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
