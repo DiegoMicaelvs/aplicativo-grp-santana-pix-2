@@ -321,7 +321,7 @@ class DatabaseStorage implements IStorage {
     return allUsers;
   }
   
-  async updateUserBalance(userId: number, amount: number, updateEarnings: boolean = true) {
+  async updateUserBalance(userId: number, amount: number, updateEarnings: boolean = false) {
     try {
       console.log(`[updateUserBalance] Atualizando saldo do usuário ${userId} com valor: ${amount}, updateEarnings: ${updateEarnings}`);
       
@@ -331,9 +331,12 @@ class DatabaseStorage implements IStorage {
         console.log(`[updateUserBalance] Saldo atual: ${currentUser.balance}, Total ganhos: ${currentUser.totalEarnings}`);
       }
       
-      // Se o valor for positivo (ganho) e updateEarnings for true, atualiza tanto o saldo quanto o total de ganhos
-      // Se for negativo (saque) ou updateEarnings for false, atualiza apenas o saldo
-      if (amount > 0 && updateEarnings) {
+      // REGRA DE NEGÓCIO CORRIGIDA:
+      // - balance: saldo disponível para saque (comissões pendentes)
+      // - totalEarnings: valor total já pago ao usuário (apenas saques pagos)
+      // Por padrão, apenas atualiza o saldo disponível
+      // O totalEarnings só é atualizado quando updateEarnings=true (quando saque é pago)
+      if (updateEarnings) {
         await db.update(users)
           .set({ 
             balance: sql`balance + ${amount}`,
@@ -823,18 +826,8 @@ class DatabaseStorage implements IStorage {
         console.log(`[updateReferralStatus] Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
       }
       
-      // Update totalEarnings only when status changes to paid
-      if (status === 'paid' && previousStatus !== 'paid') {
-        if (user && newCommissionIndicator > 0) {
-          await this.updateUserTotalEarnings(user.id, newCommissionIndicator);
-          console.log(`[updateReferralStatus] Updated total earnings for user ${user.id}: +${newCommissionIndicator}`);
-        }
-        
-        if (user?.promoterId && newCommissionPromoter > 0) {
-          await this.updateUserTotalEarnings(user.promoterId, newCommissionPromoter);
-          console.log(`[updateReferralStatus] Updated total earnings for promoter ${user.promoterId}: +${newCommissionPromoter}`);
-        }
-      }
+      // REMOVIDO: Não atualizar totalEarnings quando indicação é paga
+      // O totalEarnings deve ser atualizado apenas quando um SAQUE é pago, não quando uma indicação é paga
       
       const [updatedReferral] = await db.update(referrals)
         .set({ 
@@ -1149,9 +1142,13 @@ class DatabaseStorage implements IStorage {
     // Se o saque foi aprovado mas ainda não pago, não fazer nada com o saldo
     // O saldo já foi descontado quando a solicitação foi criada
     
-    // Se o pagamento foi realizado, criar entrada no fluxo de caixa
+    // Se o pagamento foi realizado, criar entrada no fluxo de caixa e atualizar totalEarnings
     if (status === 'paid' && updated) {
       const amount = parseFloat(updated.amount);
+      
+      // Atualizar totalEarnings do usuário (valor total já pago)
+      await this.updateUserTotalEarnings(updated.userId, amount);
+      console.log(`[updateWithdrawalStatus] Total de ganhos atualizado para usuário ${updated.userId}: +${amount}`);
       
       // Criar entrada no fluxo de caixa
       await this.createCashFlowEntry({

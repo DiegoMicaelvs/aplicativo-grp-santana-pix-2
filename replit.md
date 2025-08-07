@@ -51,6 +51,15 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-08-07 - Balance and Earnings Logic Correction
+- Fixed critical issue where user balances were showing R$0 when users had available funds
+- Corrected business logic for balance and totalEarnings:
+  - `balance`: Available withdrawal balance (pending commissions from validated/converted referrals)
+  - `totalEarnings`: Total amount already paid to user (only withdrawals with status "paid")
+- When referrals are reassigned to different users, commissions are now automatically transferred
+- Created fix-user-balances.ts script to recalculate all user balances based on current referrals
+- totalEarnings now only updates when a withdrawal is marked as "paid", not when referrals are paid
+
 ### 2025-08-06 - Analyst Edit Permissions Fix
 - Fixed issue where analysts (especially level 1) couldn't edit referral status
 - Added `edit_referral_status` permission to all analysts automatically

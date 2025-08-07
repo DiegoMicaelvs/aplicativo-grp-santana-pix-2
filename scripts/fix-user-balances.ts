@@ -2,7 +2,10 @@
 
 /**
  * Script para recalcular os saldos de todos os usuários baseado nas indicações atuais
- * Corrige inconsistências causadas por atribuições de indicações sem transferência de comissões
+ * 
+ * REGRA DE NEGÓCIO CORRIGIDA:
+ * - balance: saldo disponível para saque (comissões de indicações validadas/convertidas ainda não sacadas)
+ * - totalEarnings: valor total já pago ao usuário (apenas saques com status "paid")
  */
 
 import { config } from 'dotenv';
@@ -14,6 +17,9 @@ config({ path: '.env' });
 
 async function fixUserBalances() {
   console.log('=== Iniciando correção de saldos dos usuários ===\n');
+  console.log('REGRA DE NEGÓCIO:');
+  console.log('- Saldo Disponível: comissões de indicações validadas/convertidas ainda não sacadas');
+  console.log('- Total de Ganhos: valor total já pago ao usuário (saques pagos)\n');
   
   try {
     // 1. Buscar todos os usuários
@@ -28,8 +34,8 @@ async function fixUserBalances() {
         totalEarnings: '0'
       });
     
-    // 3. Recalcular baseado nas indicações
-    console.log('\nRecalculando saldos baseado nas indicações...\n');
+    // 3. Calcular SALDO DISPONÍVEL baseado nas comissões de indicações
+    console.log('\nCalculando SALDO DISPONÍVEL baseado nas indicações...\n');
     
     const allReferrals = await db.select().from(referrals);
     
@@ -44,7 +50,9 @@ async function fixUserBalances() {
       referralsByUser.get(userId)!.push(referral);
     }
     
-    // Calcular comissões para cada usuário
+    // Calcular comissões para cada usuário (indicador)
+    const userCommissions = new Map<number, number>();
+    
     for (const [userId, userReferrals] of referralsByUser) {
       let totalCommission = 0;
       let referralCount = 0;
@@ -58,15 +66,9 @@ async function fixUserBalances() {
       }
       
       if (totalCommission > 0) {
+        userCommissions.set(userId, totalCommission);
         const user = allUsers.find(u => u.id === userId);
-        console.log(`Usuário ${user?.fullName || userId}: ${referralCount} indicações, total: R$ ${totalCommission.toFixed(2)}`);
-        
-        // Atualizar total de ganhos
-        await db.update(users)
-          .set({ 
-            totalEarnings: totalCommission.toString()
-          })
-          .where(eq(users.id, userId));
+        console.log(`Indicador ${user?.fullName || userId}: ${referralCount} indicações, comissão total: R$ ${totalCommission.toFixed(2)}`);
       }
     }
     
@@ -98,55 +100,65 @@ async function fixUserBalances() {
       }
       
       if (totalPromoterCommission > 0) {
+        const currentCommission = userCommissions.get(promoterId) || 0;
+        userCommissions.set(promoterId, currentCommission + totalPromoterCommission);
         const promoter = allUsers.find(u => u.id === promoterId);
-        console.log(`Promotor ${promoter?.fullName || promoterId}: ${referralCount} indicações, comissão: R$ ${totalPromoterCommission.toFixed(2)}`);
-        
-        // Adicionar ao total de ganhos do promotor
-        await db.update(users)
-          .set({ 
-            totalEarnings: sql`total_earnings + ${totalPromoterCommission}`
-          })
-          .where(eq(users.id, promoterId));
+        console.log(`Promotor ${promoter?.fullName || promoterId}: ${referralCount} indicações gerenciadas, comissão: R$ ${totalPromoterCommission.toFixed(2)}`);
       }
     }
     
-    // 5. Agora calcular o saldo disponível (total de ganhos - saques aprovados/pagos)
-    console.log('\nCalculando saldos disponíveis (total - saques)...\n');
+    // 5. Calcular saques aprovados e pagos
+    console.log('\nCalculando saques processados...\n');
     
-    const allWithdrawals = await db.select().from(withdrawalRequests)
-      .where(or(
-        eq(withdrawalRequests.status, 'approved'),
-        eq(withdrawalRequests.status, 'paid')
-      ));
+    const allWithdrawals = await db.select().from(withdrawalRequests);
     
-    // Agrupar saques por usuário
-    const withdrawalsByUser = new Map<number, number>();
+    // Separar saques por status
+    const approvedWithdrawals = new Map<number, number>();  // Saques aprovados mas não pagos
+    const paidWithdrawals = new Map<number, number>();      // Saques pagos
     
     for (const withdrawal of allWithdrawals) {
       const userId = withdrawal.userId;
       const amount = parseFloat(withdrawal.amount?.toString() || '0');
       
-      if (!withdrawalsByUser.has(userId)) {
-        withdrawalsByUser.set(userId, 0);
+      if (withdrawal.status === 'approved') {
+        if (!approvedWithdrawals.has(userId)) {
+          approvedWithdrawals.set(userId, 0);
+        }
+        approvedWithdrawals.set(userId, approvedWithdrawals.get(userId)! + amount);
+      } else if (withdrawal.status === 'paid') {
+        if (!paidWithdrawals.has(userId)) {
+          paidWithdrawals.set(userId, 0);
+        }
+        paidWithdrawals.set(userId, paidWithdrawals.get(userId)! + amount);
       }
-      withdrawalsByUser.set(userId, withdrawalsByUser.get(userId)! + amount);
     }
     
-    // Atualizar saldos finais
+    // 6. Atualizar saldos e total de ganhos
+    console.log('\nAtualizando saldos finais...\n');
+    
     for (const user of allUsers) {
-      const totalEarnings = parseFloat(user.totalEarnings?.toString() || '0');
-      const totalWithdrawals = withdrawalsByUser.get(user.id) || 0;
-      const balance = totalEarnings - totalWithdrawals;
+      const totalCommissions = userCommissions.get(user.id) || 0;
+      const totalApproved = approvedWithdrawals.get(user.id) || 0;
+      const totalPaid = paidWithdrawals.get(user.id) || 0;
       
-      if (totalEarnings > 0 || totalWithdrawals > 0) {
+      // Saldo disponível = comissões totais - saques aprovados - saques pagos
+      const balance = totalCommissions - totalApproved - totalPaid;
+      
+      // Total de ganhos = apenas saques pagos
+      const totalEarnings = totalPaid;
+      
+      if (totalCommissions > 0 || totalApproved > 0 || totalPaid > 0) {
         console.log(`${user.fullName}:`);
-        console.log(`  Total ganho: R$ ${totalEarnings.toFixed(2)}`);
-        console.log(`  Total sacado: R$ ${totalWithdrawals.toFixed(2)}`);
-        console.log(`  Saldo disponível: R$ ${balance.toFixed(2)}\n`);
+        console.log(`  Comissões totais: R$ ${totalCommissions.toFixed(2)}`);
+        console.log(`  Saques aprovados: R$ ${totalApproved.toFixed(2)}`);
+        console.log(`  Saques pagos: R$ ${totalPaid.toFixed(2)}`);
+        console.log(`  SALDO DISPONÍVEL: R$ ${balance.toFixed(2)}`);
+        console.log(`  TOTAL DE GANHOS (já pago): R$ ${totalEarnings.toFixed(2)}\n`);
         
         await db.update(users)
           .set({ 
-            balance: balance.toString()
+            balance: balance.toString(),
+            totalEarnings: totalEarnings.toString()
           })
           .where(eq(users.id, user.id));
       }
