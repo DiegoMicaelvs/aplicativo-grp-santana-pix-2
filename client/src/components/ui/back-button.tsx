@@ -10,7 +10,7 @@ interface BackButtonProps {
 }
 
 export function BackButton({ to, children = "Voltar ao Dashboard", className }: BackButtonProps) {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user } = useAuth();
 
   const getDashboardRoute = () => {
@@ -38,8 +38,14 @@ export function BackButton({ to, children = "Voltar ao Dashboard", className }: 
     if (to) {
       navigate(to);
     } else {
-      // Navigate to appropriate dashboard instead of browser back
-      navigate(getDashboardRoute());
+      const dashboardRoute = getDashboardRoute();
+      // If already at the main dashboard, go to home page
+      if (location === dashboardRoute) {
+        navigate("/");
+      } else {
+        // Otherwise go to the appropriate dashboard
+        navigate(dashboardRoute);
+      }
     }
   };
 
