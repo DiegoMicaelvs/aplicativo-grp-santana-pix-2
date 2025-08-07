@@ -53,6 +53,7 @@ import { Users, ClipboardList, DollarSign, CheckCircle, XCircle, Clock, Loader2,
 import { useAuth } from "@/hooks/use-auth";
 import { Referral as BaseReferral, ReferralStatus, User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { invalidateRelatedQueries } from "@/lib/invalidateUtils";
 
 // Interface estendida para incluir a relação com o usuário
 interface Referral extends BaseReferral {
@@ -199,7 +200,8 @@ export default function AdminDashboard() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/referrals'] });
+      // Use comprehensive invalidation for referral-related queries
+      invalidateRelatedQueries(queryClient, 'referral');
       setDialogOpen(false);
       toast({
         title: "Status atualizado",
@@ -222,8 +224,8 @@ export default function AdminDashboard() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/promoters'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      // Use comprehensive invalidation for user-related queries
+      invalidateRelatedQueries(queryClient, 'user');
       setAssignDialogOpen(false);
       toast({
         title: "Atribuição realizada",

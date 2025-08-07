@@ -65,6 +65,7 @@ import Footer from "@/components/layout/footer";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCPF } from "@/lib/utils";
+import { invalidateRelatedQueries } from "@/lib/invalidateUtils";
 import {
   User,
   UserRole,
@@ -199,7 +200,8 @@ export default function AdminProfiles() {
       return apiRequest('POST', '/api/admin/users', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      // Use comprehensive invalidation for user-related queries
+      invalidateRelatedQueries(queryClient, 'user');
       toast({
         title: "Usuário criado",
         description: "O perfil foi criado com sucesso.",
@@ -235,7 +237,8 @@ export default function AdminProfiles() {
       return apiRequest('PATCH', `/api/admin/users/${data.id}`, data.updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      // Use comprehensive invalidation for user-related queries
+      invalidateRelatedQueries(queryClient, 'user');
       toast({
         title: "Usuário atualizado",
         description: "O perfil foi atualizado com sucesso.",
@@ -258,7 +261,8 @@ export default function AdminProfiles() {
       return apiRequest('PATCH', `/api/admin/users/${data.id}/status`, { isActive: data.isActive });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      // Use comprehensive invalidation for user-related queries
+      invalidateRelatedQueries(queryClient, 'user');
       toast({
         title: "Status atualizado",
         description: "O status do usuário foi alterado com sucesso.",

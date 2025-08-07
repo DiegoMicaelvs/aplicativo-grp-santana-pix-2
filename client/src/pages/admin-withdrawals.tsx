@@ -23,6 +23,7 @@ import {
 import { format } from 'date-fns';
 import { queryClient } from '@/lib/queryClient';
 import { BackButton } from '@/components/ui/back-button';
+import { invalidateRelatedQueries } from '@/lib/invalidateUtils';
 
 interface WithdrawalRequest {
   id: number;
@@ -77,8 +78,8 @@ export default function AdminWithdrawals() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/withdrawals'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/cash-flow'] });
+      // Use comprehensive invalidation for withdrawal-related queries
+      invalidateRelatedQueries(queryClient, 'withdrawal');
       setSelectedWithdrawal(null);
       setProcessingNotes('');
       toast({

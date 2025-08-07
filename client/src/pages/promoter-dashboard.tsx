@@ -51,6 +51,7 @@ import { Link } from "wouter";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { apiRequest } from "@/lib/queryClient";
+import { invalidateRelatedQueries } from "@/lib/invalidateUtils";
 
 export default function PromoterDashboard() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -104,7 +105,8 @@ export default function PromoterDashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users/indicadores"] });
+      // Use comprehensive invalidation for indicator-related queries
+      invalidateRelatedQueries(queryClient, 'indicator');
       toast({
         title: "Sucesso",
         description: "Indicador criado com sucesso!",
