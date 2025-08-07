@@ -777,6 +777,15 @@ export default function AdminReferralsDetailedPage() {
                     <span className="ml-1">{getCompanyName(referral.companyId)}</span>
                   </div>
                   <div>
+                    <span className="text-gray-500">Possui Seguro:</span>
+                    <span className={`ml-1 font-medium ${referral.hasInsurance ? 'text-green-600' : 'text-red-600'}`}>
+                      {referral.hasInsurance ? 'Sim' : 'Não'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
                     <span className="text-gray-500">Indicador:</span>
                     <span className="ml-1">{getUserName(referral.userId)}</span>
                   </div>
@@ -1198,6 +1207,7 @@ export default function AdminReferralsDetailedPage() {
                   <TableHead className="min-w-[80px]">Placa</TableHead>
                   <TableHead className="min-w-[120px]">Seguradora</TableHead>
                   <TableHead className="min-w-[90px]">Local</TableHead>
+                  <TableHead className="min-w-[80px]">Tem Seguro</TableHead>
                   <TableHead className="min-w-[110px]">Indicador</TableHead>
                   <TableHead className="min-w-[90px]">Status</TableHead>
                   <TableHead className="min-w-[100px]">Comissões</TableHead>
@@ -1222,6 +1232,11 @@ export default function AdminReferralsDetailedPage() {
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <span className={`font-medium ${referral.hasInsurance ? 'text-green-600' : 'text-red-600'}`}>
+                        {referral.hasInsurance ? 'Sim' : 'Não'}
+                      </span>
                     </TableCell>
                     <TableCell className="text-xs">
                       {getUserName(referral.userId)}
