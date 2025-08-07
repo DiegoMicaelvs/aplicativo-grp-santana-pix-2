@@ -63,10 +63,11 @@ export default function AnalystDashboard() {
 
   return (
     <div className="container mx-auto p-6">
-      {/* Back Button - Removed since this is the main dashboard for analysts */}
+      {/* Back Button */}
+      <BackButton />
 
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-6 mt-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard do Analista</h1>
