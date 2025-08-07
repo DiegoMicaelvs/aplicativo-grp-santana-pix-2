@@ -2166,8 +2166,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // License Plate Search for Indicadores
-  app.get("/api/indicador/search-plate", requireAuth, async (req, res) => {
+  // License Plate Search - Available for all authenticated users
+  const plateLookupHandler = async (req: any, res: any) => {
     try {
       const { plate } = req.query;
       
@@ -2203,7 +2203,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error searching plate:", error);
       return res.status(500).json({ error: "Erro ao consultar placa" });
     }
-  });
+  };
+  
+  // Main route for plate search
+  app.get("/api/search-plate", requireAuth, plateLookupHandler);
+  
+  // Keep backward compatibility with old route
+  app.get("/api/indicador/search-plate", requireAuth, plateLookupHandler);
 
   // Create HTTP server
   const server = createServer(app);

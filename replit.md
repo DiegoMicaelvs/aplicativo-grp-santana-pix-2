@@ -51,6 +51,15 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-08-07 - Plate Search Feature for All Users
+- Implemented plate search functionality available for all authenticated users
+- Created new `/plate-search` page with automatic Brazilian plate formatting
+- Added "Consultar Placa" button to all users' dashboards
+- API endpoint `/api/search-plate` accessible by any authenticated user
+- Backward compatibility maintained with old `/api/indicador/search-plate` endpoint
+- Real-time validation shows if plate is already registered with status and date
+- Prevents duplicate vehicle registrations in the platform
+
 ### 2025-08-07 - Balance and Earnings Logic Correction
 - Fixed critical issue where user balances were showing R$0 when users had available funds
 - Corrected business logic for balance and totalEarnings:

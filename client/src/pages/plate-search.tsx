@@ -54,7 +54,7 @@ export default function PlateSearchPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/indicador/search-plate?plate=${encodeURIComponent(plate)}`);
+      const response = await fetch(`/api/search-plate?plate=${encodeURIComponent(plate)}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -112,7 +112,7 @@ export default function PlateSearchPage() {
                     Consulta de Placas
                   </h1>
                   <p className="mt-2 text-gray-600">
-                    Verifique se uma placa já está cadastrada no sistema
+                    Ferramenta disponível para todos os usuários - Verifique se uma placa já está cadastrada no sistema
                   </p>
                 </div>
                 <BackButton to="/dashboard" />
@@ -212,6 +212,9 @@ export default function PlateSearchPage() {
                   <CardContent className="pt-6">
                     <h3 className="font-semibold text-blue-900 mb-2">Como funciona?</h3>
                     <div className="text-sm text-blue-700 space-y-2">
+                      <p>
+                        • Qualquer usuário pode consultar placas de veículos
+                      </p>
                       <p>
                         • Digite a placa do veículo que deseja consultar
                       </p>
