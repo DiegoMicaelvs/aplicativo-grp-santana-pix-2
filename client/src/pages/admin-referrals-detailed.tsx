@@ -915,7 +915,7 @@ export default function AdminReferralsDetailedPage() {
                               <div className="space-y-2">
                                 <label className="text-sm font-medium flex items-center gap-2">
                                   <UserCheck className="h-4 w-4" />
-                                  Atribuir a outro Indicador
+                                  Atribuir a outro Usuário
                                 </label>
                                 <Select 
                                   value={editFormData.userId?.toString() || ""} 
@@ -925,17 +925,17 @@ export default function AdminReferralsDetailedPage() {
                                   }}
                                 >
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Selecione um indicador" />
+                                    <SelectValue placeholder="Selecione um usuário" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {indicadores.length === 0 ? (
+                                    {allUsers.length === 0 ? (
                                       <SelectItem value="0" disabled>
-                                        Nenhum indicador disponível
+                                        Nenhum usuário disponível
                                       </SelectItem>
                                     ) : (
-                                      indicadores.map((indicador) => (
-                                        <SelectItem key={indicador.id} value={indicador.id.toString()}>
-                                          {indicador.fullName} ({indicador.username})
+                                      allUsers.map((user) => (
+                                        <SelectItem key={user.id} value={user.id.toString()}>
+                                          {user.fullName} ({user.username}) - {user.role}
                                         </SelectItem>
                                       ))
                                     )}
@@ -943,7 +943,7 @@ export default function AdminReferralsDetailedPage() {
                                 </Select>
                                 {editFormData.userId > 0 && (
                                   <p className="text-xs text-gray-500">
-                                    Indicador atual: {indicadores.find(i => i.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
+                                    Usuário atual: {allUsers.find(u => u.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
                                   </p>
                                 )}
                               </div>
