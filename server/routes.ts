@@ -31,6 +31,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register cross-app validation routes
   registerCrossAppValidationRoutes(app);
 
+  // Helper function to get status label
+  const getStatusLabel = (status: string): string => {
+    const labels: Record<string, string> = {
+      'pending': 'Pendente',
+      'analyzing': 'Em Análise',
+      'validated': 'Validado',
+      'converted': 'Convertido',
+      'rejected': 'Rejeitado',
+      'paid': 'Pago',
+      'false': 'Falso',
+      'not_validated': 'Não validado',
+      'not_converted': 'Não convertido'
+    };
+    return labels[status] || status;
+  };
+
   // Middleware to check authentication
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.isAuthenticated()) {
@@ -1140,21 +1156,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Length', buffer.length.toString());
       
       return res.send(buffer);
-      
-      function getStatusLabel(status: string): string {
-        const labels: Record<string, string> = {
-          'pending': 'Pendente',
-          'analyzing': 'Em Análise',
-          'validated': 'Validado',
-          'converted': 'Convertido',
-          'rejected': 'Rejeitado',
-          'paid': 'Pago',
-          'false': 'Falso',
-          'not_validated': 'Não validado',
-          'not_converted': 'Não convertido'
-        };
-        return labels[status] || status;
-      }
     } catch (error) {
       console.error("Error exporting referrals:", error);
       return res.status(500).json({ error: "Erro ao exportar indicações" });
@@ -2162,6 +2163,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending manual SMS:", error);
       return res.status(500).json({ error: "Erro ao enviar SMS" });
+    }
+  });
+
+  // License Plate Search for Indicadores
+  app.get("/api/indicador/search-plate", requireAuth, async (req, res) => {
+    try {
+      const { plate } = req.query;
+      
+      if (!plate || typeof plate !== 'string') {
+        return res.status(400).json({ error: "Placa é obrigatória" });
+      }
+      
+      // Clean the plate (remove special characters)
+      const cleanPlate = plate.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      
+      if (cleanPlate.length < 7) {
+        return res.status(400).json({ error: "Placa inválida - deve ter 7 caracteres" });
+      }
+      
+      // Search for the plate in referrals
+      const referral = await storage.getReferralByPlate(cleanPlate);
+      
+      if (referral) {
+        // Don't expose sensitive information
+        return res.json({
+          found: true,
+          message: "Esta placa já está cadastrada no sistema",
+          status: referral.status,
+          createdAt: referral.createdAt
+        });
+      } else {
+        return res.json({
+          found: false,
+          message: "Placa não encontrada - disponível para cadastro"
+        });
+      }
+    } catch (error) {
+      console.error("Error searching plate:", error);
+      return res.status(500).json({ error: "Erro ao consultar placa" });
     }
   });
 

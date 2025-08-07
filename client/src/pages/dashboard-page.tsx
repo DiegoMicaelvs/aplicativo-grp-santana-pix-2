@@ -388,6 +388,9 @@ export default function DashboardPage() {
                       <Link href="/new-referral" className="w-full sm:w-auto">
                         <Button className="w-full sm:w-auto">Fazer Nova Indicação</Button>
                       </Link>
+                      <Link href="/plate-search" className="w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto">Consultar Placa</Button>
+                      </Link>
                       {user?.role === "promotor" && (
                         <>
                           <Link href="/promoter-dashboard" className="w-full sm:w-auto">

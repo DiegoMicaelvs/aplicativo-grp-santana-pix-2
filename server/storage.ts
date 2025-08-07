@@ -1370,6 +1370,16 @@ class DatabaseStorage implements IStorage {
       orderBy: desc(auditLog.createdAt)
     });
   }
+
+  async getRecentAuditLog(limit: number = 100) {
+    return await db.query.auditLog.findMany({
+      with: {
+        user: true
+      },
+      orderBy: desc(auditLog.createdAt),
+      limit
+    });
+  }
   
   // Referral conversation methods
   async createReferralConversation(conversationData: CreateReferralConversation & { referralId: number; userId: number }) {
@@ -1631,6 +1641,19 @@ class DatabaseStorage implements IStorage {
       'reagendado': 'Reagendado'
     };
     return labels[status] || status;
+  }
+
+  async getReferralByPlate(plate: string) {
+    try {
+      const referral = await db.query.referrals.findFirst({
+        where: eq(referrals.licensePlate, plate)
+      });
+      
+      return referral;
+    } catch (error) {
+      console.error(`[getReferralByPlate] Error searching plate ${plate}:`, error);
+      return null;
+    }
   }
 
 }

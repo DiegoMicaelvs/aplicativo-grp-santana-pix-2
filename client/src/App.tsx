@@ -38,6 +38,7 @@ import AnalystPermissions from "@/pages/analyst-permissions";
 import AnalystReferrals from "@/pages/analyst-referrals";
 import AnalystUsers from "@/pages/analyst-users";
 import AnalystAnalytics from "@/pages/analyst-analytics";
+import PlateSearchPage from "@/pages/plate-search";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AdminRoute, PromoterRoute, VendedorRoute, ManagerRoute, AnalystRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
@@ -57,6 +58,7 @@ function Router() {
       <ProtectedRoute path="/withdrawals" component={WithdrawalPage} />
       <ProtectedRoute path="/saques" component={WithdrawalPage} />
       <ProtectedRoute path="/change-password" component={ChangePasswordPage} />
+      <ProtectedRoute path="/plate-search" component={PlateSearchPage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/analysts" component={AdminAnalysts} />
       <AdminRoute path="/admin/profiles" component={AdminProfiles} />
