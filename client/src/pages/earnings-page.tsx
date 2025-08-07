@@ -26,14 +26,12 @@ export default function EarningsPage() {
 
   // Filter only paid or validated referrals with commission
   const paidReferrals = referrals?.filter(r => 
-    (r.status === 'paid' || r.status === 'validated') && r.commissionIndicator
+    (r.status === 'paid' || r.status === 'validated' || r.status === 'converted') && r.commissionIndicator
   ) || [];
   
-  // Calculate total earnings
-  const totalEarnings = paidReferrals.reduce((sum, r) => {
-    const commission = r.commissionIndicator ? (typeof r.commissionIndicator === 'string' ? parseFloat(r.commissionIndicator) : r.commissionIndicator) : 0;
-    return sum + commission;
-  }, 0);
+  // Total earnings now comes from user.totalEarnings (value already paid through withdrawals)
+  const totalEarnings = user?.totalEarnings ? 
+    (typeof user.totalEarnings === 'string' ? parseFloat(user.totalEarnings) : user.totalEarnings) : 0;
   
   // Format date to Brazilian format
   const formatDate = (dateStr: string | Date) => {
@@ -64,6 +62,8 @@ export default function EarningsPage() {
     switch (status) {
       case 'validated':
         return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
+      case 'converted':
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Convertido</Badge>;
       case 'paid':
         return <Badge variant="outline" className="bg-emerald-100 text-emerald-800">Pago</Badge>;
       default:
@@ -103,7 +103,7 @@ export default function EarningsPage() {
                           <DollarSign className="h-6 w-6 text-white" />
                         </div>
                         <div className="ml-5 flex-1">
-                          <div className="text-sm font-medium text-gray-500">Total de Ganhos</div>
+                          <div className="text-sm font-medium text-gray-500">Total de Ganhos (Já Recebido)</div>
                           <div className="text-lg font-medium text-gray-900">{formatCurrency(totalEarnings)}</div>
                         </div>
                       </div>
@@ -117,8 +117,8 @@ export default function EarningsPage() {
                           <Calendar className="h-6 w-6 text-white" />
                         </div>
                         <div className="ml-5 flex-1">
-                          <div className="text-sm font-medium text-gray-500">Indicações Pagas/Validadas</div>
-                          <div className="text-lg font-medium text-gray-900">{paidReferrals.length}</div>
+                          <div className="text-sm font-medium text-gray-500">Saldo Disponível para Saque</div>
+                          <div className="text-lg font-medium text-gray-900">{formatCurrency(user?.balance)}</div>
                         </div>
                       </div>
                     </CardContent>
@@ -129,7 +129,7 @@ export default function EarningsPage() {
                 <div className="mt-8">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Detalhamento de Ganhos</CardTitle>
+                      <CardTitle>Indicações com Comissões</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {isLoadingReferrals ? (
@@ -181,7 +181,7 @@ export default function EarningsPage() {
                         </Table>
                       ) : (
                         <div className="p-6 text-center text-gray-500">
-                          Você ainda não tem ganhos registrados. As indicações validadas e pagas aparecerão aqui.
+                          Você ainda não tem indicações com comissões. As indicações validadas, convertidas e pagas aparecerão aqui.
                         </div>
                       )}
                     </CardContent>
@@ -189,19 +189,33 @@ export default function EarningsPage() {
                 </div>
 
                 {/* Earnings Information */}
-                <div className="mt-8">
+                <div className="mt-8 space-y-4">
                   <Card className="bg-blue-50">
                     <CardContent className="p-6">
-                      <h3 className="text-lg font-medium text-blue-900">Como são calculados os ganhos?</h3>
-                      <div className="mt-4 text-sm text-blue-700">
+                      <h3 className="text-lg font-medium text-blue-900">Entenda seus ganhos</h3>
+                      <div className="mt-4 text-sm text-blue-700 space-y-3">
+                        <div>
+                          <strong>Saldo Disponível para Saque:</strong> Valor das comissões de indicações validadas/convertidas que você ainda não sacou.
+                        </div>
+                        <div>
+                          <strong>Total de Ganhos (Já Recebido):</strong> Valor total que já foi pago para você através de saques aprovados.
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-green-50">
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-medium text-green-900">Como são calculadas as comissões?</h3>
+                      <div className="mt-4 text-sm text-green-700">
                         <p>
-                          Você recebe <strong>{formatCurrency(3)}</strong> para cada indicação validada.
+                          • <strong>Indicação Validada:</strong> {formatCurrency(3)} de comissão
                         </p>
                         <p className="mt-2">
-                          <strong>Arredondamento especial:</strong> A cada 3 indicações validadas, o valor total de <strong>{formatCurrency(9)}</strong> é arredondado para <strong>{formatCurrency(10)}</strong>!
+                          • <strong>Indicação Convertida:</strong> {formatCurrency(50)} de comissão adicional
                         </p>
-                        <p className="mt-2 text-xs text-blue-600">
-                          * Promoção válida até agosto de 2025. Valor regular após esse período: {formatCurrency(1.5)} por indicação validada.
+                        <p className="mt-3 text-xs text-green-600">
+                          * Valores promocionais válidos até agosto de 2025.
                         </p>
                       </div>
                     </CardContent>
