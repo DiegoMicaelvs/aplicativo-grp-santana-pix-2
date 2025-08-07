@@ -8,13 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
 
 type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid" | "false" | "not_validated" | "not_converted";
 
@@ -311,6 +314,11 @@ export default function AdminReferralsDetailedPage() {
   const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/users"]
   });
+  
+  // Sort users alphabetically by fullName
+  const sortedUsers = [...allUsers].sort((a, b) => 
+    (a.fullName || '').localeCompare(b.fullName || '', 'pt-BR')
+  );
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ referralId, status, notes }: { referralId: number; status: ReferralStatus; notes: string }) => {
@@ -917,33 +925,63 @@ export default function AdminReferralsDetailedPage() {
                                   <UserCheck className="h-4 w-4" />
                                   Atribuir a outro Usuário
                                 </label>
-                                <Select 
-                                  value={editFormData.userId?.toString() || ""} 
-                                  onValueChange={(value) => {
-                                    console.log("[Select onChange Mobile] Novo userId selecionado:", value);
-                                    setEditFormData({...editFormData, userId: parseInt(value)});
-                                  }}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione um usuário" />
-                                  </SelectTrigger>
-                                  <SelectContent className="max-h-[200px] overflow-y-auto">
-                                    {allUsers.length === 0 ? (
-                                      <SelectItem value="0" disabled>
-                                        Nenhum usuário disponível
-                                      </SelectItem>
-                                    ) : (
-                                      allUsers.map((user) => (
-                                        <SelectItem key={user.id} value={user.id.toString()}>
-                                          {user.fullName} ({user.username}) - {user.role}
-                                        </SelectItem>
-                                      ))
-                                    )}
-                                  </SelectContent>
-                                </Select>
+                                {(() => {
+                                  const [open, setOpen] = React.useState(false);
+                                  const selectedUser = sortedUsers.find(u => u.id === editFormData.userId);
+                                  
+                                  return (
+                                    <Popover open={open} onOpenChange={setOpen}>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          role="combobox"
+                                          aria-expanded={open}
+                                          className="w-full justify-between font-normal"
+                                        >
+                                          {selectedUser 
+                                            ? `${selectedUser.fullName} (${selectedUser.username}) - ${selectedUser.role}`
+                                            : "Selecione um usuário"}
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-full p-0" align="start">
+                                        <Command>
+                                          <CommandInput placeholder="Pesquisar usuário..." />
+                                          <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                                          <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                            {sortedUsers.map((user) => (
+                                              <CommandItem
+                                                key={user.id}
+                                                value={`${user.fullName} ${user.username} ${user.role}`}
+                                                onSelect={() => {
+                                                  console.log("[Select onChange Mobile] Novo userId selecionado:", user.id);
+                                                  setEditFormData({...editFormData, userId: user.id});
+                                                  setOpen(false);
+                                                }}
+                                              >
+                                                <Check
+                                                  className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    editFormData.userId === user.id ? "opacity-100" : "opacity-0"
+                                                  )}
+                                                />
+                                                <div className="flex-1">
+                                                  <div className="font-medium">{user.fullName}</div>
+                                                  <div className="text-xs text-gray-500">
+                                                    {user.username} - {user.role}
+                                                  </div>
+                                                </div>
+                                              </CommandItem>
+                                            ))}
+                                          </CommandGroup>
+                                        </Command>
+                                      </PopoverContent>
+                                    </Popover>
+                                  );
+                                })()}
                                 {editFormData.userId > 0 && (
                                   <p className="text-xs text-gray-500">
-                                    Usuário atual: {allUsers.find(u => u.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
+                                    Usuário selecionado: {sortedUsers.find(u => u.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
                                   </p>
                                 )}
                               </div>
@@ -1344,33 +1382,63 @@ export default function AdminReferralsDetailedPage() {
                                       <UserCheck className="h-4 w-4" />
                                       Atribuir a outro Usuário
                                     </label>
-                                    <Select 
-                                      value={editFormData.userId?.toString() || ""} 
-                                      onValueChange={(value) => {
-                                        console.log("[Select onChange] Novo userId selecionado:", value);
-                                        setEditFormData({...editFormData, userId: parseInt(value)});
-                                      }}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Selecione um usuário" />
-                                      </SelectTrigger>
-                                      <SelectContent className="max-h-[200px] overflow-y-auto">
-                                        {allUsers.length === 0 ? (
-                                          <SelectItem value="0" disabled>
-                                            Nenhum usuário disponível
-                                          </SelectItem>
-                                        ) : (
-                                          allUsers.map((user) => (
-                                            <SelectItem key={user.id} value={user.id.toString()}>
-                                              {user.fullName} ({user.username}) - {user.role}
-                                            </SelectItem>
-                                          ))
-                                        )}
-                                      </SelectContent>
-                                    </Select>
+                                    {(() => {
+                                      const [open, setOpen] = React.useState(false);
+                                      const selectedUser = sortedUsers.find(u => u.id === editFormData.userId);
+                                      
+                                      return (
+                                        <Popover open={open} onOpenChange={setOpen}>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              variant="outline"
+                                              role="combobox"
+                                              aria-expanded={open}
+                                              className="w-full justify-between font-normal"
+                                            >
+                                              {selectedUser 
+                                                ? `${selectedUser.fullName} (${selectedUser.username}) - ${selectedUser.role}`
+                                                : "Selecione um usuário"}
+                                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-full p-0" align="start">
+                                            <Command>
+                                              <CommandInput placeholder="Pesquisar usuário..." />
+                                              <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+                                              <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                                {sortedUsers.map((user) => (
+                                                  <CommandItem
+                                                    key={user.id}
+                                                    value={`${user.fullName} ${user.username} ${user.role}`}
+                                                    onSelect={() => {
+                                                      console.log("[Select onChange] Novo userId selecionado:", user.id);
+                                                      setEditFormData({...editFormData, userId: user.id});
+                                                      setOpen(false);
+                                                    }}
+                                                  >
+                                                    <Check
+                                                      className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        editFormData.userId === user.id ? "opacity-100" : "opacity-0"
+                                                      )}
+                                                    />
+                                                    <div className="flex-1">
+                                                      <div className="font-medium">{user.fullName}</div>
+                                                      <div className="text-xs text-gray-500">
+                                                        {user.username} - {user.role}
+                                                      </div>
+                                                    </div>
+                                                  </CommandItem>
+                                                ))}
+                                              </CommandGroup>
+                                            </Command>
+                                          </PopoverContent>
+                                        </Popover>
+                                      );
+                                    })()}
                                     {editFormData.userId > 0 && (
                                       <p className="text-xs text-gray-500">
-                                        Usuário atual: {allUsers.find(u => u.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
+                                        Usuário selecionado: {sortedUsers.find(u => u.id === editFormData.userId)?.fullName || "ID " + editFormData.userId}
                                       </p>
                                     )}
                                   </div>
