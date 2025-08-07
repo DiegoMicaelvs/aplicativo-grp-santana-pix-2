@@ -962,6 +962,31 @@ class DatabaseStorage implements IStorage {
     if (updates.commissionIndicator !== undefined) updateData.commissionIndicator = updates.commissionIndicator;
     if (updates.commissionPromoter !== undefined) updateData.commissionPromoter = updates.commissionPromoter;
     
+    // Handle user reassignment - transfer commissions
+    if (updates.userId !== undefined && updates.userId !== currentReferral.userId) {
+      console.log(`[updateReferral] Usuário sendo alterado de ${currentReferral.userId} para ${updates.userId}`);
+      
+      // Check if referral has commissions that need to be transferred
+      const currentCommissionIndicator = parseFloat(currentReferral.commissionIndicator?.toString() || '0');
+      const currentCommissionPromoter = parseFloat(currentReferral.commissionPromoter?.toString() || '0');
+      
+      if (currentCommissionIndicator > 0) {
+        console.log(`[updateReferral] Transferindo comissão de ${currentCommissionIndicator} do usuário ${currentReferral.userId} para ${updates.userId}`);
+        
+        // Remove commission from old user
+        await this.updateUserBalance(currentReferral.userId, -currentCommissionIndicator, false);
+        
+        // Add commission to new user  
+        await this.updateUserBalance(updates.userId, currentCommissionIndicator, true);
+        
+        // Also handle promoter commission if exists
+        if (currentReferral.promoterId && currentCommissionPromoter > 0) {
+          // The promoter commission stays with the original promoter, no change needed
+          console.log(`[updateReferral] Comissão do promotor mantida com o promotor original ${currentReferral.promoterId}`);
+        }
+      }
+    }
+    
     // Handle status update separately to ensure commission calculations
     if (updates.status !== undefined && updates.status !== currentReferral.status) {
       // Use updateReferralStatus for status changes to handle commissions
