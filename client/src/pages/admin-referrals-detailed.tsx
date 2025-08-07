@@ -927,7 +927,7 @@ export default function AdminReferralsDetailedPage() {
                                   <SelectTrigger>
                                     <SelectValue placeholder="Selecione um usuário" />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="max-h-[200px] overflow-y-auto">
                                     {allUsers.length === 0 ? (
                                       <SelectItem value="0" disabled>
                                         Nenhum usuário disponível
@@ -1354,7 +1354,7 @@ export default function AdminReferralsDetailedPage() {
                                       <SelectTrigger>
                                         <SelectValue placeholder="Selecione um usuário" />
                                       </SelectTrigger>
-                                      <SelectContent>
+                                      <SelectContent className="max-h-[200px] overflow-y-auto">
                                         {allUsers.length === 0 ? (
                                           <SelectItem value="0" disabled>
                                             Nenhum usuário disponível
