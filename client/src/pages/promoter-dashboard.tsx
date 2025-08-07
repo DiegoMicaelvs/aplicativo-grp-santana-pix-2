@@ -451,11 +451,23 @@ export default function PromoterDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="my-referrals">Minhas Indicações</TabsTrigger>
-            <TabsTrigger value="team-referrals">Indicações da Equipe</TabsTrigger>
-            <TabsTrigger value="indicadores">Meus Indicadores</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="hidden sm:inline">Visão Geral</span>
+              <span className="sm:hidden">Geral</span>
+            </TabsTrigger>
+            <TabsTrigger value="my-referrals" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="hidden sm:inline">Minhas Indicações</span>
+              <span className="sm:hidden">Minhas</span>
+            </TabsTrigger>
+            <TabsTrigger value="team-referrals" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="hidden sm:inline">Indicações da Equipe</span>
+              <span className="sm:hidden">Equipe</span>
+            </TabsTrigger>
+            <TabsTrigger value="indicadores" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="hidden sm:inline">Meus Indicadores</span>
+              <span className="sm:hidden">Indicadores</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
