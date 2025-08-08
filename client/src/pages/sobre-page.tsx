@@ -9,7 +9,7 @@ export default function SobrePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">
-            Sobre o Metis da Pix
+            Sobre o Metis
           </h1>
           
           <div className="space-y-8">
@@ -18,7 +18,7 @@ export default function SobrePage() {
                 Quem Somos
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                O Metis da Pix é um programa de indicação inovador desenvolvido pela Métis Brasil 
+                O Metis é um programa de indicação inovador desenvolvido pela Métis Brasil 
                 que conecta pessoas que possuem veículos sem proteção veicular com nossa rede de proteção. 
                 Como uma das principais empresas de proteção patrimonial do Brasil, nosso objetivo é 
                 democratizar o acesso à proteção veicular através de um sistema de indicações que 

@@ -64,7 +64,7 @@ export default function Footer() {
           </a>
         </div>
         <p className="mt-8 text-center text-base text-gray-400">
-          &copy; {new Date().getFullYear()} Metis da Pix. Software registrado no INPI sob nº 51202500***-*. Todos os direitos reservados.
+          &copy; {new Date().getFullYear()} Metis. Software registrado no INPI sob nº 51202500***-*. Todos os direitos reservados.
         </p>
         <p className="mt-2 text-center text-xs text-gray-500">
           <span title="Software protegido pelas Leis 9.609/98 e 9.610/98. Proibida a reprodução não autorizada.">

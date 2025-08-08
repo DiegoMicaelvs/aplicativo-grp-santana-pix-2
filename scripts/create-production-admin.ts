@@ -24,7 +24,7 @@ async function createProductionAdmin() {
   const adminData = {
     username: "admin@kongpix.com.br",
     password: "admin123",
-    fullName: "Administrador Metis da Pix",
+    fullName: "Administrador Metis",
     cpf: "00000000001",
     email: "admin@metisbrasil.com.br",
     phone: "00000000001",

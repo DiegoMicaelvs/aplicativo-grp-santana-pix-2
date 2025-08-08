@@ -51,6 +51,22 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-08-08 - Complete Metis Rebranding Implementation
+- Replaced all "Kong Pix" and "Metis da Pix" references with simplified "Metis" branding
+- Updated header logo to use new Metis logo (attached_assets/image_1754673337520.png)
+- Removed text-based branding in favor of logo-only approach as requested
+- Updated contact information with authentic Metis Brasil details:
+  - Address: Av. Otacílio Negrão de Lima, 800, São Luiz, Belo Horizonte - MG
+  - Phone: (31) 3514-6533 and (31) 9 9824-1928
+  - 24h assistance: 0800 400 3013 and 0800 941 8282
+- Updated social media links to @metisbrasil
+- Changed website references to metisbrasil.com.br
+- Updated email addresses to use @metisbrasil.com.br domain
+- Applied Metis Brasil blue color palette throughout application
+- Updated favicon and logo references in HTML and components
+- Modified page titles and metadata to reflect new branding
+- Updated script files and production setup with correct company information
+
 ### 2025-08-08 - Analyst Level 1 Real-Time Updates Fix
 - Fixed critical issue where analyst level 1 users were seeing outdated referral attributions
 - Corrected referral display to show current assigned user (userId) instead of creator (createdBy)
