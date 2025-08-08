@@ -33,7 +33,7 @@ export default function ContatoPage() {
               </p>
               <a 
                 href="mailto:privacidade@kongprotecaoveicular.com.br"
-                className="text-yellow-600 hover:text-yellow-700 font-medium"
+                className="text-yellow-600 hover:text-yellow-700 font-medium break-all"
               >
                 privacidade@kongprotecaoveicular.com.br
               </a>
