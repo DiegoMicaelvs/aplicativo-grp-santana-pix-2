@@ -45,14 +45,14 @@ export const config = {
   
   // Informações da empresa
   company: {
-    name: "Kong Pix Proteção Veicular",
+    name: "Metis da Pix Proteção Veicular",
     cnpj: "00.000.000/0001-00", // ATUALIZAR COM CNPJ REAL
-    email: "admin@kongpix.com.br",
-    privacyEmail: "privacidade@kongprotecaoveicular.com.br",
-    website: "https://www.kongprotecaoveicular.com.br",
+    email: "admin@metisbrasil.com.br",
+    privacyEmail: "privacidade@metisbrasil.com.br",
+    website: "https://metisbrasil.com.br",
     social: {
-      instagram: "https://www.instagram.com/kongprotecao/",
-      facebook: "https://www.facebook.com/kongprotecaoveicular",
+      instagram: "https://www.instagram.com/metisbrasil/",
+      facebook: "https://www.facebook.com/metisbrasil",
     }
   }
 };

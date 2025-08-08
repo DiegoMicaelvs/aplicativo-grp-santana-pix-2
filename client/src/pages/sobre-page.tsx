@@ -9,7 +9,7 @@ export default function SobrePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">
-            Sobre o Kong Pix
+            Sobre o Metis da Pix
           </h1>
           
           <div className="space-y-8">
@@ -18,10 +18,11 @@ export default function SobrePage() {
                 Quem Somos
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                O Kong Pix é um programa de indicação inovador que conecta pessoas 
-                que possuem veículos sem proteção veicular com nossa rede de proteção. 
-                Nosso objetivo é democratizar o acesso à proteção veicular através de 
-                um sistema de indicações que beneficia todos os envolvidos.
+                O Metis da Pix é um programa de indicação inovador desenvolvido pela Métis Brasil 
+                que conecta pessoas que possuem veículos sem proteção veicular com nossa rede de proteção. 
+                Como uma das principais empresas de proteção patrimonial do Brasil, nosso objetivo é 
+                democratizar o acesso à proteção veicular através de um sistema de indicações que 
+                beneficia todos os envolvidos.
               </p>
             </section>
 
@@ -32,7 +33,8 @@ export default function SobrePage() {
               <p className="text-gray-600 leading-relaxed">
                 Facilitar o acesso à proteção veicular através de um programa de 
                 indicações transparente e lucrativo, conectando proprietários de 
-                veículos com soluções de proteção adequadas às suas necessidades.
+                veículos com as soluções de proteção Métis Brasil - reconhecidas 
+                pela qualidade, acessibilidade e atendimento 24 horas em todo Brasil.
               </p>
             </section>
 
@@ -121,40 +123,48 @@ export default function SobrePage() {
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                 Contato
               </h2>
-              <div className="bg-gray-50 p-6 rounded-lg">
+              <div className="bg-blue-50 p-6 rounded-lg">
                 <p className="text-gray-600">
                   <strong>Site Oficial:</strong> 
-                  <a href="https://www.kongprotecaoveicular.com.br/" 
+                  <a href="https://metisbrasil.com.br/" 
                      target="_blank" 
                      rel="noopener noreferrer" 
-                     className="text-yellow-600 hover:text-yellow-700 ml-2">
-                    www.kongprotecaoveicular.com.br
+                     className="text-blue-600 hover:text-blue-700 ml-2">
+                    metisbrasil.com.br
                   </a>
                 </p>
                 <p className="text-gray-600 mt-2">
                   <strong>Instagram:</strong> 
-                  <a href="https://www.instagram.com/kongprotecao/" 
+                  <a href="https://www.instagram.com/metisbrasil/" 
                      target="_blank" 
                      rel="noopener noreferrer" 
-                     className="text-yellow-600 hover:text-yellow-700 ml-2">
-                    @kongprotecao
+                     className="text-blue-600 hover:text-blue-700 ml-2">
+                    @metisbrasil
                   </a>
                 </p>
                 <p className="text-gray-600 mt-2">
                   <strong>Facebook:</strong> 
-                  <a href="https://www.facebook.com/kongprotecaoveicular" 
+                  <a href="https://www.facebook.com/metisbrasil" 
                      target="_blank" 
                      rel="noopener noreferrer" 
-                     className="text-yellow-600 hover:text-yellow-700 ml-2">
-                    Kong Proteção Veicular
+                     className="text-blue-600 hover:text-blue-700 ml-2">
+                    Métis Brasil
                   </a>
                 </p>
                 <p className="text-gray-600 mt-2">
                   <strong>E-mail:</strong> 
-                  <a href="mailto:privacidade@kongprotecaoveicular.com.br" 
-                     className="text-yellow-600 hover:text-yellow-700 ml-2">
-                    privacidade@kongprotecaoveicular.com.br
+                  <a href="mailto:contato@metisbrasil.com.br" 
+                     className="text-blue-600 hover:text-blue-700 ml-2">
+                    contato@metisbrasil.com.br
                   </a>
+                </p>
+                <p className="text-gray-600 mt-2">
+                  <strong>Atendimento:</strong> 
+                  <span className="text-blue-600 ml-2">(31) 3514-6533 | (31) 9 9824-1928</span>
+                </p>
+                <p className="text-gray-600 mt-2">
+                  <strong>Assistência 24h:</strong> 
+                  <span className="text-blue-600 ml-2">0800 400 3013 | 0800 941 8282</span>
                 </p>
               </div>
             </section>

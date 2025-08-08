@@ -106,9 +106,9 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
   - Approved/Paid status changes no longer affect user balance
 
 ### 2025-02-03 - Simplified Company Selection for Non-Admin Users
-- Modified new referral page to show only "Kong Pix" for non-admin users
+- Modified new referral page to show only "Metis da Pix" for non-admin users
 - Admin users retain full company selection capabilities
-- Automatically assigns Kong Pix (ID 1) for all non-admin referrals
+- Automatically assigns Metis da Pix (ID 1) for all non-admin referrals
 - Fixed validation error ensuring companyId is always a positive number
 
 ### 2025-01-03 - Analyst Level 3 Filtering Implementation

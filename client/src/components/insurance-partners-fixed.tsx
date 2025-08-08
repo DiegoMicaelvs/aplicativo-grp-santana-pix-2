@@ -25,7 +25,7 @@ const traditionalInsurers = [
 // Lista de empresas de proteção patrimonial mutualistas
 const mutualistCompanies = [
   { name: "Lions Mutual", color: "#ff8000", icon: CircleDollarSign },
-  { name: "KONG", color: "#000000", icon: Layers },
+  { name: "METIS", color: "#1e40af", icon: Layers },
   { name: "APVS Brasil", color: "#001c59", icon: CreditCard },
   { name: "BP Seguradora", color: "#0f1941", icon: Shield },
   { name: "GOL Plus", color: "#003366", icon: ShieldCheck },

@@ -79,7 +79,7 @@ async function seed() {
       const existingCompanyNames = existingCompanies.map(c => c.name);
       
       const companiesToCreate = [
-        "Kong Pix Proteção Veicular",
+        "Metis da Pix Proteção Veicular",
         "Metis",
         "Cativa",
         "Kin",

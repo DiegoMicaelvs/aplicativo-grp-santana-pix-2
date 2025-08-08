@@ -32,10 +32,10 @@ export default function ContatoPage() {
                 Para dúvidas sobre privacidade e termos
               </p>
               <a 
-                href="mailto:privacidade@kongprotecaoveicular.com.br"
+                href="mailto:contato@metisbrasil.com.br"
                 className="text-yellow-600 hover:text-yellow-700 font-medium break-all"
               >
-                privacidade@kongprotecaoveicular.com.br
+                contato@metisbrasil.com.br
               </a>
             </CardContent>
           </Card>
@@ -52,12 +52,12 @@ export default function ContatoPage() {
                 Visite nosso site principal
               </p>
               <a 
-                href="https://www.kongprotecaoveicular.com.br/" 
+                href="https://metisbrasil.com.br/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-yellow-600 hover:text-yellow-700 font-medium"
               >
-                kongprotecaoveicular.com.br
+                metisbrasil.com.br
               </a>
             </CardContent>
           </Card>
@@ -65,14 +65,53 @@ export default function ContatoPage() {
           <Card className="md:col-span-2 lg:col-span-1">
             <CardHeader className="text-center">
               <div className="mx-auto w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                <MapPin className="h-6 w-6 text-yellow-600" />
+                <Phone className="h-6 w-6 text-yellow-600" />
+              </div>
+              <CardTitle className="text-lg">Atendimento</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-gray-600 mb-2">
+                <strong>(31) 3514-6533</strong><br />
+                <strong>(31) 9 9824-1928</strong>
+              </p>
+              <p className="text-sm text-gray-500">
+                Segunda a Sexta: 08:00 às 18:00<br />
+                Sábado e Domingo: Fechado
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                <Phone className="h-6 w-6 text-red-600" />
+              </div>
+              <CardTitle className="text-lg">Assistência 24h</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-gray-600 mb-2">
+                <strong>0800 400 3013</strong><br />
+                <strong>0800 941 8282</strong>
+              </p>
+              <p className="text-sm text-gray-500">
+                Atendimento emergencial 24 horas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <MapPin className="h-6 w-6 text-blue-600" />
               </div>
               <CardTitle className="text-lg">Escritório</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-gray-600">
-                Kong Proteção Veicular<br />
-                Sede Administrativa
+                <strong>Métis Brasil</strong><br />
+                Av. Otacílio Negrão de Lima, 800<br />
+                São Luiz, Belo Horizonte - MG<br />
+                CEP: 30.270-802
               </p>
             </CardContent>
           </Card>
@@ -90,12 +129,12 @@ export default function ContatoPage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-800">Facebook</h3>
                 <a 
-                  href="https://www.facebook.com/kongprotecaoveicular" 
+                  href="https://www.facebook.com/metisbrasil" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-700"
                 >
-                  @kongprotecaoveicular
+                  @metisbrasil
                 </a>
               </div>
             </div>
@@ -107,12 +146,12 @@ export default function ContatoPage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-800">Instagram</h3>
                 <a 
-                  href="https://www.instagram.com/kongprotecao/" 
+                  href="https://www.instagram.com/metisbrasil/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-pink-600 hover:text-pink-700"
                 >
-                  @kongprotecao
+                  @metisbrasil
                 </a>
               </div>
             </div>
@@ -138,14 +177,20 @@ export default function ContatoPage() {
           </div>
         </div>
 
-        <div className="text-center mt-12">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Horário de Atendimento
+        <div className="bg-blue-50 rounded-lg p-6 mt-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
+            Contatos de Emergência - Metis Brasil
           </h3>
-          <p className="text-gray-600">
-            Segunda a Sexta: 8h às 18h<br />
-            Sábado: 8h às 12h
-          </p>
+          <div className="grid md:grid-cols-2 gap-4 text-center">
+            <div>
+              <h4 className="font-medium text-gray-800">Guincho e Emergência</h4>
+              <p className="text-blue-600 font-semibold">0800 841 4900</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-800">Abertura de Eventos</h4>
+              <p className="text-blue-600 font-semibold">0800 944 3000</p>
+            </div>
+          </div>
         </div>
       </main>
       

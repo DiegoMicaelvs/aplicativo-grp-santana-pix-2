@@ -54,7 +54,7 @@ async function setupProduction() {
     const existingCompanies = await db.query.companies.findMany();
     if (existingCompanies.length === 0) {
       const defaultCompanies = [
-        { name: "Kong Pix Proteção Veicular", isActive: true },
+        { name: "Metis Brasil Proteção Veicular", isActive: true },
         { name: "Outra Empresa", isActive: true },
         { name: "Sem Seguradora", isActive: true }
       ];

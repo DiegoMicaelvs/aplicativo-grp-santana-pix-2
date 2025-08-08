@@ -64,12 +64,12 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
-    name: 'kong.sid', // Nome consistente da sessão
+    name: 'metis.sid', // Nome consistente da sessão
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
       secure: isProduction, // Secure em produção
-      sameSite: isProduction ? "none" : "lax", // None em produção para funcionar com HTTPS
+      sameSite: (isProduction ? "none" : "lax") as "strict" | "lax" | "none", // None em produção para funcionar com HTTPS
       path: "/", // Cookie válido em todo o site
       domain: undefined // Deixar o navegador gerenciar o domínio automaticamente
     }
@@ -179,7 +179,8 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
         role: "indicador", // Default role for new registrations
         createdBy: undefined, // Self-registration
-        promoterId: userData.promoterId || undefined
+        promoterId: userData.promoterId || undefined,
+        analystId: userData.analystId || undefined
       });
       
       console.log(`[REGISTRO] Novo usuário cadastrado com sucesso: ${newUser.username} (ID: ${newUser.id})`);
