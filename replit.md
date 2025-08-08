@@ -51,10 +51,11 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
-### 2025-08-08 - Complete Metis Rebranding Implementation
-- Replaced all "Kong Pix" and "Metis da Pix" references with simplified "Metis" branding
-- Updated header logo to use new Metis logo (attached_assets/image_1754673337520.png)
-- Removed text-based branding in favor of logo-only approach as requested
+### 2025-08-08 - Complete Metis da Pix Rebranding Implementation  
+- Replaced all "Kong Pix" references with "Metis da Pix" branding throughout the application
+- Updated header to display new Metis logo (attached_assets/image_1754684172138.png) alongside "Metis da Pix" text
+- Updated privacy policy dialog to consistently use "Metis da Pix" instead of "Kong Pix"
+- Implemented clean logo with transparent background and professional text styling
 - Updated contact information with authentic Metis Brasil details:
   - Address: Av. Otacílio Negrão de Lima, 800, São Luiz, Belo Horizonte - MG
   - Phone: (31) 3514-6533 and (31) 9 9824-1928
