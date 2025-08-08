@@ -29,11 +29,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield } from "lucide-react";
+import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield, RefreshCw } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import type { Referral, User, Company } from "@shared/schema";
+import type { Referral, User, Company, AnalystPermission } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 
 const validateSchema = z.object({
@@ -94,16 +94,45 @@ export default function AnalystReferrals() {
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [isValidateDialogOpen, setIsValidateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch referrals
-  const { data: referrals = [], isLoading } = useQuery<Referral[]>({
+  // Fetch referrals with automatic refresh for real-time updates
+  const { data: referrals = [], isLoading, refetch: refetchReferrals, isFetching } = useQuery<Referral[]>({
     queryKey: ["/api/analyst/referrals"],
+    refetchInterval: 30000, // Atualizar a cada 30 segundos
+    refetchIntervalInBackground: true, // Atualizar mesmo quando a aba não está ativa
+    staleTime: 10000, // Dados são considerados obsoletos após 10 segundos
   });
 
   // Fetch users for display - use analyst endpoint for proper permissions
-  const { data: users = [] } = useQuery<User[]>({
+  const { data: users = [], refetch: refetchUsers } = useQuery<User[]>({
     queryKey: ["/api/analyst/users"],
+    refetchInterval: 60000, // Atualizar usuários a cada 60 segundos
+    staleTime: 30000, // Dados de usuários são mais estáveis
   });
+
+  // Função para refresh manual
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchReferrals(),
+        refetchUsers()
+      ]);
+      toast({ 
+        title: "Dados atualizados", 
+        description: "Lista de indicações foi atualizada com sucesso!" 
+      });
+    } catch (error) {
+      toast({ 
+        title: "Erro ao atualizar", 
+        description: "Não foi possível atualizar os dados",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Fetch companies for display
   const { data: companies = [] } = useQuery<Company[]>({
@@ -151,7 +180,15 @@ export default function AnalystReferrals() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidar todas as queries relacionadas para garantir sincronização entre analistas
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
+      // Forçar refetch imediato
+      queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
       toast({ title: "Sucesso", description: "Indicação validada com sucesso!" });
       setIsValidateDialogOpen(false);
       setSelectedReferral(null);
@@ -177,7 +214,15 @@ export default function AnalystReferrals() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidar todas as queries relacionadas para garantir sincronização entre analistas
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
+      // Forçar refetch imediato
+      queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
       toast({ title: "Sucesso", description: "Indicação editada com sucesso!" });
       setIsEditDialogOpen(false);
       setSelectedReferral(null);
@@ -190,7 +235,7 @@ export default function AnalystReferrals() {
 
   // Check permissions - All analysts can edit referral status
   const canEdit = user?.role === "analista" || 
-    user?.permissions?.includes("edit_referral_status") || 
+    (user?.permissions as AnalystPermission[])?.includes("edit_referral_status") || 
     user?.role === "admin";
 
   // Filter referrals
@@ -227,9 +272,6 @@ export default function AnalystReferrals() {
       phone: referral.phone,
       licensePlate: referral.licensePlate,
       hasInsurance: referral.hasInsurance || false,
-      // vehicleBrand: referral.vehicleBrand || "",
-      vehicleModel: referral.vehicleModel || "",
-      vehicleYear: referral.vehicleYear || "",
       notes: referral.notes || "",
       status: referral.status,
     });
@@ -264,7 +306,7 @@ export default function AnalystReferrals() {
     );
   }
 
-  if (user.role === "analista" && !user.permissions?.includes("view_referrals")) {
+  if (user.role === "analista" && !(user.permissions as AnalystPermission[])?.includes("view_referrals")) {
     return (
       <div className="container mx-auto py-6">
         <Card>
@@ -294,8 +336,26 @@ export default function AnalystReferrals() {
               Mostrando apenas indicações dos usuários supervisionados
             </Badge>
           )}
+          {(isFetching || isRefreshing) && (
+            <Badge className="mt-2 bg-blue-100 text-blue-800">
+              <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+              Atualizando dados...
+            </Badge>
+          )}
         </div>
-        <BackButton to="/analyst" />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing || isFetching}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${(isRefreshing || isFetching) ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <BackButton to="/analyst" />
+        </div>
       </div>
 
       {/* Search and Filters */}

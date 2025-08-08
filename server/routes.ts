@@ -758,17 +758,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Você não tem permissão para visualizar indicações" });
       }
       
+      console.log(`[/api/analyst/referrals] 📊 Analista ${user?.fullName} (ID: ${user?.id}, Nível: ${user?.analystLevel}) solicitando indicações`);
+      console.log(`[/api/analyst/referrals] 🔑 Permissões do analista:`, userPermissions);
+      
       // If analyst is level 3, only show referrals from supervised users
       let allReferrals;
       if (user?.analystLevel === 3) {
+        console.log(`[/api/analyst/referrals] 👥 Carregando indicações para analista nível 3 (supervisor)`);
         allReferrals = await storage.getReferralsBySupervisor(req.user!.id);
+        console.log(`[/api/analyst/referrals] 📋 Supervisor ${user?.fullName} tem ${allReferrals.length} indicações dos seus supervisionados`);
       } else {
+        console.log(`[/api/analyst/referrals] 🌍 Carregando TODAS as indicações para analista nível ${user?.analystLevel}`);
         allReferrals = await storage.getAllReferrals();
+        console.log(`[/api/analyst/referrals] 📋 Total de indicações no sistema: ${allReferrals.length}`);
+        
+        // Para analistas nível 1, log adicional dos IDs das indicações
+        if (user?.analystLevel === 1) {
+          const referralIds = allReferrals.map(r => r.id).sort((a, b) => a - b);
+          console.log(`[/api/analyst/referrals] 🎯 IDs das indicações para analista nível 1:`, referralIds.slice(0, 10), referralIds.length > 10 ? `... e mais ${referralIds.length - 10}` : '');
+          
+          // Verificar se há indicações criadas recentemente
+          const recentReferrals = allReferrals.filter(r => {
+            const createdAt = new Date(r.createdAt);
+            const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            return createdAt > hourAgo;
+          });
+          console.log(`[/api/analyst/referrals] ⏰ Indicações criadas na última hora: ${recentReferrals.length}`);
+        }
       }
       
+      console.log(`[/api/analyst/referrals] ✅ Retornando ${allReferrals.length} indicações para ${user?.fullName}`);
       return res.json(allReferrals);
     } catch (error) {
-      console.error("Error fetching all referrals for analyst:", error);
+      console.error("[/api/analyst/referrals] ❌ Error fetching all referrals for analyst:", error);
       return res.status(500).json({ error: "Erro ao buscar indicações" });
     }
   });
@@ -1234,6 +1256,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update the referral
       const updatedReferral = await storage.updateReferral(referralId, updateData, req.user!.id);
       
+      console.log(`[PATCH /api/referrals/:id] Indicação atualizada com sucesso:`, {
+        id: updatedReferral.id,
+        oldUserId: existingReferral.userId,
+        newUserId: updatedReferral.userId,
+        oldPromoterId: existingReferral.promoterId,
+        newPromoterId: updatedReferral.promoterId,
+        updatedBy: req.user!.id,
+        updatedByRole: req.user!.role
+      });
+      
       // Log the update
       await storage.logUserAction({
         userId: req.user!.id,
@@ -1242,7 +1274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityId: referralId,
         oldValues: existingReferral,
         newValues: updatedReferral,
-        details: `Dados da indicação ${referralId} atualizados por ${req.user!.role}`
+        details: `Dados da indicação ${referralId} atualizados por ${req.user!.role}${userId !== undefined ? ` - Usuário alterado de ${existingReferral.userId} para ${userId}` : ''}`
       });
       
       return res.json(updatedReferral);

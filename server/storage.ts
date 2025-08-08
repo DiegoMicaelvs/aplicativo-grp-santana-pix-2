@@ -955,9 +955,23 @@ class DatabaseStorage implements IStorage {
     if (updates.commissionIndicator !== undefined) updateData.commissionIndicator = updates.commissionIndicator;
     if (updates.commissionPromoter !== undefined) updateData.commissionPromoter = updates.commissionPromoter;
     
-    // Handle user reassignment - transfer commissions
+    // Handle user reassignment - transfer commissions and update promoter relationship
     if (updates.userId !== undefined && updates.userId !== currentReferral.userId) {
       console.log(`[updateReferral] Usuário sendo alterado de ${currentReferral.userId} para ${updates.userId}`);
+      
+      // Get user info for the new assignee to determine their promoter
+      const newUser = await this.getUserById(updates.userId);
+      const oldUser = await this.getUserById(currentReferral.userId);
+      
+      console.log(`[updateReferral] Usuário antigo: ${oldUser?.fullName} (ID: ${currentReferral.userId})`);
+      console.log(`[updateReferral] Usuário novo: ${newUser?.fullName} (ID: ${updates.userId})`);
+      console.log(`[updateReferral] Promotor do novo usuário: ${newUser?.promoterId}`);
+      
+      // Update promoter relationship for this referral
+      if (newUser?.promoterId) {
+        updateData.promoterId = newUser.promoterId;
+        console.log(`[updateReferral] Atualizando promoterId da indicação para: ${newUser.promoterId}`);
+      }
       
       // Check if referral has commissions that need to be transferred
       const currentCommissionIndicator = parseFloat(currentReferral.commissionIndicator?.toString() || '0');

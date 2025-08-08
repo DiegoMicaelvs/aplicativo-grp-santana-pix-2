@@ -347,13 +347,19 @@ export default function AdminReferralsDetailedPage() {
     },
     onSuccess: (data) => {
       console.log(`[updateStatusMutation] onSuccess - dados recebidos:`, data);
-      // Invalidate all related queries to ensure UI updates
+      // Invalidate all related queries to ensure UI updates for all user types
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/team/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
+      // Forçar refetch imediato das queries de analistas
+      queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
+      queryClient.refetchQueries({ queryKey: ["/api/analyst/stats"] });
       toast({ title: "Status atualizado com sucesso!" });
       setIsDialogOpen(false);
       setStatusNotes("");
@@ -388,12 +394,20 @@ export default function AdminReferralsDetailedPage() {
     },
     onSuccess: (data) => {
       console.log("[updateReferralMutation] Dados atualizados:", data);
-      // Invalidar cache para forçar atualização
+      // Invalidar todas as queries relacionadas para garantir atualização para todos os tipos de usuário
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
       queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/team/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
+      // Forçar refetch imediato das queries de analistas
+      queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
+      queryClient.refetchQueries({ queryKey: ["/api/analyst/users"] });
       toast({ title: "Indicação atualizada com sucesso!" });
       setIsDialogOpen(false);
       setSelectedReferral(null);
