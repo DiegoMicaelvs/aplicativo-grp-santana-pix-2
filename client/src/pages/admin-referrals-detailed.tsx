@@ -280,6 +280,7 @@ export default function AdminReferralsDetailedPage() {
   const [userFilter, setUserFilter] = useState<string>("all_users");
   const [companyFilter, setCompanyFilter] = useState<string>("all_companies");
   const [monthFilter, setMonthFilter] = useState<string>("all_months");
+  const [localFilter, setLocalFilter] = useState<string>("all_locals");
   const [selectedReferral, setSelectedReferral] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<ReferralStatus>("pending");
@@ -457,13 +458,35 @@ export default function AdminReferralsDetailedPage() {
       matchesMonth = referralYear === filterYear && referralMonth === filterMonth - 1; // JavaScript months are 0-indexed
     }
     
-    return matchesSearch && matchesStatus && matchesUser && matchesCompany && matchesMonth;
+    // Local filter
+    let matchesLocal = true;
+    if (localFilter !== "all_locals") {
+      if (localFilter === "no_location") {
+        matchesLocal = !referral.city || !referral.state;
+      } else {
+        const location = `${referral.city}/${referral.state}`;
+        matchesLocal = location === localFilter;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesUser && matchesCompany && matchesMonth && matchesLocal;
   });
 
   // Helper function to get company name by ID
   const getCompanyName = (companyId: number) => {
     const company = companies.find((c: any) => c.id === companyId);
     return company?.name || "N/A";
+  };
+
+  // Helper function to get unique locations for filter
+  const getUniqueLocations = () => {
+    const locationSet = new Set<string>();
+    referrals.forEach((referral: any) => {
+      if (referral.city && referral.state) {
+        locationSet.add(`${referral.city}/${referral.state}`);
+      }
+    });
+    return Array.from(locationSet).sort();
   };
 
   // Export to Excel function
@@ -645,7 +668,7 @@ export default function AdminReferralsDetailedPage() {
             </div>
             
             {/* Filter Selects - Responsive Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full text-sm md:text-base">
                   <SelectValue placeholder="Status" />
@@ -713,6 +736,21 @@ export default function AdminReferralsDetailedPage() {
                       </SelectItem>
                     ));
                   })()}
+                </SelectContent>
+              </Select>
+              
+              <Select value={localFilter} onValueChange={setLocalFilter}>
+                <SelectTrigger className="w-full text-sm md:text-base">
+                  <SelectValue placeholder="Local" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_locals">Todos os Locais</SelectItem>
+                  <SelectItem value="no_location">Sem Local</SelectItem>
+                  {getUniqueLocations().map(location => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
