@@ -99,16 +99,19 @@ export default function AnalystReferrals() {
   // Fetch referrals with automatic refresh for real-time updates
   const { data: referrals = [], isLoading, refetch: refetchReferrals, isFetching } = useQuery<Referral[]>({
     queryKey: ["/api/analyst/referrals"],
-    refetchInterval: 30000, // Atualizar a cada 30 segundos
+    refetchInterval: 15000, // Atualizar a cada 15 segundos para mudanças mais rápidas
     refetchIntervalInBackground: true, // Atualizar mesmo quando a aba não está ativa
-    staleTime: 10000, // Dados são considerados obsoletos após 10 segundos
+    staleTime: 5000, // Dados são considerados obsoletos após 5 segundos
+    refetchOnWindowFocus: true, // Refetch quando a janela ganha foco
+    refetchOnMount: true, // Sempre refetch ao montar
   });
 
   // Fetch users for display - use analyst endpoint for proper permissions
   const { data: users = [], refetch: refetchUsers } = useQuery<User[]>({
     queryKey: ["/api/analyst/users"],
-    refetchInterval: 60000, // Atualizar usuários a cada 60 segundos
-    staleTime: 30000, // Dados de usuários são mais estáveis
+    refetchInterval: 30000, // Atualizar usuários a cada 30 segundos
+    staleTime: 15000, // Dados de usuários podem mudar com reatribuições
+    refetchOnWindowFocus: true, // Refetch quando a janela ganha foco
   });
 
   // Função para refresh manual
@@ -342,6 +345,11 @@ export default function AnalystReferrals() {
               Atualizando dados...
             </Badge>
           )}
+          <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+            <span>📊 {referrals.length} indicações no sistema</span>
+            <span>🔄 Atualização automática a cada 15s</span>
+            <span>⏰ {new Date().toLocaleTimeString('pt-BR')}</span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -434,7 +442,9 @@ export default function AnalystReferrals() {
                 </TableHeader>
                 <TableBody>
                   {filteredReferrals.map((referral) => {
-                    const indicador = users.find((u) => u.id === referral.createdBy);
+                    // Usar userId para mostrar o usuário ATUAL da indicação, não quem criou
+                    const indicador = users.find((u) => u.id === referral.userId);
+                    const criador = users.find((u) => u.id === referral.createdBy);
                     const company = companies.find((c) => c.id === referral.companyId);
                     return (
                       <TableRow key={referral.id}>
@@ -442,7 +452,18 @@ export default function AnalystReferrals() {
                         <TableCell className="font-medium">{referral.fullName}</TableCell>
                         <TableCell>{referral.phone}</TableCell>
                         <TableCell>{referral.licensePlate}</TableCell>
-                        <TableCell>{indicador?.fullName || "N/A"}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              {indicador?.fullName || "N/A"}
+                            </div>
+                            {criador && criador.id !== indicador?.id && (
+                              <div className="text-xs text-gray-500">
+                                Criado por: {criador.fullName}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{company?.name || "N/A"}</TableCell>
                         <TableCell>
                           <Badge className={statusColors[referral.status]}>

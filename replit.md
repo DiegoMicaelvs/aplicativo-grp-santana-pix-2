@@ -51,6 +51,19 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-08-08 - Analyst Level 1 Real-Time Updates Fix
+- Fixed critical issue where analyst level 1 users were seeing outdated referral attributions
+- Corrected referral display to show current assigned user (userId) instead of creator (createdBy)
+- Implemented enhanced React Query cache invalidation:
+  - Reduced polling interval to 15 seconds for faster updates
+  - Added refetchOnWindowFocus and refetchOnMount for immediate updates
+  - Improved cache invalidation across all analyst-related queries
+- Added visual distinction between referral creator and current assigned user
+- Implemented manual refresh button with visual feedback for analysts
+- Enhanced server-side logging for better debugging of referral assignments
+- Created diagnostic scripts to verify data consistency and real-time update behavior
+- Fixed TypeScript type errors in analyst components for better stability
+
 ### 2025-08-07 - Plate Search Feature for All Users
 - Implemented plate search functionality available for all authenticated users
 - Created new `/plate-search` page with automatic Brazilian plate formatting
