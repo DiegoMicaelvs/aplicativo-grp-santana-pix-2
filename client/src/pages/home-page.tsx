@@ -83,9 +83,9 @@ export default function HomePage() {
         </div>
         <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 flex items-center justify-center">
           <img
-            className="h-56 w-auto object-contain object-center sm:h-72 md:h-96 lg:h-80 xl:h-96 mix-blend-multiply bg-transparent"
-            src="/images/metis-brasil-hero.png"
-            alt="Métis Brasil - Proteção Patrimonial"
+            className="h-56 w-auto object-contain object-center sm:h-72 md:h-96 lg:h-80 xl:h-96"
+            src="/images/metis-logo-hero.png"
+            alt="Métis - Logo"
             style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
           />
         </div>
