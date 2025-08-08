@@ -14,9 +14,6 @@ import { ChevronDown, Clock, DollarSign, Shield, Users, BarChart, HeadphonesIcon
 import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
 
-
-import diegomicael58_3D_animated_childrens_storybook_style_top_down__bf4c1a1e_e808_4db2_a50f_ca7a494f0767_0 from "@assets/diegomicael58_3D_animated_childrens_storybook_style_top-down__bf4c1a1e-e808-4db2-a50f-ca7a494f0767_0.png";
-
 export default function HomePage() {
   const { user } = useAuth();
   const [location] = useLocation();
@@ -87,8 +84,8 @@ export default function HomePage() {
         <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <img
             className="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
-            src={diegomicael58_3D_animated_childrens_storybook_style_top_down__bf4c1a1e_e808_4db2_a50f_ca7a494f0767_0}
-            alt="Ilustração de uma pessoa indicando seguro para veículos"
+            src="/images/metis-brasil-hero.png"
+            alt="Métis Brasil - Proteção Patrimonial"
           />
         </div>
       </div>
