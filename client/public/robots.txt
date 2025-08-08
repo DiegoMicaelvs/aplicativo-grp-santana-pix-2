@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://metis-pix.replit.app/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /auth/
+Disallow: /manager/
+Disallow: /analyst/
+Disallow: /team/
+Disallow: /referrals/
+Disallow: /earnings/
+Disallow: /withdrawals/
+Disallow: /plate-search/
+Disallow: /new-referral/
+
+# Allow public pages
+Allow: /
+Allow: /contato

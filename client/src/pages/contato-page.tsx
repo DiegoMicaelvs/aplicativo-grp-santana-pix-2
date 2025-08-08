@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Phone, MapPin, Globe, Instagram, Facebook } from "lucide-react";
 
 export default function ContatoPage() {
+  useEffect(() => {
+    // Update page title and meta description for SEO
+    document.title = "Contato - Metis da Pix | Fale Conosco";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Entre em contato com a Metis da Pix. Tire suas dúvidas sobre nosso programa de indicação. E-mail, telefone e endereço.');
+    }
+    
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) {
+      ogTitle.setAttribute('content', 'Contato - Metis da Pix | Fale Conosco');
+    }
+    
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription) {
+      ogDescription.setAttribute('content', 'Entre em contato com a Metis da Pix. Tire suas dúvidas sobre nosso programa de indicação.');
+    }
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
