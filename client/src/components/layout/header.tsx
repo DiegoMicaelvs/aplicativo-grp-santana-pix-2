@@ -52,7 +52,7 @@ export default function Header() {
           <div className="flex justify-start lg:w-0 lg:flex-1">
             <Link href="/" className="flex items-center">
               <span className="sr-only">Metis</span>
-              <img src="/images/logos/metis-logo.png" alt="Metis" className="h-14 w-auto" />
+              <img src="/images/logos/metis-brasil-logo.png" alt="Métis Brasil - Proteção Patrimonial" className="h-14 w-auto" />
             </Link>
           </div>
 
