@@ -458,14 +458,13 @@ export default function AdminReferralsDetailedPage() {
       matchesMonth = referralYear === filterYear && referralMonth === filterMonth - 1; // JavaScript months are 0-indexed
     }
     
-    // Local filter
+    // Local filter (by state only)
     let matchesLocal = true;
     if (localFilter !== "all_locals") {
-      if (localFilter === "no_location") {
-        matchesLocal = !referral.city || !referral.state;
+      if (localFilter === "no_state") {
+        matchesLocal = !referral.state;
       } else {
-        const location = `${referral.city}/${referral.state}`;
-        matchesLocal = location === localFilter;
+        matchesLocal = referral.state === localFilter;
       }
     }
     
@@ -478,15 +477,15 @@ export default function AdminReferralsDetailedPage() {
     return company?.name || "N/A";
   };
 
-  // Helper function to get unique locations for filter
-  const getUniqueLocations = () => {
-    const locationSet = new Set<string>();
+  // Helper function to get unique states for filter
+  const getUniqueStates = () => {
+    const stateSet = new Set<string>();
     referrals.forEach((referral: any) => {
-      if (referral.city && referral.state) {
-        locationSet.add(`${referral.city}/${referral.state}`);
+      if (referral.state) {
+        stateSet.add(referral.state);
       }
     });
-    return Array.from(locationSet).sort();
+    return Array.from(stateSet).sort();
   };
 
   // Export to Excel function
@@ -741,14 +740,14 @@ export default function AdminReferralsDetailedPage() {
               
               <Select value={localFilter} onValueChange={setLocalFilter}>
                 <SelectTrigger className="w-full text-sm md:text-base">
-                  <SelectValue placeholder="Local" />
+                  <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all_locals">Todos os Locais</SelectItem>
-                  <SelectItem value="no_location">Sem Local</SelectItem>
-                  {getUniqueLocations().map(location => (
-                    <SelectItem key={location} value={location}>
-                      {location}
+                  <SelectItem value="all_locals">Todos os Estados</SelectItem>
+                  <SelectItem value="no_state">Sem Estado</SelectItem>
+                  {getUniqueStates().map(state => (
+                    <SelectItem key={state} value={state}>
+                      {state}
                     </SelectItem>
                   ))}
                 </SelectContent>
