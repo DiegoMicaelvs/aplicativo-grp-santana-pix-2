@@ -560,7 +560,7 @@ export default function NewReferralPage() {
                           ) : (
                             <div className="mt-2">
                               <Input 
-                                value="Kong Pix" 
+                                value="Metis da Pix" 
                                 disabled 
                                 className="bg-gray-50"
                               />
