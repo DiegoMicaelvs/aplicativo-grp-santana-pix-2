@@ -1123,8 +1123,8 @@ class DatabaseStorage implements IStorage {
         orderBy: desc(referrals.createdAt)
       });
 
-      // Determine if user has insurance (adesão) from their latest referral
-      const hasInsurance = latestReferral?.hasInsurance || false;
+      // Use hasInsurance from withdrawal_requests table if available, otherwise fallback to latest referral
+      const hasInsurance = withdrawal.hasInsurance !== null ? withdrawal.hasInsurance : (latestReferral?.hasInsurance || false);
       const licensePlate = latestReferral?.licensePlate || null;
 
       return {

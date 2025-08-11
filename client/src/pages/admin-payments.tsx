@@ -77,46 +77,21 @@ export default function AdminPaymentsPage() {
 
       return response.json();
     },
-    onMutate: async ({ withdrawalId, hasInsurance }) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["/api/admin/withdrawals"] });
-
-      // Snapshot the previous value
-      const previousWithdrawals = queryClient.getQueryData(["/api/admin/withdrawals"]);
-
-      // Optimistically update to the new value
-      queryClient.setQueryData(["/api/admin/withdrawals"], (old: any[]) => {
-        if (!old) return old;
-        return old.map(w => 
-          w.id === withdrawalId 
-            ? { ...w, hasInsurance } 
-            : w
-        );
-      });
-
-      // Return a context with the previous and new data
-      return { previousWithdrawals };
-    },
-    onError: (err, variables, context) => {
-      // If the mutation fails, use the context to roll back
-      if (context?.previousWithdrawals) {
-        queryClient.setQueryData(["/api/admin/withdrawals"], context.previousWithdrawals);
-      }
-      console.error("Error updating insurance:", err);
-      toast({
-        title: "Erro ao atualizar adesão",
-        variant: "destructive",
-      });
-    },
     onSuccess: (data) => {
       console.log("Insurance updated successfully:", data);
+      // Invalidate and refetch the withdrawals data
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
+      queryClient.refetchQueries({ queryKey: ["/api/admin/withdrawals"] });
       toast({
         title: "Adesão atualizada com sucesso",
       });
     },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
+    onError: (error) => {
+      console.error("Error updating insurance:", error);
+      toast({
+        title: "Erro ao atualizar adesão",
+        variant: "destructive",
+      });
     },
   });
 
