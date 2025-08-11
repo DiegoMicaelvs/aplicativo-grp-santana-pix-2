@@ -270,6 +270,8 @@ export default function AdminPaymentsPage() {
                   <TableHead>Valor</TableHead>
                   <TableHead>Chave PIX</TableHead>
                   <TableHead>CPF</TableHead>
+                  <TableHead>Adesão</TableHead>
+                  <TableHead>Placa</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Data Solicitação</TableHead>
                   <TableHead>Ações</TableHead>
@@ -289,6 +291,14 @@ export default function AdminPaymentsPage() {
                     </TableCell>
                     <TableCell className="font-mono text-sm">{withdrawal.pixKey}</TableCell>
                     <TableCell className="font-mono text-sm">{withdrawal.cpfKey}</TableCell>
+                    <TableCell>
+                      <Badge className={withdrawal.hasInsurance ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                        {withdrawal.hasInsurance ? "Sim" : "Não"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {withdrawal.licensePlate || "-"}
+                    </TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(withdrawal.status)}>
                         {getStatusLabel(withdrawal.status)}
@@ -337,6 +347,12 @@ export default function AdminPaymentsPage() {
                                   </div>
                                   <div>
                                     <strong>CPF:</strong> {selectedWithdrawal.cpfKey}
+                                  </div>
+                                  <div>
+                                    <strong>Adesão:</strong> {selectedWithdrawal.hasInsurance ? "Sim" : "Não"}
+                                  </div>
+                                  <div>
+                                    <strong>Placa:</strong> {selectedWithdrawal.licensePlate || "N/A"}
                                   </div>
                                   <div>
                                     <strong>Status:</strong> {getStatusLabel(selectedWithdrawal.status)}

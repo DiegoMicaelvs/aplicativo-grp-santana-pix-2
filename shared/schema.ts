@@ -117,6 +117,8 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   cpfKey: text("cpf_key").notNull(), // CPF associado à chave PIX
   requestType: text("request_type").notNull().$type<"indicador" | "promotor">(), // Tipo de saque
   status: text("status").default("pending").notNull().$type<WithdrawalStatus>(),
+  hasInsurance: boolean("has_insurance").default(false).notNull(), // Se possui seguro (adesão)
+  licensePlate: text("license_plate"), // Placa da última indicação do usuário
   requestedAt: timestamp("requested_at").defaultNow().notNull(),
   processedAt: timestamp("processed_at"),
   processedBy: integer("processed_by").references(() => users.id),

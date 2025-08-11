@@ -1106,13 +1106,35 @@ class DatabaseStorage implements IStorage {
   }
   
   async getAllWithdrawalRequests() {
-    return await db.query.withdrawalRequests.findMany({
+    // Get withdrawal requests with user info
+    const withdrawals = await db.query.withdrawalRequests.findMany({
       with: {
         user: true,
         processedByUser: true
       },
       orderBy: desc(withdrawalRequests.requestedAt)
     });
+
+    // For each withdrawal, get the user's latest referral to populate license plate
+    const withdrawalsWithReferralInfo = await Promise.all(withdrawals.map(async (withdrawal) => {
+      // Get the most recent referral for this user
+      const latestReferral = await db.query.referrals.findFirst({
+        where: eq(referrals.userId, withdrawal.userId),
+        orderBy: desc(referrals.createdAt)
+      });
+
+      // Determine if user has insurance (adesão) from their latest referral
+      const hasInsurance = latestReferral?.hasInsurance || false;
+      const licensePlate = latestReferral?.licensePlate || null;
+
+      return {
+        ...withdrawal,
+        hasInsurance,
+        licensePlate
+      };
+    }));
+
+    return withdrawalsWithReferralInfo;
   }
   
   async getWithdrawalRequestById(id: number) {
