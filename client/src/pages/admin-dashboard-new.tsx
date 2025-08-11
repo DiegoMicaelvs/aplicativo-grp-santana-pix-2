@@ -54,7 +54,7 @@ export default function AdminDashboard() {
   };
 
   const handleGoBack = () => {
-    window.history.back();
+    setLocation('/');
   };
 
   // Calculate key metrics
