@@ -62,6 +62,7 @@ export default function AdminPaymentsPage() {
 
   const updateInsuranceMutation = useMutation({
     mutationFn: async ({ withdrawalId, hasInsurance }: { withdrawalId: number; hasInsurance: boolean }) => {
+      console.log(`Updating insurance for withdrawal ${withdrawalId} to ${hasInsurance}`);
       const response = await fetch(`/api/admin/withdrawals/${withdrawalId}/insurance`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -69,23 +70,53 @@ export default function AdminPaymentsPage() {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
         throw new Error("Erro ao atualizar adesão");
       }
 
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
-      toast({
-        title: "Adesão atualizada com sucesso",
+    onMutate: async ({ withdrawalId, hasInsurance }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/admin/withdrawals"] });
+
+      // Snapshot the previous value
+      const previousWithdrawals = queryClient.getQueryData(["/api/admin/withdrawals"]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["/api/admin/withdrawals"], (old: any[]) => {
+        if (!old) return old;
+        return old.map(w => 
+          w.id === withdrawalId 
+            ? { ...w, hasInsurance } 
+            : w
+        );
       });
+
+      // Return a context with the previous and new data
+      return { previousWithdrawals };
     },
-    onError: (error) => {
-      console.error("Error updating insurance:", error);
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context to roll back
+      if (context?.previousWithdrawals) {
+        queryClient.setQueryData(["/api/admin/withdrawals"], context.previousWithdrawals);
+      }
+      console.error("Error updating insurance:", err);
       toast({
         title: "Erro ao atualizar adesão",
         variant: "destructive",
       });
+    },
+    onSuccess: (data) => {
+      console.log("Insurance updated successfully:", data);
+      toast({
+        title: "Adesão atualizada com sucesso",
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
     },
   });
 
