@@ -1198,6 +1198,15 @@ class DatabaseStorage implements IStorage {
     
     return updated;
   }
+
+  async updateWithdrawalInsurance(id: number, hasInsurance: boolean) {
+    const [updated] = await db.update(withdrawalRequests)
+      .set({ hasInsurance })
+      .where(eq(withdrawalRequests.id, id))
+      .returning();
+    
+    return updated;
+  }
   
   // Cash flow methods
   async createCashFlowEntry(entry: CreateCashFlow & { createdBy: number }) {
