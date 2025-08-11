@@ -51,14 +51,14 @@ export async function comparePasswords(
 }
 
 export function setupAuth(app: Express) {
-  // Detectar se estamos em produção no Replit
-  const isProduction = process.env.NODE_ENV === "production" || 
-                      process.env.REPLIT_DEPLOYMENT === "1" ||
-                      (process.env.REPLIT_DEV_DOMAIN && !process.env.REPLIT_DEV_DOMAIN.includes("localhost"));
+  // Detectar se estamos em produção real (deployment)
+  const isDeployment = process.env.REPLIT_DEPLOYMENT === "1";
   
-  console.log(`[AUTH] Configurando autenticação - Modo: ${isProduction ? 'PRODUÇÃO' : 'DESENVOLVIMENTO'}`);
+  console.log(`[AUTH] Configurando autenticação - Modo: ${isDeployment ? 'PRODUÇÃO (DEPLOY)' : 'DESENVOLVIMENTO'}`);
+  console.log(`[AUTH] REPLIT_DEPLOYMENT: ${process.env.REPLIT_DEPLOYMENT}`);
+  console.log(`[AUTH] NODE_ENV: ${process.env.NODE_ENV}`);
   
-  // Session configuration
+  // Session configuration - usar secure cookies apenas em deployment real
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || process.env.REPL_ID || crypto.randomBytes(32).toString("hex"),
     resave: false,
@@ -68,8 +68,8 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: isProduction, // Secure em produção
-      sameSite: (isProduction ? "none" : "lax") as "strict" | "lax" | "none", // None em produção para funcionar com HTTPS
+      secure: isDeployment, // Secure apenas em deployment real
+      sameSite: (isDeployment ? "none" : "lax"), // None em deployment para funcionar com HTTPS
       path: "/", // Cookie válido em todo o site
       domain: undefined // Deixar o navegador gerenciar o domínio automaticamente
     }
@@ -80,7 +80,7 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Passport strategy
+  // Passport strategy with enhanced debugging
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -95,22 +95,23 @@ export function setupAuth(app: Express) {
           return done(null, false);
         }
         
-        const passwordMatch = await comparePasswords(password, user.password);
-        if (!passwordMatch) {
-          console.log(`[AUTH] Senha incorreta para usuário: ${normalizedUsername}`);
-          return done(null, false);
-        }
-        
-        // Check if user is active
+        // Check if user is active BEFORE password check
         if (!user.isActive) {
           console.log(`[AUTH] Usuário desativado: ${normalizedUsername}`);
           return done(new AuthError("Usuário desativado", 403), false);
         }
         
+        const passwordMatch = await comparePasswords(password, user.password);
+        
+        if (!passwordMatch) {
+          console.log(`[AUTH] Senha incorreta para usuário: ${normalizedUsername}`);
+          return done(null, false);
+        }
+        
         console.log(`[AUTH] Login bem-sucedido: ${normalizedUsername}`);
         return done(null, user);
       } catch (err) {
-        console.error(`[AUTH] Erro na autenticação:`, err);
+        console.error(`[AUTH] LocalStrategy - Erro na autenticação para ${username}:`, err);
         return done(err);
       }
     }),
@@ -180,7 +181,8 @@ export function setupAuth(app: Express) {
         role: "indicador", // Default role for new registrations
         createdBy: undefined, // Self-registration
         promoterId: userData.promoterId || undefined,
-        analystId: userData.analystId || undefined
+        analystId: userData.analystId || undefined,
+        supervisorId: userData.supervisorId || undefined
       });
       
       console.log(`[REGISTRO] Novo usuário cadastrado com sucesso: ${newUser.username} (ID: ${newUser.id})`);
@@ -243,10 +245,11 @@ export function setupAuth(app: Express) {
     try {
       // Validate login data
       const loginData = loginSchema.parse(req.body);
+      console.log(`[AUTH] Login attempt: ${loginData.username}`);
       
       passport.authenticate("local", (err: any, user: any, info: any) => {
         if (err) {
-          console.error("Login error:", err);
+          console.error(`[AUTH] Authentication error for ${loginData.username}:`, err);
           
           if (err instanceof AuthError) {
             return res.status(err.statusCode).json({ message: err.message });
@@ -256,20 +259,26 @@ export function setupAuth(app: Express) {
         }
 
         if (!user) {
+          console.log(`[AUTH] Authentication failed for ${loginData.username} - No user returned`);
           return res.status(401).json({ message: "Credenciais inválidas" });
         }
 
+        console.log(`[AUTH] User authenticated successfully: ${user.username} (ID: ${user.id})`);
+
         req.login(user, (err) => {
           if (err) {
-            console.error("Session error:", err);
+            console.error(`[AUTH] Session creation error for ${user.username}:`, err);
             return res.status(500).json({ message: "Erro ao iniciar sessão" });
           }
 
+          console.log(`[AUTH] Session created successfully for ${user.username} - SessionID: ${req.sessionID}`);
           const { password, ...userWithoutPassword } = user;
           res.json(userWithoutPassword);
         });
       })(req, res, next);
     } catch (error: any) {
+      console.error(`[AUTH] Login route error:`, error);
+      
       if (error.name === 'ZodError') {
         return res.status(400).json({ 
           message: "Dados inválidos", 
@@ -344,6 +353,8 @@ export function setupAuth(app: Express) {
       res.json({ authenticated: false });
     }
   });
+
+
 }
 
 // Type declarations for Express

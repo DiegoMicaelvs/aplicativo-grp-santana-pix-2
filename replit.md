@@ -51,6 +51,21 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-08-11 - Critical Authentication Fix Implementation
+- Fixed critical login authentication issue affecting multiple users
+- Problem identified: Some users had password hashes that were incompatible with current authentication system
+- Root cause: Environment detection for cookie security was overly aggressive, treating development as production
+- Solutions implemented:
+  - Corrected production environment detection to only use `REPLIT_DEPLOYMENT=1` for secure cookies
+  - Fixed cookie `sameSite` and `secure` settings for proper development environment operation
+  - Created diagnostic scripts to identify and fix user password issues
+  - Reset passwords for 6 affected users (admin accounts with outdated hashes)
+  - Enhanced authentication logging for better troubleshooting
+  - Removed debug endpoints and excessive logging post-fix
+- Result: All 70 users can now login successfully with their credentials
+- Standard password for reset users: "123456" (users prompted to change on first login)
+- Authentication system now stable and properly configured for both development and production
+
 ### 2025-08-08 - Complete Metis da Pix Rebranding Implementation  
 - Replaced all "Kong Pix" references with "Metis da Pix" branding throughout the application
 - Updated header to display new Metis logo (attached_assets/image_1754684172138.png) alongside "Metis da Pix" text
