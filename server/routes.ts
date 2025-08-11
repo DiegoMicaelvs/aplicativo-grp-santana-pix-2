@@ -1336,6 +1336,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update withdrawal insurance status (admin only)
+  app.patch("/api/admin/withdrawals/:id/insurance", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { hasInsurance } = req.body;
+      
+      if (typeof hasInsurance !== 'boolean') {
+        return res.status(400).json({ error: "hasInsurance deve ser true ou false" });
+      }
+      
+      const updated = await storage.updateWithdrawalInsurance(id, hasInsurance);
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error updating withdrawal insurance:", error);
+      return res.status(500).json({ error: "Erro ao atualizar adesão" });
+    }
+  });
+
   // Get cash flow entries
   app.get("/api/admin/cash-flow", requireAdmin, async (req, res) => {
     try {

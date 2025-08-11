@@ -60,6 +60,35 @@ export default function AdminPaymentsPage() {
     },
   });
 
+  const updateInsuranceMutation = useMutation({
+    mutationFn: async ({ withdrawalId, hasInsurance }: { withdrawalId: number; hasInsurance: boolean }) => {
+      const response = await fetch(`/api/admin/withdrawals/${withdrawalId}/insurance`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hasInsurance })
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao atualizar adesão");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
+      toast({
+        title: "Adesão atualizada com sucesso",
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating insurance:", error);
+      toast({
+        title: "Erro ao atualizar adesão",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Filter withdrawals
   const filteredWithdrawals = withdrawals.filter((withdrawal: any) => {
     const user = users.find((u: any) => u.id === withdrawal.userId);
@@ -292,9 +321,35 @@ export default function AdminPaymentsPage() {
                     <TableCell className="font-mono text-sm">{withdrawal.pixKey}</TableCell>
                     <TableCell className="font-mono text-sm">{withdrawal.cpfKey}</TableCell>
                     <TableCell>
-                      <Badge className={withdrawal.hasInsurance ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                        {withdrawal.hasInsurance ? "Sim" : "Não"}
-                      </Badge>
+                      <Select
+                        value={withdrawal.hasInsurance ? "sim" : "nao"}
+                        onValueChange={(value) => {
+                          const hasInsurance = value === "sim";
+                          updateInsuranceMutation.mutate({
+                            withdrawalId: withdrawal.id,
+                            hasInsurance
+                          });
+                        }}
+                        disabled={updateInsuranceMutation.isPending}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sim">
+                            <span className="flex items-center">
+                              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                              Sim
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="nao">
+                            <span className="flex items-center">
+                              <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                              Não
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       {withdrawal.licensePlate || "-"}
