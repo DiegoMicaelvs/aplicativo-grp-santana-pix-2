@@ -1115,21 +1115,21 @@ class DatabaseStorage implements IStorage {
       orderBy: desc(withdrawalRequests.requestedAt)
     });
 
-    // For each withdrawal, get the user's latest referral to populate license plate
+    // For each withdrawal, get the user's latest referral to populate license plate if not already present
     const withdrawalsWithReferralInfo = await Promise.all(withdrawals.map(async (withdrawal) => {
-      // Get the most recent referral for this user
-      const latestReferral = await db.query.referrals.findFirst({
-        where: eq(referrals.userId, withdrawal.userId),
-        orderBy: desc(referrals.createdAt)
-      });
-
-      // Use hasInsurance from withdrawal_requests table if available, otherwise fallback to latest referral
-      const hasInsurance = withdrawal.hasInsurance !== null ? withdrawal.hasInsurance : (latestReferral?.hasInsurance || false);
-      const licensePlate = latestReferral?.licensePlate || null;
+      // Get the most recent referral for this user to get license plate if not set
+      let licensePlate = withdrawal.licensePlate;
+      
+      if (!licensePlate) {
+        const latestReferral = await db.query.referrals.findFirst({
+          where: eq(referrals.userId, withdrawal.userId),
+          orderBy: desc(referrals.createdAt)
+        });
+        licensePlate = latestReferral?.licensePlate || null;
+      }
 
       return {
         ...withdrawal,
-        hasInsurance,
         licensePlate
       };
     }));
