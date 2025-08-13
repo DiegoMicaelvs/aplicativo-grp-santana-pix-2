@@ -68,8 +68,8 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: isDeployment, // Secure apenas em deployment real
-      sameSite: (isDeployment ? "none" : "lax"), // None em deployment para funcionar com HTTPS
+      secure: false, // Desabilitar secure em desenvolvimento para funcionar com HTTP
+      sameSite: "lax", // Usar lax em desenvolvimento
       path: "/", // Cookie válido em todo o site
       domain: undefined // Deixar o navegador gerenciar o domínio automaticamente
     }
