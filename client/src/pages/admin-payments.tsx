@@ -499,6 +499,7 @@ export default function AdminPaymentsPage() {
                   <TableHead>Data</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Descrição</TableHead>
+                  <TableHead>Beneficiário</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Saldo</TableHead>
                   <TableHead>Operador</TableHead>
@@ -516,6 +517,17 @@ export default function AdminPaymentsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{entry.description}</TableCell>
+                    <TableCell>
+                      {entry.withdrawal?.user ? (
+                        <span className="text-blue-600 font-medium">
+                          {entry.withdrawal.user.fullName}
+                        </span>
+                      ) : entry.type === "inflow" ? (
+                        <span className="text-green-600 font-medium">Entrada do Sistema</span>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </TableCell>
                     <TableCell className={entry.type === "inflow" ? "text-green-600" : "text-red-600"}>
                       {entry.type === "inflow" ? "+" : "-"}R$ {parseFloat(entry.amount).toFixed(2)}
                     </TableCell>

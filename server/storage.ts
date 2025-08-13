@@ -1230,7 +1230,11 @@ class DatabaseStorage implements IStorage {
     return await db.query.cashFlow.findMany({
       with: {
         createdByUser: true,
-        withdrawal: true
+        withdrawal: {
+          with: {
+            user: true
+          }
+        }
       },
       orderBy: desc(cashFlow.createdAt)
     });
