@@ -344,12 +344,12 @@ export default function NewReferralPage() {
                 </Alert>
 
                 {/* Contador de cadastros diários */}
-                <Alert className={`border-2 ${todayStats?.count >= 25 ? 'border-red-200 bg-red-50' : todayStats?.count >= 20 ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
-                  <Check className={`h-4 w-4 ${todayStats?.count >= 25 ? 'text-red-600' : todayStats?.count >= 20 ? 'text-yellow-600' : 'text-green-600'}`} />
-                  <AlertDescription className={todayStats?.count >= 25 ? 'text-red-800' : todayStats?.count >= 20 ? 'text-yellow-800' : 'text-green-800'}>
+                <Alert className={`border-2 ${todayStats?.count >= 45 ? 'border-red-200 bg-red-50' : todayStats?.count >= 40 ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
+                  <Check className={`h-4 w-4 ${todayStats?.count >= 45 ? 'text-red-600' : todayStats?.count >= 40 ? 'text-yellow-600' : 'text-green-600'}`} />
+                  <AlertDescription className={todayStats?.count >= 45 ? 'text-red-800' : todayStats?.count >= 40 ? 'text-yellow-800' : 'text-green-800'}>
                     <div className="font-semibold mb-2">📊 Cadastros de Hoje</div>
                     <div className="text-lg font-bold">
-                      {todayStats?.count || 0} / 30
+                      {todayStats?.count || 0} / 50
                     </div>
                     <div className="text-sm">
                       {todayStats?.remaining > 0 ? (
@@ -360,8 +360,8 @@ export default function NewReferralPage() {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
-                        className={`h-2 rounded-full transition-all ${todayStats?.count >= 25 ? 'bg-red-500' : todayStats?.count >= 20 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                        style={{ width: `${Math.min(100, ((todayStats?.count || 0) / 30) * 100)}%` }}
+                        className={`h-2 rounded-full transition-all ${todayStats?.count >= 45 ? 'bg-red-500' : todayStats?.count >= 40 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                        style={{ width: `${Math.min(100, ((todayStats?.count || 0) / 50) * 100)}%` }}
                       ></div>
                     </div>
                   </AlertDescription>

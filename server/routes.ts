@@ -345,8 +345,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.json({
         count: todayReferrals.length,
-        limit: 30,
-        remaining: Math.max(0, 30 - todayReferrals.length)
+        limit: 50,
+        remaining: Math.max(0, 50 - todayReferrals.length)
       });
     } catch (error) {
       console.error("Error fetching today stats:", error);
