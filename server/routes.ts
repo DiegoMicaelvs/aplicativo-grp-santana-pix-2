@@ -228,15 +228,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // === SISTEMA DE SEGURANÇA PARA LEADS ===
       
-      // 1. Verificar limite de 30 referrals por dia
+      // 1. Verificar limite de 50 referrals por dia
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayReferrals = await storage.getTodayReferralsByUserId(req.user!.id, today);
       
-      if (todayReferrals.length >= 30) {
+      if (todayReferrals.length >= 50) {
         return res.status(400).json({ 
           error: "Limite diário atingido",
-          details: `Você já cadastrou ${todayReferrals.length} clientes hoje. Limite máximo: 30 por dia.`
+          details: `Você já cadastrou ${todayReferrals.length} clientes hoje. Limite máximo: 50 por dia.`
         });
       }
       
