@@ -352,7 +352,7 @@ export default function HomePage() {
                   Quantos cadastros posso fazer por dia?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Quantos quiser! Mas com apenas 30 cadastros diários, você já garante R$1.980 por mês.
+                  Quantos quiser! Mas com apenas 50 cadastros diários, você já garante R$3.300 por mês.
                 </AccordionContent>
               </AccordionItem>
               
