@@ -379,8 +379,9 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* New Referral Card */}
-                <div className="mt-8 bg-white shadow rounded-lg">
+                {/* New Referral Card - Hidden for Metis Viewers */}
+                {user?.role !== "metis_viewer" && (
+                  <div className="mt-8 bg-white shadow rounded-lg">
                   <div className="px-6 py-6">
                     <h3 className="text-lg leading-6 font-medium text-gray-900 font-heading">
                       Nova Indicação
@@ -637,6 +638,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             </div>
           </main>
