@@ -129,9 +129,9 @@ export default function DashboardPage() {
     }
   }, [user, setLocation]);
   
-  // Fetch referrals for the current user
+  // Fetch referrals - for Metis Viewer, get all Metis referrals; for others, get user's own referrals
   const { data: referrals, isLoading: isLoadingReferrals } = useQuery<Referral[]>({
-    queryKey: ['/api/referrals'],
+    queryKey: user?.role === 'metis_viewer' ? ['/api/metis-viewer/referrals'] : ['/api/referrals'],
   });
 
   // Calculate statistics
