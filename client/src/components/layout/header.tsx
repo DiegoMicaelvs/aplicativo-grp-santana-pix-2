@@ -215,12 +215,16 @@ export default function Header() {
                       <Link href="/new-referral">
                         <DropdownMenuItem>Nova Indicação</DropdownMenuItem>
                       </Link>
-                      <Link href="/earnings">
-                        <DropdownMenuItem>Meus Ganhos</DropdownMenuItem>
-                      </Link>
-                      <Link href="/withdrawals">
-                        <DropdownMenuItem>Saques</DropdownMenuItem>
-                      </Link>
+                      {user.role !== 'metis_viewer' && (
+                        <Link href="/earnings">
+                          <DropdownMenuItem>Meus Ganhos</DropdownMenuItem>
+                        </Link>
+                      )}
+                      {user.role !== 'metis_viewer' && (
+                        <Link href="/withdrawals">
+                          <DropdownMenuItem>Saques</DropdownMenuItem>
+                        </Link>
+                      )}
                       {user.role === 'admin' && (
                         <Link href="/admin">
                           <DropdownMenuItem>Painel Admin</DropdownMenuItem>
