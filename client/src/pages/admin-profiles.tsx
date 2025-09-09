@@ -88,7 +88,7 @@ const profileManagementSchema = z.object({
   zipCode: z.string().min(8, "CEP inválido").max(9, "CEP inválido"),
   shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
-  role: z.enum(["indicador", "promotor", "admin", "analista", "vendedor", "gerente"]),
+  role: z.enum(["indicador", "promotor", "admin", "analista", "vendedor", "gerente", "metis_viewer"]),
   analystLevel: z.coerce.number().int().min(1).max(3).optional(),
   permissions: z.array(z.string()).optional(),
   isActive: z.boolean(),
@@ -412,6 +412,7 @@ export default function AdminProfiles() {
       case "analista": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100";
       case "vendedor": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100";
       case "gerente": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
+      case "metis_viewer": return "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-100";
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
     }
   };
@@ -424,6 +425,7 @@ export default function AdminProfiles() {
       case "indicador": return "Indicador";
       case "vendedor": return "Vendedor";
       case "gerente": return "Gerente";
+      case "metis_viewer": return "Metis Viewer";
       default: return role;
     }
   };
@@ -473,6 +475,7 @@ export default function AdminProfiles() {
                   <SelectItem value="analista">Analistas</SelectItem>
                   <SelectItem value="indicador">Indicadores</SelectItem>
                   <SelectItem value="vendedor">Vendedores</SelectItem>
+                  <SelectItem value="metis_viewer">Metis Viewers</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -1175,6 +1178,7 @@ export default function AdminProfiles() {
                   <SelectItem value="analista">Analista</SelectItem>
                   <SelectItem value="vendedor">Vendedor</SelectItem>
                   <SelectItem value="gerente">Gerente</SelectItem>
+                  <SelectItem value="metis_viewer">Metis Viewer</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
