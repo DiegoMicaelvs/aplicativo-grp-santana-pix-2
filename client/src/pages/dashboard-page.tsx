@@ -201,9 +201,11 @@ export default function DashboardPage() {
           <header>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <h1 className="text-3xl font-bold leading-tight text-gray-900 font-heading">Dashboard</h1>
-              <p className="mt-2 text-gray-600">
-                Bem-vindo, {user?.fullName}! Veja o resumo da sua atividade como indicador.
-              </p>
+              {user?.role !== "metis_viewer" && (
+                <p className="mt-2 text-gray-600">
+                  Bem-vindo, {user?.fullName}! Veja o resumo da sua atividade como indicador.
+                </p>
+              )}
             </div>
           </header>
           
