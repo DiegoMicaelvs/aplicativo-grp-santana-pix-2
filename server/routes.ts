@@ -71,6 +71,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  // Middleware to check metis_viewer role
+  const requireMetisViewer = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || (req.user.role !== "metis_viewer" && req.user.role !== "admin")) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+    next();
+  };
+
   // Middleware to check promoter role
   const requirePromoter = (req: any, res: any, next: any) => {
     if (!req.isAuthenticated() || (req.user.role !== "promotor" && req.user.role !== "admin")) {
@@ -925,6 +933,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching audit log for analytics:", error);
       return res.status(500).json({ error: "Erro ao buscar log de auditoria" });
+    }
+  });
+
+  // === METIS VIEWER ROUTES ===
+
+  // Get all referrals for Metis viewer (only Metis da Pix company)
+  app.get("/api/metis-viewer/referrals", requireMetisViewer, async (req, res) => {
+    try {
+      const metisReferrals = await storage.getAllReferralsForMetisViewer();
+      return res.json(metisReferrals);
+    } catch (error) {
+      console.error("Error fetching Metis referrals:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicações da Metis" });
+    }
+  });
+
+  // Get users with Metis referrals
+  app.get("/api/metis-viewer/users", requireMetisViewer, async (req, res) => {
+    try {
+      const metisUsers = await storage.getUsersWithMetisReferrals();
+      // Remove passwords from response
+      const usersWithoutPasswords = metisUsers.map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      });
+      return res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Error fetching Metis users:", error);
+      return res.status(500).json({ error: "Erro ao buscar usuários da Metis" });
+    }
+  });
+
+  // Get Metis viewer stats
+  app.get("/api/metis-viewer/stats", requireMetisViewer, async (req, res) => {
+    try {
+      const metisStats = await storage.getMetisViewerStats();
+      return res.json(metisStats);
+    } catch (error) {
+      console.error("Error fetching Metis stats:", error);
+      return res.status(500).json({ error: "Erro ao buscar estatísticas da Metis" });
     }
   });
 
