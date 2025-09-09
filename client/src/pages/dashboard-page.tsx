@@ -273,45 +273,49 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Current Balance Card */}
-                  <Card>
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 bg-green-600 rounded-md p-2 sm:p-3">
-                          <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  {/* Current Balance Card - Hidden for Metis Viewers */}
+                  {user?.role !== "metis_viewer" && (
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 bg-green-600 rounded-md p-2 sm:p-3">
+                            <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                          </div>
+                          <div className="ml-3 sm:ml-5 flex-1">
+                            <div className="text-xs sm:text-sm font-medium text-gray-500">Saldo Disponível</div>
+                            <div className="text-base sm:text-lg font-medium text-gray-900">{formatCurrency(user?.balance || 0)}</div>
+                          </div>
                         </div>
-                        <div className="ml-3 sm:ml-5 flex-1">
-                          <div className="text-xs sm:text-sm font-medium text-gray-500">Saldo Disponível</div>
-                          <div className="text-base sm:text-lg font-medium text-gray-900">{formatCurrency(user?.balance || 0)}</div>
+                        <div className="mt-4 sm:mt-6">
+                          <Link href="/withdrawals">
+                            <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Solicitar saque</Button>
+                          </Link>
                         </div>
-                      </div>
-                      <div className="mt-4 sm:mt-6">
-                        <Link href="/withdrawals">
-                          <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Solicitar saque</Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
 
-                  {/* Total Earnings Card */}
-                  <Card>
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 bg-accent rounded-md p-2 sm:p-3">
-                          <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  {/* Total Earnings Card - Hidden for Metis Viewers */}
+                  {user?.role !== "metis_viewer" && (
+                    <Card>
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 bg-accent rounded-md p-2 sm:p-3">
+                            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                          </div>
+                          <div className="ml-3 sm:ml-5 flex-1">
+                            <div className="text-xs sm:text-sm font-medium text-gray-500">Total de Ganhos</div>
+                            <div className="text-base sm:text-lg font-medium text-gray-900">{formatCurrency(user?.totalEarnings || 0)}</div>
+                          </div>
                         </div>
-                        <div className="ml-3 sm:ml-5 flex-1">
-                          <div className="text-xs sm:text-sm font-medium text-gray-500">Total de Ganhos</div>
-                          <div className="text-base sm:text-lg font-medium text-gray-900">{formatCurrency(user?.totalEarnings || 0)}</div>
+                        <div className="mt-4 sm:mt-6">
+                          <Link href="/earnings">
+                            <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Ver histórico</Button>
+                          </Link>
                         </div>
-                      </div>
-                      <div className="mt-4 sm:mt-6">
-                        <Link href="/earnings">
-                          <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Ver histórico</Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
 
                 {/* Recent Referrals Table */}
