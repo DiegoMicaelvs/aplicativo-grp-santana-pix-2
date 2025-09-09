@@ -73,6 +73,7 @@ export interface IStorage {
   // Referral methods
   createReferral(referral: CreateReferral & { userId: number }): Promise<any>;
   getReferralById(id: number): Promise<any>;
+  getAllReferralsForMetisViewer(): Promise<any[]>;
   getReferralsByUserId(userId: number): Promise<any[]>;
   getReferralsByUsers(userIds: number[]): Promise<any[]>;
   getAllReferrals(): Promise<any[]>;
@@ -319,6 +320,55 @@ class DatabaseStorage implements IStorage {
     console.log(`[getAllUsersBySupervisor] Returning total of ${allUsers.length} users`);
     
     return allUsers;
+  }
+
+  // Get unique users who created referrals for Metis da Pix company only
+  async getUsersWithMetisReferrals() {
+    const metisReferrals = await db.query.referrals.findMany({
+      where: eq(referrals.companyId, 5), // Metis da Pix company ID
+      with: {
+        user: true
+      }
+    });
+
+    // Extract unique users
+    const uniqueUsers = new Map();
+    metisReferrals.forEach(referral => {
+      if (referral.user && !uniqueUsers.has(referral.user.id)) {
+        uniqueUsers.set(referral.user.id, referral.user);
+      }
+    });
+
+    return Array.from(uniqueUsers.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  // Get stats specifically for Metis da Pix company
+  async getMetisViewerStats() {
+    const metisReferrals = await db.query.referrals.findMany({
+      where: eq(referrals.companyId, 5), // Metis da Pix company ID
+      with: {
+        user: true
+      }
+    });
+
+    const totalReferrals = metisReferrals.length;
+    const statusCounts = metisReferrals.reduce((acc, ref) => {
+      acc[ref.status] = (acc[ref.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const uniqueUsers = new Set(metisReferrals.map(r => r.userId));
+    const totalUsers = uniqueUsers.size;
+
+    return {
+      totalReferrals,
+      totalUsers,
+      statusCounts,
+      companyName: "Metis",
+      companyId: 5
+    };
   }
   
   async updateUserBalance(userId: number, amount: number, updateEarnings: boolean = false) {
@@ -654,6 +704,19 @@ class DatabaseStorage implements IStorage {
   
   async getAllReferrals() {
     return await db.query.referrals.findMany({
+      with: {
+        user: true,
+        company: true,
+        createdByUser: true
+      },
+      orderBy: desc(referrals.createdAt)
+    });
+  }
+
+  // Get all referrals only from Metis da Pix company (ID: 5)
+  async getAllReferralsForMetisViewer() {
+    return await db.query.referrals.findMany({
+      where: eq(referrals.companyId, 5), // Filter only Metis da Pix company
       with: {
         user: true,
         company: true,
