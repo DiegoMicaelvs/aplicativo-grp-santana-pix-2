@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // User roles
-export type UserRole = "indicador" | "promotor" | "admin" | "analista" | "vendedor" | "gerente";
+export type UserRole = "indicador" | "promotor" | "admin" | "analista" | "vendedor" | "gerente" | "metis_viewer";
 export type AnalystLevel = 1 | 2 | 3;
 
 // Analyst permissions
@@ -475,7 +475,7 @@ export const createCashFlowSchema = z.object({
 
 // Schema para criar indicador (usado por promotores)
 export const createIndicadorSchema = insertUserSchema.extend({
-  role: z.literal("indicador"),
+  role: z.enum(["indicador", "promotor", "admin", "analista", "vendedor", "gerente", "metis_viewer"]),
   promoterId: z.number().optional(), // Será preenchido automaticamente pelo promotor logado
 });
 
