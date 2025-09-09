@@ -212,9 +212,11 @@ export default function Header() {
                       <Link href="/referrals">
                         <DropdownMenuItem>Minhas Indicações</DropdownMenuItem>
                       </Link>
-                      <Link href="/new-referral">
-                        <DropdownMenuItem>Nova Indicação</DropdownMenuItem>
-                      </Link>
+                      {user.role !== 'metis_viewer' && (
+                        <Link href="/new-referral">
+                          <DropdownMenuItem>Nova Indicação</DropdownMenuItem>
+                        </Link>
+                      )}
                       {user.role !== 'metis_viewer' && (
                         <Link href="/earnings">
                           <DropdownMenuItem>Meus Ganhos</DropdownMenuItem>
