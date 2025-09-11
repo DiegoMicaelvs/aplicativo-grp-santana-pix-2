@@ -232,7 +232,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new referral
   app.post("/api/referrals", requireAuth, async (req, res) => {
     try {
-      const validatedData = createReferralSchema.parse(req.body);
+      // Pre-normalize for backward compatibility: convert single licensePlate to licensePlates array
+      let requestBody = { ...req.body };
+      if (requestBody.licensePlate && !requestBody.licensePlates) {
+        requestBody.licensePlates = [requestBody.licensePlate];
+        delete requestBody.licensePlate;
+      }
+      
+      const validatedData = createReferralSchema.parse(requestBody);
       
       // === SISTEMA DE SEGURANÇA PARA LEADS ===
       
@@ -248,14 +255,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // 2. Verificar duplicatas locais (placa e telefone)
-      const duplicates = await storage.checkDuplicateReferralWithOwner(
-        validatedData.phone,
-        validatedData.licensePlate
-      );
+      // 2. Verificar duplicatas locais (placas e telefone)
+      // Get all plates to check - support both new licensePlates array and legacy single plate
+      const platesToCheck = validatedData.licensePlates || [];
+      let allDuplicates: any[] = [];
       
-      if (duplicates.length > 0) {
-        const duplicate = duplicates[0];
+      // Check phone duplicates
+      if (validatedData.phone) {
+        const phoneDuplicates = await storage.checkDuplicateReferralWithOwner(validatedData.phone);
+        allDuplicates.push(...phoneDuplicates);
+      }
+      
+      // Check each plate for duplicates
+      for (const plate of platesToCheck) {
+        if (plate) {
+          const plateDuplicates = await storage.checkDuplicateReferralWithOwner(undefined, plate);
+          // Add plate duplicates that aren't already in the list
+          plateDuplicates.forEach(duplicate => {
+            if (!allDuplicates.find(d => d.id === duplicate.id)) {
+              allDuplicates.push(duplicate);
+            }
+          });
+        }
+      }
+      
+      if (allDuplicates.length > 0) {
+        const duplicate = allDuplicates[0];
         const ownerFirstName = duplicate.createdByFirstName || 'Usuário';
         const ownerState = duplicate.createdByState || '';
         const ownerInfo = ownerState ? `${ownerFirstName} (${ownerState})` : ownerFirstName;
@@ -264,9 +289,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (duplicate.phone && duplicate.phone.toLowerCase() === validatedData.phone.toLowerCase()) {
           errorMessage += `• Telefone ${validatedData.phone} já cadastrado por ${ownerInfo}\n`;
         }
-        if (duplicate.licensePlate && duplicate.licensePlate.toLowerCase() === validatedData.licensePlate.toLowerCase()) {
-          errorMessage += `• Placa ${validatedData.licensePlate} já cadastrada por ${ownerInfo}\n`;
+        
+        // Check which plates are duplicated
+        for (const plate of platesToCheck) {
+          if (duplicate.licensePlate && duplicate.licensePlate.toLowerCase() === plate.toLowerCase()) {
+            errorMessage += `• Placa ${plate} já cadastrada por ${ownerInfo}\n`;
+            break; // Only show first duplicate plate
+          }
         }
+        
         errorMessage += `Data do primeiro cadastro: ${new Date(duplicate.createdAt).toLocaleDateString('pt-BR')}`;
         
         return res.status(400).json({ 
@@ -278,20 +309,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 3. Verificar duplicatas em outros aplicativos (validação cruzada)
-      const crossAppValidation = await validateReferralDuplicates({
-        phone: validatedData.phone,
-        licensePlate: validatedData.licensePlate
-      });
-      
-      if (crossAppValidation.isDuplicate) {
-        const validationError = crossAppValidation.message || 
-          "Esta indicação já foi cadastrada em outro aplicativo";
-        
-        return res.status(400).json({
-          error: "Indicação duplicada em outro app",
-          details: validationError,
-          crossAppDuplicate: true
-        });
+      // Check all plates for cross-app validation
+      for (const plate of platesToCheck) {
+        if (plate) {
+          const crossAppValidation = await validateReferralDuplicates({
+            phone: validatedData.phone,
+            licensePlate: plate
+          });
+          
+          if (crossAppValidation.isDuplicate) {
+            const validationError = crossAppValidation.message || 
+              `Esta indicação já foi cadastrada em outro aplicativo (placa: ${plate})`;
+            
+            return res.status(400).json({
+              error: "Indicação duplicada em outro app",
+              details: validationError,
+              crossAppDuplicate: true,
+              duplicatedPlate: plate
+            });
+          }
+        }
       }
       
       const referral = await storage.createReferral({
@@ -327,12 +364,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check for duplicate referrals
   app.post("/api/referrals/check-duplicate", requireAuth, async (req, res) => {
     try {
-      const { phone, licensePlate } = req.body;
-      const duplicates = await storage.checkDuplicateReferralWithOwner(phone, licensePlate);
+      const { phone, licensePlate, licensePlates } = req.body;
+      
+      // Support both single plate (legacy) and multiple plates (new)
+      const platesToCheck = licensePlates || (licensePlate ? [licensePlate] : []);
+      
+      let allDuplicates: any[] = [];
+      
+      // Check phone duplicates if provided
+      if (phone) {
+        const phoneDuplicates = await storage.checkDuplicateReferralWithOwner(phone);
+        allDuplicates.push(...phoneDuplicates);
+      }
+      
+      // Check each plate for duplicates
+      for (const plate of platesToCheck) {
+        if (plate) {
+          const plateDuplicates = await storage.checkDuplicateReferralWithOwner(undefined, plate);
+          // Add plate duplicates that aren't already in the list
+          plateDuplicates.forEach(duplicate => {
+            if (!allDuplicates.find(d => d.id === duplicate.id)) {
+              allDuplicates.push(duplicate);
+            }
+          });
+        }
+      }
       
       return res.json({ 
-        isDuplicate: duplicates.length > 0,
-        duplicates: duplicates.map(duplicate => ({
+        isDuplicate: allDuplicates.length > 0,
+        duplicates: allDuplicates.map(duplicate => ({
           ...duplicate,
           ownerFirstName: duplicate.createdByFirstName,
           ownerState: duplicate.createdByState
