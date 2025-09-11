@@ -106,6 +106,15 @@ export const referrals = pgTable("referrals", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Referral plates - Support for multiple license plates per referral
+export const referralPlates = pgTable("referral_plates", {
+  id: serial("id").primaryKey(),
+  referralId: integer("referral_id").references(() => referrals.id, { onDelete: "cascade" }).notNull(),
+  plate: text("plate").notNull(), // Placa normalizada (sem hífen, maiúscula)
+  isPrimary: boolean("is_primary").default(false).notNull(), // Primeira placa é primária
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Withdrawal requests
 export type WithdrawalStatus = "pending" | "approved" | "paid" | "rejected";
 
@@ -304,6 +313,7 @@ export const referralsRelations = relations(referrals, ({ one, many }) => ({
     references: [companies.id],
   }),
   conversations: many(referralConversations),
+  plates: many(referralPlates),
 }));
 
 export const referralConversationsRelations = relations(referralConversations, ({ one }) => ({
@@ -314,6 +324,13 @@ export const referralConversationsRelations = relations(referralConversations, (
   user: one(users, {
     fields: [referralConversations.userId],
     references: [users.id],
+  }),
+}));
+
+export const referralPlatesRelations = relations(referralPlates, ({ one }) => ({
+  referral: one(referrals, {
+    fields: [referralPlates.referralId],
+    references: [referrals.id],
   }),
 }));
 
@@ -428,7 +445,17 @@ export const createReferralSchema = createInsertSchema(referrals, {
   companyId: z.coerce.number().positive("Empresa é obrigatória"),
   city: z.string().min(2, "Cidade é obrigatória"),
   state: z.string().length(2, "Estado deve ter 2 letras (ex: SP, RJ)"),
-}).omit({ id: true, userId: true, createdBy: true, promoterId: true, status: true, commissionIndicator: true, commissionPromoter: true, createdAt: true, updatedAt: true, notes: true, statusHistory: true });
+}).omit({ id: true, userId: true, createdBy: true, promoterId: true, status: true, commissionIndicator: true, commissionPromoter: true, createdAt: true, updatedAt: true, notes: true, statusHistory: true }).extend({
+  // Support for multiple license plates
+  licensePlates: z.array(z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida").transform(val => val.toUpperCase().replace(/[^A-Z0-9]/g, ''))).min(1, "Pelo menos uma placa é obrigatória").max(3, "Máximo de 3 placas por indicação"),
+}).omit({ licensePlate: true }); // Remove single licensePlate in favor of licensePlates array
+
+// Referral plates schemas
+export const createReferralPlateSchema = createInsertSchema(referralPlates, {
+  plate: (schema) => schema.min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
+}).omit({ id: true, createdAt: true });
+
+export const selectReferralPlateSchema = createSelectSchema(referralPlates);
 
 // Audit log schema
 export const createAuditLogSchema = createInsertSchema(auditLog).omit({ id: true, createdAt: true });
