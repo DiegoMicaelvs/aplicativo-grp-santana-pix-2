@@ -106,6 +106,11 @@ export const referrals = pgTable("referrals", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Legacy table placeholder to prevent Drizzle rename suggestion
+export const referralLinks = pgTable("referral_links", {
+  id: serial("id").primaryKey(),
+});
+
 // Referral plates - Support for multiple license plates per referral
 export const referralPlates = pgTable("referral_plates", {
   id: serial("id").primaryKey(),
