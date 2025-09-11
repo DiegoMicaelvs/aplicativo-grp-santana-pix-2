@@ -626,3 +626,5 @@ export type CreateIndicador = z.infer<typeof createIndicadorSchema>;
 export type UpdateAnalystPermissions = z.infer<typeof updateAnalystPermissionsSchema>;
 export type ReferralConversation = typeof referralConversations.$inferSelect;
 export type CreateReferralConversation = z.infer<typeof createReferralConversationSchema>;
+export type ReferralPlate = typeof referralPlates.$inferSelect;
+export type CreateReferralPlate = z.infer<typeof createReferralPlateSchema>;

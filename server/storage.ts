@@ -3,6 +3,7 @@ import { eq, desc, asc, or, count, and, sql } from "drizzle-orm";
 import { 
   users, 
   referrals, 
+  referralPlates,
   companies,
   withdrawalRequests,
   cashFlow,
@@ -31,7 +32,8 @@ import {
   type SalesReminder,
   type CreateSalesReminder,
   type AnalystPermission,
-  type ManagerPermission
+  type ManagerPermission,
+  type CreateReferralPlate
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -71,7 +73,7 @@ export interface IStorage {
   getSalesStats(vendedorId: number): Promise<any>;
   
   // Referral methods
-  createReferral(referral: CreateReferral & { userId: number }): Promise<any>;
+  createReferral(referral: CreateReferral & { userId: number; plates?: string[] }): Promise<any>;
   getReferralById(id: number): Promise<any>;
   getAllReferralsForMetisViewer(): Promise<any[]>;
   getReferralsByUserId(userId: number): Promise<any[]>;
@@ -83,6 +85,13 @@ export interface IStorage {
   getTodayReferralsByUserId(userId: number, startDate: Date): Promise<any[]>;
   updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number): Promise<any>;
   calculateCommissions(referralId: number): Promise<void>;
+  
+  // Multiple license plates methods
+  addPlateToReferral(referralId: number, plate: string, isPrimary?: boolean): Promise<any>;
+  removePlateFromReferral(referralId: number, plateId: number): Promise<void>;
+  getReferralPlates(referralId: number): Promise<any[]>;
+  updatePlatePrimary(referralId: number, plateId: number): Promise<void>;
+  checkDuplicatePlate(plate: string): Promise<any[]>;
   
   // Company methods
   getAllCompanies(): Promise<Company[]>;
@@ -621,14 +630,22 @@ class DatabaseStorage implements IStorage {
   }
   
   // Referral methods
-  async createReferral(referralData: CreateReferral & { userId: number; createdBy: number; promoterId?: number }) {
+  async createReferral(referralData: CreateReferral & { userId: number; createdBy: number; promoterId?: number; plates?: string[] }) {
     // Get user info to determine promoter
     const user = await this.getUserById(referralData.userId);
     const promoterId = referralData.promoterId || user?.promoterId || null;
     
+    // Get plates from either the new licensePlates array or the legacy plates parameter  
+    const platesToCreate = referralData.plates || referralData.licensePlates || [];
+    const primaryPlate = platesToCreate[0];
+    
+    // Destructure referralData to exclude licensePlates field (not in database table)
+    const { licensePlates, plates, ...referralDataForDB } = referralData;
+    
     const [referral] = await db.insert(referrals)
       .values({
-        ...referralData,
+        ...referralDataForDB,
+        licensePlate: primaryPlate, // Keep backward compatibility
         promoterId,
         statusHistory: [{
           status: 'pending',
@@ -638,6 +655,17 @@ class DatabaseStorage implements IStorage {
         }]
       })
       .returning();
+    
+    // Create entries in referral_plates table for all plates
+    if (platesToCreate && platesToCreate.length > 0) {
+      const plateEntries = platesToCreate.map((plate, index) => ({
+        referralId: referral.id,
+        plate: plate.toUpperCase().replace(/[^A-Z0-9]/g, ''), // Normalize plate
+        isPrimary: index === 0 // First plate is primary
+      }));
+      
+      await db.insert(referralPlates).values(plateEntries);
+    }
     
     // Log audit trail (with error handling)
     try {
@@ -662,9 +690,109 @@ class DatabaseStorage implements IStorage {
       where: eq(referrals.id, id),
       with: {
         user: true,
-        company: true
+        company: true,
+        plates: true
       }
     });
+  }
+
+  // Multiple license plates methods
+  async addPlateToReferral(referralId: number, plate: string, isPrimary: boolean = false) {
+    const normalizedPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    
+    // If this is set as primary, update other plates to not be primary
+    if (isPrimary) {
+      await db.update(referralPlates)
+        .set({ isPrimary: false })
+        .where(eq(referralPlates.referralId, referralId));
+    }
+    
+    const [newPlate] = await db.insert(referralPlates)
+      .values({
+        referralId,
+        plate: normalizedPlate,
+        isPrimary
+      })
+      .returning();
+    
+    return newPlate;
+  }
+
+  async removePlateFromReferral(referralId: number, plateId: number) {
+    await db.delete(referralPlates)
+      .where(and(
+        eq(referralPlates.id, plateId),
+        eq(referralPlates.referralId, referralId)
+      ));
+  }
+
+  async getReferralPlates(referralId: number) {
+    return await db.query.referralPlates.findMany({
+      where: eq(referralPlates.referralId, referralId),
+      orderBy: [desc(referralPlates.isPrimary), asc(referralPlates.createdAt)]
+    });
+  }
+
+  async updatePlatePrimary(referralId: number, plateId: number) {
+    // First, set all plates for this referral to not primary
+    await db.update(referralPlates)
+      .set({ isPrimary: false })
+      .where(eq(referralPlates.referralId, referralId));
+    
+    // Then set the selected plate as primary
+    await db.update(referralPlates)
+      .set({ isPrimary: true })
+      .where(and(
+        eq(referralPlates.id, plateId),
+        eq(referralPlates.referralId, referralId)
+      ));
+    
+    // Update the main referrals table licensePlate field for backward compatibility
+    const primaryPlate = await db.query.referralPlates.findFirst({
+      where: and(
+        eq(referralPlates.id, plateId),
+        eq(referralPlates.referralId, referralId)
+      )
+    });
+    
+    if (primaryPlate) {
+      await db.update(referrals)
+        .set({ licensePlate: primaryPlate.plate })
+        .where(eq(referrals.id, referralId));
+    }
+  }
+
+  async checkDuplicatePlate(plate: string) {
+    const normalizedPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    
+    // Check both referrals.licensePlate and referral_plates.plate
+    const referralResults = await db.query.referrals.findMany({
+      where: sql`UPPER(REPLACE(${referrals.licensePlate}, '-', '')) = ${normalizedPlate}`,
+      with: {
+        user: true
+      }
+    });
+    
+    const plateResults = await db.query.referralPlates.findMany({
+      where: sql`UPPER(REPLACE(${referralPlates.plate}, '-', '')) = ${normalizedPlate}`,
+      with: {
+        referral: {
+          with: {
+            user: true
+          }
+        }
+      }
+    });
+    
+    // Combine results and remove duplicates
+    const allResults = [...referralResults];
+    plateResults.forEach(plateResult => {
+      if (plateResult.referral && !allResults.find(r => r.id === plateResult.referral.id)) {
+        allResults.push(plateResult.referral);
+      }
+    });
+    
+    return allResults;
   }
   
   async getReferralsByUserId(userId: number) {
@@ -771,12 +899,37 @@ class DatabaseStorage implements IStorage {
     
     if (conditions.length === 0) return [];
     
-    return await db.query.referrals.findMany({
+    // Search in main referrals table
+    const referralResults = await db.query.referrals.findMany({
       where: or(...conditions),
       with: {
         user: true
       }
     });
+    
+    // If checking for license plate, also search in referral_plates table
+    if (licensePlate) {
+      const normalizedPlate = licensePlate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const plateResults = await db.query.referralPlates.findMany({
+        where: sql`UPPER(REPLACE(${referralPlates.plate}, '-', '')) = ${normalizedPlate}`,
+        with: {
+          referral: {
+            with: {
+              user: true
+            }
+          }
+        }
+      });
+      
+      // Combine results and remove duplicates
+      plateResults.forEach(plateResult => {
+        if (plateResult.referral && !referralResults.find(r => r.id === plateResult.referral.id)) {
+          referralResults.push(plateResult.referral);
+        }
+      });
+    }
+    
+    return referralResults;
   }
 
   async checkDuplicateReferralWithOwner(phone?: string, licensePlate?: string) {
@@ -787,7 +940,8 @@ class DatabaseStorage implements IStorage {
     
     if (conditions.length === 0) return [];
     
-    return await db.select({
+    // Search in main referrals table
+    const referralResults = await db.select({
       id: referrals.id,
       fullName: referrals.fullName,
       phone: referrals.phone,
@@ -800,6 +954,34 @@ class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(referrals.createdBy, users.id))
       .where(or(...conditions))
       .orderBy(asc(referrals.createdAt));
+    
+    // If checking for license plate, also search in referral_plates table
+    if (licensePlate) {
+      const normalizedPlate = licensePlate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const plateResults = await db.select({
+        id: referrals.id,
+        fullName: referrals.fullName,
+        phone: referrals.phone,
+        licensePlate: referralPlates.plate,
+        createdAt: referrals.createdAt,
+        createdByName: users.fullName,
+        createdByFirstName: sql`SPLIT_PART(${users.fullName}, ' ', 1)`.as('createdByFirstName'),
+        createdByState: users.state
+      }).from(referralPlates)
+        .leftJoin(referrals, eq(referralPlates.referralId, referrals.id))
+        .leftJoin(users, eq(referrals.createdBy, users.id))
+        .where(sql`UPPER(REPLACE(${referralPlates.plate}, '-', '')) = ${normalizedPlate}`)
+        .orderBy(asc(referrals.createdAt));
+      
+      // Combine results and remove duplicates
+      plateResults.forEach(plateResult => {
+        if (plateResult.id && !referralResults.find(r => r.id === plateResult.id)) {
+          referralResults.push(plateResult as any); // Type assertion needed due to nullable fields from LEFT JOIN
+        }
+      });
+    }
+    
+    return referralResults.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
   async getTodayReferralsByUserId(userId: number, startDate: Date) {
