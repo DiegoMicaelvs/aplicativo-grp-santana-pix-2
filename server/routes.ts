@@ -550,6 +550,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get company metrics (admin only)
+  app.get("/api/admin/company-metrics/:companyId", requireAdmin, async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      
+      // Validate companyId parameter
+      if (isNaN(companyId) || companyId <= 0) {
+        return res.status(400).json({ error: "ID da empresa inválido" });
+      }
+      
+      // Get company info
+      const company = await storage.getCompanyById(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Empresa não encontrada" });
+      }
+
+      // Get referrals for this specific company (efficient query)
+      const companyReferrals = await storage.getReferralsByCompanyId(companyId);
+      
+      // Calculate metrics
+      const totalReferrals = companyReferrals.length;
+      const convertedReferrals = companyReferrals.filter((r: any) => 
+        r.status === 'converted' || r.status === 'paid'
+      ).length;
+      const pendingReferrals = companyReferrals.filter((r: any) => r.status === 'pending').length;
+      const rejectedReferrals = companyReferrals.filter((r: any) => 
+        r.status === 'rejected' || r.status === 'false' || r.status === 'not_converted'
+      ).length;
+
+      const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
+
+      // Calculate commissions ONLY for converted/paid referrals (valores gastos = actually spent)
+      const paidReferrals = companyReferrals.filter((r: any) => 
+        r.status === 'converted' || r.status === 'paid'
+      );
+      
+      const totalCommissionIndicators = paidReferrals.reduce((sum: number, r: any) => 
+        sum + (parseFloat(r.commissionIndicator) || 0), 0
+      );
+      const totalCommissionPromoters = paidReferrals.reduce((sum: number, r: any) => 
+        sum + (parseFloat(r.commissionPromoter) || 0), 0
+      );
+      const totalCommissions = totalCommissionIndicators + totalCommissionPromoters;
+
+      // Get unique users involved with this company
+      const indicatorsInvolved = new Set(companyReferrals.map((r: any) => r.userId));
+      const promotersInvolved = new Set(companyReferrals.map((r: any) => r.promoterId).filter(Boolean));
+
+      const totalIndicators = indicatorsInvolved.size;
+      const totalPromoters = promotersInvolved.size;
+
+      // Calculate active indicators (those who made referrals in last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const recentReferrals = companyReferrals.filter((r: any) => 
+        new Date(r.createdAt) >= thirtyDaysAgo
+      ).length;
+      
+      const activeIndicators = new Set(
+        companyReferrals
+          .filter((r: any) => new Date(r.createdAt) >= thirtyDaysAgo)
+          .map((r: any) => r.userId)
+      ).size;
+
+      const averageReferralsPerIndicator = totalIndicators > 0 ? totalReferrals / totalIndicators : 0;
+
+      const metrics = {
+        companyId,
+        companyName: company.name,
+        totalIndicators,
+        totalPromoters,
+        totalReferrals,
+        convertedReferrals,
+        conversionRate,
+        averageReferralsPerIndicator,
+        totalCommissionIndicators,
+        totalCommissionPromoters,
+        totalCommissions,
+        activeIndicators,
+        recentReferrals,
+        pendingReferrals,
+        rejectedReferrals
+      };
+
+      return res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching company metrics:", error);
+      return res.status(500).json({ error: "Erro ao buscar métricas da empresa" });
+    }
+  });
+
   // === WITHDRAWAL ROUTES ===
   
   // Get current user's withdrawal requests

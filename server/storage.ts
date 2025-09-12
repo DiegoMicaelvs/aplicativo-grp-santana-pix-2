@@ -92,9 +92,11 @@ export interface IStorage {
   getReferralPlates(referralId: number): Promise<any[]>;
   updatePlatePrimary(referralId: number, plateId: number): Promise<void>;
   checkDuplicatePlate(plate: string): Promise<any[]>;
+  getReferralsByCompanyId(companyId: number): Promise<any[]>;
   
   // Company methods
   getAllCompanies(): Promise<Company[]>;
+  getCompanyById(id: number): Promise<Company | undefined>;
   createCompany(name: string): Promise<Company>;
   
   // Withdrawal methods
@@ -841,6 +843,18 @@ class DatabaseStorage implements IStorage {
     });
   }
 
+  async getReferralsByCompanyId(companyId: number) {
+    return await db.query.referrals.findMany({
+      where: eq(referrals.companyId, companyId),
+      with: {
+        user: true,
+        promoter: true,
+        company: true
+      },
+      orderBy: desc(referrals.createdAt)
+    });
+  }
+
   // Get all referrals only from Metis da Pix company (ID: 5)
   async getAllReferralsForMetisViewer() {
     return await db.query.referrals.findMany({
@@ -1304,6 +1318,12 @@ class DatabaseStorage implements IStorage {
       .returning();
     
     return company;
+  }
+
+  async getCompanyById(id: number) {
+    return await db.query.companies.findFirst({
+      where: eq(companies.id, id)
+    });
   }
 
   async updateCompany(id: number, data: { name?: string; isActive?: boolean }) {
