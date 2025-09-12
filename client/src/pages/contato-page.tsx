@@ -101,40 +101,6 @@ export default function ContatoPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                <Phone className="h-6 w-6 text-red-600" />
-              </div>
-              <CardTitle className="text-lg">Assistência 24h</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-gray-600 mb-2">
-                <strong>0800 400 3013</strong><br />
-                <strong>0800 941 8282</strong>
-              </p>
-              <p className="text-sm text-gray-500">
-                Atendimento emergencial 24 horas
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <MapPin className="h-6 w-6 text-blue-600" />
-              </div>
-              <CardTitle className="text-lg">Escritório</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-gray-600">
-                <strong>Métis Brasil</strong><br />
-                Av. Otacílio Negrão de Lima, 800<br />
-                São Luiz, Belo Horizonte - MG<br />
-                CEP: 30.270-802
-              </p>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
