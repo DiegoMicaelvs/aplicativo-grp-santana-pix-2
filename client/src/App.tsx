@@ -25,6 +25,7 @@ import AdminSupportTickets from "@/pages/admin-support-tickets";
 import AdminCompanies from "@/pages/admin-companies";
 import AdminSettings from "@/pages/admin-settings";
 import CompanyDashboard from "@/pages/company-dashboard";
+import PublicCompanyDashboard from "@/pages/public-company-dashboard";
 import PromoterDashboard from "@/pages/promoter-dashboard";
 import TeamDashboard from "@/pages/team-dashboard";
 import VendedorDashboard from "@/pages/vendedor-dashboard";
@@ -51,6 +52,7 @@ function Router() {
       <Route path="/sobre" component={SobrePage} />
       <Route path="/contato" component={ContatoPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/public-dashboard/:companyId" component={PublicCompanyDashboard} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/referrals" component={ReferralsPage} />
       <ProtectedRoute path="/new-referral" component={NewReferralPage} />

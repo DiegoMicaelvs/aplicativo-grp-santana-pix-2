@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, BarChart3, TrendingUp, Users, Target, DollarSign, Activity } from "lucide-react";
+import { Download, Share2, BarChart3, TrendingUp, Users, Target, DollarSign, Activity, Link2 } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 // Format currency to Brazilian Real
 const formatCurrency = (value: number | string): string => {
@@ -85,6 +85,22 @@ export default function CompanyDashboard() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleGenerateShareableLink = () => {
+    if (selectedCompanyId === "all_companies") return;
+    
+    const shareableUrl = `${window.location.origin}/public-dashboard/${selectedCompanyId}`;
+    
+    navigator.clipboard.writeText(shareableUrl).then(() => {
+      toast({
+        title: "Link copiado!",
+        description: "O link compartilhável foi copiado para a área de transferência. Agora você pode enviar para gestores acompanharem as métricas sem precisar fazer login.",
+      });
+    }).catch(() => {
+      // Fallback: show the link in a prompt
+      prompt("Copie este link para compartilhar:", shareableUrl);
+    });
   };
 
   const handleExportReport = () => {
@@ -174,8 +190,8 @@ export default function CompanyDashboard() {
       {/* Company Selection */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <BarChart3 className="h-5 w-5 text-blue-600 flex-shrink-0" />
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-700 mb-2 block">
                 Selecione a empresa para acompanhamento:
@@ -194,6 +210,16 @@ export default function CompanyDashboard() {
                 </SelectContent>
               </Select>
             </div>
+            {selectedCompanyId !== "all_companies" && (
+              <Button
+                onClick={handleGenerateShareableLink}
+                variant="outline"
+                className="flex items-center gap-2 whitespace-nowrap"
+              >
+                <Link2 className="h-4 w-4" />
+                Compartilhar Link
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
