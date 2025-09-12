@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -96,7 +97,7 @@ const CHART_COLORS = {
   light: '#A8B19C', // Verde militar claro
 };
 
-// Prepare chart data
+// Prepare chart data with memoization
 const prepareReferralStatusData = (metrics: CompanyMetrics) => [
   { name: 'Pendentes', value: metrics.pendingReferrals, color: CHART_COLORS.warning },
   { name: 'Convertidas', value: metrics.convertedReferrals, color: CHART_COLORS.success },
@@ -157,8 +158,18 @@ export default function CompanyDashboard() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all_companies");
   const [selectedMonth, setSelectedMonth] = useState<string>("all_time");
   const { toast } = useToast();
+  const isMobile = useMobile();
   
   const monthOptions = generateMonthOptions();
+  
+  // Chart configuration based on device type
+  const chartHeight = isMobile ? 220 : 300;
+  const pieConfig = {
+    innerRadius: isMobile ? 40 : 55,
+    outerRadius: isMobile ? 65 : 85,
+    showLabels: !isMobile
+  };
+  
 
   // Fetch all companies
   const { data: companies, isLoading: companiesLoading } = useQuery<Company[]>({
@@ -293,38 +304,51 @@ export default function CompanyDashboard() {
     <div className="container mx-auto p-6">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
           <BackButton />
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard de Acompanhamento</h1>
-            <p className="text-gray-600 mt-2">Acompanhe as métricas de performance por empresa</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard de Acompanhamento</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-2">Acompanhe as métricas de performance por empresa</p>
           </div>
           {metrics && (
-            <div className="flex gap-2">
-              <Button onClick={handleShareDashboard} variant="outline" size="sm">
-                <Share2 className="h-4 w-4 mr-2" />
-                Compartilhar
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={handleShareDashboard} 
+                variant="outline" 
+                size={isMobile ? "sm" : "sm"}
+                className="flex-1 sm:flex-none py-3 min-h-[44px] touch-manipulation"
+              >
+                <Share2 className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-2'}`} />
+                {!isMobile && "Compartilhar"}
               </Button>
-              <Button onClick={handleExportReport} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
+              <Button 
+                onClick={handleExportReport} 
+                variant="outline" 
+                size={isMobile ? "sm" : "sm"}
+                className="flex-1 sm:flex-none py-3 min-h-[44px] touch-manipulation"
+              >
+                <Download className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-2'}`} />
+                {!isMobile && "Exportar"}
               </Button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Company Selection */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <BarChart3 className="h-5 w-5 text-blue-600 flex-shrink-0" />
-            <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+      {/* Company Selection - Sticky on mobile */}
+      <Card className={`mb-6 ${isMobile ? 'sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80' : ''}`}>
+        <CardContent className={`${isMobile ? 'py-4' : 'pt-6'}`}>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary flex-shrink-0" />
+              <label className="text-sm font-medium text-gray-700">
                 Selecione a empresa para acompanhamento:
               </label>
+            </div>
+            
+            <div className="space-y-3">
               <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                <SelectTrigger className="w-full md:w-96">
+                <SelectTrigger className="w-full min-h-[44px]">
                   <SelectValue placeholder="Escolha uma empresa" />
                 </SelectTrigger>
                 <SelectContent>
@@ -336,34 +360,35 @@ export default function CompanyDashboard() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            {selectedCompanyId !== "all_companies" && (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-600" />
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Selecione o período" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {monthOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              
+              {selectedCompanyId !== "all_companies" && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex items-center gap-2 flex-1">
+                    <Calendar className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                      <SelectTrigger className="w-full min-h-[44px]">
+                        <SelectValue placeholder="Selecione o período" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {monthOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    onClick={handleGenerateShareableLink}
+                    variant="outline"
+                    className="flex items-center justify-center gap-2 whitespace-nowrap min-h-[44px] py-3 touch-manipulation"
+                  >
+                    <Link2 className="h-4 w-4" />
+                    {isMobile ? "Link" : "Compartilhar Link"}
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleGenerateShareableLink}
-                  variant="outline"
-                  className="flex items-center gap-2 whitespace-nowrap"
-                >
-                  <Link2 className="h-4 w-4" />
-                  Compartilhar Link
-                </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -414,7 +439,7 @@ export default function CompanyDashboard() {
           </Card>
 
           {/* Key Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'}`}>
             {/* Taxa de Conversão */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -422,10 +447,10 @@ export default function CompanyDashboard() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-green-600`}>
                   {metrics.conversionRate.toFixed(1)}%
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
                   {metrics.convertedReferrals} de {metrics.totalReferrals} indicações
                 </p>
               </CardContent>
@@ -438,8 +463,8 @@ export default function CompanyDashboard() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{metrics.totalIndicators}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{metrics.totalIndicators}</div>
+                <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
                   {metrics.activeIndicators} ativos
                 </p>
               </CardContent>
@@ -452,8 +477,8 @@ export default function CompanyDashboard() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{metrics.totalPromoters}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{metrics.totalPromoters}</div>
+                <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
                   na empresa
                 </p>
               </CardContent>
@@ -466,10 +491,10 @@ export default function CompanyDashboard() {
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
                   {metrics.averageReferralsPerIndicator.toFixed(1)}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
                   indicações por pessoa
                 </p>
               </CardContent>
@@ -485,26 +510,26 @@ export default function CompanyDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+                <div className={`${isMobile ? 'bg-gray-50 p-3 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-green-600`}>
                     {formatCurrency(metrics.totalCommissionIndicators)}
                   </div>
-                  <p className="text-sm text-muted-foreground">Valor Gasto com Indicadores</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Valor Gasto com Indicadores</p>
                 </div>
                 
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className={`${isMobile ? 'bg-gray-50 p-3 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-blue-600`}>
                     {formatCurrency(metrics.totalCommissionPromoters)}
                   </div>
-                  <p className="text-sm text-muted-foreground">Valor Gasto com Promotores</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Valor Gasto com Promotores</p>
                 </div>
                 
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
+                <div className={`${isMobile ? 'bg-gray-50 p-3 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-purple-600`}>
                     {formatCurrency(metrics.totalCommissions)}
                   </div>
-                  <p className="text-sm text-muted-foreground">Total de Comissões</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Total de Comissões</p>
                 </div>
               </div>
             </CardContent>
@@ -519,33 +544,33 @@ export default function CompanyDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+                <div className={`${isMobile ? 'bg-gray-50 p-3 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-orange-600`}>
                     {formatCurrency(metrics.totalPaidToIndicators)}
                   </div>
-                  <p className="text-sm text-muted-foreground">Liberado para Indicadores</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Liberado para Indicadores</p>
                 </div>
                 
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-500">
+                <div className={`${isMobile ? 'bg-gray-50 p-3 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-orange-500`}>
                     {formatCurrency(metrics.totalPaidToPromoters)}
                   </div>
-                  <p className="text-sm text-muted-foreground">Liberado para Promotores</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Liberado para Promotores</p>
                 </div>
                 
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-700">
+                <div className={`${isMobile ? 'bg-gray-50 p-3 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-orange-700`}>
                     {formatCurrency(metrics.totalPaidValues)}
                   </div>
-                  <p className="text-sm text-muted-foreground">Total Liberado</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Total Liberado</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Visual Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 lg:grid-cols-2 gap-6'}`}>
             {/* Referral Status Pie Chart */}
             <Card>
               <CardHeader>
@@ -554,25 +579,47 @@ export default function CompanyDashboard() {
                   Status das Indicações
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+              <CardContent className="touch-pan-y">
+                <ResponsiveContainer width="100%" height={chartHeight}>
                   <PieChart>
                     <Pie
-                      data={prepareReferralStatusData(metrics)}
+                      data={metrics ? prepareReferralStatusData(metrics) : []}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      label={pieConfig.showLabels ? ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%` : false}
+                      innerRadius={pieConfig.innerRadius}
+                      outerRadius={pieConfig.outerRadius}
                       fill="#8884d8"
                       dataKey="value"
+                      isAnimationActive={!isMobile}
                     >
-                      {prepareReferralStatusData(metrics).map((entry, index) => (
+                      {(metrics ? prepareReferralStatusData(metrics) : []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [value.toLocaleString('pt-BR'), 'Quantidade']} />
-                    <Legend />
+                    <Tooltip 
+                      formatter={(value) => [value.toLocaleString('pt-BR'), 'Quantidade']}
+                      contentStyle={{ 
+                        fontSize: isMobile ? 12 : 14, 
+                        padding: isMobile ? 6 : 8,
+                        borderRadius: 8,
+                        border: 'none',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      cursor={{ stroke: CHART_COLORS.primary, strokeDasharray: '3 3' }}
+                      allowEscapeViewBox={{ x: true, y: true }}
+                    />
+                    <Legend 
+                      verticalAlign={isMobile ? "bottom" : "bottom"}
+                      height={isMobile ? 32 : 20}
+                      iconSize={isMobile ? 10 : 14}
+                      wrapperStyle={{
+                        fontSize: isMobile ? '12px' : '14px',
+                        lineHeight: isMobile ? '16px' : '20px',
+                        whiteSpace: 'normal'
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -586,16 +633,58 @@ export default function CompanyDashboard() {
                   Comissões vs Valores Liberados
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={prepareCommissionData(metrics)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="category" />
-                    <YAxis tickFormatter={(value) => `R$ ${(value/1000).toFixed(0)}k`} />
-                    <Tooltip formatter={formatTooltipValue} />
-                    <Legend />
-                    <Bar dataKey="valor" fill={CHART_COLORS.primary} name="Total Comissões" />
-                    <Bar dataKey="liberado" fill={CHART_COLORS.success} name="Valores Liberados" />
+              <CardContent className="touch-pan-y">
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  <BarChart 
+                    data={metrics ? prepareCommissionData(metrics) : []}
+                    margin={{
+                      left: isMobile ? 0 : 20,
+                      right: isMobile ? 8 : 20,
+                      bottom: isMobile ? 12 : 20
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.light} />
+                    <XAxis 
+                      dataKey="category" 
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                      height={isMobile ? 30 : 40}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => isMobile ? `${(value/1000).toFixed(0)}k` : `R$ ${(value/1000).toFixed(0)}k`}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                    />
+                    <Tooltip 
+                      formatter={formatTooltipValue}
+                      contentStyle={{ 
+                        fontSize: isMobile ? 12 : 14, 
+                        padding: isMobile ? 6 : 8,
+                        borderRadius: 8,
+                        border: 'none',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      cursor={{ fill: 'rgba(75, 83, 32, 0.1)' }}
+                      allowEscapeViewBox={{ x: true, y: true }}
+                    />
+                    <Legend 
+                      height={isMobile ? 28 : 20}
+                      iconSize={isMobile ? 10 : 14}
+                      wrapperStyle={{
+                        fontSize: isMobile ? '12px' : '14px',
+                        lineHeight: isMobile ? '16px' : '20px'
+                      }}
+                    />
+                    <Bar 
+                      dataKey="valor" 
+                      fill={CHART_COLORS.primary} 
+                      name="Total Comissões"
+                      isAnimationActive={!isMobile}
+                    />
+                    <Bar 
+                      dataKey="liberado" 
+                      fill={CHART_COLORS.success} 
+                      name="Valores Liberados"
+                      isAnimationActive={!isMobile}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -603,7 +692,7 @@ export default function CompanyDashboard() {
           </div>
 
           {/* Performance and Financial Overview Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 lg:grid-cols-2 gap-6'}`}>
             {/* Performance Line Chart */}
             <Card>
               <CardHeader>
@@ -612,25 +701,59 @@ export default function CompanyDashboard() {
                   Métricas de Performance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={preparePerformanceData(metrics)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="metric" />
-                    <YAxis />
+              <CardContent className="touch-pan-y">
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  <LineChart 
+                    data={metrics ? preparePerformanceData(metrics) : []}
+                    margin={{
+                      left: isMobile ? 0 : 20,
+                      right: isMobile ? 8 : 20,
+                      bottom: isMobile ? 12 : 20
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.light} />
+                    <XAxis 
+                      dataKey="metric" 
+                      tick={{ fontSize: isMobile ? 9 : 12 }}
+                      height={isMobile ? 40 : 50}
+                      angle={isMobile ? -45 : 0}
+                      textAnchor={isMobile ? 'end' : 'middle'}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                    />
                     <Tooltip 
                       formatter={(value, name) => [
                         name === 'percentual' ? `${Number(value).toFixed(1)}%` : value.toLocaleString('pt-BR'),
                         name === 'percentual' ? 'Percentual' : 'Total'
-                      ]} 
+                      ]}
+                      contentStyle={{ 
+                        fontSize: isMobile ? 12 : 14, 
+                        padding: isMobile ? 6 : 8,
+                        borderRadius: 8,
+                        border: 'none',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      cursor={{ stroke: CHART_COLORS.primary, strokeDasharray: '3 3' }}
+                      allowEscapeViewBox={{ x: true, y: true }}
                     />
-                    <Legend />
+                    <Legend 
+                      height={isMobile ? 28 : 20}
+                      iconSize={isMobile ? 10 : 14}
+                      wrapperStyle={{
+                        fontSize: isMobile ? '12px' : '14px',
+                        lineHeight: isMobile ? '16px' : '20px'
+                      }}
+                    />
                     <Line 
                       type="monotone" 
                       dataKey="percentual" 
                       stroke={CHART_COLORS.primary} 
-                      strokeWidth={3}
+                      strokeWidth={isMobile ? 2 : 3}
                       name="Percentual"
+                      dot={{ fill: CHART_COLORS.primary, strokeWidth: 2, r: isMobile ? 3 : 4 }}
+                      activeDot={{ r: isMobile ? 5 : 6, stroke: CHART_COLORS.primary, strokeWidth: 2 }}
+                      isAnimationActive={!isMobile}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -645,21 +768,54 @@ export default function CompanyDashboard() {
                   Visão Geral Financeira
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={prepareFinancialOverviewData(metrics)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="categoria" />
-                    <YAxis tickFormatter={(value) => `R$ ${(value/1000).toFixed(0)}k`} />
-                    <Tooltip formatter={formatTooltipValue} />
-                    <Legend />
+              <CardContent className="touch-pan-y">
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  <AreaChart 
+                    data={metrics ? prepareFinancialOverviewData(metrics) : []}
+                    margin={{
+                      left: isMobile ? 0 : 20,
+                      right: isMobile ? 8 : 20,
+                      bottom: isMobile ? 12 : 20
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.light} />
+                    <XAxis 
+                      dataKey="categoria" 
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                      height={isMobile ? 30 : 40}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => isMobile ? `${(value/1000).toFixed(0)}k` : `R$ ${(value/1000).toFixed(0)}k`}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                    />
+                    <Tooltip 
+                      formatter={formatTooltipValue}
+                      contentStyle={{ 
+                        fontSize: isMobile ? 12 : 14, 
+                        padding: isMobile ? 6 : 8,
+                        borderRadius: 8,
+                        border: 'none',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                      cursor={{ fill: 'rgba(75, 83, 32, 0.1)' }}
+                      allowEscapeViewBox={{ x: true, y: true }}
+                    />
+                    <Legend 
+                      height={isMobile ? 28 : 20}
+                      iconSize={isMobile ? 10 : 14}
+                      wrapperStyle={{
+                        fontSize: isMobile ? '12px' : '14px',
+                        lineHeight: isMobile ? '16px' : '20px'
+                      }}
+                    />
                     <Area 
                       type="monotone" 
                       dataKey="total" 
-                      stackId="1" 
+                      stackId="1"
                       stroke={CHART_COLORS.primary} 
                       fill={CHART_COLORS.light}
                       name="Total"
+                      isAnimationActive={!isMobile}
                     />
                     <Area 
                       type="monotone" 
@@ -668,6 +824,7 @@ export default function CompanyDashboard() {
                       stroke={CHART_COLORS.success} 
                       fill={CHART_COLORS.success}
                       name="Indicadores"
+                      isAnimationActive={!isMobile}
                     />
                     <Area 
                       type="monotone" 
@@ -676,6 +833,7 @@ export default function CompanyDashboard() {
                       stroke={CHART_COLORS.secondary} 
                       fill={CHART_COLORS.secondary}
                       name="Promotores"
+                      isAnimationActive={!isMobile}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -689,26 +847,26 @@ export default function CompanyDashboard() {
               <CardTitle>Resumo do Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: CHART_COLORS.warning }}>
+              <div className={`grid ${isMobile ? 'grid-cols-3 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+                <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: CHART_COLORS.warning }}>
                     {metrics.pendingReferrals}
                   </div>
-                  <p className="text-sm text-muted-foreground">Pendentes</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Pendentes</p>
                 </div>
                 
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: CHART_COLORS.success }}>
+                <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: CHART_COLORS.success }}>
                     {metrics.convertedReferrals}
                   </div>
-                  <p className="text-sm text-muted-foreground">Convertidas</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Convertidas</p>
                 </div>
                 
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: CHART_COLORS.error }}>
+                <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: CHART_COLORS.error }}>
                     {metrics.rejectedReferrals}
                   </div>
-                  <p className="text-sm text-muted-foreground">Rejeitadas</p>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Rejeitadas</p>
                 </div>
               </div>
             </CardContent>
@@ -720,10 +878,10 @@ export default function CompanyDashboard() {
               <CardTitle>Atividade Recente</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
+              <div className={`${isMobile ? 'text-center bg-gray-50 p-3 rounded-lg' : 'flex items-center justify-between'}`}>
                 <div>
-                  <div className="text-2xl font-bold">{metrics.recentReferrals}</div>
-                  <p className="text-sm text-muted-foreground">
+                  <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>{metrics.recentReferrals}</div>
+                  <p className={`${isMobile ? 'text-xs mt-1' : 'text-sm'} text-muted-foreground`}>
                     {selectedMonth === "all_time" ? "Indicações nos últimos 30 dias" : 
                      `Indicações em ${monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth}`}
                   </p>
