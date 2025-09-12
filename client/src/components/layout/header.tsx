@@ -52,7 +52,7 @@ export default function Header() {
           <div className="flex justify-start lg:w-0 lg:flex-1">
             <Link href="/" className="flex items-center space-x-3">
               <span className="sr-only">Grupo Santana Pix</span>
-              <img src="/images/logos/grupo-santana-logo.png" alt="Grupo Santana Logo" className="h-24 w-auto" />
+              <img src="/images/logos/gs-logo.png" alt="Grupo Santana Logo" className="h-24 w-auto" />
               <span className="text-xl font-bold text-primary font-heading">Grupo Santana Pix</span>
             </Link>
           </div>
