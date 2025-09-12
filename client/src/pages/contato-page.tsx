@@ -108,22 +108,6 @@ export default function ContatoPage() {
             Redes Sociais
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="flex items-center p-4 bg-blue-50 rounded-lg">
-              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
-                <Facebook className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-800">Facebook</h3>
-                <a 
-                  href="https://www.facebook.com/metisbrasil" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  @metisbrasil
-                </a>
-              </div>
-            </div>
 
             <div className="flex items-center p-4 bg-pink-50 rounded-lg">
               <div className="w-12 h-12 bg-pink-500 rounded-lg flex items-center justify-center mr-4">
@@ -163,21 +147,6 @@ export default function ContatoPage() {
           </div>
         </div>
 
-        <div className="bg-blue-50 rounded-lg p-6 mt-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
-            Contatos de Emergência - Metis Brasil
-          </h3>
-          <div className="grid md:grid-cols-2 gap-4 text-center">
-            <div>
-              <h4 className="font-medium text-gray-800">Guincho e Emergência</h4>
-              <p className="text-blue-600 font-semibold">0800 841 4900</p>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-800">Abertura de Eventos</h4>
-              <p className="text-blue-600 font-semibold">0800 944 3000</p>
-            </div>
-          </div>
-        </div>
       </main>
       
       <Footer />
