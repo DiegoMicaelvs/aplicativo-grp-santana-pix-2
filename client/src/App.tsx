@@ -75,6 +75,7 @@ function Router() {
       <AdminRoute path="/admin/support-tickets" component={AdminSupportTickets} />
       <AdminRoute path="/admin/companies" component={AdminCompanies} />
       <AdminRoute path="/admin/company-dashboard" component={CompanyDashboard} />
+      <Route path="/company-dashboard" component={CompanyDashboard} />
       <AdminRoute path="/admin/settings" component={AdminSettings} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
       <PromoterRoute path="/promoter-dashboard" component={PromoterDashboard} />
