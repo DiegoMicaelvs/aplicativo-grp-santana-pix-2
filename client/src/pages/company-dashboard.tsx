@@ -5,6 +5,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Download, Share2, BarChart3, TrendingUp, Users, Target, DollarSign, Activity, Link2, Calendar } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
+import { 
+  PieChart, 
+  Pie, 
+  Cell, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line
+} from 'recharts';
 // Format currency to Brazilian Real
 const formatCurrency = (value: number | string): string => {
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -66,6 +83,74 @@ const generateMonthOptions = () => {
   }
   
   return options;
+};
+
+// Chart colors using the new green military palette
+const CHART_COLORS = {
+  primary: '#4B5320', // Verde Militar
+  secondary: '#808080', // Cinza
+  success: '#6B7240', // Verde militar mais claro
+  warning: '#B8860B', // Dourado escuro
+  error: '#8B4513', // Marrom avermelhado
+  info: '#5F6A6B', // Cinza azulado
+  light: '#A8B19C', // Verde militar claro
+};
+
+// Prepare chart data
+const prepareReferralStatusData = (metrics: CompanyMetrics) => [
+  { name: 'Pendentes', value: metrics.pendingReferrals, color: CHART_COLORS.warning },
+  { name: 'Convertidas', value: metrics.convertedReferrals, color: CHART_COLORS.success },
+  { name: 'Rejeitadas', value: metrics.rejectedReferrals, color: CHART_COLORS.error }
+];
+
+const prepareCommissionData = (metrics: CompanyMetrics) => [
+  { 
+    category: 'Indicadores', 
+    valor: metrics.totalCommissionIndicators,
+    liberado: metrics.totalPaidToIndicators,
+  },
+  { 
+    category: 'Promotores', 
+    valor: metrics.totalCommissionPromoters,
+    liberado: metrics.totalPaidToPromoters,
+  }
+];
+
+const preparePerformanceData = (metrics: CompanyMetrics) => [
+  {
+    metric: 'Taxa de Conversão',
+    percentual: metrics.conversionRate,
+    total: metrics.totalReferrals
+  },
+  {
+    metric: 'Média por Indicador', 
+    percentual: metrics.averageReferralsPerIndicator,
+    total: metrics.totalIndicators
+  }
+];
+
+const prepareFinancialOverviewData = (metrics: CompanyMetrics) => [
+  {
+    categoria: 'Comissões',
+    indicadores: metrics.totalCommissionIndicators,
+    promotores: metrics.totalCommissionPromoters,
+    total: metrics.totalCommissions
+  },
+  {
+    categoria: 'Liberado',
+    indicadores: metrics.totalPaidToIndicators,
+    promotores: metrics.totalPaidToPromoters, 
+    total: metrics.totalPaidValues
+  }
+];
+
+// Custom tooltip formatter
+const formatTooltipValue = (value: number, name: string) => {
+  if (name.toLowerCase().includes('valor') || name.toLowerCase().includes('total') || 
+      name.toLowerCase().includes('comissão') || name.toLowerCase().includes('liberado')) {
+    return [formatCurrency(value), name];
+  }
+  return [value.toLocaleString('pt-BR'), name];
 };
 
 export default function CompanyDashboard() {
@@ -459,29 +544,168 @@ export default function CompanyDashboard() {
             </CardContent>
           </Card>
 
+          {/* Visual Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Referral Status Pie Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Status das Indicações
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={prepareReferralStatusData(metrics)}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {prepareReferralStatusData(metrics).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [value.toLocaleString('pt-BR'), 'Quantidade']} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Commission vs Released Bar Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  Comissões vs Valores Liberados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={prepareCommissionData(metrics)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis tickFormatter={(value) => `R$ ${(value/1000).toFixed(0)}k`} />
+                    <Tooltip formatter={formatTooltipValue} />
+                    <Legend />
+                    <Bar dataKey="valor" fill={CHART_COLORS.primary} name="Total Comissões" />
+                    <Bar dataKey="liberado" fill={CHART_COLORS.success} name="Valores Liberados" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Performance and Financial Overview Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Performance Line Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Métricas de Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={preparePerformanceData(metrics)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="metric" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        name === 'percentual' ? `${Number(value).toFixed(1)}%` : value.toLocaleString('pt-BR'),
+                        name === 'percentual' ? 'Percentual' : 'Total'
+                      ]} 
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="percentual" 
+                      stroke={CHART_COLORS.primary} 
+                      strokeWidth={3}
+                      name="Percentual"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Financial Overview Area Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Visão Geral Financeira
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={prepareFinancialOverviewData(metrics)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="categoria" />
+                    <YAxis tickFormatter={(value) => `R$ ${(value/1000).toFixed(0)}k`} />
+                    <Tooltip formatter={formatTooltipValue} />
+                    <Legend />
+                    <Area 
+                      type="monotone" 
+                      dataKey="total" 
+                      stackId="1" 
+                      stroke={CHART_COLORS.primary} 
+                      fill={CHART_COLORS.light}
+                      name="Total"
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="indicadores" 
+                      stackId="2" 
+                      stroke={CHART_COLORS.success} 
+                      fill={CHART_COLORS.success}
+                      name="Indicadores"
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="promotores" 
+                      stackId="3" 
+                      stroke={CHART_COLORS.secondary} 
+                      fill={CHART_COLORS.secondary}
+                      name="Promotores"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Status Overview */}
           <Card>
             <CardHeader>
-              <CardTitle>Status das Indicações</CardTitle>
+              <CardTitle>Resumo do Status</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">
+                  <div className="text-2xl font-bold" style={{ color: CHART_COLORS.warning }}>
                     {metrics.pendingReferrals}
                   </div>
                   <p className="text-sm text-muted-foreground">Pendentes</p>
                 </div>
                 
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold" style={{ color: CHART_COLORS.success }}>
                     {metrics.convertedReferrals}
                   </div>
                   <p className="text-sm text-muted-foreground">Convertidas</p>
                 </div>
                 
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-2xl font-bold" style={{ color: CHART_COLORS.error }}>
                     {metrics.rejectedReferrals}
                   </div>
                   <p className="text-sm text-muted-foreground">Rejeitadas</p>
