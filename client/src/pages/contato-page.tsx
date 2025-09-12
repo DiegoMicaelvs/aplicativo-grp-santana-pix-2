@@ -91,7 +91,7 @@ export default function ContatoPage() {
             <CardContent className="text-center">
               <p className="text-gray-600 mb-2">
                 <strong>(31) 3514-6533</strong><br />
-                <strong>(31) 9 9824-1928</strong>
+                <strong>+55 11 97774-4132</strong>
               </p>
               <p className="text-sm text-gray-500">
                 Segunda a Sexta: 08:00 às 18:00<br />
