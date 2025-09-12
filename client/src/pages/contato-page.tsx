@@ -28,7 +28,6 @@ export default function ContatoPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
-      
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -120,9 +119,7 @@ export default function ContatoPage() {
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-pink-600 hover:text-pink-700"
-                >
-                  @metisbrasil
-                </a>
+                >@grpsantana</a>
               </div>
             </div>
           </div>
@@ -148,7 +145,6 @@ export default function ContatoPage() {
         </div>
 
       </main>
-      
       <Footer />
     </div>
   );
