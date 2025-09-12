@@ -52,7 +52,7 @@ export default function CompanyDashboard() {
 
   // Fetch company metrics
   const { data: metrics, isLoading: metricsLoading } = useQuery<CompanyMetrics>({
-    queryKey: ["/api/admin/company-metrics", selectedCompanyId],
+    queryKey: [`/api/admin/company-metrics/${selectedCompanyId}`],
     enabled: selectedCompanyId !== "all_companies",
   });
 
