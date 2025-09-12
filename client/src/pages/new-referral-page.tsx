@@ -619,7 +619,7 @@ export default function NewReferralPage() {
                           ) : (
                             <div className="mt-2">
                               <Input 
-                                value="Metis da Pix" 
+                                value="Grupo Santana" 
                                 disabled 
                                 className="bg-gray-50"
                               />
