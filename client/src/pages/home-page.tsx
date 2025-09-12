@@ -83,7 +83,7 @@ export default function HomePage() {
         </div>
         <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 flex items-center justify-center">
           <img
-            className="h-56 w-auto object-contain object-center sm:h-72 md:h-96 lg:h-80 xl:h-96"
+            className="h-72 w-auto object-contain object-center sm:h-80 md:h-[28rem] lg:h-96 xl:h-[32rem]"
             src="/images/grupo-santana-hero.png"
             alt="Grupo Santana - Logo"
             style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
