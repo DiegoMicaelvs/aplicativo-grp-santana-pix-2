@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Users, Target, DollarSign, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +37,23 @@ interface CompanyMetrics {
 
 export default function PublicCompanyDashboard() {
   const { companyId } = useParams();
+  const searchParams = new URLSearchParams(useSearch());
+  const monthFilter = searchParams.get('month') || 'all_time';
 
   // Fetch company metrics
   const { data: metrics, isLoading, error } = useQuery<CompanyMetrics>({
-    queryKey: [`/api/public/company-metrics/${companyId}`],
+    queryKey: [`/api/public/company-metrics/${companyId}`, monthFilter],
     enabled: !!companyId,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (monthFilter !== "all_time") {
+        params.append('month', monthFilter);
+      }
+      const url = `/api/public/company-metrics/${companyId}${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch metrics');
+      return response.json();
+    },
   });
 
   if (isLoading) {
@@ -88,9 +100,16 @@ export default function PublicCompanyDashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Dashboard de Acompanhamento</h1>
         </div>
         <p className="text-gray-600">Métricas e performance empresarial em tempo real</p>
-        <Badge variant="outline" className="mt-2">
-          Modo Visualização Pública
-        </Badge>
+        <div className="flex items-center gap-2 mt-2">
+          <Badge variant="outline">
+            Modo Visualização Pública
+          </Badge>
+          {monthFilter !== "all_time" && (
+            <Badge variant="secondary">
+              {new Date(monthFilter + '-01').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -284,7 +303,10 @@ export default function PublicCompanyDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-2xl font-bold">{metrics.recentReferrals}</div>
-                <p className="text-sm text-muted-foreground">Indicações nos últimos 30 dias</p>
+                <p className="text-sm text-muted-foreground">
+                  {monthFilter === "all_time" ? "Indicações nos últimos 30 dias" : 
+                   `Indicações em ${new Date(monthFilter + '-01').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`}
+                </p>
               </div>
               <Activity className="h-8 w-8 text-blue-600" />
             </div>

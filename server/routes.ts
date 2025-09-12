@@ -554,6 +554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/company-metrics/:companyId", requireAdmin, async (req, res) => {
     try {
       const companyId = parseInt(req.params.companyId);
+      const monthFilter = req.query.month as string;
       
       // Validate companyId parameter
       if (isNaN(companyId) || companyId <= 0) {
@@ -567,7 +568,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get referrals for this specific company (efficient query)
-      const companyReferrals = await storage.getReferralsByCompanyId(companyId);
+      let companyReferrals = await storage.getReferralsByCompanyId(companyId);
+      
+      // Filter by month if specified
+      if (monthFilter && monthFilter !== "all_time") {
+        const [year, month] = monthFilter.split('-');
+        const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+        
+        companyReferrals = companyReferrals.filter((r: any) => {
+          const referralDate = new Date(r.createdAt);
+          return referralDate >= startDate && referralDate <= endDate;
+        });
+      }
       
       // Calculate metrics
       const totalReferrals = companyReferrals.length;
@@ -655,6 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/public/company-metrics/:companyId", async (req, res) => {
     try {
       const companyId = parseInt(req.params.companyId);
+      const monthFilter = req.query.month as string;
       
       // Validate companyId parameter
       if (isNaN(companyId) || companyId <= 0) {
@@ -668,7 +682,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get referrals for this specific company (efficient query)
-      const companyReferrals = await storage.getReferralsByCompanyId(companyId);
+      let companyReferrals = await storage.getReferralsByCompanyId(companyId);
+      
+      // Filter by month if specified
+      if (monthFilter && monthFilter !== "all_time") {
+        const [year, month] = monthFilter.split('-');
+        const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+        
+        companyReferrals = companyReferrals.filter((r: any) => {
+          const referralDate = new Date(r.createdAt);
+          return referralDate >= startDate && referralDate <= endDate;
+        });
+      }
       
       // Calculate metrics (same logic as admin endpoint)
       const totalReferrals = companyReferrals.length;

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, BarChart3, TrendingUp, Users, Target, DollarSign, Activity, Link2 } from "lucide-react";
+import { Download, Share2, BarChart3, TrendingUp, Users, Target, DollarSign, Activity, Link2, Calendar } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 // Format currency to Brazilian Real
 const formatCurrency = (value: number | string): string => {
@@ -44,9 +44,36 @@ interface Company {
   isActive: boolean;
 }
 
+// Generate month options for the last 24 months
+const generateMonthOptions = () => {
+  const options = [];
+  const now = new Date();
+  
+  // Add "All time" option
+  options.push({ value: "all_time", label: "Todos os períodos" });
+  
+  // Add current month first
+  const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const currentMonthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  options.push({ value: currentMonth, label: currentMonthLabel });
+  
+  // Add previous 23 months
+  for (let i = 1; i < 24; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+    const label = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    options.push({ value, label });
+  }
+  
+  return options;
+};
+
 export default function CompanyDashboard() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all_companies");
+  const [selectedMonth, setSelectedMonth] = useState<string>("all_time");
   const { toast } = useToast();
+  
+  const monthOptions = generateMonthOptions();
 
   // Fetch all companies
   const { data: companies, isLoading: companiesLoading } = useQuery<Company[]>({
@@ -55,8 +82,18 @@ export default function CompanyDashboard() {
 
   // Fetch company metrics
   const { data: metrics, isLoading: metricsLoading } = useQuery<CompanyMetrics>({
-    queryKey: [`/api/admin/company-metrics/${selectedCompanyId}`],
+    queryKey: [`/api/admin/company-metrics/${selectedCompanyId}`, selectedMonth],
     enabled: selectedCompanyId !== "all_companies",
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedMonth !== "all_time") {
+        params.append('month', selectedMonth);
+      }
+      const url = `/api/admin/company-metrics/${selectedCompanyId}${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch metrics');
+      return response.json();
+    },
   });
 
   const handleShareDashboard = async () => {
@@ -90,7 +127,12 @@ export default function CompanyDashboard() {
   const handleGenerateShareableLink = () => {
     if (selectedCompanyId === "all_companies") return;
     
-    const shareableUrl = `${window.location.origin}/public-dashboard/${selectedCompanyId}`;
+    const params = new URLSearchParams();
+    if (selectedMonth !== "all_time") {
+      params.append('month', selectedMonth);
+    }
+    
+    const shareableUrl = `${window.location.origin}/public-dashboard/${selectedCompanyId}${params.toString() ? '?' + params.toString() : ''}`;
     
     navigator.clipboard.writeText(shareableUrl).then(() => {
       toast({
@@ -211,14 +253,31 @@ export default function CompanyDashboard() {
               </Select>
             </div>
             {selectedCompanyId !== "all_companies" && (
-              <Button
-                onClick={handleGenerateShareableLink}
-                variant="outline"
-                className="flex items-center gap-2 whitespace-nowrap"
-              >
-                <Link2 className="h-4 w-4" />
-                Compartilhar Link
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-600" />
+                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Selecione o período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {monthOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={handleGenerateShareableLink}
+                  variant="outline"
+                  className="flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Link2 className="h-4 w-4" />
+                  Compartilhar Link
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
@@ -440,7 +499,10 @@ export default function CompanyDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-2xl font-bold">{metrics.recentReferrals}</div>
-                  <p className="text-sm text-muted-foreground">Indicações nos últimos 30 dias</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedMonth === "all_time" ? "Indicações nos últimos 30 dias" : 
+                     `Indicações em ${monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth}`}
+                  </p>
                 </div>
                 <Activity className="h-8 w-8 text-blue-600" />
               </div>
