@@ -90,7 +90,6 @@ export default function ContatoPage() {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-gray-600 mb-2">
-                <strong>(31) 3514-6533</strong><br />
                 <strong>+55 11 97774-4132</strong>
               </p>
               <p className="text-sm text-gray-500">
