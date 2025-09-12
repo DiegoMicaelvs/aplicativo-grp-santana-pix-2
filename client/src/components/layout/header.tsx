@@ -51,9 +51,9 @@ export default function Header() {
         <div className="flex justify-between items-center py-4 md:justify-start md:space-x-10">
           <div className="flex justify-start lg:w-0 lg:flex-1">
             <Link href="/" className="flex items-center space-x-3">
-              <span className="sr-only">Metis da Pix</span>
-              <img src="/images/logos/metis-logo-only.png" alt="Métis Logo" className="h-12 w-auto" />
-              <span className="text-xl font-bold text-primary font-heading">Metis da Pix</span>
+              <span className="sr-only">Grupo Santana Pix</span>
+              <img src="/images/logos/grupo-santana-logo.png" alt="Grupo Santana Logo" className="h-12 w-auto" />
+              <span className="text-xl font-bold text-primary font-heading">Grupo Santana Pix</span>
             </Link>
           </div>
 
@@ -67,7 +67,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                  <SheetTitle className="font-heading">Metis da Pix</SheetTitle>
+                  <SheetTitle className="font-heading">Grupo Santana Pix</SheetTitle>
                   <SheetDescription>
                     Cadastrou, validou é PIX! Indique e ganhe comissões
                   </SheetDescription>

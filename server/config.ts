@@ -45,14 +45,14 @@ export const config = {
   
   // Informações da empresa
   company: {
-    name: "Metis da Pix Proteção Veicular",
+    name: "Grupo Santana Pix",
     cnpj: "00.000.000/0001-00", // ATUALIZAR COM CNPJ REAL
-    email: "admin@metisbrasil.com.br",
-    privacyEmail: "privacidade@metisbrasil.com.br",
-    website: "https://metisbrasil.com.br",
+    email: "admin@gruposantana.com.br",
+    privacyEmail: "privacidade@gruposantana.com.br",
+    website: "https://gruposantana.com.br",
     social: {
-      instagram: "https://www.instagram.com/metisbrasil/",
-      facebook: "https://www.facebook.com/metisbrasil",
+      instagram: "https://www.instagram.com/gruposantana/",
+      facebook: "https://www.facebook.com/gruposantana",
     }
   }
 };
