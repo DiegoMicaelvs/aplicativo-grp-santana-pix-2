@@ -459,6 +459,26 @@ export default function AdminDashboard() {
             </Card>
 
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Link href="/admin/company-dashboard">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-purple-600" />
+                    Dashboard de Acompanhamento
+                  </CardTitle>
+                  <CardDescription>
+                    Métricas e análises por empresa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">
+                    <BarChart3 className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm text-gray-600">análise empresarial</p>
+                </CardContent>
+              </Link>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <Link href="/admin/support-tickets">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
