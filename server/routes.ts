@@ -617,6 +617,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const averageReferralsPerIndicator = totalIndicators > 0 ? totalReferrals / totalIndicators : 0;
 
+      // Calculate values actually paid/released to users from this company
+      // Get all paid withdrawals for users who have referrals in this company
+      const usersInvolved = Array.from(new Set([...Array.from(indicatorsInvolved), ...Array.from(promotersInvolved)]));
+      let totalPaidToIndicators = 0;
+      let totalPaidToPromoters = 0;
+
+      for (const userId of usersInvolved) {
+        const userWithdrawals = await storage.getWithdrawalRequestsByUserId(userId);
+        const paidWithdrawals = userWithdrawals.filter(w => w.status === 'paid');
+        const totalPaidToUser = paidWithdrawals.reduce((sum, w) => sum + parseFloat(w.amount), 0);
+
+        // Get user info to determine if they are indicator or promoter
+        const userInfo = await storage.getUserById(userId);
+        if (userInfo) {
+          if (userInfo.role === 'indicador') {
+            totalPaidToIndicators += totalPaidToUser;
+          } else if (userInfo.role === 'promotor') {
+            totalPaidToPromoters += totalPaidToUser;
+          }
+        }
+      }
+
+      const totalPaidValues = totalPaidToIndicators + totalPaidToPromoters;
+
       const metrics = {
         companyId,
         companyName: company.name,
@@ -632,7 +656,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         activeIndicators,
         recentReferrals,
         pendingReferrals,
-        rejectedReferrals
+        rejectedReferrals,
+        totalPaidToIndicators,
+        totalPaidToPromoters,
+        totalPaidValues
       };
 
       return res.json(metrics);

@@ -33,6 +33,9 @@ interface CompanyMetrics {
   recentReferrals: number; // Last 30 days
   pendingReferrals: number;
   rejectedReferrals: number;
+  totalPaidToIndicators: number;
+  totalPaidToPromoters: number;
+  totalPaidValues: number;
 }
 
 interface Company {
@@ -100,6 +103,9 @@ export default function CompanyDashboard() {
       ["Comissões Indicadores", formatCurrency(metrics.totalCommissionIndicators)],
       ["Comissões Promotores", formatCurrency(metrics.totalCommissionPromoters)],
       ["Total de Comissões", formatCurrency(metrics.totalCommissions)],
+      ["Valores Liberados - Indicadores", formatCurrency(metrics.totalPaidToIndicators)],
+      ["Valores Liberados - Promotores", formatCurrency(metrics.totalPaidToPromoters)],
+      ["Total Valores Liberados", formatCurrency(metrics.totalPaidValues)],
       ["Indicadores Ativos", metrics.activeIndicators.toString()],
       ["Indicações Recentes (30 dias)", metrics.recentReferrals.toString()],
       ["Indicações Pendentes", metrics.pendingReferrals.toString()],
@@ -329,6 +335,40 @@ export default function CompanyDashboard() {
                     {formatCurrency(metrics.totalCommissions)}
                   </div>
                   <p className="text-sm text-muted-foreground">Total de Comissões</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Values Released */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-orange-600" />
+                Valores Liberados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {formatCurrency(metrics.totalPaidToIndicators)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Liberado para Indicadores</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-500">
+                    {formatCurrency(metrics.totalPaidToPromoters)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Liberado para Promotores</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-700">
+                    {formatCurrency(metrics.totalPaidValues)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Total Liberado</p>
                 </div>
               </div>
             </CardContent>
