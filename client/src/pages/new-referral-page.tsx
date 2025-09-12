@@ -33,7 +33,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import { Check, Loader2, AlertTriangle } from "lucide-react";
+import { Check, Loader2, AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -73,11 +73,13 @@ const BRAZILIAN_STATES = [
   { value: "TO", label: "Tocantins" },
 ];
 
-// Define validation schema matching the exact fields requested
+// Define validation schema with multiple license plates support
 const referralSchema = z.object({
   fullName: z.string().min(1, "Nome é obrigatório"),
   phone: z.string().min(10, "Número é obrigatório").max(15, "Número inválido"),
-  licensePlate: z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
+  licensePlates: z.array(z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"))
+    .min(1, "Pelo menos uma placa é obrigatória")
+    .max(5, "Máximo 5 placas por indicação"),
   hasInsurance: z.boolean(),
   companyId: z.string().transform(val => val && val !== "" ? Number(val) : 1), // Padrão para Kong Pix (ID 1)
   city: z.string().min(2, "Cidade é obrigatória"),
@@ -101,7 +103,7 @@ export default function NewReferralPage() {
     defaultValues: {
       fullName: "",
       phone: "",
-      licensePlate: "",
+      licensePlates: [""], // Start with one empty plate
       hasInsurance: false,
       companyId: user?.role === "admin" ? "" as any : "1", // Kong Pix para não-admin
       city: "",
@@ -140,10 +142,10 @@ export default function NewReferralPage() {
     queryKey: ['/api/referrals/today-stats'],
   });
 
-  // Mutation para verificar duplicatas
-  const checkDuplicateMutation = useMutation<any, Error, { phone: string; licensePlate: string; formData: ReferralFormValues }>({
-    mutationFn: async ({ phone, licensePlate }) => {
-      const res = await apiRequest("POST", "/api/referrals/check-duplicate", { phone, licensePlate });
+  // Mutation para verificar duplicatas (suporte a múltiplas placas)
+  const checkDuplicateMutation = useMutation<any, Error, { phone: string; licensePlates: string[]; formData: ReferralFormValues }>({
+    mutationFn: async ({ phone, licensePlates }) => {
+      const res = await apiRequest("POST", "/api/referrals/check-duplicate", { phone, licensePlates });
       return await res.json();
     },
     onSuccess: (data, variables) => {
@@ -249,15 +251,29 @@ export default function NewReferralPage() {
       }
     }
 
+    // Filtrar placas vazias
+    const validPlates = data.licensePlates.filter(plate => plate.trim() !== "");
+    if (validPlates.length === 0) {
+      toast({
+        title: "Placa obrigatória",
+        description: "Por favor, adicione pelo menos uma placa de veículo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Atualizar dados com placas válidas
+    const finalData = { ...data, licensePlates: validPlates };
+
     // Se já há duplicatas conhecidas, pular verificação e enviar diretamente
     if (duplicateInfo && duplicateInfo.length > 0) {
-      mutation.mutate(data as any);
+      mutation.mutate(finalData as any);
     } else {
       // Primeiro verifica se há duplicatas, passando os dados modificados
       checkDuplicateMutation.mutate({
-        phone: data.phone,
-        licensePlate: data.licensePlate,
-        formData: data
+        phone: finalData.phone,
+        licensePlates: finalData.licensePlates,
+        formData: finalData
       });
     }
   };
@@ -375,27 +391,30 @@ export default function NewReferralPage() {
                     <AlertTriangle className="h-4 w-4 text-red-600" />
                     <AlertDescription className="text-red-800">
                     <div className="font-semibold mb-2">⚠️ Cadastro já existe!</div>
-                    {duplicateInfo.map((duplicate: any, index: number) => (
-                      <div key={index} className="mb-2">
-                        {duplicate.phone === form.getValues().phone && (
-                          <p className="text-sm">
-                            O telefone <strong>{duplicate.phone}</strong> já foi cadastrado por{" "}
-                            <strong>{duplicate.ownerFirstName}</strong>
-                            {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
+                    {duplicateInfo.map((duplicate: any, index: number) => {
+                      const currentPlates = form.getValues().licensePlates || [];
+                      return (
+                        <div key={index} className="mb-2">
+                          {duplicate.phone === form.getValues().phone && (
+                            <p className="text-sm">
+                              O telefone <strong>{duplicate.phone}</strong> já foi cadastrado por{" "}
+                              <strong>{duplicate.ownerFirstName}</strong>
+                              {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
+                            </p>
+                          )}
+                          {duplicate.licensePlate && currentPlates.includes(duplicate.licensePlate) && (
+                            <p className="text-sm">
+                              A placa <strong>{duplicate.licensePlate}</strong> já foi cadastrada por{" "}
+                              <strong>{duplicate.ownerFirstName}</strong>
+                              {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-600 mt-1">
+                            Data do primeiro cadastro: {new Date(duplicate.createdAt).toLocaleDateString('pt-BR')}
                           </p>
-                        )}
-                        {duplicate.licensePlate === form.getValues().licensePlate && (
-                          <p className="text-sm">
-                            A placa <strong>{duplicate.licensePlate}</strong> já foi cadastrada por{" "}
-                            <strong>{duplicate.ownerFirstName}</strong>
-                            {duplicate.ownerState && <span> ({duplicate.ownerState})</span>}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-600 mt-1">
-                          Data do primeiro cadastro: {new Date(duplicate.createdAt).toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                     <p className="text-sm mt-3 font-medium">
                       ⚠️ Atenção: Este cadastro pode ser uma duplicata. Certifique-se que os dados estão corretos antes de prosseguir.
                     </p>
@@ -442,23 +461,63 @@ export default function NewReferralPage() {
                       )}
                     />
 
-                    {/* Placa do veículo */}
+                    {/* Placas dos veículos (múltiplas) */}
                     <FormField
                       control={form.control}
-                      name="licensePlate"
+                      name="licensePlates"
                       render={({ field }) => (
                         <FormItem className="mb-4">
-                          <FormLabel>Placa do Veículo</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="ABC-1234" 
-                              {...field} 
-                              onChange={(e) => {
-                                // Convert to uppercase
-                                field.onChange(e.target.value.toUpperCase());
-                              }}
-                            />
-                          </FormControl>
+                          <FormLabel>Placas dos Veículos</FormLabel>
+                          <div className="space-y-3">
+                            {(Array.isArray(field.value) ? field.value : [""]).map((plate, index) => (
+                              <div key={index} className="flex gap-2 items-center">
+                                <FormControl>
+                                  <Input 
+                                    placeholder="ABC-1234" 
+                                    value={plate}
+                                    onChange={(e) => {
+                                      const newPlates = [...field.value];
+                                      newPlates[index] = e.target.value.toUpperCase();
+                                      field.onChange(newPlates);
+                                    }}
+                                    className="flex-1"
+                                  />
+                                </FormControl>
+                                {field.value.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newPlates = field.value.filter((_, i) => i !== index);
+                                      field.onChange(newPlates);
+                                    }}
+                                    className="px-3"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            {field.value.length < 5 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const newPlates = [...field.value, ""];
+                                  field.onChange(newPlates);
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Adicionar outra placa
+                              </Button>
+                            )}
+                          </div>
+                          <FormDescription>
+                            Adicione as placas de todos os veículos que o cliente possui (máximo 5)
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
