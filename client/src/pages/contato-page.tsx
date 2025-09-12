@@ -106,16 +106,15 @@ export default function ContatoPage() {
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
             Redes Sociais
           </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-
-            <div className="flex items-center p-4 bg-pink-50 rounded-lg">
+          <div className="flex justify-center">
+            <div className="flex items-center p-4 bg-pink-50 rounded-lg max-w-sm w-full">
               <div className="w-12 h-12 bg-pink-500 rounded-lg flex items-center justify-center mr-4">
                 <Instagram className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-800">Instagram</h3>
                 <a 
-                  href="https://www.instagram.com/metisbrasil/" 
+                  href="https://www.instagram.com/grpsantana/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-pink-600 hover:text-pink-700"
