@@ -1,19 +1,19 @@
 {
-  "name": "Metis da Pix - Indique e Ganhe",
-  "short_name": "Metis da Pix",
+  "name": "Grupo Santana Pix - Indique e Ganhe",
+  "short_name": "Grupo Santana",
   "description": "Programa de indicação que realmente paga. Ganhe R$3 por cadastro validado + R$50 de bônus na conversão.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1e40af",
+  "theme_color": "#4B5320",
   "icons": [
     {
-      "src": "/images/logos/metis-logo-only.png",
+      "src": "/images/logos/gs-favicon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/images/logos/metis-logo-only.png",
+      "src": "/images/logos/gs-favicon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
