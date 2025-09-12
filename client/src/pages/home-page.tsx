@@ -14,6 +14,8 @@ import { ChevronDown, Clock, DollarSign, Shield, Users, BarChart, HeadphonesIcon
 import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
 
+import logo_final_Grupo_Santana from "@assets/logo final Grupo Santana.png";
+
 export default function HomePage() {
   const { user } = useAuth();
   const [location] = useLocation();
@@ -84,7 +86,7 @@ export default function HomePage() {
         <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 flex items-center justify-center">
           <img
             className="h-72 w-auto object-contain object-center sm:h-80 md:h-[28rem] lg:h-96 xl:h-[32rem]"
-            src="/images/grupo-santana-hero.png"
+            src={logo_final_Grupo_Santana}
             alt="Grupo Santana - Logo"
             style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
           />
