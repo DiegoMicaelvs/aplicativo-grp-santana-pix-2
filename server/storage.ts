@@ -173,8 +173,12 @@ class DatabaseStorage implements IStorage {
   async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number; analystId?: number; supervisorId?: number }) {
     try {
       // Prepare user data with proper typing
-      // Normalizar username e email
-      const normalizedUsername = userData.username.trim().toLowerCase();
+      // Normalizar username e email - use email as username if username not provided
+      if (!userData || (!userData.username && !userData.email)) {
+        throw new Error("Username or email is required");
+      }
+      
+      const normalizedUsername = (userData.username || userData.email).trim().toLowerCase();
       const normalizedEmail = (userData.email || userData.username).trim().toLowerCase();
       
       console.log(`[STORAGE] Criando usuário com username normalizado: ${normalizedUsername}`);
@@ -185,10 +189,16 @@ class DatabaseStorage implements IStorage {
         analystId: userData.analystId,
         supervisorId: userData.supervisorId
       });
+
+      // Import hashPassword function
+      const { hashPassword } = await import('./auth');
+      
+      // Hash the password before storing
+      const hashedPassword = await hashPassword(userData.password);
       
       const insertData = {
         username: normalizedUsername,
-        password: userData.password,
+        password: hashedPassword,
         fullName: userData.fullName,
         email: normalizedEmail,
         phone: userData.phone,
