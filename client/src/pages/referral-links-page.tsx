@@ -56,7 +56,7 @@ export function ReferralLinksPage() {
   const queryClient = useQueryClient();
 
   // Fetch referral links
-  const { data: links = [], isLoading } = useQuery({
+  const { data: links = [], isLoading } = useQuery<ReferralLink[]>({
     queryKey: ["/api/referral-links"],
     refetchInterval: 30000, // Refresh every 30 seconds for stats
   });
@@ -64,7 +64,7 @@ export function ReferralLinksPage() {
   // Create link mutation
   const createMutation = useMutation({
     mutationFn: (data: ReferralLinkFormData) => 
-      apiRequest("/api/referral-links", "POST", data),
+      apiRequest("POST", "/api/referral-links", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/referral-links"] });
       setCreateDialogOpen(false);
@@ -86,7 +86,7 @@ export function ReferralLinksPage() {
   // Update link mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: ReferralLinkFormData }) => 
-      apiRequest(`/api/referral-links/${id}`, "PATCH", data),
+      apiRequest("PATCH", `/api/referral-links/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/referral-links"] });
       setEditDialogOpen(false);
@@ -108,7 +108,7 @@ export function ReferralLinksPage() {
   // Delete link mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/referral-links/${id}`, "DELETE"),
+      apiRequest("DELETE", `/api/referral-links/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/referral-links"] });
       toast({
