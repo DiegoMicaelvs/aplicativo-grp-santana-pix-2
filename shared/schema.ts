@@ -106,10 +106,6 @@ export const referrals = pgTable("referrals", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Legacy table placeholder to prevent Drizzle rename suggestion
-export const referralLinks = pgTable("referral_links", {
-  id: serial("id").primaryKey(),
-});
 
 // Referral plates - Support for multiple license plates per referral
 export const referralPlates = pgTable("referral_plates", {
@@ -212,6 +208,19 @@ export const ticketResponses = pgTable("ticket_responses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Referral links for tracking user registrations
+export const referralLinks = pgTable("referral_links", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(), // User who created the link (promoter, admin, analyst level 3)
+  linkToken: text("link_token").notNull().unique(), // Unique token for the link
+  name: text("name").notNull(), // Custom name for the link
+  clicks: integer("clicks").default(0).notNull(), // Number of clicks on the link
+  registrations: integer("registrations").default(0).notNull(), // Number of successful registrations
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Sales Pipeline - CRM for Vendedor role
 export type SalesLeadStatus = "novo" | "em_negociacao" | "proposta_enviada" | "negocio_fechado" | "perdido" | "reagendado";
 export type SalesLeadSource = "indicacao" | "prospeccao" | "marketing" | "referencia";
@@ -298,6 +307,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   withdrawalRequests: many(withdrawalRequests),
   supportTickets: many(supportTickets),
   ticketResponses: many(ticketResponses),
+  referralLinks: many(referralLinks),
 }));
 
 export const referralsRelations = relations(referrals, ({ one, many }) => ({
@@ -387,6 +397,13 @@ export const ticketResponsesRelations = relations(ticketResponses, ({ one }) => 
   }),
   user: one(users, {
     fields: [ticketResponses.userId],
+    references: [users.id],
+  }),
+}));
+
+export const referralLinksRelations = relations(referralLinks, ({ one }) => ({
+  user: one(users, {
+    fields: [referralLinks.userId],
     references: [users.id],
   }),
 }));
@@ -628,3 +645,18 @@ export type ReferralConversation = typeof referralConversations.$inferSelect;
 export type CreateReferralConversation = z.infer<typeof createReferralConversationSchema>;
 export type ReferralPlate = typeof referralPlates.$inferSelect;
 export type CreateReferralPlate = z.infer<typeof createReferralPlateSchema>;
+
+// Referral Links schemas
+export const createReferralLinkSchema = createInsertSchema(referralLinks, {
+  name: (schema) => schema.min(1, "Nome do link é obrigatório"),
+}).omit({ id: true, linkToken: true, clicks: true, registrations: true, createdAt: true, updatedAt: true });
+
+export const updateReferralLinkSchema = z.object({
+  name: z.string().min(1, "Nome do link é obrigatório"),
+  isActive: z.boolean(),
+});
+
+// Types for referral links
+export type ReferralLink = typeof referralLinks.$inferSelect;
+export type CreateReferralLink = z.infer<typeof createReferralLinkSchema>;
+export type UpdateReferralLink = z.infer<typeof updateReferralLinkSchema>;
