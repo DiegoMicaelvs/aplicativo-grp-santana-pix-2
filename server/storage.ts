@@ -4,6 +4,7 @@ import {
   users, 
   referrals, 
   referralPlates,
+  referralLinks,
   companies,
   withdrawalRequests,
   cashFlow,
@@ -33,7 +34,10 @@ import {
   type CreateSalesReminder,
   type AnalystPermission,
   type ManagerPermission,
-  type CreateReferralPlate
+  type CreateReferralPlate,
+  type ReferralLink,
+  type CreateReferralLink,
+  type UpdateReferralLink
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -140,6 +144,14 @@ export interface IStorage {
   getUserTeamStats(userId: number): Promise<{ totalReferrals: number; convertedReferrals: number; totalCommissions: number }>;
   validateCpfForWithdrawal(userId: number, cpfKey: string): Promise<boolean>;
   generateTicketNumber(): Promise<string>;
+  
+  // Referral Link methods
+  createReferralLink(userId: number, data: CreateReferralLink): Promise<ReferralLink>;
+  getReferralLinksByUserId(userId: number): Promise<ReferralLink[]>;
+  updateReferralLink(id: number, userId: number, data: UpdateReferralLink): Promise<ReferralLink>;
+  deleteReferralLink(id: number, userId: number): Promise<void>;
+  trackReferralLinkClick(token: string): Promise<void>;
+  createUserWithReferralAttribution(userData: InsertUser, referralToken?: string): Promise<any>;
   
   // Session store
   sessionStore: session.Store;
@@ -1967,6 +1979,245 @@ class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`[getReferralByPlate] Error searching plate ${plate}:`, error);
       return null;
+    }
+  }
+
+  // Referral Links implementation
+  async createReferralLink(userId: number, data: CreateReferralLink): Promise<ReferralLink> {
+    const crypto = await import('crypto');
+    let retries = 0;
+    const maxRetries = 5;
+
+    while (retries < maxRetries) {
+      try {
+        // Generate collision-resistant token
+        const token = crypto.randomUUID().replace(/-/g, '');
+        
+        const [newLink] = await db.insert(referralLinks).values({
+          userId,
+          linkToken: token,
+          name: data.name.trim(),
+          isActive: data.isActive ?? true,
+        }).returning();
+
+        // Log audit trail
+        await this.logUserAction({
+          userId,
+          action: 'create_referral_link',
+          entityType: 'referral_link',
+          entityId: newLink.id,
+          details: `Created referral link: ${data.name}`
+        });
+
+        return newLink;
+      } catch (error: any) {
+        // Check for unique constraint violation on token
+        if (error.code === '23505' && error.detail?.includes('link_token')) {
+          retries++;
+          if (retries >= maxRetries) {
+            throw new Error('Failed to generate unique token after multiple attempts');
+          }
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Failed to create referral link');
+  }
+
+  async getReferralLinksByUserId(userId: number): Promise<ReferralLink[]> {
+    try {
+      const links = await db.query.referralLinks.findMany({
+        where: and(
+          eq(referralLinks.userId, userId),
+          eq(referralLinks.isActive, true)
+        ),
+        orderBy: desc(referralLinks.createdAt)
+      });
+
+      return links;
+    } catch (error) {
+      console.error('Error fetching referral links:', error);
+      throw error;
+    }
+  }
+
+  async updateReferralLink(id: number, userId: number, data: UpdateReferralLink): Promise<ReferralLink> {
+    try {
+      // First, check if the link exists and user has permission
+      const existingLink = await db.query.referralLinks.findFirst({
+        where: eq(referralLinks.id, id)
+      });
+
+      if (!existingLink) {
+        throw new Error('Link not found');
+      }
+
+      // Check ownership or admin permission
+      const user = await this.getUserById(userId);
+      const hasPermission = existingLink.userId === userId || 
+                           user?.role === 'admin' ||
+                           (user?.role === 'analista' && user?.analystLevel === 3);
+
+      if (!hasPermission) {
+        throw new Error('Insufficient permissions');
+      }
+
+      const [updatedLink] = await db.update(referralLinks)
+        .set({
+          name: data.name.trim(),
+          isActive: data.isActive,
+          updatedAt: new Date()
+        })
+        .where(eq(referralLinks.id, id))
+        .returning();
+
+      // Log audit trail
+      await this.logUserAction({
+        userId,
+        action: 'update_referral_link',
+        entityType: 'referral_link',
+        entityId: id,
+        details: `Updated referral link: ${data.name}`
+      });
+
+      return updatedLink;
+    } catch (error) {
+      console.error('Error updating referral link:', error);
+      throw error;
+    }
+  }
+
+  async deleteReferralLink(id: number, userId: number): Promise<void> {
+    try {
+      // First, check if the link exists and user has permission
+      const existingLink = await db.query.referralLinks.findFirst({
+        where: eq(referralLinks.id, id)
+      });
+
+      if (!existingLink) {
+        throw new Error('Link not found');
+      }
+
+      // Check ownership or admin permission
+      const user = await this.getUserById(userId);
+      const hasPermission = existingLink.userId === userId || 
+                           user?.role === 'admin' ||
+                           (user?.role === 'analista' && user?.analystLevel === 3);
+
+      if (!hasPermission) {
+        throw new Error('Insufficient permissions');
+      }
+
+      // Soft delete - set isActive to false
+      await db.update(referralLinks)
+        .set({
+          isActive: false,
+          updatedAt: new Date()
+        })
+        .where(eq(referralLinks.id, id));
+
+      // Log audit trail
+      await this.logUserAction({
+        userId,
+        action: 'delete_referral_link',
+        entityType: 'referral_link',
+        entityId: id,
+        details: `Deleted referral link: ${existingLink.name}`
+      });
+    } catch (error) {
+      console.error('Error deleting referral link:', error);
+      throw error;
+    }
+  }
+
+  async trackReferralLinkClick(token: string): Promise<void> {
+    try {
+      const result = await db.update(referralLinks)
+        .set({
+          clicks: sql`COALESCE(${referralLinks.clicks}, 0) + 1`,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(referralLinks.linkToken, token),
+          eq(referralLinks.isActive, true)
+        ));
+
+      // If no rows were updated, the link doesn't exist or is inactive
+      if (result.rowCount === 0) {
+        throw new Error('Referral link not found or inactive');
+      }
+    } catch (error) {
+      console.error('Error tracking referral link click:', error);
+      throw error;
+    }
+  }
+
+  async createUserWithReferralAttribution(userData: InsertUser, referralToken?: string): Promise<any> {
+    try {
+      return await db.transaction(async (tx) => {
+        let assignmentData = {};
+
+        if (referralToken) {
+          // Find the referral link and its owner
+          const link = await tx.query.referralLinks.findFirst({
+            where: and(
+              eq(referralLinks.linkToken, referralToken),
+              eq(referralLinks.isActive, true)
+            ),
+            with: {
+              user: true
+            }
+          });
+
+          if (link && link.user) {
+            const owner = link.user;
+            
+            // Determine assignment based on owner role
+            if (owner.role === 'analista' && owner.analystLevel === 3) {
+              assignmentData = { supervisorId: owner.id };
+            } else if (owner.role === 'promotor') {
+              assignmentData = { 
+                promoterId: owner.id,
+                supervisorId: owner.supervisorId || undefined
+              };
+            }
+
+            // Increment registrations count
+            await tx.update(referralLinks)
+              .set({
+                registrations: sql`COALESCE(${referralLinks.registrations}, 0) + 1`,
+                updatedAt: new Date()
+              })
+              .where(eq(referralLinks.id, link.id));
+          }
+        }
+
+        // Create user with assignment data
+        const userDataWithAssignment = {
+          ...userData,
+          ...assignmentData
+        };
+
+        const newUser = await this.createUser(userDataWithAssignment);
+
+        // Log audit trail if referral attribution was made
+        if (referralToken && Object.keys(assignmentData).length > 0) {
+          await this.logUserAction({
+            userId: newUser.id,
+            action: 'register_with_referral',
+            entityType: 'user',
+            entityId: newUser.id,
+            details: `User registered via referral link: ${referralToken}`
+          });
+        }
+
+        return newUser;
+      });
+    } catch (error) {
+      console.error('Error creating user with referral attribution:', error);
+      throw error;
     }
   }
 

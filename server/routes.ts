@@ -15,6 +15,8 @@ import {
   updateAnalystPermissionsSchema,
   createReferralConversationSchema,
   validateReferralSchema,
+  createReferralLinkSchema,
+  updateReferralLinkSchema,
   type AnalystPermission,
   type ManagerPermission
 } from "@shared/schema";
@@ -2595,6 +2597,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Keep backward compatibility with old route
   app.get("/api/indicador/search-plate", requireAuth, plateLookupHandler);
+
+  // REFERRAL LINKS ROUTES
+  // Middleware to check referral link permissions (admin, promoter, analyst level 3)
+  const requireReferralLinkPermission = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Não autorizado" });
+    }
+    
+    const { role, analystLevel } = req.user;
+    const hasPermission = role === "admin" || 
+                         role === "promotor" || 
+                         (role === "analista" && analystLevel === 3);
+    
+    if (!hasPermission) {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+    next();
+  };
+
+  // Create new referral link
+  app.post("/api/referral-links", requireReferralLinkPermission, async (req, res) => {
+    try {
+      const validatedData = createReferralLinkSchema.parse(req.body);
+      const referralLink = await storage.createReferralLink(req.user.id, validatedData);
+      return res.status(201).json(referralLink);
+    } catch (error) {
+      console.error("Error creating referral link:", error);
+      return res.status(500).json({ error: "Erro ao criar link de referência" });
+    }
+  });
+
+  // Get user's referral links
+  app.get("/api/referral-links", requireReferralLinkPermission, async (req, res) => {
+    try {
+      const links = await storage.getReferralLinksByUserId(req.user.id);
+      return res.json(links);
+    } catch (error) {
+      console.error("Error fetching referral links:", error);
+      return res.status(500).json({ error: "Erro ao buscar links de referência" });
+    }
+  });
+
+  // Update referral link
+  app.patch("/api/referral-links/:id", requireReferralLinkPermission, async (req, res) => {
+    try {
+      const linkId = parseInt(req.params.id);
+      const validatedData = updateReferralLinkSchema.parse(req.body);
+      const updatedLink = await storage.updateReferralLink(linkId, req.user.id, validatedData);
+      return res.json(updatedLink);
+    } catch (error) {
+      console.error("Error updating referral link:", error);
+      return res.status(500).json({ error: "Erro ao atualizar link de referência" });
+    }
+  });
+
+  // Delete referral link
+  app.delete("/api/referral-links/:id", requireReferralLinkPermission, async (req, res) => {
+    try {
+      const linkId = parseInt(req.params.id);
+      await storage.deleteReferralLink(linkId, req.user.id);
+      return res.json({ message: "Link de referência excluído com sucesso" });
+    } catch (error) {
+      console.error("Error deleting referral link:", error);
+      return res.status(500).json({ error: "Erro ao excluir link de referência" });
+    }
+  });
+
+  // Track referral link click (public endpoint)
+  app.get("/ref/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      await storage.trackReferralLinkClick(token);
+      
+      // Redirect to registration page with referral token
+      return res.redirect(`/register?ref=${token}`);
+    } catch (error) {
+      console.error("Error tracking referral link click:", error);
+      // Still redirect to registration page even if tracking fails
+      return res.redirect("/register");
+    }
+  });
+
+  // Registration with referral link
+  app.post("/api/register-with-referral", async (req, res) => {
+    try {
+      const { referralToken, userData } = req.body;
+      
+      // Create user with referral attribution
+      const newUser = await storage.createUserWithReferralAttribution(userData, referralToken);
+      
+      return res.status(201).json({ 
+        message: "Usuário criado com sucesso", 
+        user: { id: newUser.id, username: newUser.username } 
+      });
+    } catch (error) {
+      console.error("Error registering user with referral:", error);
+      return res.status(500).json({ error: "Erro ao cadastrar usuário" });
+    }
+  });
 
   // Create HTTP server
   const server = createServer(app);
