@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Users, TrendingUp, DollarSign, UserCheck, FileText, ArrowLeft, Wallet, Plus } from "lucide-react";
+import { PlusCircle, Users, TrendingUp, DollarSign, UserCheck, FileText, ArrowLeft, Wallet, Plus, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -453,7 +453,7 @@ export default function PromoterDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-3">
               <span className="hidden sm:inline">Visão Geral</span>
               <span className="sm:hidden">Geral</span>
@@ -469,6 +469,10 @@ export default function PromoterDashboard() {
             <TabsTrigger value="indicadores" className="text-xs sm:text-sm px-2 sm:px-3">
               <span className="hidden sm:inline">Meus Indicadores</span>
               <span className="sm:hidden">Indicadores</span>
+            </TabsTrigger>
+            <TabsTrigger value="referral-links" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="hidden sm:inline">Links de Referência</span>
+              <span className="sm:hidden">Links</span>
             </TabsTrigger>
           </TabsList>
 
@@ -802,6 +806,35 @@ export default function PromoterDashboard() {
                     </TableBody>
                   </Table>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="referral-links" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ExternalLink className="h-5 w-5" />
+                  Links de Referência
+                </CardTitle>
+                <CardDescription>
+                  Crie e gerencie links personalizados para rastrear novos cadastros através de sua rede
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <ExternalLink className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Gerencie seus Links de Referência</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Crie links personalizados para diferentes campanhas e acompanhe o desempenho em tempo real
+                  </p>
+                  <Link href="/referral-links">
+                    <Button>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Acessar Links de Referência
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

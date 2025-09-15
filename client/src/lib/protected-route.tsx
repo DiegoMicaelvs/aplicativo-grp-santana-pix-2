@@ -190,3 +190,40 @@ export function AnalystRoute({
 
   return <Route path={path} component={Component} />;
 }
+
+export function ReferralLinkRoute({
+  path,
+  component: Component,
+}: {
+  path: string;
+  component: () => React.JSX.Element;
+}) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Route path={path}>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Route>
+    );
+  }
+
+  // Check if user has permission for referral links (admin, promoter, analyst level 3)
+  const hasPermission = user && (
+    user.role === "admin" || 
+    user.role === "promotor" || 
+    (user.role === "analista" && user.analystLevel === 3)
+  );
+
+  if (!hasPermission) {
+    return (
+      <Route path={path}>
+        <Redirect to="/dashboard" />
+      </Route>
+    );
+  }
+
+  return <Route path={path} component={Component} />;
+}

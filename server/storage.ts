@@ -148,6 +148,7 @@ export interface IStorage {
   // Referral Link methods
   createReferralLink(userId: number, data: CreateReferralLink): Promise<ReferralLink>;
   getReferralLinksByUserId(userId: number): Promise<ReferralLink[]>;
+  getReferralLinkById(id: number): Promise<ReferralLink | null>;
   updateReferralLink(id: number, userId: number, data: UpdateReferralLink): Promise<ReferralLink>;
   deleteReferralLink(id: number, userId: number): Promise<void>;
   trackReferralLinkClick(token: string): Promise<void>;
@@ -2039,6 +2040,19 @@ class DatabaseStorage implements IStorage {
       return links;
     } catch (error) {
       console.error('Error fetching referral links:', error);
+      throw error;
+    }
+  }
+
+  async getReferralLinkById(id: number): Promise<ReferralLink | null> {
+    try {
+      const link = await db.query.referralLinks.findFirst({
+        where: eq(referralLinks.id, id)
+      });
+
+      return link || null;
+    } catch (error) {
+      console.error('Error fetching referral link by id:', error);
       throw error;
     }
   }

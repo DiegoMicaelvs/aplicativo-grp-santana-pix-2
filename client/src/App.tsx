@@ -41,8 +41,9 @@ import AnalystReferrals from "@/pages/analyst-referrals";
 import AnalystUsers from "@/pages/analyst-users";
 import AnalystAnalytics from "@/pages/analyst-analytics";
 import PlateSearchPage from "@/pages/plate-search";
+import { ReferralLinksPage } from "@/pages/referral-links-page";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AdminRoute, PromoterRoute, VendedorRoute, ManagerRoute, AnalystRoute } from "./lib/protected-route";
+import { AdminRoute, PromoterRoute, VendedorRoute, ManagerRoute, AnalystRoute, ReferralLinkRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
 
 function Router() {
@@ -62,6 +63,7 @@ function Router() {
       <ProtectedRoute path="/saques" component={WithdrawalPage} />
       <ProtectedRoute path="/change-password" component={ChangePasswordPage} />
       <ProtectedRoute path="/plate-search" component={PlateSearchPage} />
+      <ReferralLinkRoute path="/referral-links" component={ReferralLinksPage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
       <AdminRoute path="/admin/analysts" component={AdminAnalysts} />
       <AdminRoute path="/admin/profiles" component={AdminProfiles} />

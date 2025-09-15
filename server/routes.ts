@@ -2611,9 +2611,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
                          (role === "analista" && analystLevel === 3);
     
     if (!hasPermission) {
-      return res.status(403).json({ error: "Acesso negado" });
+      return res.status(403).json({ error: "Acesso negado - apenas admins, promotores e analistas nível 3 podem acessar links de referência" });
     }
     next();
+  };
+
+  // Middleware to check ownership for update/delete operations
+  const requireReferralLinkOwnership = async (req: any, res: any, next: any) => {
+    try {
+      const linkId = parseInt(req.params.id);
+      const link = await storage.getReferralLinkById(linkId);
+      
+      if (!link) {
+        return res.status(404).json({ error: "Link de referência não encontrado" });
+      }
+
+      // Admin can access any link, others only their own
+      if (req.user.role !== "admin" && link.userId !== req.user.id) {
+        return res.status(403).json({ error: "Acesso negado - você só pode modificar seus próprios links" });
+      }
+
+      next();
+    } catch (error) {
+      console.error("Error checking referral link ownership:", error);
+      return res.status(500).json({ error: "Erro interno do servidor" });
+    }
   };
 
   // Create new referral link
@@ -2640,7 +2662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update referral link
-  app.patch("/api/referral-links/:id", requireReferralLinkPermission, async (req, res) => {
+  app.patch("/api/referral-links/:id", requireReferralLinkPermission, requireReferralLinkOwnership, async (req, res) => {
     try {
       const linkId = parseInt(req.params.id);
       const validatedData = updateReferralLinkSchema.parse(req.body);
@@ -2653,7 +2675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete referral link
-  app.delete("/api/referral-links/:id", requireReferralLinkPermission, async (req, res) => {
+  app.delete("/api/referral-links/:id", requireReferralLinkPermission, requireReferralLinkOwnership, async (req, res) => {
     try {
       const linkId = parseInt(req.params.id);
       await storage.deleteReferralLink(linkId, req.user.id);
