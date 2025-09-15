@@ -153,7 +153,7 @@ export function ReferralLinksPage() {
   };
 
   const copyLinkToClipboard = (token: string) => {
-    const url = `${window.location.origin}/ref/${token}`;
+    const url = `https://cadastro.souindicador.com.br/ref/${token}`;
     navigator.clipboard.writeText(url).then(() => {
       toast({
         title: "Copiado!",
@@ -162,7 +162,7 @@ export function ReferralLinksPage() {
     });
   };
 
-  const getFullLink = (token: string) => `${window.location.origin}/ref/${token}`;
+  const getFullLink = (token: string) => `https://cadastro.souindicador.com.br/ref/${token}`;
 
   const calculateConversionRate = (clicks: number, registrations: number) => {
     if (clicks === 0) return 0;

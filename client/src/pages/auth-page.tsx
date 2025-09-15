@@ -41,6 +41,9 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { formatCPF } from "@/lib/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Login schema
 const loginSchema = z.object({
@@ -87,6 +90,48 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
   const [, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Get referral token from URL parameters
+  const [referralToken, setReferralToken] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refToken = urlParams.get('ref');
+    if (refToken) {
+      setReferralToken(refToken);
+      setActiveTab("register"); // Auto-switch to register tab if coming from referral link
+    }
+  }, []);
+
+  // Register with referral token mutation
+  const registerWithReferralMutation = useMutation({
+    mutationFn: async ({ userData, referralToken }: { userData: any; referralToken: string }) => {
+      const res = await apiRequest("POST", "/api/register-with-referral", {
+        userData,
+        referralToken
+      });
+      return await res.json();
+    },
+    onSuccess: (result: any) => {
+      toast({
+        title: "Cadastro realizado com sucesso!",
+        description: "Você foi cadastrado através de um link de referência. Bem-vindo!",
+      });
+      // Refresh user data or redirect as needed
+      setTimeout(() => {
+        window.location.href = "/auth"; // Redirect to login
+      }, 2000);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Falha no cadastro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
   
   // Redirect if user is already logged in based on role
   useEffect(() => {
@@ -155,7 +200,16 @@ export default function AuthPage() {
       ...registerData,
       email: data.username, // Use username as email since they should be the same
     };
-    registerMutation.mutate(finalData as any);
+    
+    // Use referral registration if we have a token, otherwise use normal registration
+    if (referralToken) {
+      registerWithReferralMutation.mutate({ 
+        userData: finalData, 
+        referralToken 
+      });
+    } else {
+      registerMutation.mutate(finalData as any);
+    }
   };
 
   return (
@@ -176,6 +230,13 @@ export default function AuthPage() {
                     ? "Entre na sua conta para gerenciar suas indicações" 
                     : "Preencha seus dados para começar a indicar e ganhar"}
                 </CardDescription>
+                {referralToken && activeTab === "register" && (
+                  <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-xs text-green-800 text-center">
+                      ✨ Você foi convidado através de um link de referência especial!
+                    </p>
+                  </div>
+                )}
               </CardHeader>
               
               <CardContent>

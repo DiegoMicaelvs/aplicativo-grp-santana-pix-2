@@ -2690,14 +2690,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/ref/:token", async (req, res) => {
     try {
       const { token } = req.params;
+      
+      // Sanitize token - only allow alphanumeric characters and dashes (UUID format)
+      if (!/^[a-zA-Z0-9-]+$/.test(token)) {
+        return res.status(400).json({ error: "Token inválido" });
+      }
+
       await storage.trackReferralLinkClick(token);
       
-      // Redirect to registration page with referral token
-      return res.redirect(`/register?ref=${token}`);
+      // Redirect to auth page with referral token for registration
+      return res.redirect(`/auth?ref=${token}`);
     } catch (error) {
       console.error("Error tracking referral link click:", error);
-      // Still redirect to registration page even if tracking fails
-      return res.redirect("/register");
+      // Still redirect to auth page even if tracking fails
+      return res.redirect("/auth");
     }
   });
 
