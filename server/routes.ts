@@ -2691,8 +2691,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { token } = req.params;
       
-      // Sanitize token - only allow alphanumeric characters and dashes (UUID format)
-      if (!/^[a-zA-Z0-9-]+$/.test(token)) {
+      // Sanitize token - only allow alphanumeric characters, dashes and underscores
+      if (!/^[a-zA-Z0-9-_]+$/.test(token)) {
         return res.status(400).json({ error: "Token inválido" });
       }
 
