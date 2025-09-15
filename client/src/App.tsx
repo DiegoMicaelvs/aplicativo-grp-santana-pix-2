@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
+import SignupPage from "@/pages/signup-page";
 import DashboardPage from "@/pages/dashboard-page";
 import NewReferralPage from "@/pages/new-referral-page";
 import ReferralsPage from "@/pages/referrals-page";
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/sobre" component={SobrePage} />
       <Route path="/contato" component={ContatoPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/signup" component={SignupPage} />
       <Route path="/public-dashboard/:companyId" component={PublicCompanyDashboard} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/referrals" component={ReferralsPage} />

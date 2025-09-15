@@ -2698,12 +2698,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.trackReferralLinkClick(token);
       
-      // Redirect to auth page with referral token for registration
-      return res.redirect(`/auth?ref=${token}`);
+      // Redirect to signup page with referral token for registration
+      return res.redirect(`/signup?ref=${token}`);
     } catch (error) {
       console.error("Error tracking referral link click:", error);
-      // Still redirect to auth page even if tracking fails
-      return res.redirect("/auth");
+      // Still redirect to signup page even if tracking fails
+      return res.redirect("/signup");
     }
   });
 
