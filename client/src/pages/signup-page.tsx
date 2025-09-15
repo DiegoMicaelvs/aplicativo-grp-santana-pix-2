@@ -92,7 +92,7 @@ export default function SignupPage() {
       zipCode: "",
       shirtSize: "M",
       pixKey: "",
-      role: "indicador",
+      role: "indicador", // Always default to indicador, especially for referral signups
       password: "",
       confirmPassword: "",
       terms: false,
@@ -384,27 +384,39 @@ export default function SignupPage() {
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="role"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tipo de Cadastro *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="indicador">Indicador - Indico pessoas (R$3 por cadastro validado)</SelectItem>
-                              <SelectItem value="promotor">Promotor - Gerencio equipe de indicadores</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Only show role selection if not coming from referral link */}
+                    {!referralToken && (
+                      <FormField
+                        control={form.control}
+                        name="role"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tipo de Cadastro *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o tipo" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="indicador">Indicador - Indico pessoas (R$3 por cadastro validado)</SelectItem>
+                                <SelectItem value="promotor">Promotor - Gerencio equipe de indicadores</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                    
+                    {/* Show info when coming from referral link */}
+                    {referralToken && (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-700">
+                          <strong>Cadastro como Indicador:</strong> Você poderá indicar pessoas e ganhar R$3 por cada cadastro validado + R$50 de bônus na conversão.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Password */}
