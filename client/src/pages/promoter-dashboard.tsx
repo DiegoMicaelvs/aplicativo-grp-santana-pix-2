@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Users, TrendingUp, DollarSign, UserCheck, FileText, ArrowLeft, Wallet, Plus, ExternalLink } from "lucide-react";
+import { PlusCircle, Users, TrendingUp, DollarSign, UserCheck, FileText, ArrowLeft, Wallet, Plus, ExternalLink, Copy, Edit, Trash2, Eye, MousePointer } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,9 @@ import {
 } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createIndicadorSchema, type CreateIndicador, type User, type Referral, type ReferralStatus } from "@shared/schema";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { createIndicadorSchema, type CreateIndicador, type User, type Referral, type ReferralStatus, type ReferralLink } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import Header from "@/components/layout/header";
@@ -53,9 +55,21 @@ import Footer from "@/components/layout/footer";
 import { apiRequest } from "@/lib/queryClient";
 import { invalidateRelatedQueries } from "@/lib/invalidateUtils";
 
+interface ReferralLinkFormData {
+  name: string;
+  isActive: boolean;
+}
+
 export default function PromoterDashboard() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [createLinkDialogOpen, setCreateLinkDialogOpen] = useState(false);
+  const [editLinkDialogOpen, setEditLinkDialogOpen] = useState(false);
+  const [selectedLink, setSelectedLink] = useState<ReferralLink | null>(null);
+  const [linkFormData, setLinkFormData] = useState<ReferralLinkFormData>({
+    name: "",
+    isActive: true
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -72,6 +86,12 @@ export default function PromoterDashboard() {
   // Fetch promoter's own referrals
   const { data: myReferrals = [], isLoading: isLoadingMyReferrals } = useQuery<Referral[]>({
     queryKey: ["/api/referrals"],
+  });
+
+  // Fetch referral links
+  const { data: referralLinks = [], isLoading: isLoadingLinks } = useQuery<ReferralLink[]>({
+    queryKey: ["/api/referral-links"],
+    refetchInterval: 30000, // Refresh every 30 seconds for stats
   });
 
   // Fetch current user info
@@ -144,6 +164,111 @@ export default function PromoterDashboard() {
 
   const onSubmit = (data: CreateIndicador) => {
     createIndicadorMutation.mutate(data);
+  };
+
+  // Referral Links Mutations
+  const createLinkMutation = useMutation({
+    mutationFn: (data: ReferralLinkFormData) => 
+      apiRequest("POST", "/api/referral-links", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral-links"] });
+      setCreateLinkDialogOpen(false);
+      setLinkFormData({ name: "", isActive: true });
+      toast({
+        title: "Sucesso",
+        description: "Link de referência criado com sucesso",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar link de referência",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateLinkMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ReferralLinkFormData }) => 
+      apiRequest("PATCH", `/api/referral-links/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral-links"] });
+      setEditLinkDialogOpen(false);
+      setSelectedLink(null);
+      toast({
+        title: "Sucesso",
+        description: "Link de referência atualizado com sucesso",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar link de referência",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteLinkMutation = useMutation({
+    mutationFn: (id: number) => 
+      apiRequest("DELETE", `/api/referral-links/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral-links"] });
+      toast({
+        title: "Sucesso",
+        description: "Link de referência excluído com sucesso",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao excluir link de referência",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Referral link helper functions
+  const handleCreateLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkFormData.name.trim()) return;
+    createLinkMutation.mutate(linkFormData);
+  };
+
+  const handleEditLink = (link: ReferralLink) => {
+    setSelectedLink(link);
+    setLinkFormData({
+      name: link.name,
+      isActive: link.isActive
+    });
+    setEditLinkDialogOpen(true);
+  };
+
+  const handleUpdateLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLink || !linkFormData.name.trim()) return;
+    updateLinkMutation.mutate({ id: selectedLink.id, data: linkFormData });
+  };
+
+  const handleDeleteLink = (link: ReferralLink) => {
+    if (confirm(`Tem certeza que deseja excluir o link "${link.name}"?`)) {
+      deleteLinkMutation.mutate(link.id);
+    }
+  };
+
+  const copyLinkToClipboard = (token: string) => {
+    const url = `https://cadastro.souindicador.com.br/ref/${token}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast({
+        title: "Copiado!",
+        description: "Link copiado para a área de transferência",
+      });
+    });
+  };
+
+  const calculateConversionRate = (clicks: number, registrations: number) => {
+    if (clicks === 0) return 0;
+    return ((registrations / clicks) * 100).toFixed(1);
   };
 
   // Calculate stats
@@ -822,19 +947,239 @@ export default function PromoterDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <ExternalLink className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Gerencie seus Links de Referência</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Crie links personalizados para diferentes campanhas e acompanhe o desempenho em tempo real
-                  </p>
-                  <Link href="/referral-links">
-                    <Button>
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Acessar Links de Referência
-                    </Button>
-                  </Link>
+                {/* Statistics Summary */}
+                {referralLinks.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MousePointer className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-600">Total de Cliques</span>
+                      </div>
+                      <p className="text-2xl font-bold text-blue-700">
+                        {referralLinks.reduce((sum, link) => sum + (link.clicks || 0), 0)}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-600">Cadastros</span>
+                      </div>
+                      <p className="text-2xl font-bold text-green-700">
+                        {referralLinks.reduce((sum, link) => sum + (link.registrations || 0), 0)}
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-purple-600" />
+                        <span className="text-sm font-medium text-purple-600">Conversão Média</span>
+                      </div>
+                      <p className="text-2xl font-bold text-purple-700">
+                        {referralLinks.length > 0 && referralLinks.reduce((sum, link) => sum + (link.clicks || 0), 0) > 0 
+                          ? calculateConversionRate(
+                              referralLinks.reduce((sum, link) => sum + (link.clicks || 0), 0),
+                              referralLinks.reduce((sum, link) => sum + (link.registrations || 0), 0)
+                            ) + '%'
+                          : '0%'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Create New Link Button */}
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Seus Links de Referência</h3>
+                  <Dialog open={createLinkDialogOpen} onOpenChange={setCreateLinkDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Criar Link
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Criar Novo Link de Referência</DialogTitle>
+                        <DialogDescription>
+                          Crie um link personalizado para rastrear cadastros de sua rede
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateLink} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="link-name">Nome do Link</Label>
+                          <Input
+                            id="link-name"
+                            placeholder="Ex: Campanha Facebook, Instagram Stories..."
+                            value={linkFormData.name}
+                            onChange={(e) => setLinkFormData(prev => ({ ...prev, name: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="link-active"
+                            checked={linkFormData.isActive}
+                            onCheckedChange={(checked) => setLinkFormData(prev => ({ ...prev, isActive: checked }))}
+                          />
+                          <Label htmlFor="link-active">Link ativo</Label>
+                        </div>
+                        <div className="flex justify-end space-x-2 pt-4">
+                          <Button type="button" variant="outline" onClick={() => setCreateLinkDialogOpen(false)}>
+                            Cancelar
+                          </Button>
+                          <Button type="submit" disabled={createLinkMutation.isPending}>
+                            {createLinkMutation.isPending ? "Criando..." : "Criar Link"}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
                 </div>
+
+                {/* Links Table */}
+                {isLoadingLinks ? (
+                  <div className="text-center py-8">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-1/4 mx-auto mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                    </div>
+                  </div>
+                ) : referralLinks.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ExternalLink className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhum link criado ainda</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Crie seu primeiro link de referência para começar a rastrear cadastros
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead className="text-center">Cliques</TableHead>
+                          <TableHead className="text-center">Cadastros</TableHead>
+                          <TableHead className="text-center">Conversão</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="text-center">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {referralLinks.map((link) => (
+                          <TableRow key={link.id}>
+                            <TableCell className="font-medium">
+                              <div>
+                                <p className="font-medium">{link.name}</p>
+                                <p className="text-xs text-muted-foreground truncate max-w-xs">
+                                  https://cadastro.souindicador.com.br/ref/{link.linkToken}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <MousePointer className="h-3 w-3 text-blue-500" />
+                                {link.clicks || 0}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <Users className="h-3 w-3 text-green-500" />
+                                {link.registrations || 0}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="outline">
+                                {calculateConversionRate(link.clicks || 0, link.registrations || 0)}%
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant={link.isActive ? "default" : "secondary"}>
+                                {link.isActive ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyLinkToClipboard(link.linkToken)}
+                                  title="Copiar link"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditLink(link)}
+                                  title="Editar"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteLink(link)}
+                                  title="Excluir"
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                {/* Edit Dialog */}
+                <Dialog open={editLinkDialogOpen} onOpenChange={setEditLinkDialogOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Editar Link de Referência</DialogTitle>
+                      <DialogDescription>
+                        Modifique as informações do seu link de referência
+                      </DialogDescription>
+                    </DialogHeader>
+                    {selectedLink && (
+                      <form onSubmit={handleUpdateLink} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-link-name">Nome do Link</Label>
+                          <Input
+                            id="edit-link-name"
+                            placeholder="Ex: Campanha Facebook, Instagram Stories..."
+                            value={linkFormData.name}
+                            onChange={(e) => setLinkFormData(prev => ({ ...prev, name: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="edit-link-active"
+                            checked={linkFormData.isActive}
+                            onCheckedChange={(checked) => setLinkFormData(prev => ({ ...prev, isActive: checked }))}
+                          />
+                          <Label htmlFor="edit-link-active">Link ativo</Label>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-md">
+                          <Label className="text-sm font-medium">URL do Link</Label>
+                          <p className="text-sm text-muted-foreground break-all">
+                            https://cadastro.souindicador.com.br/ref/{selectedLink.linkToken}
+                          </p>
+                        </div>
+                        <div className="flex justify-end space-x-2 pt-4">
+                          <Button type="button" variant="outline" onClick={() => setEditLinkDialogOpen(false)}>
+                            Cancelar
+                          </Button>
+                          <Button type="submit" disabled={updateLinkMutation.isPending}>
+                            {updateLinkMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                          </Button>
+                        </div>
+                      </form>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
           </TabsContent>
