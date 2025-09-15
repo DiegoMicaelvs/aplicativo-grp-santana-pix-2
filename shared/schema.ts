@@ -649,7 +649,7 @@ export type CreateReferralPlate = z.infer<typeof createReferralPlateSchema>;
 // Referral Links schemas
 export const createReferralLinkSchema = createInsertSchema(referralLinks, {
   name: (schema) => schema.min(1, "Nome do link é obrigatório"),
-}).omit({ id: true, linkToken: true, clicks: true, registrations: true, createdAt: true, updatedAt: true });
+}).omit({ id: true, linkToken: true, clicks: true, registrations: true, createdAt: true, updatedAt: true, userId: true });
 
 export const updateReferralLinkSchema = z.object({
   name: z.string().min(1, "Nome do link é obrigatório"),
