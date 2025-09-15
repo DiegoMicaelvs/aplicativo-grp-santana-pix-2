@@ -34,7 +34,6 @@ import { useToast } from "@/hooks/use-toast";
 
 // Registration schema for signup
 const signupSchema = z.object({
-  username: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
   email: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
   fullName: z.string().min(1, "Nome completo é obrigatório"),
   cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
@@ -81,7 +80,6 @@ export default function SignupPage() {
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      username: "",
       email: "",
       fullName: "",
       cpf: "",
@@ -157,6 +155,8 @@ export default function SignupPage() {
   });
 
   const onSubmit = (data: SignupFormData) => {
+    console.log("Form submission started with data:", data);
+    console.log("Referral token:", referralToken);
     registerMutation.mutate(data);
   };
 
