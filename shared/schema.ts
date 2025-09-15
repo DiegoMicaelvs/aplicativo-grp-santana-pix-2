@@ -211,11 +211,11 @@ export const ticketResponses = pgTable("ticket_responses", {
 // Referral links for tracking user registrations
 export const referralLinks = pgTable("referral_links", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(), // User who created the link (promoter, admin, analyst level 3)
+  userId: integer("promoter_id").references(() => users.id).notNull(), // User who created the link (promoter, admin, analyst level 3)
   linkToken: text("link_token").notNull().unique(), // Unique token for the link
   name: text("name").notNull(), // Custom name for the link
-  clicks: integer("clicks").default(0).notNull(), // Number of clicks on the link
-  registrations: integer("registrations").default(0).notNull(), // Number of successful registrations
+  clicks: integer("click_count").default(0).notNull(), // Number of clicks on the link
+  registrations: integer("registration_count").default(0).notNull(), // Number of successful registrations
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
