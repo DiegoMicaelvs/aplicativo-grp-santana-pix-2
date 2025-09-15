@@ -2707,6 +2707,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Regular registration endpoint
+  app.post("/api/register", async (req, res) => {
+    try {
+      const userData = req.body;
+      
+      // Create user without referral attribution
+      const newUser = await storage.createUser(userData);
+      
+      return res.status(201).json({ 
+        message: "Usuário criado com sucesso", 
+        user: { id: newUser.id, username: newUser.username } 
+      });
+    } catch (error: any) {
+      console.error("Error registering user:", error);
+      
+      // Handle specific database errors
+      if (error.code === '23505') {
+        if (error.constraint === 'users_cpf_unique') {
+          return res.status(400).json({ error: "Este CPF já está cadastrado" });
+        } else if (error.constraint === 'users_username_unique') {
+          return res.status(400).json({ error: "Este e-mail já está cadastrado" });
+        }
+      }
+      
+      return res.status(500).json({ error: "Erro ao cadastrar usuário" });
+    }
+  });
+
   // Registration with referral link
   app.post("/api/register-with-referral", async (req, res) => {
     try {
@@ -2719,8 +2747,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Usuário criado com sucesso", 
         user: { id: newUser.id, username: newUser.username } 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error registering user with referral:", error);
+      
+      // Handle specific database errors
+      if (error.code === '23505') {
+        if (error.constraint === 'users_cpf_unique') {
+          return res.status(400).json({ error: "Este CPF já está cadastrado" });
+        } else if (error.constraint === 'users_username_unique') {
+          return res.status(400).json({ error: "Este e-mail já está cadastrado" });
+        }
+      }
+      
       return res.status(500).json({ error: "Erro ao cadastrar usuário" });
     }
   });

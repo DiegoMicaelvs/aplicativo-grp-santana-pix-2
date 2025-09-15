@@ -132,15 +132,25 @@ export default function SignupPage() {
         title: "Cadastro realizado com sucesso!",
         description: "Aguarde a validação do seu cadastro para começar a indicar.",
       });
-      // Redirect to login after a few seconds
+      // Redirect to main domain after a few seconds
       setTimeout(() => {
-        setLocation("/auth");
+        window.location.href = "https://grp.souindicador.com.br/auth";
       }, 3000);
     },
     onError: (error: any) => {
+      console.error("Registration error:", error);
+      let errorMessage = "Erro ao realizar cadastro. Tente novamente.";
+      
+      // Handle specific error responses
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro no cadastro",
-        description: error.message || "Erro ao realizar cadastro. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
