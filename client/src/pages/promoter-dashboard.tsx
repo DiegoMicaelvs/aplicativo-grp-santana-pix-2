@@ -257,7 +257,9 @@ export default function PromoterDashboard() {
   };
 
   const copyLinkToClipboard = (token: string) => {
-    const url = `https://cadastro.souindicador.com.br/ref/${token}`;
+    // Use current domain instead of external domain that's not properly configured
+    const currentDomain = window.location.origin;
+    const url = `${currentDomain}/ref/${token}`;
     navigator.clipboard.writeText(url).then(() => {
       toast({
         title: "Copiado!",
@@ -1071,7 +1073,7 @@ export default function PromoterDashboard() {
                               <div>
                                 <p className="font-medium">{link.name}</p>
                                 <p className="text-xs text-muted-foreground truncate max-w-xs">
-                                  https://cadastro.souindicador.com.br/ref/{link.linkToken}
+                                  {window.location.origin}/ref/{link.linkToken}
                                 </p>
                               </div>
                             </TableCell>
@@ -1165,7 +1167,7 @@ export default function PromoterDashboard() {
                         <div className="bg-gray-50 p-3 rounded-md">
                           <Label className="text-sm font-medium">URL do Link</Label>
                           <p className="text-sm text-muted-foreground break-all">
-                            https://cadastro.souindicador.com.br/ref/{selectedLink.linkToken}
+                            {window.location.origin}/ref/{selectedLink.linkToken}
                           </p>
                         </div>
                         <div className="flex justify-end space-x-2 pt-4">
