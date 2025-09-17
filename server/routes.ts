@@ -25,10 +25,14 @@ import {
   validateUserDuplicates,
   validateReferralDuplicates 
 } from "./crossAppValidation";
+import { attachTenantMiddleware, getCurrentTenant } from "./tenancy";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
   setupAuth(app);
+  
+  // Setup tenant middleware for multi-company support
+  app.use(attachTenantMiddleware);
   
   // Register cross-app validation routes
   registerCrossAppValidationRoutes(app);
@@ -161,6 +165,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       return res.status(500).json({ error: "Erro ao buscar usuário" });
+    }
+  });
+
+  // Get current tenant info (company identification)
+  app.get("/api/tenant", async (req, res) => {
+    try {
+      const tenantConfig = getCurrentTenant(req);
+      return res.json(tenantConfig);
+    } catch (error) {
+      console.error("Error fetching tenant config:", error);
+      return res.status(500).json({ error: "Erro ao buscar configuração do tenant" });
     }
   });
 
