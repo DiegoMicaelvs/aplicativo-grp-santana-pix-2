@@ -48,7 +48,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Referral, ReferralStatus } from "@shared/schema";
+import { Referral, ReferralStatus, Company } from "@shared/schema";
 
 // Helper function to get appropriate badge color based on status
 const getStatusBadge = (status: ReferralStatus) => {
@@ -98,6 +98,11 @@ export default function ReferralsPage() {
   // Fetch all referrals
   const { data: referrals, isLoading } = useQuery<Referral[]>({
     queryKey: ['/api/referrals'],
+  });
+
+  // Fetch all companies
+  const { data: companies } = useQuery<Company[]>({
+    queryKey: ['/api/companies'],
   });
   
   // Filter referrals based on status
@@ -177,6 +182,7 @@ export default function ReferralsPage() {
                         <TableRow>
                           <TableHead>Nome</TableHead>
                           <TableHead>Veículo</TableHead>
+                          <TableHead>Empresa</TableHead>
                           <TableHead>Cidade/Estado</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Status</TableHead>
@@ -185,7 +191,9 @@ export default function ReferralsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paginatedReferrals.map((referral) => (
+                        {paginatedReferrals.map((referral) => {
+                          const company = companies?.find((c) => c.id === referral.companyId);
+                          return (
                           <TableRow key={referral.id}>
                             <TableCell className="font-medium">
                               <div>
@@ -197,6 +205,11 @@ export default function ReferralsPage() {
                             </TableCell>
                             <TableCell>
                               <div>Placa: {referral.licensePlate}</div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm font-medium text-blue-600">
+                                {company?.name || `ID: ${referral.companyId}`}
+                              </span>
                             </TableCell>
                             <TableCell>
                               {referral.city && referral.state ? (
@@ -220,7 +233,8 @@ export default function ReferralsPage() {
                               </Button>
                             </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
