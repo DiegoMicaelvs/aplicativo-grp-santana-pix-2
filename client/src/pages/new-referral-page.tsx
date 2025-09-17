@@ -81,7 +81,7 @@ const referralSchema = z.object({
     .min(1, "Pelo menos uma placa é obrigatória")
     .max(5, "Máximo 5 placas por indicação"),
   hasInsurance: z.boolean(),
-  companyId: z.string().transform(val => val && val !== "" ? Number(val) : 1), // Padrão para Kong Pix (ID 1)
+  companyId: z.string().transform(val => val && val !== "" ? Number(val) : 1), // Company ID determined by tenant
   city: z.string().min(2, "Cidade é obrigatória"),
   state: z.string().length(2, "Selecione um estado"),
 });
@@ -98,6 +98,11 @@ export default function NewReferralPage() {
   const [customCompanyName, setCustomCompanyName] = useState("");
   const duplicateAlertRef = useRef<HTMLDivElement>(null);
   
+  // Fetch current tenant config for company identification
+  const { data: tenantConfig } = useQuery<{tenant: string, companyId: number, companyName: string}>({
+    queryKey: ['/api/tenant'],
+  });
+  
   const form = useForm<ReferralFormValues>({
     resolver: zodResolver(referralSchema),
     defaultValues: {
@@ -105,11 +110,18 @@ export default function NewReferralPage() {
       phone: "",
       licensePlates: [""], // Start with one empty plate
       hasInsurance: false,
-      companyId: user?.role === "admin" ? "" as any : "1", // Kong Pix para não-admin
+      companyId: user?.role === "admin" ? "" as any : "1", // Will be updated by useEffect
       city: "",
       state: "",
     },
   });
+
+  // Update form companyId when tenantConfig loads (for non-admin users)
+  useEffect(() => {
+    if (tenantConfig && user?.role !== "admin") {
+      form.setValue("companyId", tenantConfig.companyId.toString());
+    }
+  }, [tenantConfig, user?.role, form]);
 
   // Scroll para o alerta de duplicata quando detectado
   useEffect(() => {
@@ -205,10 +217,7 @@ export default function NewReferralPage() {
   });
   
   const onSubmit = async (data: ReferralFormValues) => {
-    // Para usuários não-admin, sempre usar Kong Pix (ID 1)
-    if (user?.role !== "admin") {
-      data.companyId = 1;
-    }
+    // Company ID is automatically enforced by server based on tenant for non-admin users
     
     // Validar se é empresa customizada
     if (isCustomCompany) {

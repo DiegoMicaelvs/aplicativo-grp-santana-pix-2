@@ -350,8 +350,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Apply tenant-based company enforcement
+      let finalReferralData = { ...validatedData };
+      
+      // For non-admin users, enforce tenant company ID for security
+      if (req.user!.role !== "admin") {
+        const tenantConfig = getCurrentTenant(req);
+        finalReferralData.companyId = tenantConfig.companyId;
+        console.log(`[TENANT] Non-admin user ${req.user!.role} - enforcing companyId: ${tenantConfig.companyId} (${tenantConfig.companyName})`);
+      } else {
+        console.log(`[TENANT] Admin user - allowing selected companyId: ${finalReferralData.companyId}`);
+      }
+      
       const referral = await storage.createReferral({
-        ...validatedData,
+        ...finalReferralData,
         userId: req.user!.id,
         createdBy: req.user!.id
       });
