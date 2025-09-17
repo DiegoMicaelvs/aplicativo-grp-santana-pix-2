@@ -105,7 +105,7 @@ export default function NewReferralPage() {
       phone: "",
       licensePlates: [""], // Start with one empty plate
       hasInsurance: false,
-      companyId: user?.role === "admin" ? "" as any : "1", // Kong Pix para não-admin
+      companyId: user?.role === "admin" ? "" as any : "1", // Grupo Santana Pix para não-admin
       city: "",
       state: "",
     },
