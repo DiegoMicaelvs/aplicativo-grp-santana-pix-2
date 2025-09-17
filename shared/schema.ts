@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // User roles
-export type UserRole = "indicador" | "promotor" | "admin" | "analista" | "vendedor" | "gerente" | "metis_viewer";
+export type UserRole = "indicador" | "indicador_nivel_1" | "promotor" | "admin" | "analista" | "vendedor" | "gerente" | "metis_viewer";
 export type AnalystLevel = 1 | 2 | 3;
 
 // Analyst permissions
