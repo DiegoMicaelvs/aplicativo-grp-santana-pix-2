@@ -275,8 +275,8 @@ export default function DashboardPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Current Balance Card - Hidden for Metis Viewers */}
-                  {user?.role !== "metis_viewer" && (
+                  {/* Current Balance Card - Hidden for Metis Viewers and Indicador Nível 1 */}
+                  {user?.role !== "metis_viewer" && user?.role !== "indicador_nivel_1" && (
                     <Card>
                       <CardContent className="p-4 sm:p-6">
                         <div className="flex items-center">
@@ -297,8 +297,8 @@ export default function DashboardPage() {
                     </Card>
                   )}
 
-                  {/* Total Earnings Card - Hidden for Metis Viewers */}
-                  {user?.role !== "metis_viewer" && (
+                  {/* Total Earnings Card - Hidden for Metis Viewers and Indicador Nível 1 */}
+                  {user?.role !== "metis_viewer" && user?.role !== "indicador_nivel_1" && (
                     <Card>
                       <CardContent className="p-4 sm:p-6">
                         <div className="flex items-center">

@@ -88,7 +88,7 @@ const profileManagementSchema = z.object({
   zipCode: z.string().min(8, "CEP inválido").max(9, "CEP inválido"),
   shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
-  role: z.enum(["indicador", "promotor", "admin", "analista", "vendedor", "gerente", "metis_viewer"]),
+  role: z.enum(["indicador", "indicador_nivel_1", "promotor", "admin", "analista", "vendedor", "gerente", "metis_viewer"]),
   analystLevel: z.coerce.number().int().min(1).max(3).optional(),
   permissions: z.array(z.string()).optional(),
   isActive: z.boolean(),
@@ -474,6 +474,7 @@ export default function AdminProfiles() {
                   <SelectItem value="promotor">Promotores</SelectItem>
                   <SelectItem value="analista">Analistas</SelectItem>
                   <SelectItem value="indicador">Indicadores</SelectItem>
+                  <SelectItem value="indicador_nivel_1">Indicadores nível 1</SelectItem>
                   <SelectItem value="vendedor">Vendedores</SelectItem>
                   <SelectItem value="metis_viewer">Metis Viewers</SelectItem>
                 </SelectContent>
@@ -1174,6 +1175,7 @@ export default function AdminProfiles() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="indicador">Indicador</SelectItem>
+                  <SelectItem value="indicador_nivel_1">Indicador nível 1</SelectItem>
                   <SelectItem value="promotor">Promotor</SelectItem>
                   <SelectItem value="analista">Analista</SelectItem>
                   <SelectItem value="vendedor">Vendedor</SelectItem>
@@ -1184,7 +1186,7 @@ export default function AdminProfiles() {
               </Select>
             </div>
 
-            {(watchedRole === "indicador" && promoters && promoters.length > 0) && (
+            {((watchedRole === "indicador" || watchedRole === "indicador_nivel_1") && promoters && promoters.length > 0) && (
               <div>
                 <Label htmlFor="promoterId">Promotor Responsável</Label>
                 <Select

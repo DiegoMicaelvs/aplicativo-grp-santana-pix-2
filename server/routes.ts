@@ -245,16 +245,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // === SISTEMA DE SEGURANÇA PARA LEADS ===
       
-      // 1. Verificar limite de 50 referrals por dia
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayReferrals = await storage.getTodayReferralsByUserId(req.user!.id, today);
-      
-      if (todayReferrals.length >= 50) {
-        return res.status(400).json({ 
-          error: "Limite diário atingido",
-          details: `Você já cadastrou ${todayReferrals.length} clientes hoje. Limite máximo: 50 por dia.`
-        });
+      // 1. Verificar limite de 50 referrals por dia (não aplicar para indicador_nivel_1)
+      if (req.user!.role !== "indicador_nivel_1") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayReferrals = await storage.getTodayReferralsByUserId(req.user!.id, today);
+        
+        if (todayReferrals.length >= 50) {
+          return res.status(400).json({ 
+            error: "Limite diário atingido",
+            details: `Você já cadastrou ${todayReferrals.length} clientes hoje. Limite máximo: 50 por dia.`
+          });
+        }
       }
       
       // 2. Verificar duplicatas locais (placas e telefone)
@@ -784,6 +786,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's withdrawal requests
   app.get("/api/withdrawals", requireAuth, async (req, res) => {
     try {
+      // Block withdrawal access for indicador_nivel_1 users
+      if (req.user!.role === "indicador_nivel_1") {
+        return res.status(403).json({ 
+          error: "Acesso negado",
+          details: "Usuários do tipo 'Indicador nível 1' não podem acessar funcionalidades de saque"
+        });
+      }
+      
       const withdrawals = await storage.getWithdrawalRequestsByUserId(req.user!.id);
       return res.json(withdrawals);
     } catch (error) {
@@ -795,6 +805,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create withdrawal request
   app.post("/api/withdrawals", requireAuth, async (req, res) => {
     try {
+      // Block withdrawal requests for indicador_nivel_1 users
+      if (req.user!.role === "indicador_nivel_1") {
+        return res.status(403).json({ 
+          error: "Acesso negado",
+          details: "Usuários do tipo 'Indicador nível 1' não podem solicitar saques"
+        });
+      }
+      
       const validatedData = createWithdrawalRequestSchema.parse(req.body);
       
       // Check if user has enough balance

@@ -117,12 +117,16 @@ export default function Header() {
                       <Link href="/new-referral" onClick={() => setIsOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">Nova Indicação</Button>
                       </Link>
-                      <Link href="/earnings" onClick={() => setIsOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">Meus Ganhos</Button>
-                      </Link>
-                      <Link href="/withdrawals" onClick={() => setIsOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">Saques</Button>
-                      </Link>
+                      {user.role !== 'metis_viewer' && user.role !== 'indicador_nivel_1' && (
+                        <Link href="/earnings" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">Meus Ganhos</Button>
+                        </Link>
+                      )}
+                      {user.role !== 'metis_viewer' && user.role !== 'indicador_nivel_1' && (
+                        <Link href="/withdrawals" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">Saques</Button>
+                        </Link>
+                      )}
                       {user.role === 'admin' && (
                         <Link href="/admin" onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start">Painel Admin</Button>
@@ -217,12 +221,12 @@ export default function Header() {
                           <DropdownMenuItem>Nova Indicação</DropdownMenuItem>
                         </Link>
                       )}
-                      {user.role !== 'metis_viewer' && (
+                      {user.role !== 'metis_viewer' && user.role !== 'indicador_nivel_1' && (
                         <Link href="/earnings">
                           <DropdownMenuItem>Meus Ganhos</DropdownMenuItem>
                         </Link>
                       )}
-                      {user.role !== 'metis_viewer' && (
+                      {user.role !== 'metis_viewer' && user.role !== 'indicador_nivel_1' && (
                         <Link href="/withdrawals">
                           <DropdownMenuItem>Saques</DropdownMenuItem>
                         </Link>

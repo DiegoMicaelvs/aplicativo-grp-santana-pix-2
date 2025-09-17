@@ -524,7 +524,7 @@ export const createCashFlowSchema = z.object({
 
 // Schema para criar indicador (usado por promotores)
 export const createIndicadorSchema = insertUserSchema.extend({
-  role: z.enum(["indicador", "promotor", "admin", "analista", "vendedor", "gerente", "metis_viewer"]),
+  role: z.enum(["indicador", "indicador_nivel_1", "promotor", "admin", "analista", "vendedor", "gerente", "metis_viewer"]),
   promoterId: z.number().optional(), // Será preenchido automaticamente pelo promotor logado
 });
 
