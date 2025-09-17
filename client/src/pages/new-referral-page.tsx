@@ -352,7 +352,11 @@ export default function NewReferralPage() {
                   <AlertDescription className="text-blue-800">
                     <div className="font-semibold mb-2">🔒 Sistema de Segurança</div>
                     <div className="text-sm space-y-1">
-                      <p>• <strong>Limite diário:</strong> Máximo 30 cadastros</p>
+                      {user?.role === 'indicador_nivel_1' ? (
+                        <p>• <strong>Limite diário:</strong> Ilimitado ⭐</p>
+                      ) : (
+                        <p>• <strong>Limite diário:</strong> Máximo 50 cadastros</p>
+                      )}
                       <p>• <strong>Sem duplicatas:</strong> Telefone e placa únicos</p>
                       <p>• <strong>Proteção automática</strong> contra fraudes</p>
                     </div>
@@ -360,28 +364,46 @@ export default function NewReferralPage() {
                 </Alert>
 
                 {/* Contador de cadastros diários */}
-                <Alert className={`border-2 ${todayStats?.count >= 45 ? 'border-red-200 bg-red-50' : todayStats?.count >= 40 ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
-                  <Check className={`h-4 w-4 ${todayStats?.count >= 45 ? 'text-red-600' : todayStats?.count >= 40 ? 'text-yellow-600' : 'text-green-600'}`} />
-                  <AlertDescription className={todayStats?.count >= 45 ? 'text-red-800' : todayStats?.count >= 40 ? 'text-yellow-800' : 'text-green-800'}>
-                    <div className="font-semibold mb-2">📊 Cadastros de Hoje</div>
-                    <div className="text-lg font-bold">
-                      {todayStats?.count || 0} / 50
-                    </div>
-                    <div className="text-sm">
-                      {todayStats?.remaining > 0 ? (
-                        `Restam ${todayStats.remaining} cadastros`
-                      ) : (
-                        "Limite diário atingido"
-                      )}
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all ${todayStats?.count >= 45 ? 'bg-red-500' : todayStats?.count >= 40 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                        style={{ width: `${Math.min(100, ((todayStats?.count || 0) / 50) * 100)}%` }}
-                      ></div>
-                    </div>
-                  </AlertDescription>
-                </Alert>
+                {user?.role === 'indicador_nivel_1' ? (
+                  <Alert className="border-2 border-purple-200 bg-purple-50">
+                    <Check className="h-4 w-4 text-purple-600" />
+                    <AlertDescription className="text-purple-800">
+                      <div className="font-semibold mb-2">📊 Cadastros de Hoje</div>
+                      <div className="text-lg font-bold">
+                        {todayStats?.count || 0} (Ilimitado ⭐)
+                      </div>
+                      <div className="text-sm">
+                        Perfil Indicador Nível 1 - Sem limites!
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div className="h-2 rounded-full bg-purple-500 w-full"></div>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert className={`border-2 ${todayStats?.count >= 45 ? 'border-red-200 bg-red-50' : todayStats?.count >= 40 ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
+                    <Check className={`h-4 w-4 ${todayStats?.count >= 45 ? 'text-red-600' : todayStats?.count >= 40 ? 'text-yellow-600' : 'text-green-600'}`} />
+                    <AlertDescription className={todayStats?.count >= 45 ? 'text-red-800' : todayStats?.count >= 40 ? 'text-yellow-800' : 'text-green-800'}>
+                      <div className="font-semibold mb-2">📊 Cadastros de Hoje</div>
+                      <div className="text-lg font-bold">
+                        {todayStats?.count || 0} / 50
+                      </div>
+                      <div className="text-sm">
+                        {todayStats?.remaining > 0 ? (
+                          `Restam ${todayStats.remaining} cadastros`
+                        ) : (
+                          "Limite diário atingido"
+                        )}
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all ${todayStats?.count >= 45 ? 'bg-red-500' : todayStats?.count >= 40 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                          style={{ width: `${Math.min(100, ((todayStats?.count || 0) / 50) * 100)}%` }}
+                        ></div>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
 
               {/* Alerta de duplicatas */}
