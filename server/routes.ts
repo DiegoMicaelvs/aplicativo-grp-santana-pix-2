@@ -415,10 +415,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       today.setHours(0, 0, 0, 0);
       const todayReferrals = await storage.getTodayReferralsByUserId(req.user!.id, today);
       
+      // For indicador_nivel_1 users, return unlimited stats
+      if (req.user!.role === "indicador_nivel_1") {
+        return res.json({
+          count: todayReferrals.length,
+          limit: null,
+          remaining: null,
+          isUnlimited: true
+        });
+      }
+      
+      // For all other users, return standard 50-limit stats
       return res.json({
         count: todayReferrals.length,
         limit: 50,
-        remaining: Math.max(0, 50 - todayReferrals.length)
+        remaining: Math.max(0, 50 - todayReferrals.length),
+        isUnlimited: false
       });
     } catch (error) {
       console.error("Error fetching today stats:", error);
