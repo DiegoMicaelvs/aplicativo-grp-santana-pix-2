@@ -44,13 +44,13 @@ import AnalystAnalytics from "@/pages/analyst-analytics";
 import PlateSearchPage from "@/pages/plate-search";
 import { ReferralLinksPage } from "@/pages/referral-links-page";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AdminRoute, PromoterRoute, VendedorRoute, ManagerRoute, AnalystRoute, ReferralLinkRoute } from "./lib/protected-route";
+import { AdminRoute, PromoterRoute, VendedorRoute, ManagerRoute, AnalystRoute, ReferralLinkRoute, HomePageRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={HomePage} />
+      <HomePageRoute path="/" component={HomePage} />
       <Route path="/sobre" component={SobrePage} />
       <Route path="/contato" component={ContatoPage} />
       <Route path="/auth" component={AuthPage} />

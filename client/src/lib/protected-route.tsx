@@ -227,3 +227,35 @@ export function ReferralLinkRoute({
 
   return <Route path={path} component={Component} />;
 }
+
+export function HomePageRoute({
+  path,
+  component: Component,
+}: {
+  path: string;
+  component: () => React.JSX.Element;
+}) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Route path={path}>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Route>
+    );
+  }
+
+  // If user is indicador_nivel_1, redirect to new-referral page
+  if (user && user.role === "indicador_nivel_1") {
+    return (
+      <Route path={path}>
+        <Redirect to="/new-referral" />
+      </Route>
+    );
+  }
+
+  // For all other users (or no user), show the home page
+  return <Route path={path} component={Component} />;
+}

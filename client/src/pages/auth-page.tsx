@@ -153,6 +153,9 @@ export default function AuthPage() {
         case "gerente":
           navigate("/manager");
           break;
+        case "indicador_nivel_1":
+          navigate("/new-referral");
+          break;
         default:
           navigate("/dashboard");
       }
