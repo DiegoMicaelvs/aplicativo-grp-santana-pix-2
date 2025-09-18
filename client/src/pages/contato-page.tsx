@@ -90,7 +90,7 @@ export default function ContatoPage() {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-gray-600 mb-2">
-                <strong>+55 11 97774-4132</strong>
+                <strong>+55 73 9841-4132</strong>
               </p>
               <p className="text-sm text-gray-500">
                 Segunda a Sexta: 08:00 às 18:00<br />
