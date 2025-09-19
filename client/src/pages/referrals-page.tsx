@@ -182,7 +182,7 @@ export default function ReferralsPage() {
                         <TableRow>
                           <TableHead>Nome</TableHead>
                           <TableHead>Veículo</TableHead>
-                          <TableHead>Empresa</TableHead>
+                          {user?.role !== "indicador_nivel_1" && <TableHead>Empresa</TableHead>}
                           <TableHead>Cidade/Estado</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Status</TableHead>
@@ -206,11 +206,13 @@ export default function ReferralsPage() {
                             <TableCell>
                               <div>Placa: {referral.licensePlate}</div>
                             </TableCell>
-                            <TableCell>
-                              <span className="text-sm font-medium text-blue-600">
-                                {company?.name || `ID: ${referral.companyId}`}
-                              </span>
-                            </TableCell>
+                            {user?.role !== "indicador_nivel_1" && (
+                              <TableCell>
+                                <span className="text-sm font-medium text-blue-600">
+                                  {company?.name || `ID: ${referral.companyId}`}
+                                </span>
+                              </TableCell>
+                            )}
                             <TableCell>
                               {referral.city && referral.state ? (
                                 <span className="text-sm">
