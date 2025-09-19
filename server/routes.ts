@@ -2074,7 +2074,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get user team statistics
-  app.get("/api/team/stats", requireAuth, async (req, res) => {
+  app.get("/api/team/stats", requireAuth, forbidRole("indicador_nivel_1", "Usuários do tipo 'Indicador nível 1' não podem acessar estatísticas da equipe"), async (req, res) => {
     try {
       const stats = await storage.getUserTeamStats(req.user!.id);
       return res.json(stats);
@@ -2087,7 +2087,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === ENHANCED WITHDRAWAL ROUTES ===
   
   // Validate CPF for withdrawal
-  app.post("/api/withdrawals/validate-cpf", requireAuth, async (req, res) => {
+  app.post("/api/withdrawals/validate-cpf", requireAuth, forbidRole("indicador_nivel_1", "Usuários do tipo 'Indicador nível 1' não podem acessar funcionalidades de saque"), async (req, res) => {
     try {
       const { cpf } = req.body;
       const isValid = await storage.validateCpfForWithdrawal(req.user!.id, cpf);

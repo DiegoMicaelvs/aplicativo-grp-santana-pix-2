@@ -94,7 +94,7 @@ function Router() {
       <AnalystRoute path="/analyst/referrals" component={AnalystReferrals} />
       <AnalystRoute path="/analyst/users" component={AnalystUsers} />
       <AnalystRoute path="/analyst/analytics" component={AnalystAnalytics} />
-      <Route path="/team-dashboard" component={TeamDashboard} />
+      <ProtectedRoute path="/team-dashboard" component={TeamDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
