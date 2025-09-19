@@ -7,6 +7,7 @@ import {
 import { User, InsertUser, LoginData } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 type AuthContextType = {
   user: User | null;
@@ -21,6 +22,8 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  
   const {
     data: user,
     error,
@@ -41,6 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login realizado com sucesso!",
         description: `Bem-vindo(a) de volta, ${user.fullName}!`,
       });
+      
+      // Redirect based on user role after successful login
+      if (user.role === "indicador_nivel_1") {
+        setLocation("/new-referral");
+      } else if (user.role === "admin") {
+        setLocation("/admin");
+      } else if (user.role === "promotor") {
+        setLocation("/promoter-dashboard");
+      } else {
+        setLocation("/dashboard");
+      }
     },
     onError: (error: Error) => {
       toast({

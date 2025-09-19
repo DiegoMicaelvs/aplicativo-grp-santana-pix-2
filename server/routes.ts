@@ -109,6 +109,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  // Middleware to forbid specific roles from accessing endpoints
+  const forbidRole = (role: string, message?: string) => {
+    return (req: any, res: any, next: any) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Não autorizado" });
+      }
+      if (req.user.role === role) {
+        return res.status(403).json({ 
+          error: "Acesso negado",
+          details: message || `Usuários do tipo '${role}' não podem acessar esta funcionalidade`
+        });
+      }
+      next();
+    };
+  };
+
   // Middleware to check analyst permissions
   const requireAnalystPermission = (permission: AnalystPermission) => {
     return (req: any, res: any, next: any) => {
@@ -823,15 +839,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === WITHDRAWAL ROUTES ===
   
   // Get current user's withdrawal requests
-  app.get("/api/withdrawals", requireAuth, async (req, res) => {
+  app.get("/api/withdrawals", requireAuth, forbidRole("indicador_nivel_1", "Usuários do tipo 'Indicador nível 1' não podem acessar funcionalidades de saque"), async (req, res) => {
     try {
-      // Block withdrawal access for indicador_nivel_1 users
-      if (req.user!.role === "indicador_nivel_1") {
-        return res.status(403).json({ 
-          error: "Acesso negado",
-          details: "Usuários do tipo 'Indicador nível 1' não podem acessar funcionalidades de saque"
-        });
-      }
       
       const withdrawals = await storage.getWithdrawalRequestsByUserId(req.user!.id);
       return res.json(withdrawals);
@@ -842,15 +851,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create withdrawal request
-  app.post("/api/withdrawals", requireAuth, async (req, res) => {
+  app.post("/api/withdrawals", requireAuth, forbidRole("indicador_nivel_1", "Usuários do tipo 'Indicador nível 1' não podem solicitar saques"), async (req, res) => {
     try {
-      // Block withdrawal requests for indicador_nivel_1 users
-      if (req.user!.role === "indicador_nivel_1") {
-        return res.status(403).json({ 
-          error: "Acesso negado",
-          details: "Usuários do tipo 'Indicador nível 1' não podem solicitar saques"
-        });
-      }
       
       const validatedData = createWithdrawalRequestSchema.parse(req.body);
       

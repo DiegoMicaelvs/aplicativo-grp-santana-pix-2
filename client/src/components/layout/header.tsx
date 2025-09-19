@@ -108,9 +108,11 @@ export default function Header() {
                   
                   {user ? (
                     <>
-                      <Link href="/dashboard" onClick={() => setIsOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">Dashboard</Button>
-                      </Link>
+                      {user.role !== 'indicador_nivel_1' && (
+                        <Link href="/dashboard" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">Dashboard</Button>
+                        </Link>
+                      )}
                       <Link href="/referrals" onClick={() => setIsOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">Minhas Indicações</Button>
                       </Link>
@@ -210,9 +212,11 @@ export default function Header() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <Link href="/dashboard">
-                        <DropdownMenuItem>Dashboard</DropdownMenuItem>
-                      </Link>
+                      {user.role !== 'indicador_nivel_1' && (
+                        <Link href="/dashboard">
+                          <DropdownMenuItem>Dashboard</DropdownMenuItem>
+                        </Link>
+                      )}
                       <Link href="/referrals">
                         <DropdownMenuItem>Minhas Indicações</DropdownMenuItem>
                       </Link>

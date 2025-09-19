@@ -38,6 +38,19 @@ export function ProtectedRoute({
     );
   }
 
+  // Restrict indicador_nivel_1 users to only allowed paths
+  if (user.role === "indicador_nivel_1") {
+    const allowedPaths = ["/new-referral", "/nova-indicacao", "/referrals", "/change-password"];
+    
+    if (!allowedPaths.includes(path)) {
+      return (
+        <Route path={path}>
+          <Redirect to="/new-referral" />
+        </Route>
+      );
+    }
+  }
+
   return <Route path={path} component={Component} />;
 }
 
