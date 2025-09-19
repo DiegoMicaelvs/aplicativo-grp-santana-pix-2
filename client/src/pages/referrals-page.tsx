@@ -186,7 +186,7 @@ export default function ReferralsPage() {
                           <TableHead>Cidade/Estado</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Comissão</TableHead>
+                          {user?.role !== "indicador_nivel_1" && <TableHead>Comissão</TableHead>}
                           <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -224,7 +224,9 @@ export default function ReferralsPage() {
                             </TableCell>
                             <TableCell>{formatDate(referral.createdAt)}</TableCell>
                             <TableCell>{getStatusBadge(referral.status)}</TableCell>
-                            <TableCell>{formatCurrency(referral.commissionIndicator)}</TableCell>
+                            {user?.role !== "indicador_nivel_1" && (
+                              <TableCell>{formatCurrency(referral.commissionIndicator)}</TableCell>
+                            )}
                             <TableCell className="text-right">
                               <Button 
                                 variant="ghost" 
