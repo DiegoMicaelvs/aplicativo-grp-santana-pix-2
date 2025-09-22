@@ -119,55 +119,6 @@ export default function SobrePage() {
               </div>
             </section>
 
-            <section>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Contato
-              </h2>
-              <div className="bg-blue-50 p-6 rounded-lg">
-                <p className="text-gray-600">
-                  <strong>Site Oficial:</strong> 
-                  <a href="https://gruposantana.com.br/" 
-                     target="_blank" 
-                     rel="noopener noreferrer" 
-                     className="text-blue-600 hover:text-blue-700 ml-2">
-                    gruposantana.com.br
-                  </a>
-                </p>
-                <p className="text-gray-600 mt-2">
-                  <strong>Instagram:</strong> 
-                  <a href="https://www.instagram.com/gruposantana/" 
-                     target="_blank" 
-                     rel="noopener noreferrer" 
-                     className="text-blue-600 hover:text-blue-700 ml-2">
-                    @gruposantana
-                  </a>
-                </p>
-                <p className="text-gray-600 mt-2">
-                  <strong>Facebook:</strong> 
-                  <a href="https://www.facebook.com/gruposantana" 
-                     target="_blank" 
-                     rel="noopener noreferrer" 
-                     className="text-blue-600 hover:text-blue-700 ml-2">
-                    Grupo Santana
-                  </a>
-                </p>
-                <p className="text-gray-600 mt-2">
-                  <strong>E-mail:</strong> 
-                  <a href="mailto:contato@gruposantana.com.br" 
-                     className="text-blue-600 hover:text-blue-700 ml-2">
-                    contato@gruposantana.com.br
-                  </a>
-                </p>
-                <p className="text-gray-600 mt-2">
-                  <strong>Atendimento:</strong> 
-                  <span className="text-blue-600 ml-2">(31) 3514-6533 | (31) 9 9824-1928</span>
-                </p>
-                <p className="text-gray-600 mt-2">
-                  <strong>Assistência 24h:</strong> 
-                  <span className="text-blue-600 ml-2">0800 400 3013 | 0800 941 8282</span>
-                </p>
-              </div>
-            </section>
           </div>
         </div>
       </main>
