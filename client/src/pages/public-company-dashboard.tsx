@@ -29,6 +29,7 @@ interface CompanyMetrics {
   activeIndicators: number;
   recentReferrals: number;
   pendingReferrals: number;
+  validatedReferrals: number;
   rejectedReferrals: number;
   totalPaidToIndicators: number;
   totalPaidToPromoters: number;

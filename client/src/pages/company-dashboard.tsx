@@ -50,6 +50,7 @@ interface CompanyMetrics {
   activeIndicators: number;
   recentReferrals: number; // Last 30 days
   pendingReferrals: number;
+  validatedReferrals: number;
   rejectedReferrals: number;
   totalPaidToIndicators: number;
   totalPaidToPromoters: number;
@@ -101,6 +102,7 @@ const CHART_COLORS = {
 const prepareReferralStatusData = (metrics: CompanyMetrics) => [
   { name: 'Pendentes', value: metrics.pendingReferrals, color: CHART_COLORS.warning },
   { name: 'Convertidas', value: metrics.convertedReferrals, color: CHART_COLORS.success },
+  { name: 'Validadas', value: metrics.validatedReferrals, color: '#10b981' },
   { name: 'Rejeitadas', value: metrics.rejectedReferrals, color: CHART_COLORS.error }
 ];
 
@@ -847,7 +849,7 @@ export default function CompanyDashboard() {
               <CardTitle>Resumo do Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`grid ${isMobile ? 'grid-cols-3 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+              <div className={`grid ${isMobile ? 'grid-cols-4 gap-2' : 'grid-cols-1 md:grid-cols-4 gap-6'}`}>
                 <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
                   <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: CHART_COLORS.warning }}>
                     {metrics.pendingReferrals}
@@ -860,6 +862,13 @@ export default function CompanyDashboard() {
                     {metrics.convertedReferrals}
                   </div>
                   <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Convertidas</p>
+                </div>
+                
+                <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: '#10b981' }}>
+                    {metrics.validatedReferrals}
+                  </div>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Validadas</p>
                 </div>
                 
                 <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
