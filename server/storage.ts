@@ -2181,7 +2181,10 @@ class DatabaseStorage implements IStorage {
   async createUserWithReferralAttribution(userData: InsertUser, referralToken?: string): Promise<any> {
     try {
       return await db.transaction(async (tx) => {
-        let assignmentData = {};
+        let assignmentData: {
+          promoterId?: number;
+          supervisorId?: number;
+        } = {};
 
         if (referralToken) {
           // Find the referral link and its owner
@@ -2221,7 +2224,12 @@ class DatabaseStorage implements IStorage {
         // Create user with assignment data
         const userDataWithAssignment = {
           ...userData,
-          ...assignmentData
+          ...assignmentData,
+          // Ensure null values are converted to undefined for compatibility
+          createdBy: userData.createdBy ?? undefined,
+          promoterId: assignmentData.promoterId ?? userData.promoterId ?? undefined,
+          analystId: userData.analystId ?? undefined,
+          supervisorId: assignmentData.supervisorId ?? userData.supervisorId ?? undefined
         };
 
         const newUser = await this.createUser(userDataWithAssignment);
