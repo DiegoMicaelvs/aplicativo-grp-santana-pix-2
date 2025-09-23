@@ -310,7 +310,6 @@ export default function SignupPage() {
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="indicador">Indicador - Indico pessoas (R$3 por cadastro validado)</SelectItem>
-                                <SelectItem value="promotor">Promotor - Gerencio equipe de indicadores</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
