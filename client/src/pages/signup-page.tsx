@@ -38,11 +38,6 @@ const signupSchema = z.object({
   fullName: z.string().min(1, "Nome completo é obrigatório"),
   cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
   phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
-  address: z.string().min(5, "Endereço é obrigatório"),
-  city: z.string().min(2, "Cidade é obrigatória"),
-  state: z.string().min(2, "Estado é obrigatório").max(2, "Estado deve ter 2 letras"),
-  zipCode: z.string().min(8, "CEP inválido").max(9, "CEP inválido"),
-  shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
   role: z.enum(["indicador", "promotor"], {
     required_error: "Selecione o tipo de cadastro",
@@ -84,11 +79,6 @@ export default function SignupPage() {
       fullName: "",
       cpf: "",
       phone: "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      shirtSize: "M",
       pixKey: "",
       role: "indicador", // Always default to indicador, especially for referral signups
       password: "",
@@ -285,114 +275,24 @@ export default function SignupPage() {
                     </div>
                   </div>
 
-                  {/* Address Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Endereço</h3>
-                    
-                    <FormField
-                      control={form.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Endereço Completo *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Rua, número, bairro" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Cidade *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Sua cidade" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="state"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Estado *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="UF" maxLength={2} {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="zipCode"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>CEP *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="00000-000" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
 
                   {/* Additional Information */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Informações Adicionais</h3>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="shirtSize"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tamanho da Camisa *</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o tamanho" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="PP">PP</SelectItem>
-                                <SelectItem value="P">P</SelectItem>
-                                <SelectItem value="M">M</SelectItem>
-                                <SelectItem value="G">G</SelectItem>
-                                <SelectItem value="GG">GG</SelectItem>
-                                <SelectItem value="XG">XG</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="pixKey"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Chave PIX *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="CPF, e-mail ou telefone" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="pixKey"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Chave PIX *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="CPF, e-mail ou telefone" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     {/* Only show role selection if not coming from referral link */}
                     {!referralToken && (

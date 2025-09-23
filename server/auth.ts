@@ -217,10 +217,6 @@ export function setupAuth(app: Express) {
               return 'CPF inválido';
             case 'phone':
               return 'Telefone inválido';
-            case 'address':
-              return 'Endereço é obrigatório';
-            case 'shirtSize':
-              return 'Tamanho da camisa é obrigatório';
             case 'pixKey':
               return 'Chave PIX é obrigatória';
             default:

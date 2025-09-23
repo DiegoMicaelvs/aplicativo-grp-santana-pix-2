@@ -41,11 +41,11 @@ export const users = pgTable("users", {
   cpf: text("cpf").notNull().unique(),
   email: text("email").notNull().unique(),
   phone: text("phone").notNull(),
-  address: text("address").notNull(),
-  city: text("city").notNull(),
-  state: text("state").notNull(),
-  zipCode: text("zip_code").notNull(),
-  shirtSize: text("shirt_size").notNull(), // P, M, G, GG, etc
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  shirtSize: text("shirt_size"), // P, M, G, GG, etc
   pixKey: text("pix_key").notNull(),
   role: text("role").default("indicador").notNull().$type<UserRole>(),
   analystLevel: integer("analyst_level").$type<AnalystLevel>(), // Apenas para analistas
@@ -452,11 +452,6 @@ export const insertUserSchema = createInsertSchema(users, {
   cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
   email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
   phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
-  address: z.string().min(5, "Endereço é obrigatório"),
-  city: z.string().min(2, "Cidade é obrigatória"),
-  state: z.string().min(2, "Estado é obrigatório").max(2, "Estado deve ter 2 letras"),
-  zipCode: z.string().min(8, "CEP inválido").max(9, "CEP inválido"),
-  shirtSize: z.string().min(1, "Tamanho da camisa é obrigatório"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
 }).omit({ id: true, createdAt: true, updatedAt: true, balance: true, totalEarnings: true });
 
