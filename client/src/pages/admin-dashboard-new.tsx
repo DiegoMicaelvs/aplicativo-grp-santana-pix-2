@@ -126,7 +126,7 @@ export default function AdminDashboard() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Painel Administrativo</h1>
-              <p className="text-gray-600 mt-2">Controle completo do sistema Metis</p>
+              <p className="text-gray-600 mt-2">Controle completo do sistema Grp Pix</p>
             </div>
           </div>
           <Button
@@ -140,7 +140,6 @@ export default function AdminDashboard() {
           </Button>
         </div>
       </div>
-
       {/* Key Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
@@ -191,7 +190,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-
       {/* 10 Control Tabs - Mobile Optimized with Touch Support */}
       <Tabs defaultValue="overview" className="space-y-6">
         <div className="w-full">
