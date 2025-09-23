@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,8 @@ import {
   Eye,
   Users,
   MousePointer,
-  TrendingUp
+  TrendingUp,
+  ArrowLeft
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { ReferralLink } from "@shared/schema";
@@ -188,6 +190,14 @@ export function ReferralLinksPage() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
+          <div className="flex items-center gap-4 mb-2">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar ao Dashboard
+              </Button>
+            </Link>
+          </div>
           <h1 className="text-3xl font-bold">Links de Referência</h1>
           <p className="text-muted-foreground">
             Gerencie seus links de cadastro e acompanhe as estatísticas
