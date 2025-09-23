@@ -149,6 +149,11 @@ export default function Header() {
                           <Button variant="ghost" className="w-full justify-start">Minha Equipe</Button>
                         </Link>
                       )}
+                      {(user.role === 'admin' || user.role === 'promotor' || (user.role === 'analista' && user.analystLevel === 3)) && (
+                        <Link href="/referral-links" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">Links de Referência</Button>
+                        </Link>
+                      )}
                       <div className="border-t border-gray-200 mt-2 pt-2">
                         <Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => {
                           handleLogout();
@@ -253,6 +258,11 @@ export default function Header() {
                       {user.role === 'promotor' && (
                         <Link href="/team">
                           <DropdownMenuItem>Minha Equipe</DropdownMenuItem>
+                        </Link>
+                      )}
+                      {(user.role === 'admin' || user.role === 'promotor' || (user.role === 'analista' && user.analystLevel === 3)) && (
+                        <Link href="/referral-links">
+                          <DropdownMenuItem>Links de Referência</DropdownMenuItem>
                         </Link>
                       )}
                       <DropdownMenuSeparator />
