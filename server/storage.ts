@@ -2219,22 +2219,8 @@ class DatabaseStorage implements IStorage {
         }
 
         // Create user with assignment data
-        // Convert null values to undefined to match expected types
-        const cleanedUserData = {
-          ...userData,
-          createdBy: userData.createdBy ?? undefined,
-          promoterId: userData.promoterId ?? undefined,
-          analystId: userData.analystId ?? undefined,
-          supervisorId: userData.supervisorId ?? undefined,
-          address: userData.address ?? undefined,
-          city: userData.city ?? undefined,
-          state: userData.state ?? undefined,
-          zipCode: userData.zipCode ?? undefined,
-          shirtSize: userData.shirtSize ?? undefined,
-        };
-        
         const userDataWithAssignment = {
-          ...cleanedUserData,
+          ...userData,
           ...assignmentData
         };
 
