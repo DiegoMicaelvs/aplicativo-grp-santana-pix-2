@@ -128,7 +128,6 @@ export default function PublicCompanyDashboard() {
               <Badge variant={metrics.conversionRate >= 15 ? "default" : "secondary"}>
                 {metrics.conversionRate.toFixed(1)}% Conversão
               </Badge>
-              <Badge variant="outline">{metrics.activeIndicators} Indicadores Ativos</Badge>
             </div>
           </CardContent>
         </Card>
@@ -160,7 +159,7 @@ export default function PublicCompanyDashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{metrics.totalIndicators}</div>
               <p className="text-xs text-muted-foreground">
-                {metrics.activeIndicators} ativos
+                cadastrados
               </p>
             </CardContent>
           </Card>

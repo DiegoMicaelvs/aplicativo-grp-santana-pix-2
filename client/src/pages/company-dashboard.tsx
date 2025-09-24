@@ -262,7 +262,6 @@ export default function CompanyDashboard() {
       ["Valores Liberados - Indicadores", formatCurrency(metrics.totalPaidToIndicators)],
       ["Valores Liberados - Promotores", formatCurrency(metrics.totalPaidToPromoters)],
       ["Total Valores Liberados", formatCurrency(metrics.totalPaidValues)],
-      ["Indicadores Ativos", metrics.activeIndicators.toString()],
       ["Indicações Recentes (30 dias)", metrics.recentReferrals.toString()],
       ["Indicações Pendentes", metrics.pendingReferrals.toString()],
       ["Indicações Rejeitadas", metrics.rejectedReferrals.toString()],
@@ -435,7 +434,6 @@ export default function CompanyDashboard() {
                 <Badge variant={metrics.conversionRate >= 15 ? "default" : "secondary"}>
                   {metrics.conversionRate.toFixed(1)}% Conversão
                 </Badge>
-                <Badge variant="outline">{metrics.activeIndicators} Indicadores Ativos</Badge>
               </div>
             </CardContent>
           </Card>
@@ -467,7 +465,7 @@ export default function CompanyDashboard() {
               <CardContent>
                 <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{metrics.totalIndicators}</div>
                 <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
-                  {metrics.activeIndicators} ativos
+                  cadastrados
                 </p>
               </CardContent>
             </Card>
