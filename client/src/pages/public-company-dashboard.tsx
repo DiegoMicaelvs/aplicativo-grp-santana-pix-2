@@ -230,39 +230,6 @@ export default function PublicCompanyDashboard() {
           </CardContent>
         </Card>
 
-        {/* Values Released */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-orange-600" />
-              Valores Liberados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(metrics.totalPaidToIndicators)}
-                </div>
-                <p className="text-sm text-muted-foreground">Liberado para Indicadores</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-500">
-                  {formatCurrency(metrics.totalPaidToPromoters)}
-                </div>
-                <p className="text-sm text-muted-foreground">Liberado para Promotores</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-700">
-                  {formatCurrency(metrics.totalPaidValues)}
-                </div>
-                <p className="text-sm text-muted-foreground">Total Liberado</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Status Overview */}
         <Card>
@@ -270,12 +237,19 @@ export default function PublicCompanyDashboard() {
             <CardTitle>Status das Indicações</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">
                   {metrics.pendingReferrals}
                 </div>
                 <p className="text-sm text-muted-foreground">Pendentes</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {metrics.validatedReferrals ?? 0}
+                </div>
+                <p className="text-sm text-muted-foreground">Validadas</p>
               </div>
               
               <div className="text-center">
