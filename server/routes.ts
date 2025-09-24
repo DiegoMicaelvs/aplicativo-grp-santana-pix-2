@@ -1754,6 +1754,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get financial statistics for payments dashboard
+  app.get("/api/admin/financial-stats", requireAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getFinancialStatistics();
+      return res.json(stats);
+    } catch (error) {
+      console.error("Error fetching financial statistics:", error);
+      return res.status(500).json({ error: "Erro ao buscar estatísticas financeiras" });
+    }
+  });
+
   // Get cash flow entries
   app.get("/api/admin/cash-flow", requireAdmin, async (req, res) => {
     try {

@@ -33,6 +33,16 @@ export default function AdminPaymentsPage() {
     queryKey: ["/api/admin/cash-flow"]
   });
 
+  const { data: financialStats = { 
+    totalAvailableBalance: 0, 
+    totalPaidOut: 0, 
+    totalCommissionsGenerated: 0, 
+    totalCommissionsEarned: 0,
+    withdrawalStats: { totalRequested: 0, totalPending: 0, totalApproved: 0, totalPaid: 0 }
+  }, isLoading: financialStatsLoading } = useQuery<any>({
+    queryKey: ["/api/admin/financial-stats"]
+  });
+
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/users"]
   });
@@ -51,6 +61,7 @@ export default function AdminPaymentsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/cash-flow"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/financial-stats"] });
       toast({ title: "Saque processado com sucesso!" });
       setIsDialogOpen(false);
       setProcessingNotes("");
@@ -163,7 +174,7 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  if (withdrawalsLoading || cashFlowLoading) {
+  if (withdrawalsLoading || cashFlowLoading || financialStatsLoading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
@@ -192,6 +203,28 @@ export default function AdminPaymentsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Saldo Disponível</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">R$ {financialStats.totalAvailableBalance.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">disponível para saque</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Comissões Geradas</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">R$ {financialStats.totalCommissionsEarned.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">em indicações validadas</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Saques Pendentes</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -203,37 +236,12 @@ export default function AdminPaymentsPage() {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pago</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Já Pago</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">R$ {stats.totalPaidAmount.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">{stats.approvedWithdrawals} saques aprovados</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Entradas</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">R$ {stats.totalInflow.toFixed(2)}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fluxo Líquido</CardTitle>
-            {netCashFlow >= 0 ? 
-              <TrendingUp className="h-4 w-4 text-green-600" /> : 
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            }
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              R$ {netCashFlow.toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold text-green-600">R$ {financialStats.totalPaidOut.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">pagamentos realizados</p>
           </CardContent>
         </Card>
       </div>
@@ -472,7 +480,18 @@ export default function AdminPaymentsPage() {
             {filteredWithdrawals.length === 0 && (
               <div className="text-center py-8">
                 <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Nenhuma solicitação de saque encontrada.</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma solicitação de saque encontrada</h3>
+                <p className="text-gray-500 mb-4">
+                  {withdrawals.length === 0 
+                    ? "Ainda não há solicitações de saque no sistema. Os usuários podem solicitar saques quando tiverem saldo disponível."
+                    : "Nenhuma solicitação corresponde aos filtros aplicados."
+                  }
+                </p>
+                {withdrawals.length === 0 && financialStats.totalAvailableBalance > 0 && (
+                  <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-700">
+                    <strong>R$ {financialStats.totalAvailableBalance.toFixed(2)}</strong> estão disponíveis para saque no sistema, mas nenhum usuário fez uma solicitação ainda.
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -545,7 +564,15 @@ export default function AdminPaymentsPage() {
             {cashFlowData.entries.length === 0 && (
               <div className="text-center py-8">
                 <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Nenhuma movimentação encontrada.</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma movimentação de caixa registrada</h3>
+                <p className="text-gray-500 mb-4">
+                  O fluxo de caixa será alimentado automaticamente quando saques forem processados e pagos.
+                </p>
+                {financialStats.totalAvailableBalance > 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg text-sm text-green-700 max-w-md mx-auto">
+                    Há <strong>R$ {financialStats.totalAvailableBalance.toFixed(2)}</strong> disponíveis para saque no sistema. Quando os usuários solicitarem saques e forem processados, as movimentações aparecerão aqui.
+                  </div>
+                )}
               </div>
             )}
           </div>
