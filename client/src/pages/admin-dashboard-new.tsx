@@ -70,6 +70,8 @@ export default function AdminDashboard() {
       .reduce((sum, r) => sum + (parseFloat(r.commissionIndicator || '0') || 0) + (parseFloat(r.commissionPromoter || '0') || 0), 0),
     pendingWithdrawals: withdrawals.filter(w => w.status === "pending").length,
     totalPendingAmount: withdrawals.filter(w => w.status === "pending")
+      .reduce((sum, w) => sum + parseFloat(w.amount), 0),
+    totalPaid: withdrawals.filter(w => w.status === "paid")
       .reduce((sum, w) => sum + parseFloat(w.amount), 0)
   };
 
@@ -322,8 +324,8 @@ export default function AdminDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">R$ {stats.totalCommissions.toFixed(2)}</div>
-                  <p className="text-sm text-gray-600">em comissões</p>
+                  <div className="text-2xl font-bold text-purple-600">R$ {stats.totalPaid.toFixed(2)}</div>
+                  <p className="text-sm text-gray-600">total pago</p>
                 </CardContent>
               </Link>
             </Card>
