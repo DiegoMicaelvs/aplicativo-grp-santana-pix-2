@@ -329,6 +329,10 @@ export default function PromoterDashboard() {
         return <Badge variant="outline" className="bg-purple-100 text-purple-800">Validado</Badge>;
       case 'paid':
         return <Badge variant="outline" className="bg-emerald-100 text-emerald-800">Pago</Badge>;
+      case 'not_validated':
+        return <Badge variant="outline" className="bg-gray-100 text-gray-800">Não validado</Badge>;
+      case 'processing':
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em processamento</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -827,8 +831,8 @@ export default function PromoterDashboard() {
                     </TableHeader>
                     <TableBody>
                       {teamReferrals.map((referral) => {
-                        const registered = referral.status !== 'rejected' ? 1.0 : 0;
-                        const converted = referral.status === 'converted' || referral.status === 'paid' ? 10.0 : 0;
+                        const registered = (referral.status === 'validated' || referral.status === 'converted' || referral.status === 'paid') ? 1.0 : 0;
+                        const converted = (referral.status === 'converted' || referral.status === 'paid') ? 10.0 : 0;
                         const commission = registered + converted;
                         
                         return (
