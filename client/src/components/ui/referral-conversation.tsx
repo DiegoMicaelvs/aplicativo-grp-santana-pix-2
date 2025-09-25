@@ -113,6 +113,11 @@ export function ReferralConversationComponent({ referralId, userRole }: Referral
   const canAddMessage = userRole === "admin" || userRole === "analista" || userRole === "indicador" || userRole === "promotor";
   const canAddInternalMessage = userRole === "admin" || userRole === "analista";
 
+  // Hide conversation history for level 1 indicators
+  if (userRole === 'indicador_nivel_1') {
+    return null;
+  }
+
   return (
     <Card className="mt-6">
       <CardHeader className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
