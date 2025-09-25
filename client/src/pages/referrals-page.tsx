@@ -360,7 +360,7 @@ export default function ReferralsPage() {
                     </div>
                   )}
                   
-                  {selectedReferral.notes && (
+                  {user?.role !== 'indicador_nivel_1' && selectedReferral.notes && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Notas do Sistema</h4>
                       <p className="mt-1 text-sm text-gray-600">{selectedReferral.notes}</p>
