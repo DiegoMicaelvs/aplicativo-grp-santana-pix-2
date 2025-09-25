@@ -351,7 +351,7 @@ export default function ReferralsPage() {
                     </div>
                   </div>
                   
-                  {(selectedReferral.status === 'converted' || selectedReferral.status === 'validated' || selectedReferral.status === 'paid') && (
+                  {user?.role !== 'indicador_nivel_1' && (selectedReferral.status === 'converted' || selectedReferral.status === 'validated' || selectedReferral.status === 'paid') && (
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Comissão</h4>
                       <p className="mt-1 text-lg font-medium text-green-600">
