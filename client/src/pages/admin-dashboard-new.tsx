@@ -65,8 +65,9 @@ export default function AdminDashboard() {
     totalReferrals: referrals.length,
     pendingReferrals: referrals.filter(r => r.status === "pending").length,
     validatedReferrals: referrals.filter(r => r.status === "validated").length,
-    totalCommissions: referrals.reduce((sum, r) => 
-      sum + (parseFloat(r.commissionIndicator || '0') || 0) + (parseFloat(r.commissionPromoter || '0') || 0), 0),
+    totalCommissions: referrals
+      .filter(r => ['validated', 'converted', 'paid'].includes(r.status))
+      .reduce((sum, r) => sum + (parseFloat(r.commissionIndicator || '0') || 0) + (parseFloat(r.commissionPromoter || '0') || 0), 0),
     pendingWithdrawals: withdrawals.filter(w => w.status === "pending").length,
     totalPendingAmount: withdrawals.filter(w => w.status === "pending")
       .reduce((sum, w) => sum + parseFloat(w.amount), 0)

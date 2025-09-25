@@ -654,9 +654,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
 
-      // Calculate commissions ONLY for converted/paid referrals (valores gastos = actually spent)
+      // Calculate commissions ONLY for validated/converted/paid referrals (valores gastos = actually spent)
       const paidReferrals = companyReferrals.filter((r: any) => 
-        r.status === 'converted' || r.status === 'paid'
+        r.status === 'validated' || r.status === 'converted' || r.status === 'paid'
       );
       
       const totalCommissionIndicators = paidReferrals.reduce((sum: number, r: any) => 
@@ -770,9 +770,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
 
-      // Calculate commissions ONLY for converted/paid referrals
+      // Calculate commissions ONLY for validated/converted/paid referrals
       const paidReferrals = companyReferrals.filter((r: any) => 
-        r.status === 'converted' || r.status === 'paid'
+        r.status === 'validated' || r.status === 'converted' || r.status === 'paid'
       );
       
       const totalCommissionIndicators = paidReferrals.reduce((sum: number, r: any) => 

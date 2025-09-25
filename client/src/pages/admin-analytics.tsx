@@ -58,8 +58,9 @@ export default function AdminAnalyticsPage() {
     validatedReferrals: filteredReferrals.filter((r: any) => r.status === "validated").length,
     conversionRate: filteredReferrals.length > 0 ? 
       (filteredReferrals.filter((r: any) => r.status === "validated").length / filteredReferrals.length * 100) : 0,
-    totalCommissions: filteredReferrals.reduce((sum: number, r: any) => 
-      sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0),
+    totalCommissions: filteredReferrals
+      .filter((r: any) => ['validated', 'converted', 'paid'].includes(r.status))
+      .reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0),
     avgReferralsPerIndicator: registrationStats.totalIndicators > 0 ? 
       filteredReferrals.length / registrationStats.totalIndicators : 0
   };
