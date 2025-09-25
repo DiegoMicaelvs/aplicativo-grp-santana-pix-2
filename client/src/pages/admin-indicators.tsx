@@ -50,7 +50,10 @@ export default function AdminIndicatorsPage() {
                          user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.cpf?.includes(searchTerm);
     const matchesRole = roleFilter === "all_roles" || user.role === roleFilter;
-    const matchesStatus = statusFilter === "all_statuses" || user.status === statusFilter;
+    const matchesStatus = statusFilter === "all_statuses" || 
+                          (statusFilter === "active" && user.isActive === true) ||
+                          (statusFilter === "inactive" && user.isActive === false) ||
+                          (statusFilter === "suspended" && user.isActive === false);
     
     return matchesSearch && matchesRole && matchesStatus;
   });
@@ -58,7 +61,7 @@ export default function AdminIndicatorsPage() {
   // Calculate statistics
   const stats = {
     totalIndicators: (users as any[]).filter((u: any) => u.role === "indicador").length,
-    activeIndicators: (users as any[]).filter((u: any) => u.role === "indicador" && u.status === "active").length,
+    activeIndicators: (users as any[]).filter((u: any) => u.role === "indicador" && u.isActive === true).length,
     totalReferrals: (referrals as any[]).length,
     totalCommissions: (referrals as any[]).reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0)
   };
@@ -371,8 +374,8 @@ export default function AdminIndicatorsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusBadgeColor(user.status || "active")}>
-                        {user.status || "active"}
+                      <Badge className={getStatusBadgeColor(user.isActive ? "active" : "inactive")}>
+                        {user.isActive ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
                     <TableCell>
