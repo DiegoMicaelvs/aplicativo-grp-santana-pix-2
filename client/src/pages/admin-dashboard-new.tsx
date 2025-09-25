@@ -177,7 +177,7 @@ export default function AdminDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">R$ {stats.totalCommissions.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-green-600">R$ {stats.totalPaid.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">comissões geradas</p>
           </CardContent>
         </Card>
