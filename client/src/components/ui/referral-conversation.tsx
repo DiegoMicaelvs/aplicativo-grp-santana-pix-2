@@ -113,8 +113,8 @@ export function ReferralConversationComponent({ referralId, userRole }: Referral
   const canAddMessage = userRole === "admin" || userRole === "analista" || userRole === "indicador" || userRole === "promotor";
   const canAddInternalMessage = userRole === "admin" || userRole === "analista";
 
-  // Hide conversation history for level 1 indicators
-  if (userRole === 'indicador_nivel_1') {
+  // Hide conversation history for level 1 indicators, indicators, and promoters
+  if (userRole === 'indicador_nivel_1' || userRole === 'indicador' || userRole === 'promotor') {
     return null;
   }
 
