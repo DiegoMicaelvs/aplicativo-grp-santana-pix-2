@@ -129,13 +129,18 @@ export default function ReferralsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 font-heading">Minhas Indicações</h1>
-              <p className="mt-1 text-gray-600">Gerencie e acompanhe todas as suas indicações</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-heading">Minhas Indicações</h1>
+              <p className="mt-1 text-sm sm:text-base text-gray-600">
+                {user?.role === 'indicador_nivel_1' ? 
+                  'Acompanhe o status de todas as suas indicações' :
+                  'Gerencie e acompanhe todas as suas indicações'
+                }
+              </p>
             </div>
-            <div className="mt-4 sm:mt-0 flex items-center gap-3">
+            <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <BackButton to="/dashboard" />
-              <Link href="/new-referral">
-                <Button>Nova Indicação</Button>
+              <Link href="/new-referral" className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto">Nova Indicação</Button>
               </Link>
             </div>
           </div>
@@ -176,7 +181,75 @@ export default function ReferralsPage() {
                 </div>
               ) : filteredReferrals.length > 0 ? (
                 <>
-                  <div className="overflow-x-auto">
+                  {/* Mobile Card View */}
+                  <div className="block md:hidden space-y-4">
+                    {paginatedReferrals.map((referral) => {
+                      const company = companies?.find((c) => c.id === referral.companyId);
+                      return (
+                        <Card key={referral.id} className="shadow-sm">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h3 className="font-medium text-base">{referral.fullName}</h3>
+                                <p className="text-sm text-gray-600">{referral.phone}</p>
+                              </div>
+                              <div className="flex flex-col items-end gap-2">
+                                {getStatusBadge(referral.status)}
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleViewDetails(referral)}
+                                  className="text-xs"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" /> Ver
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Placa:</span>
+                                <span className="font-medium">{referral.licensePlate}</span>
+                              </div>
+                              
+                              {referral.city && referral.state && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Local:</span>
+                                  <span>{referral.city}/{referral.state}</span>
+                                </div>
+                              )}
+                              
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Data:</span>
+                                <span>{formatDate(referral.createdAt)}</span>
+                              </div>
+                              
+                              {user?.role !== "indicador_nivel_1" && user?.role !== "indicador" && user?.role !== "promotor" && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Empresa:</span>
+                                  <span className="text-blue-600 font-medium">
+                                    {company?.name || `ID: ${referral.companyId}`}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {user?.role !== "indicador_nivel_1" && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Comissão:</span>
+                                  <span className="text-green-600 font-medium">
+                                    {formatCurrency(referral.commissionIndicator)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>

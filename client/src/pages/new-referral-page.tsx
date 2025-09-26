@@ -119,7 +119,7 @@ export default function NewReferralPage() {
   // Update form companyId when tenantConfig loads (for non-admin users)
   useEffect(() => {
     if (tenantConfig && user?.role !== "admin") {
-      form.setValue("companyId", tenantConfig.companyId.toString());
+      form.setValue("companyId", tenantConfig.companyId as any);
     }
   }, [tenantConfig, user?.role, form]);
 
@@ -355,7 +355,7 @@ export default function NewReferralPage() {
             </CardHeader>
             <CardContent>
               {/* Sistema de Segurança - Regras e Contador */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="space-y-4 mb-6">
                 <Alert className="border-blue-200 bg-blue-50">
                   <AlertTriangle className="h-4 w-4 text-blue-600" />
                   <AlertDescription className="text-blue-800">
@@ -377,12 +377,12 @@ export default function NewReferralPage() {
                   <Alert className="border-2 border-purple-200 bg-purple-50">
                     <Check className="h-4 w-4 text-purple-600" />
                     <AlertDescription className="text-purple-800">
-                      <div className="font-semibold mb-2">📊 Cadastros de Hoje</div>
+                      <div className="font-semibold mb-2">📊 Suas Indicações Hoje</div>
                       <div className="text-lg font-bold">
-                        {todayStats?.count || 0} (Ilimitado ⭐)
+                        {todayStats?.count || 0} indicações
                       </div>
                       <div className="text-sm">
-                        Perfil Indicador Nível 1 - Sem limites!
+                        Perfil Indicador Nível 1 - Sem limites! ⭐
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                         <div className="h-2 rounded-full bg-purple-500 w-full"></div>
