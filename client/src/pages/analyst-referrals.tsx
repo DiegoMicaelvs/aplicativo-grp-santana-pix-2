@@ -43,8 +43,7 @@ const validateSchema = z.object({
   nameCorrect: z.boolean(),
   plateCorrect: z.boolean(),
   phoneCorrect: z.boolean(),
-  finalStatus: z.enum(["validated", "rejected"]),
-  notes: z.string().optional(),
+  validationNotes: z.string().optional(),
 });
 
 type ValidateFormValues = z.infer<typeof validateSchema>;
@@ -151,8 +150,7 @@ export default function AnalystReferrals() {
       nameCorrect: true,
       plateCorrect: true,
       phoneCorrect: true,
-      finalStatus: "validated",
-      notes: "",
+      validationNotes: "",
     },
   });
 
@@ -256,14 +254,13 @@ export default function AnalystReferrals() {
   const handleValidateClick = (referral: Referral) => {
     setSelectedReferral(referral);
     form.reset({
-      // vehicleBrand: referral.vehicleBrand || "",
+      vehicleBrand: referral.vehicleBrand || "",
       vehicleModel: referral.vehicleModel || "",
       vehicleYear: referral.vehicleYear || "",
       nameCorrect: referral.nameCorrect ?? true,
       plateCorrect: referral.plateCorrect ?? true,
       phoneCorrect: referral.phoneCorrect ?? true,
-      finalStatus: "validated",
-      notes: "",
+      validationNotes: "",
     });
     setIsValidateDialogOpen(true);
   };
@@ -717,38 +714,10 @@ export default function AnalystReferrals() {
 
             <div className="space-y-4 border-t pt-4">
               <div>
-                <Label htmlFor="finalStatus">Status Final</Label>
-                <Select
-                  value={form.watch("finalStatus")}
-                  onValueChange={(value: "validated" | "rejected") =>
-                    form.setValue("finalStatus", value)
-                  }
-                >
-                  <SelectTrigger id="finalStatus">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="validated">
-                      <div className="flex items-center">
-                        <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                        Validado
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="rejected">
-                      <div className="flex items-center">
-                        <XCircle className="h-4 w-4 mr-2 text-red-600" />
-                        Rejeitado
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Observações</Label>
+                <Label htmlFor="validationNotes">Observações da Validação</Label>
                 <textarea
-                  id="notes"
-                  {...form.register("notes")}
+                  id="validationNotes"
+                  {...form.register("validationNotes")}
                   className="w-full min-h-[80px] px-3 py-2 border rounded-md"
                   placeholder="Adicione observações sobre a validação..."
                 />
