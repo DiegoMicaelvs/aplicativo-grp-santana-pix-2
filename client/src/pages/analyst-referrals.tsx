@@ -328,11 +328,11 @@ export default function AnalystReferrals() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Indicações para Análise</h1>
-          <p className="text-gray-600">Visualize e valide as indicações cadastradas</p>
+    <div className="container mx-auto py-4 sm:py-6 space-y-4 sm:space-y-6 px-4 sm:px-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Indicações para Análise</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Visualize e valide as indicações cadastradas</p>
           {user?.analystLevel === 3 && (
             <Badge className="mt-2 bg-purple-100 text-purple-800">
               <Shield className="h-3 w-3 mr-1" />
@@ -345,19 +345,19 @@ export default function AnalystReferrals() {
               Atualizando dados...
             </Badge>
           )}
-          <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
-            <span>📊 {referrals.length} indicações no sistema</span>
-            <span>🔄 Atualização automática a cada 15s</span>
+          <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+            <span>📊 {referrals.length} indicações</span>
+            <span>🔄 Atualização automática</span>
             <span>⏰ {new Date().toLocaleTimeString('pt-BR')}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={handleManualRefresh}
             disabled={isRefreshing || isFetching}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${(isRefreshing || isFetching) ? 'animate-spin' : ''}`} />
             Atualizar
@@ -372,7 +372,7 @@ export default function AnalystReferrals() {
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="search">Buscar</Label>
               <div className="relative">
@@ -425,83 +425,168 @@ export default function AnalystReferrals() {
               Nenhuma indicação encontrada
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>Placa</TableHead>
-                    <TableHead>Indicador</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data</TableHead>
-                    {canEdit && <TableHead>Ações</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredReferrals.map((referral) => {
-                    // Usar userId para mostrar o usuário ATUAL da indicação, não quem criou
-                    const indicador = users.find((u) => u.id === referral.userId);
-                    const criador = users.find((u) => u.id === referral.createdBy);
-                    const company = companies.find((c) => c.id === referral.companyId);
-                    return (
-                      <TableRow key={referral.id}>
-                        <TableCell>#{referral.id}</TableCell>
-                        <TableCell className="font-medium">{referral.fullName}</TableCell>
-                        <TableCell>{referral.phone}</TableCell>
-                        <TableCell>{referral.licensePlate}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium">
-                              {indicador?.fullName || "N/A"}
+            <>
+              {/* Mobile Card View */}
+              <div className="block lg:hidden space-y-4">
+                {filteredReferrals.map((referral) => {
+                  const indicador = users.find((u) => u.id === referral.userId);
+                  const criador = users.find((u) => u.id === referral.createdBy);
+                  const company = companies.find((c) => c.id === referral.companyId);
+                  return (
+                    <Card key={referral.id} className="shadow-sm border-l-4 border-l-blue-500">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-mono text-gray-500">#{referral.id}</span>
+                              <Badge className={statusColors[referral.status]}>
+                                {statusLabels[referral.status]}
+                              </Badge>
                             </div>
-                            {criador && criador.id !== indicador?.id && (
-                              <div className="text-xs text-gray-500">
-                                Criado por: {criador.fullName}
-                              </div>
-                            )}
+                            <h3 className="font-medium text-base">{referral.fullName}</h3>
+                            <p className="text-sm text-gray-600">{referral.phone}</p>
                           </div>
-                        </TableCell>
-                        <TableCell>{company?.name || "N/A"}</TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[referral.status]}>
-                            {statusLabels[referral.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(referral.createdAt).toLocaleDateString("pt-BR")}
-                        </TableCell>
+                        </div>
+                        
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Placa:</span>
+                            <span className="font-medium">{referral.licensePlate}</span>
+                          </div>
+                          
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Indicador:</span>
+                            <div className="text-right">
+                              <div className="font-medium">
+                                {indicador?.fullName || "N/A"}
+                              </div>
+                              {criador && criador.id !== indicador?.id && (
+                                <div className="text-xs text-gray-500">
+                                  Criado por: {criador.fullName}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Empresa:</span>
+                            <span>{company?.name || "N/A"}</span>
+                          </div>
+                          
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Data:</span>
+                            <span>{new Date(referral.createdAt).toLocaleDateString("pt-BR")}</span>
+                          </div>
+                        </div>
+                        
                         {canEdit && (
+                          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditClick(referral)}
+                              className="flex-1 text-xs"
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              Editar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleValidateClick(referral)}
+                              disabled={referral.status === "paid"}
+                              className="flex-1 text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Validar
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead>Placa</TableHead>
+                      <TableHead>Indicador</TableHead>
+                      <TableHead>Empresa</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Data</TableHead>
+                      {canEdit && <TableHead>Ações</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredReferrals.map((referral) => {
+                      // Usar userId para mostrar o usuário ATUAL da indicação, não quem criou
+                      const indicador = users.find((u) => u.id === referral.userId);
+                      const criador = users.find((u) => u.id === referral.createdBy);
+                      const company = companies.find((c) => c.id === referral.companyId);
+                      return (
+                        <TableRow key={referral.id}>
+                          <TableCell>#{referral.id}</TableCell>
+                          <TableCell className="font-medium">{referral.fullName}</TableCell>
+                          <TableCell>{referral.phone}</TableCell>
+                          <TableCell>{referral.licensePlate}</TableCell>
                           <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditClick(referral)}
-                              >
-                                <Edit className="h-4 w-4 mr-1" />
-                                Editar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleValidateClick(referral)}
-                                disabled={referral.status === "paid"}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Validar
-                              </Button>
+                            <div className="space-y-1">
+                              <div className="font-medium">
+                                {indicador?.fullName || "N/A"}
+                              </div>
+                              {criador && criador.id !== indicador?.id && (
+                                <div className="text-xs text-gray-500">
+                                  Criado por: {criador.fullName}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
-                        )}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                          <TableCell>{company?.name || "N/A"}</TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[referral.status]}>
+                              {statusLabels[referral.status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(referral.createdAt).toLocaleDateString("pt-BR")}
+                          </TableCell>
+                          {canEdit && (
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditClick(referral)}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleValidateClick(referral)}
+                                  disabled={referral.status === "paid"}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Validar
+                                </Button>
+                              </div>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
