@@ -543,7 +543,9 @@ export default function AdminReferralsDetailedPage() {
     totalReferrals: referrals.length,
     pendingReferrals: referrals.filter((r: any) => r.status === "pending").length,
     validatedReferrals: referrals.filter((r: any) => r.status === "validated").length,
-    totalCommissions: referrals.reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0)
+    totalCommissions: referrals
+      .filter((r: any) => ['validated', 'converted'].includes(r.status))
+      .reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0)
   };
 
   const getStatusBadgeColor = (status: ReferralStatus) => {
