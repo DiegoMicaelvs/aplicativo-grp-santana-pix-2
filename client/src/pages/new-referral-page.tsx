@@ -81,7 +81,7 @@ const referralSchema = z.object({
     .min(1, "Pelo menos uma placa é obrigatória")
     .max(5, "Máximo 5 placas por indicação"),
   hasInsurance: z.boolean(),
-  companyId: z.string().transform(val => val && val !== "" ? Number(val) : 1), // Company ID determined by tenant
+  companyId: z.coerce.number().positive("Empresa é obrigatória"), // Company ID determined by tenant
   city: z.string().min(2, "Cidade é obrigatória"),
   state: z.string().length(2, "Selecione um estado"),
 });
@@ -110,7 +110,7 @@ export default function NewReferralPage() {
       phone: "",
       licensePlates: [""], // Start with one empty plate
       hasInsurance: false,
-      companyId: user?.role === "admin" ? "" as any : "1", // Will be updated by useEffect
+      companyId: user?.role === "admin" ? 0 : 1, // Will be updated by useEffect for non-admin users
       city: "",
       state: "",
     },
@@ -119,7 +119,7 @@ export default function NewReferralPage() {
   // Update form companyId when tenantConfig loads (for non-admin users)
   useEffect(() => {
     if (tenantConfig && user?.role !== "admin") {
-      form.setValue("companyId", tenantConfig.companyId as any);
+      form.setValue("companyId", tenantConfig.companyId);
     }
   }, [tenantConfig, user?.role, form]);
 
@@ -603,10 +603,10 @@ export default function NewReferralPage() {
                                   } else {
                                     setIsCustomCompany(false);
                                     setCustomCompanyName("");
-                                    field.onChange(value);
+                                    field.onChange(parseInt(value));
                                   }
                                 }}
-                                value={isCustomCompany ? "custom" : field.value.toString()}
+                                value={isCustomCompany ? "custom" : field.value?.toString() || ""}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -650,7 +650,7 @@ export default function NewReferralPage() {
                           ) : (
                             <div className="mt-2">
                               <Input 
-                                value="Grupo Santana" 
+                                value={tenantConfig?.companyName || "Grupo Santana"} 
                                 disabled 
                                 className="bg-gray-50"
                               />
