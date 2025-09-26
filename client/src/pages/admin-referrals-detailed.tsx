@@ -1549,7 +1549,45 @@ export default function AdminReferralsDetailedPage() {
                                     />
                                   </div>
                                 
-                                {selectedReferral.notes && (
+                                {/* Histórico de Status com Observações */}
+                                {selectedReferral.statusHistory && selectedReferral.statusHistory.length > 0 && (
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium">Histórico de Observações:</label>
+                                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                                      {selectedReferral.statusHistory
+                                        .filter((entry: any) => entry.notes && entry.notes.trim())
+                                        .sort((a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
+                                        .map((entry: any, index: number) => {
+                                          const entryUser = users.find(u => u.id === entry.changedBy);
+                                          const entryDate = new Date(entry.changedAt);
+                                          
+                                          return (
+                                            <div key={index} className="p-3 bg-gray-50 rounded-lg border-l-4 border-blue-200">
+                                              <div className="flex justify-between items-start mb-2">
+                                                <div className="flex items-center gap-2">
+                                                  <Badge variant="outline" className="text-xs">
+                                                    {getStatusLabel(entry.status)}
+                                                  </Badge>
+                                                  <span className="text-xs text-gray-600 font-medium">
+                                                    {entryUser?.fullName || 'Usuário não encontrado'}
+                                                  </span>
+                                                </div>
+                                                <span className="text-xs text-gray-500">
+                                                  {format(entryDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                                </span>
+                                              </div>
+                                              <div className="text-sm text-gray-700">
+                                                {entry.notes}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Fallback para observações simples (compatibilidade) */}
+                                {selectedReferral.notes && (!selectedReferral.statusHistory || selectedReferral.statusHistory.filter((entry: any) => entry.notes && entry.notes.trim()).length === 0) && (
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium">Observações Anteriores:</label>
                                     <div className="p-2 bg-gray-50 rounded text-sm">
