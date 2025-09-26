@@ -454,6 +454,17 @@ export default function AnalystReferrals() {
                             <span className="font-medium">{referral.licensePlate}</span>
                           </div>
                           
+                          {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Veículo:</span>
+                              <span className="font-medium text-right">
+                                {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              </span>
+                            </div>
+                          )}
+                          
                           <div className="flex justify-between">
                             <span className="text-gray-500">Indicador:</span>
                             <div className="text-right">
@@ -517,6 +528,7 @@ export default function AnalystReferrals() {
                       <TableHead>Nome</TableHead>
                       <TableHead>Telefone</TableHead>
                       <TableHead>Placa</TableHead>
+                      <TableHead>Veículo</TableHead>
                       <TableHead>Indicador</TableHead>
                       <TableHead>Empresa</TableHead>
                       <TableHead>Status</TableHead>
@@ -536,6 +548,17 @@ export default function AnalystReferrals() {
                           <TableCell className="font-medium">{referral.fullName}</TableCell>
                           <TableCell>{referral.phone}</TableCell>
                           <TableCell>{referral.licensePlate}</TableCell>
+                          <TableCell>
+                            {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) ? (
+                              <div className="text-sm">
+                                {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <div className="space-y-1">
                               <div className="font-medium">
