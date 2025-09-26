@@ -14,10 +14,11 @@ import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, Trending
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { ReferralConversationComponent } from "@/components/ui/referral-conversation";
 
 type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid" | "false" | "not_validated" | "not_converted";
 
@@ -583,13 +584,37 @@ export default function AdminReferralsDetailedPage() {
     return user?.fullName || "Usuário não encontrado";
   };
 
-  const handleStatusUpdate = () => {
-    if (selectedReferral && newStatus !== selectedReferral.status) {
-      updateStatusMutation.mutate({
-        referralId: selectedReferral.id,
-        status: newStatus,
-        notes: statusNotes
-      });
+  const handleStatusUpdate = async () => {
+    if (!selectedReferral) return;
+    
+    // Atualiza o status primeiro
+    updateStatusMutation.mutate({
+      referralId: selectedReferral.id,
+      status: newStatus,
+      notes: "" // Campo notes vazio, usaremos conversas
+    });
+    
+    // Se há observações, cria uma entrada na conversa
+    if (statusNotes.trim()) {
+      try {
+        await apiRequest("POST", `/api/referrals/${selectedReferral.id}/conversations`, {
+          message: statusNotes,
+          messageType: "status_change",
+          isInternal: false,
+          metadata: {
+            oldStatus: selectedReferral.status,
+            newStatus: newStatus
+          }
+        });
+        
+        // Invalida as conversas para atualizar a UI
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/referrals", selectedReferral.id, "conversations"] 
+        });
+      } catch (error) {
+        console.error("Erro ao salvar observação:", error);
+        // Não falha a operação principal se houver erro na conversa
+      }
     }
   };
 
@@ -1093,14 +1118,16 @@ export default function AdminReferralsDetailedPage() {
                                 />
                               </div>
                             
-                            {selectedReferral.notes && (
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium">Observações Anteriores:</label>
-                                <div className="p-2 bg-gray-50 rounded text-sm">
-                                  {selectedReferral.notes}
-                                </div>
+                            {/* Seção de Conversas/Observações */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Histórico de Observações:</label>
+                              <div className="max-h-60 overflow-y-auto border rounded-lg p-2">
+                                <ReferralConversationComponent 
+                                  referralId={selectedReferral.id} 
+                                  userRole={user?.role || ""} 
+                                />
                               </div>
-                            )}
+                            </div>
                             
                             {/* Commission change warning */}
                             {selectedReferral && newStatus !== selectedReferral.status && (
@@ -1549,14 +1576,16 @@ export default function AdminReferralsDetailedPage() {
                                     />
                                   </div>
                                 
-                                {selectedReferral.notes && (
-                                  <div className="space-y-2">
-                                    <label className="text-sm font-medium">Observações Anteriores:</label>
-                                    <div className="p-2 bg-gray-50 rounded text-sm">
-                                      {selectedReferral.notes}
-                                    </div>
+                                {/* Seção de Conversas/Observações */}
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Histórico de Observações:</label>
+                                  <div className="max-h-60 overflow-y-auto border rounded-lg p-2">
+                                    <ReferralConversationComponent 
+                                      referralId={selectedReferral.id} 
+                                      userRole={user?.role || ""} 
+                                    />
                                   </div>
-                                )}
+                                </div>
                                 
                                 {/* Commission change warning */}
                                 {selectedReferral && newStatus !== selectedReferral.status && (
