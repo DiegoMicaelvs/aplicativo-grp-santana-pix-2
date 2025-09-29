@@ -29,6 +29,7 @@ interface CompanyMetrics {
   activeIndicators: number;
   recentReferrals: number;
   pendingReferrals: number;
+  analyzingReferrals: number;
   validatedReferrals: number;
   rejectedReferrals: number;
   totalPaidToIndicators: number;
@@ -208,12 +209,19 @@ export default function PublicCompanyDashboard() {
             <CardTitle>Status das Indicações</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">
                   {metrics.pendingReferrals}
                 </div>
                 <p className="text-sm text-muted-foreground">Pendentes</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {metrics.analyzingReferrals ?? 0}
+                </div>
+                <p className="text-sm text-muted-foreground">Em análise</p>
               </div>
               
               <div className="text-center">
