@@ -50,6 +50,7 @@ interface CompanyMetrics {
   activeIndicators: number;
   recentReferrals: number; // Last 30 days
   pendingReferrals: number;
+  analyzingReferrals: number;
   validatedReferrals: number;
   rejectedReferrals: number;
   totalPaidToIndicators: number;
@@ -814,12 +815,19 @@ export default function CompanyDashboard() {
               <CardTitle>Resumo do Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`grid ${isMobile ? 'grid-cols-4 gap-2' : 'grid-cols-1 md:grid-cols-4 gap-6'}`}>
+              <div className={`grid ${isMobile ? 'grid-cols-5 gap-1' : 'grid-cols-1 md:grid-cols-5 gap-6'}`}>
                 <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
                   <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: CHART_COLORS.warning }}>
                     {metrics.pendingReferrals}
                   </div>
                   <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Pendentes</p>
+                </div>
+                
+                <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: '#3b82f6' }}>
+                    {metrics.analyzingReferrals}
+                  </div>
+                  <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Em análise</p>
                 </div>
                 
                 <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>

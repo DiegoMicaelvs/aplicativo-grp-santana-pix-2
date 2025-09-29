@@ -647,6 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         r.status === 'converted' || r.status === 'paid'
       ).length;
       const pendingReferrals = companyReferrals.filter((r: any) => r.status === 'pending').length;
+      const analyzingReferrals = companyReferrals.filter((r: any) => r.status === 'analyzing').length;
       const validatedReferrals = companyReferrals.filter((r: any) => r.status === 'validated').length;
       const rejectedReferrals = companyReferrals.filter((r: any) => 
         r.status === 'rejected' || r.status === 'false' || r.status === 'not_converted'
@@ -711,6 +712,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         activeIndicators,
         recentReferrals,
         pendingReferrals,
+        analyzingReferrals,
         validatedReferrals,
         rejectedReferrals,
         totalPaidToIndicators,
@@ -763,6 +765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         r.status === 'converted' || r.status === 'paid'
       ).length;
       const pendingReferrals = companyReferrals.filter((r: any) => r.status === 'pending').length;
+      const analyzingReferrals = companyReferrals.filter((r: any) => r.status === 'analyzing').length;
       const validatedReferrals = companyReferrals.filter((r: any) => r.status === 'validated').length;
       const rejectedReferrals = companyReferrals.filter((r: any) => 
         r.status === 'rejected' || r.status === 'false' || r.status === 'not_converted'
@@ -826,6 +829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         activeIndicators,
         recentReferrals,
         pendingReferrals,
+        analyzingReferrals,
         validatedReferrals,
         rejectedReferrals,
         totalPaidToIndicators,
