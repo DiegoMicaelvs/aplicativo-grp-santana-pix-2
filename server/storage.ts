@@ -1164,7 +1164,16 @@ class DatabaseStorage implements IStorage {
       throw new Error("Referral not found");
     }
 
-    // Update referral with validation data
+    // Add validation entry to status history
+    const currentHistory = referral.statusHistory || [];
+    const validationHistoryEntry = {
+      status: 'validated',
+      changedBy: validatorUserId,
+      changedAt: new Date().toISOString(),
+      notes: validationData.validationNotes || `Validação: ${validationData.vehicleBrand} ${validationData.vehicleModel} ${validationData.vehicleYear}`
+    };
+
+    // Update referral with validation data and add to status history
     const [updatedReferral] = await db.update(referrals)
       .set({
         vehicleBrand: validationData.vehicleBrand,
@@ -1176,6 +1185,8 @@ class DatabaseStorage implements IStorage {
         validationNotes: validationData.validationNotes,
         validatedBy: validatorUserId,
         validatedAt: new Date(),
+        status: 'validated', // Set status to validated
+        statusHistory: [...currentHistory, validationHistoryEntry],
         updatedAt: new Date()
       })
       .where(eq(referrals.id, id))

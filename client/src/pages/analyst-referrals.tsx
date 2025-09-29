@@ -747,13 +747,13 @@ export default function AnalystReferrals() {
                 />
               </div>
               
-              {/* Histórico de Status com Observações */}
+              {/* Histórico de Status */}
               {selectedReferral?.statusHistory && selectedReferral.statusHistory.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Histórico de Observações:</label>
+                  <label className="text-sm font-medium">Histórico de Status:</label>
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {selectedReferral.statusHistory
-                      .filter((entry: any) => entry.notes && entry.notes.trim())
+
                       .sort((a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
                       .map((entry: any, index: number) => {
                         const entryUser = allUsers.find(u => u.id === entry.changedBy);
@@ -774,9 +774,11 @@ export default function AnalystReferrals() {
                                 {entryDate.toLocaleDateString("pt-BR")} às {entryDate.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            <div className="text-sm text-gray-700">
-                              {entry.notes}
-                            </div>
+                            {entry.notes && (
+                              <div className="text-sm text-gray-700">
+                                {entry.notes}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -948,13 +950,13 @@ export default function AnalystReferrals() {
                 />
               </div>
               
-              {/* Histórico de Status com Observações */}
+              {/* Histórico de Status */}
               {selectedReferral?.statusHistory && selectedReferral.statusHistory.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Histórico de Observações:</label>
+                  <label className="text-sm font-medium">Histórico de Status:</label>
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {selectedReferral.statusHistory
-                      .filter((entry: any) => entry.notes && entry.notes.trim())
+
                       .sort((a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
                       .map((entry: any, index: number) => {
                         const entryUser = allUsers.find(u => u.id === entry.changedBy);
@@ -975,9 +977,11 @@ export default function AnalystReferrals() {
                                 {entryDate.toLocaleDateString("pt-BR")} às {entryDate.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            <div className="text-sm text-gray-700">
-                              {entry.notes}
-                            </div>
+                            {entry.notes && (
+                              <div className="text-sm text-gray-700">
+                                {entry.notes}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
