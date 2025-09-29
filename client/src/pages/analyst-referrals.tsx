@@ -104,6 +104,39 @@ export default function AnalystReferrals() {
     refetchOnWindowFocus: true, // Refetch quando a janela ganha foco
   });
 
+  // Coletar IDs únicos de usuários do histórico de status para buscar informações específicas
+  const statusHistoryUserIds = referrals.reduce((ids: number[], referral) => {
+    if (referral.statusHistory) {
+      referral.statusHistory.forEach((entry: any) => {
+        if (entry.changedBy && !ids.includes(entry.changedBy)) {
+          ids.push(entry.changedBy);
+        }
+      });
+    }
+    return ids;
+  }, []);
+
+  // Fetch specific users from status history if not in current user list
+  const missingUserIds = statusHistoryUserIds.filter(id => !users.find(u => u.id === id));
+  const { data: historyUsers = [] } = useQuery<User[]>({
+    queryKey: ["/api/users/by-ids", missingUserIds],
+    queryFn: async () => {
+      if (missingUserIds.length === 0) return [];
+      const response = await fetch('/api/users/by-ids', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds: missingUserIds })
+      });
+      if (!response.ok) throw new Error('Failed to fetch history users');
+      return response.json();
+    },
+    enabled: missingUserIds.length > 0,
+    staleTime: 60000, // Cache por 1 minuto
+  });
+
+  // Combinar lista de usuários normais com usuários do histórico
+  const allUsers = [...users, ...historyUsers];
+
   // Função para refresh manual
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -232,7 +265,7 @@ export default function AnalystReferrals() {
 
   // Filter referrals
   const filteredReferrals = referrals.filter((referral) => {
-    const user = users.find((u) => u.id === referral.userId);
+    const user = allUsers.find((u) => u.id === referral.userId);
     const matchesSearch =
       referral.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       referral.phone?.includes(searchTerm) ||
@@ -723,7 +756,7 @@ export default function AnalystReferrals() {
                       .filter((entry: any) => entry.notes && entry.notes.trim())
                       .sort((a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
                       .map((entry: any, index: number) => {
-                        const entryUser = users.find(u => u.id === entry.changedBy);
+                        const entryUser = allUsers.find(u => u.id === entry.changedBy);
                         const entryDate = new Date(entry.changedAt);
                         
                         return (
@@ -924,7 +957,7 @@ export default function AnalystReferrals() {
                       .filter((entry: any) => entry.notes && entry.notes.trim())
                       .sort((a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
                       .map((entry: any, index: number) => {
-                        const entryUser = users.find(u => u.id === entry.changedBy);
+                        const entryUser = allUsers.find(u => u.id === entry.changedBy);
                         const entryDate = new Date(entry.changedAt);
                         
                         return (

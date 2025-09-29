@@ -1222,6 +1222,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific users by IDs (for resolving status history user names)
+  app.post("/api/users/by-ids", requireAuth, async (req, res) => {
+    try {
+      const { userIds } = req.body;
+      
+      if (!userIds || !Array.isArray(userIds)) {
+        return res.status(400).json({ error: "Lista de IDs de usuário é obrigatória" });
+      }
+      
+      if (userIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Buscar usuários específicos
+      const foundUsers = await Promise.all(
+        userIds.map(async (id: number) => {
+          try {
+            const user = await storage.getUserById(id);
+            if (user) {
+              const { password, ...userWithoutPassword } = user;
+              return userWithoutPassword;
+            }
+            return null;
+          } catch {
+            return null;
+          }
+        })
+      );
+      
+      // Filtrar usuários válidos
+      const validUsers = foundUsers.filter(user => user !== null);
+      
+      return res.json(validUsers);
+    } catch (error) {
+      console.error("Error fetching users by IDs:", error);
+      return res.status(500).json({ error: "Erro ao buscar usuários" });
+    }
+  });
+
   // Analytics routes for analysts with view_reports permission
   app.get("/api/analyst/analytics/users", requireAnalyst, async (req, res) => {
     try {
