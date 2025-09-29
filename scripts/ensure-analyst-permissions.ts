@@ -93,7 +93,7 @@ export async function ensureAnalystPermissions(userId?: number) {
 }
 
 // Executar se chamado diretamente
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   ensureAnalystPermissions()
     .catch(console.error)
     .finally(() => process.exit(0));

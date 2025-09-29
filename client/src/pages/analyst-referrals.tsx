@@ -34,19 +34,10 @@ import { BackButton } from "@/components/ui/back-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import type { Referral, User, Company, AnalystPermission } from "@shared/schema";
+import { validateReferralSchema } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 
-const validateSchema = z.object({
-  vehicleBrand: z.string().min(1, "Marca é obrigatória"),
-  vehicleModel: z.string().min(1, "Modelo é obrigatório"),
-  vehicleYear: z.string().min(4, "Ano é obrigatório"),
-  nameCorrect: z.boolean(),
-  plateCorrect: z.boolean(),
-  phoneCorrect: z.boolean(),
-  validationNotes: z.string().optional(),
-});
-
-type ValidateFormValues = z.infer<typeof validateSchema>;
+type ValidateFormValues = z.infer<typeof validateReferralSchema>;
 
 const editSchema = z.object({
   fullName: z.string().min(1, "Nome é obrigatório"),
@@ -142,11 +133,11 @@ export default function AnalystReferrals() {
   });
 
   const form = useForm<ValidateFormValues>({
-    resolver: zodResolver(validateSchema),
+    resolver: zodResolver(validateReferralSchema),
     defaultValues: {
-      vehicleBrand: "",
-      vehicleModel: "",
-      vehicleYear: "",
+      vehicleBrand: "Não informado",
+      vehicleModel: "Não informado",
+      vehicleYear: "2020",
       nameCorrect: true,
       plateCorrect: true,
       phoneCorrect: true,
@@ -254,9 +245,9 @@ export default function AnalystReferrals() {
   const handleValidateClick = (referral: Referral) => {
     setSelectedReferral(referral);
     form.reset({
-      vehicleBrand: referral.vehicleBrand || "",
-      vehicleModel: referral.vehicleModel || "",
-      vehicleYear: referral.vehicleYear || "",
+      vehicleBrand: referral.vehicleBrand || "Não informado",
+      vehicleModel: referral.vehicleModel || "Não informado", 
+      vehicleYear: referral.vehicleYear || "2020",
       nameCorrect: referral.nameCorrect ?? true,
       plateCorrect: referral.plateCorrect ?? true,
       phoneCorrect: referral.phoneCorrect ?? true,

@@ -1584,11 +1584,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Validate referral (for analysts and admins)
+  // Validate referral (for analysts and admins with edit_referral_status permission)
   app.patch("/api/referrals/:id/validate", requireAnalyst, async (req, res) => {
     try {
       const referralId = parseInt(req.params.id);
-      const validatedData = validateReferralSchema.parse(req.body);
+      
+      // Check if analyst has edit_referral_status permission
+      const user = await storage.getUserById(req.user!.id);
+      const userPermissions = user?.permissions as string[] || [];
+      if (req.user!.role === "analista" && !userPermissions.includes("edit_referral_status")) {
+        console.log(`[VALIDATE] Analista ${user?.fullName} (ID: ${user?.id}) sem permissão edit_referral_status`);
+        return res.status(403).json({ error: "Você não tem permissão para validar indicações" });
+      }
+      
+      // Validate request data using shared schema
+      const parseResult = validateReferralSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        console.log(`[VALIDATE] Erro de validação para usuário ${req.user!.id}, indicação ${referralId}:`, parseResult.error.errors);
+        return res.status(400).json({ 
+          error: "Dados de validação inválidos",
+          details: parseResult.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+      
+      const validatedData = parseResult.data;
+      console.log(`[VALIDATE] Analista ${user?.fullName} (ID: ${user?.id}) validando indicação ${referralId}`);
       
       const updatedReferral = await storage.validateReferral(
         referralId,
@@ -1599,7 +1622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(updatedReferral);
     } catch (error) {
       console.error("Error validating referral:", error);
-      return res.status(500).json({ error: "Erro ao validar indicação" });
+      return res.status(500).json({ error: "Erro interno do servidor ao validar indicação" });
     }
   });
 
