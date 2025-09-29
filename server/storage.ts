@@ -1164,6 +1164,27 @@ class DatabaseStorage implements IStorage {
       throw new Error("Referral not found");
     }
 
+    // Calculate commission values for validated status
+    const newCommissionIndicator = 3; // R$ 3 por validado
+    const newCommissionPromoter = 1; // R$ 1 para o promotor
+    
+    // Calculate commission differences for user balance updates
+    const previousCommissionIndicator = parseFloat(referral.commissionIndicator?.toString() || '0');
+    const previousCommissionPromoter = parseFloat(referral.commissionPromoter?.toString() || '0');
+    const commissionDifferenceIndicator = newCommissionIndicator - previousCommissionIndicator;
+    const commissionDifferencePromoter = newCommissionPromoter - previousCommissionPromoter;
+    
+    // Update user balances
+    if (commissionDifferenceIndicator !== 0) {
+      await this.updateUserBalance(referral.userId, commissionDifferenceIndicator);
+    }
+    
+    // Update promoter balance if exists
+    const user = await this.getUserById(referral.userId);
+    if (user?.promoterId && commissionDifferencePromoter !== 0) {
+      await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
+    }
+
     // Add validation entry to status history
     const currentHistory = referral.statusHistory || [];
     const validationHistoryEntry = {
@@ -1186,6 +1207,8 @@ class DatabaseStorage implements IStorage {
         validatedBy: validatorUserId,
         validatedAt: new Date(),
         status: 'validated', // Set status to validated
+        commissionIndicator: newCommissionIndicator.toFixed(2),
+        commissionPromoter: newCommissionPromoter.toFixed(2),
         statusHistory: [...currentHistory, validationHistoryEntry],
         updatedAt: new Date()
       })
