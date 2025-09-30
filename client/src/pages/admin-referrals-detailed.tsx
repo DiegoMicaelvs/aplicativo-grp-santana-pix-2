@@ -720,7 +720,7 @@ export default function AdminReferralsDetailedPage() {
             <div className="relative">
               <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
               <Input
-                placeholder="Buscar por cliente, telefone, placa, indicador ou data (ex: 30/09)..."
+                placeholder="Buscar por cliente, telefone, placa, indicador ou data"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 text-sm md:text-base"
