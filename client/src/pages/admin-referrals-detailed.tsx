@@ -455,10 +455,31 @@ export default function AdminReferralsDetailedPage() {
   // Filter referrals
   const filteredReferrals = referrals.filter((referral: any) => {
     const user = users.find((u: any) => u.id === referral.userId);
+    
+    // Check if search term matches date
+    let matchesDate = false;
+    if (searchTerm.includes('/')) {
+      try {
+        const referralDate = new Date(referral.createdAt);
+        const formattedDate = format(referralDate, "dd/MM/yyyy", { locale: ptBR });
+        const shortDate = format(referralDate, "dd/MM", { locale: ptBR });
+        const mediumDate = format(referralDate, "dd/MM/yy", { locale: ptBR });
+        
+        // Match against various date formats
+        matchesDate = formattedDate.includes(searchTerm) || 
+                     shortDate.includes(searchTerm) || 
+                     mediumDate.includes(searchTerm);
+      } catch (error) {
+        // If date parsing fails, just skip date matching
+        matchesDate = false;
+      }
+    }
+    
     const matchesSearch = referral.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          referral.phone?.includes(searchTerm) ||
                          referral.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
+                         user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         matchesDate;
     const matchesStatus = statusFilter === "all_statuses" || referral.status === statusFilter;
     const matchesUser = userFilter === "all_users" || referral.userId.toString() === userFilter;
     const matchesCompany = companyFilter === "all_companies" || referral.companyId?.toString() === companyFilter;
@@ -699,7 +720,7 @@ export default function AdminReferralsDetailedPage() {
             <div className="relative">
               <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
               <Input
-                placeholder="Buscar por cliente, telefone, placa ou indicador..."
+                placeholder="Buscar por cliente, telefone, placa, indicador ou data (ex: 30/09)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 text-sm md:text-base"
