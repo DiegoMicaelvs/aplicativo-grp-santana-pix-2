@@ -2770,6 +2770,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new referral link
   app.post("/api/referral-links", requireReferralLinkPermission, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Não autenticado" });
+      }
       const validatedData = createReferralLinkSchema.parse(req.body);
       const referralLink = await storage.createReferralLink(req.user.id, validatedData);
       return res.status(201).json(referralLink);
@@ -2782,6 +2785,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's referral links
   app.get("/api/referral-links", requireReferralLinkPermission, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Não autenticado" });
+      }
       const links = await storage.getReferralLinksByUserId(req.user.id);
       return res.json(links);
     } catch (error) {
@@ -2793,6 +2799,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update referral link
   app.patch("/api/referral-links/:id", requireReferralLinkPermission, requireReferralLinkOwnership, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Não autenticado" });
+      }
       const linkId = parseInt(req.params.id);
       const validatedData = updateReferralLinkSchema.parse(req.body);
       const updatedLink = await storage.updateReferralLink(linkId, req.user.id, validatedData);
@@ -2806,6 +2815,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete referral link
   app.delete("/api/referral-links/:id", requireReferralLinkPermission, requireReferralLinkOwnership, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Não autenticado" });
+      }
       const linkId = parseInt(req.params.id);
       await storage.deleteReferralLink(linkId, req.user.id);
       return res.json({ message: "Link de referência excluído com sucesso" });

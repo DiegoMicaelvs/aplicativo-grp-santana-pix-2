@@ -18,6 +18,7 @@ import { queryClient } from "@/lib/queryClient";
 import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import * as XLSX from 'xlsx';
 
 type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid" | "false" | "not_validated" | "not_converted";
 
@@ -502,31 +503,54 @@ export default function AdminReferralsDetailedPage() {
     return Array.from(stateSet).sort();
   };
 
-  // Export to Excel function
-  const handleExportExcel = async () => {
+  // Export to Excel function - exports only filtered referrals
+  const handleExportExcel = () => {
     try {
-      const response = await fetch('/api/admin/export/referrals', {
-        method: 'GET',
-        credentials: 'include'
+      // Prepare data for export from filtered referrals
+      const exportData = filteredReferrals.map((referral: any) => {
+        const user = users.find((u: any) => u.id === referral.userId);
+        const company = companies.find((c: any) => c.id === referral.companyId);
+        
+        return {
+          'Cliente': referral.fullName,
+          'Telefone': referral.phone,
+          'Placa': referral.licensePlate,
+          'Seguradora': company?.name || 'N/A',
+          'Cidade': referral.city || '-',
+          'Estado': referral.state || '-',
+          'Possui Seguro': referral.hasInsurance ? 'Sim' : 'Não',
+          'Indicador': user?.fullName || 'N/A',
+          'Status': getStatusLabel(referral.status as ReferralStatus),
+          'Comissão Indicador (R$)': parseFloat(referral.commissionIndicator || '0').toFixed(2),
+          'Comissão Promotor (R$)': parseFloat(referral.commissionPromoter || '0').toFixed(2),
+          'Data Criação': format(new Date(referral.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+          'Marca': referral.vehicleBrand || '-',
+          'Modelo': referral.vehicleModel || '-',
+          'Ano': referral.vehicleYear || '-',
+          'Observações': referral.notes || '-'
+        };
       });
       
-      if (!response.ok) {
-        throw new Error('Erro ao exportar dados');
-      }
+      // Create worksheet from data
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
       
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `indicacoes_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Create workbook and add worksheet
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Indicações');
+      
+      // Generate filename with current date and filter info
+      let filename = `indicacoes_${new Date().toISOString().split('T')[0]}`;
+      if (statusFilter !== "all_statuses") {
+        filename += `_${getStatusLabel(statusFilter as ReferralStatus)}`;
+      }
+      filename += '.xlsx';
+      
+      // Download file
+      XLSX.writeFile(workbook, filename);
       
       toast({ 
         title: "Exportação concluída!",
-        description: "O arquivo Excel foi baixado com sucesso."
+        description: `${filteredReferrals.length} indicações exportadas com sucesso.`
       });
     } catch (error) {
       console.error('Erro ao exportar:', error);
