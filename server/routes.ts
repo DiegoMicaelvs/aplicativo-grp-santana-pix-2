@@ -636,6 +636,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
         
         companyReferrals = companyReferrals.filter((r: any) => {
+          // For validated referrals, check validatedAt date
+          if (r.status === 'validated' && r.validatedAt) {
+            const validatedDate = new Date(r.validatedAt);
+            return validatedDate >= startDate && validatedDate <= endDate;
+          }
+          
+          // For converted/paid referrals, check updatedAt date (when status changed)
+          if ((r.status === 'converted' || r.status === 'paid') && r.updatedAt) {
+            const convertedDate = new Date(r.updatedAt);
+            return convertedDate >= startDate && convertedDate <= endDate;
+          }
+          
+          // For other statuses, check createdAt date
           const referralDate = new Date(r.createdAt);
           return referralDate >= startDate && referralDate <= endDate;
         });
@@ -754,6 +767,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
         
         companyReferrals = companyReferrals.filter((r: any) => {
+          // For validated referrals, check validatedAt date
+          if (r.status === 'validated' && r.validatedAt) {
+            const validatedDate = new Date(r.validatedAt);
+            return validatedDate >= startDate && validatedDate <= endDate;
+          }
+          
+          // For converted/paid referrals, check updatedAt date (when status changed)
+          if ((r.status === 'converted' || r.status === 'paid') && r.updatedAt) {
+            const convertedDate = new Date(r.updatedAt);
+            return convertedDate >= startDate && convertedDate <= endDate;
+          }
+          
+          // For other statuses, check createdAt date
           const referralDate = new Date(r.createdAt);
           return referralDate >= startDate && referralDate <= endDate;
         });
