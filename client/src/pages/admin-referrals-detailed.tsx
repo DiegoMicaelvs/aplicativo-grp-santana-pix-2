@@ -484,10 +484,21 @@ export default function AdminReferralsDetailedPage() {
     const matchesUser = userFilter === "all_users" || referral.userId.toString() === userFilter;
     const matchesCompany = companyFilter === "all_companies" || referral.companyId?.toString() === companyFilter;
     
-    // Month filter
+    // Month filter - use appropriate date based on status filter
     let matchesMonth = true;
     if (monthFilter !== "all_months") {
-      const referralDate = new Date(referral.createdAt);
+      let dateToUse = referral.createdAt;
+      
+      // For validated status, use validatedAt if available
+      if (statusFilter === "validated" && referral.validatedAt) {
+        dateToUse = referral.validatedAt;
+      }
+      // For converted status, use updatedAt (when status was changed to converted)
+      else if (statusFilter === "converted") {
+        dateToUse = referral.updatedAt;
+      }
+      
+      const referralDate = new Date(dateToUse);
       const referralMonth = referralDate.getMonth();
       const referralYear = referralDate.getFullYear();
       const [filterYear, filterMonth] = monthFilter.split("-").map(Number);
