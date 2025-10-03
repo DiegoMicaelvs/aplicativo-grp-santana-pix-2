@@ -309,6 +309,7 @@ export default function AdminPaymentsPage() {
                   <TableHead>Placa</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Data Solicitação</TableHead>
+                  <TableHead>Data Pagamento</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -367,6 +368,15 @@ export default function AdminPaymentsPage() {
                     </TableCell>
                     <TableCell>
                       {format(new Date(withdrawal.requestedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </TableCell>
+                    <TableCell>
+                      {withdrawal.processedAt ? (
+                        <span className="text-green-600 font-medium">
+                          {format(new Date(withdrawal.processedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -509,7 +519,13 @@ export default function AdminPaymentsPage() {
                 {cashFlowData.entries.slice(0, 10).map((entry: any) => (
                   <TableRow key={entry.id}>
                     <TableCell>
-                      {format(new Date(entry.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      {entry.withdrawal?.processedAt ? (
+                        <span className="text-green-600 font-medium">
+                          {format(new Date(entry.withdrawal.processedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
+                      ) : (
+                        format(new Date(entry.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={entry.type === "inflow" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
