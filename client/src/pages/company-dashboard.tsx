@@ -1,11 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Download, Share2, BarChart3, TrendingUp, Users, Target, DollarSign, Activity, Link2, Calendar } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   PieChart, 
   Pie, 
@@ -160,6 +163,8 @@ const formatTooltipValue = (value: number, name: string) => {
 export default function CompanyDashboard() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all_companies");
   const [selectedMonth, setSelectedMonth] = useState<string>("all_time");
+  const [cashDialogOpen, setCashDialogOpen] = useState(false);
+  const [newCashBalance, setNewCashBalance] = useState("");
   const { toast } = useToast();
   const isMobile = useMobile();
   
@@ -173,11 +178,62 @@ export default function CompanyDashboard() {
     showLabels: !isMobile
   };
   
+  // Fetch user info
+  const { data: user } = useQuery<any>({
+    queryKey: ["/api/user"],
+  });
 
   // Fetch all companies
   const { data: companies, isLoading: companiesLoading } = useQuery<Company[]>({
     queryKey: ["/api/admin/companies"],
   });
+
+  // Get current company cash balance
+  const companyCashBalance = useMemo(() => {
+    if (!companies || selectedCompanyId === "all_companies") return 0;
+    const company = companies.find(c => c.id === parseInt(selectedCompanyId));
+    return parseFloat((company as any)?.cashBalance || '0');
+  }, [companies, selectedCompanyId]);
+
+  // Update cash balance mutation
+  const updateCashMutation = useMutation({
+    mutationFn: async (data: { companyId: number; cashBalance: string }) => {
+      return await apiRequest("PATCH", `/api/admin/companies/${data.companyId}/cash-balance`, {
+        cashBalance: data.cashBalance
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      toast({
+        title: "Caixa atualizado!",
+        description: "O caixa da empresa foi atualizado com sucesso.",
+      });
+      setCashDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível atualizar o caixa.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateCashBalance = () => {
+    if (!newCashBalance || isNaN(parseFloat(newCashBalance))) {
+      toast({
+        title: "Valor inválido",
+        description: "Por favor, insira um valor numérico válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateCashMutation.mutate({
+      companyId: parseInt(selectedCompanyId),
+      cashBalance: newCashBalance
+    });
+  };
 
   // Fetch company metrics
   const { data: metrics, isLoading: metricsLoading } = useQuery<CompanyMetrics>({
@@ -443,9 +499,59 @@ export default function CompanyDashboard() {
           {/* Company Info */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-blue-600" />
-                {metrics.companyName}
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-blue-600" />
+                  {metrics.companyName}
+                </div>
+                {user?.role === 'admin' && (
+                  <Dialog open={cashDialogOpen} onOpenChange={(open) => {
+                    setCashDialogOpen(open);
+                    if (open) {
+                      setNewCashBalance(companyCashBalance.toString());
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Caixa: {formatCurrency(companyCashBalance)}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Atualizar Caixa da Empresa</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Valor do Caixa</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={newCashBalance}
+                            onChange={(e) => setNewCashBalance(e.target.value)}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="bg-blue-50 p-3 rounded-lg">
+                          <p className="text-sm text-blue-700">
+                            <strong>Comissões Totais:</strong> {formatCurrency(metrics.totalCommissions)}
+                          </p>
+                          <p className="text-sm text-blue-700 mt-1">
+                            <strong>Saldo após comissões:</strong> {formatCurrency(parseFloat(newCashBalance || '0') - metrics.totalCommissions)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button variant="outline" onClick={() => setCashDialogOpen(false)}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={handleUpdateCashBalance} disabled={updateCashMutation.isPending}>
+                          {updateCashMutation.isPending ? 'Salvando...' : 'Salvar'}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>

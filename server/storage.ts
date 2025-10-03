@@ -1383,7 +1383,7 @@ class DatabaseStorage implements IStorage {
     });
   }
 
-  async updateCompany(id: number, data: { name?: string; isActive?: boolean }) {
+  async updateCompany(id: number, data: { name?: string; isActive?: boolean; cashBalance?: string }) {
     const [company] = await db.update(companies)
       .set(data)
       .where(eq(companies.id, id))

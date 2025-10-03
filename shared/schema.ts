@@ -66,6 +66,7 @@ export const users = pgTable("users", {
 export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
+  cashBalance: decimal("cash_balance", { precision: 10, scale: 2 }).default("0.00").notNull(), // Caixa da empresa
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
