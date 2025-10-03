@@ -18,6 +18,7 @@ const formatCurrency = (value: number | string): string => {
 interface CompanyMetrics {
   companyId: number;
   companyName: string;
+  cashBalance: number;
   totalIndicators: number;
   totalPromoters: number;
   totalReferrals: number;
@@ -149,6 +150,40 @@ export default function PublicCompanyDashboard() {
               <Badge variant={metrics.conversionRate >= 15 ? "default" : "secondary"}>
                 {metrics.conversionRate.toFixed(1)}% Conversão
               </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cash Balance and Commissions Card */}
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <DollarSign className="h-5 w-5 text-blue-600" />
+              Caixa e Pagamentos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-4 rounded-lg border border-blue-100">
+                <p className="text-sm font-medium text-blue-700 mb-1">Caixa Disponível</p>
+                <div className="text-3xl font-bold text-blue-600">
+                  {formatCurrency(metrics.cashBalance)}
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg border border-blue-100">
+                <p className="text-sm font-medium text-blue-700 mb-1">Total Pago em Comissões</p>
+                <div className="text-3xl font-bold text-purple-600">
+                  {formatCurrency(metrics.totalCommissions)}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-white rounded-lg border border-blue-100">
+              <p className="text-sm text-gray-600">
+                <strong>Saldo após comissões:</strong>{' '}
+                <span className={metrics.cashBalance - metrics.totalCommissions >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                  {formatCurrency(metrics.cashBalance - metrics.totalCommissions)}
+                </span>
+              </p>
             </div>
           </CardContent>
         </Card>

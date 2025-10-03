@@ -735,6 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const metrics = {
         companyId,
         companyName: company.name,
+        cashBalance: parseFloat((company as any).cashBalance || '0'),
         totalIndicators,
         totalPromoters,
         totalReferrals,
@@ -865,6 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const metrics = {
         companyId,
         companyName: company.name,
+        cashBalance: parseFloat((company as any).cashBalance || '0'),
         totalIndicators,
         totalPromoters,
         totalReferrals,

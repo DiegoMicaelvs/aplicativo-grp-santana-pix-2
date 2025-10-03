@@ -41,6 +41,7 @@ import { Separator } from "@/components/ui/separator";
 interface CompanyMetrics {
   companyId: number;
   companyName: string;
+  cashBalance: number;
   totalIndicators: number;
   totalPromoters: number;
   totalReferrals: number;
