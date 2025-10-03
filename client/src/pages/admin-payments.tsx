@@ -370,9 +370,9 @@ export default function AdminPaymentsPage() {
                       {format(new Date(withdrawal.requestedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </TableCell>
                     <TableCell>
-                      {withdrawal.processedAt ? (
+                      {withdrawal.paidAt ? (
                         <span className="text-green-600 font-medium">
-                          {format(new Date(withdrawal.processedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          {format(new Date(withdrawal.paidAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
@@ -519,9 +519,9 @@ export default function AdminPaymentsPage() {
                 {cashFlowData.entries.slice(0, 10).map((entry: any) => (
                   <TableRow key={entry.id}>
                     <TableCell>
-                      {entry.withdrawal?.processedAt ? (
+                      {entry.withdrawal?.paidAt ? (
                         <span className="text-green-600 font-medium">
-                          {format(new Date(entry.withdrawal.processedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          {format(new Date(entry.withdrawal.paidAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </span>
                       ) : (
                         format(new Date(entry.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })

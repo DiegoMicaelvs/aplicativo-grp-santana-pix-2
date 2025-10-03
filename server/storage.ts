@@ -1470,13 +1470,24 @@ class DatabaseStorage implements IStorage {
   }
   
   async updateWithdrawalStatus(id: number, status: WithdrawalStatus, processedBy: number, notes?: string) {
+    const updateData: any = {
+      status,
+      processedBy,
+      notes
+    };
+    
+    // Set processedAt for approved/rejected
+    if (status === 'approved' || status === 'rejected') {
+      updateData.processedAt = new Date();
+    }
+    
+    // Set paidAt only when marking as paid
+    if (status === 'paid') {
+      updateData.paidAt = new Date();
+    }
+    
     const [updated] = await db.update(withdrawalRequests)
-      .set({
-        status,
-        processedBy,
-        processedAt: new Date(),
-        notes
-      })
+      .set(updateData)
       .where(eq(withdrawalRequests.id, id))
       .returning();
     

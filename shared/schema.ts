@@ -130,8 +130,9 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   hasInsurance: boolean("has_insurance").default(false).notNull(), // Se possui seguro (adesão)
   licensePlate: text("license_plate"), // Placa da última indicação do usuário
   requestedAt: timestamp("requested_at").defaultNow().notNull(),
-  processedAt: timestamp("processed_at"),
+  processedAt: timestamp("processed_at"), // Data de aprovação/rejeição
   processedBy: integer("processed_by").references(() => users.id),
+  paidAt: timestamp("paid_at"), // Data real do pagamento
   notes: text("notes"),
   rejectionReason: text("rejection_reason"),
 });
