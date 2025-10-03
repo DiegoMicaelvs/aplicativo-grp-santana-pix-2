@@ -176,13 +176,13 @@ export default function PublicCompanyDashboard() {
                 </div>
               </div>
             </div>
-            <div className="mt-4 p-3 bg-white rounded-lg border border-blue-100">
-              <p className="text-sm text-gray-600">
-                <strong>Saldo após comissões:</strong>{' '}
-                <span className={metrics.cashBalance - metrics.totalCommissions >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+            <div className="mt-4 p-4 bg-white rounded-lg border-2 border-blue-200">
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-600 mb-2">Saldo após comissões</p>
+                <div className={metrics.cashBalance - metrics.totalCommissions >= 0 ? 'text-3xl font-bold text-green-600' : 'text-3xl font-bold text-red-600'}>
                   {formatCurrency(metrics.cashBalance - metrics.totalCommissions)}
-                </span>
-              </p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
