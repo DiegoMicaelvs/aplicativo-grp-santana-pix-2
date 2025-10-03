@@ -195,6 +195,25 @@ export default function CompanyDashboard() {
     },
   });
 
+  // Fetch current month metrics separately (always show current month data)
+  const currentMonth = useMemo(() => {
+    const now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  }, []);
+
+  const { data: monthlyMetrics } = useQuery<CompanyMetrics>({
+    queryKey: [`/api/admin/company-metrics/${selectedCompanyId}/monthly`, currentMonth],
+    enabled: selectedCompanyId !== "all_companies",
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('month', currentMonth);
+      const url = `/api/admin/company-metrics/${selectedCompanyId}?${params.toString()}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch monthly metrics');
+      return response.json();
+    },
+  });
+
   const handleShareDashboard = async () => {
     try {
       const shareData = {
@@ -535,6 +554,45 @@ export default function CompanyDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Monthly Financial Metrics */}
+          {monthlyMetrics && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  Valores e Comissões Mensais
+                  <Badge variant="outline" className="ml-2">
+                    {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+                  <div className={`${isMobile ? 'bg-green-50 p-3 rounded-lg' : ''} text-center`}>
+                    <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-green-600`}>
+                      {formatCurrency(monthlyMetrics.totalCommissionIndicators)}
+                    </div>
+                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Valor Gasto com Indicadores</p>
+                  </div>
+                  
+                  <div className={`${isMobile ? 'bg-blue-50 p-3 rounded-lg' : ''} text-center`}>
+                    <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-blue-600`}>
+                      {formatCurrency(monthlyMetrics.totalCommissionPromoters)}
+                    </div>
+                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Valor Gasto com Promotores</p>
+                  </div>
+                  
+                  <div className={`${isMobile ? 'bg-purple-50 p-3 rounded-lg' : ''} text-center`}>
+                    <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-purple-600`}>
+                      {formatCurrency(monthlyMetrics.totalCommissions)}
+                    </div>
+                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Total de Comissões</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
 
           {/* Visual Charts Section */}
