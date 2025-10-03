@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useSearch } from "wouter";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingUp, Users, Target, DollarSign, Activity } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Target, DollarSign, Activity, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -54,6 +55,25 @@ export default function PublicCompanyDashboard() {
       const url = `/api/public/company-metrics/${companyId}${params.toString() ? '?' + params.toString() : ''}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch metrics');
+      return response.json();
+    },
+  });
+
+  // Fetch current month metrics separately (always show current month data)
+  const currentMonth = useMemo(() => {
+    const now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  }, []);
+
+  const { data: monthlyMetrics } = useQuery<CompanyMetrics>({
+    queryKey: [`/api/public/company-metrics/${companyId}/monthly`, currentMonth],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('month', currentMonth);
+      const url = `/api/public/company-metrics/${companyId}?${params.toString()}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch monthly metrics');
       return response.json();
     },
   });
@@ -201,6 +221,45 @@ export default function PublicCompanyDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Monthly Financial Metrics */}
+        {monthlyMetrics && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                Valores e Comissões Mensais
+                <Badge variant="outline" className="ml-2">
+                  {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatCurrency(monthlyMetrics.totalCommissionIndicators)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Valor Gasto com Indicadores</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(monthlyMetrics.totalCommissionPromoters)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Valor Gasto com Promotores</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {formatCurrency(monthlyMetrics.totalCommissions)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Total de Comissões</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
 
         {/* Status Overview */}
