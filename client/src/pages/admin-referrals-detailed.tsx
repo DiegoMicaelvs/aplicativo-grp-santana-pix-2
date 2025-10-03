@@ -524,6 +524,20 @@ export default function AdminReferralsDetailedPage() {
     return company?.name || "N/A";
   };
 
+  // Helper function to get appropriate date for display based on status filter
+  const getDisplayDate = (referral: any) => {
+    // Show validated date when filtering by validated status
+    if (statusFilter === "validated" && referral.validatedAt) {
+      return referral.validatedAt;
+    }
+    // Show conversion date (updatedAt) when filtering by converted status
+    if (statusFilter === "converted") {
+      return referral.updatedAt;
+    }
+    // Default to creation date
+    return referral.createdAt;
+  };
+
   // Helper function to get unique states for filter
   const getUniqueStates = () => {
     const stateSet = new Set<string>();
@@ -555,6 +569,7 @@ export default function AdminReferralsDetailedPage() {
           'Status': getStatusLabel(referral.status as ReferralStatus),
           'Comissão Indicador (R$)': parseFloat(referral.commissionIndicator || '0').toFixed(2),
           'Comissão Promotor (R$)': parseFloat(referral.commissionPromoter || '0').toFixed(2),
+          'Data': format(new Date(getDisplayDate(referral)), "dd/MM/yyyy HH:mm", { locale: ptBR }),
           'Data Criação': format(new Date(referral.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }),
           'Marca': referral.vehicleBrand || '-',
           'Modelo': referral.vehicleModel || '-',
@@ -903,7 +918,7 @@ export default function AdminReferralsDetailedPage() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-gray-500">Data:</span>
-                    <span className="ml-1">{format(new Date(referral.createdAt), "dd/MM/yy", { locale: ptBR })}</span>
+                    <span className="ml-1">{format(new Date(getDisplayDate(referral)), "dd/MM/yy", { locale: ptBR })}</span>
                   </div>
                 </div>
                 
@@ -1368,7 +1383,7 @@ export default function AdminReferralsDetailedPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-xs">
-                      {format(new Date(referral.createdAt), "dd/MM", { locale: ptBR })}
+                      {format(new Date(getDisplayDate(referral)), "dd/MM", { locale: ptBR })}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
