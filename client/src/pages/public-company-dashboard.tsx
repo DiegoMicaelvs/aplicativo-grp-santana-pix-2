@@ -134,7 +134,6 @@ export default function PublicCompanyDashboard() {
           )}
         </div>
       </div>
-
       <div className="space-y-6">
         {/* Company Info */}
         <Card>
@@ -165,7 +164,7 @@ export default function PublicCompanyDashboard() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white p-4 rounded-lg border border-blue-100">
-                <p className="text-sm font-medium text-blue-700 mb-1">Caixa Disponível</p>
+                <p className="text-sm font-medium text-blue-700 mb-1">Saldo inicial</p>
                 <div className="text-3xl font-bold text-blue-600">
                   {formatCurrency(metrics.cashBalance)}
                 </div>
@@ -361,7 +360,6 @@ export default function PublicCompanyDashboard() {
           </CardContent>
         </Card>
       </div>
-
       {/* Footer */}
       <div className="mt-8 pt-6 border-t border-gray-200">
         <p className="text-center text-sm text-gray-500">
