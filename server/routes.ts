@@ -378,30 +378,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[TENANT] Admin user - allowing selected companyId: ${finalReferralData.companyId}`);
       }
       
-      const referral = await storage.createReferral({
-        ...finalReferralData,
-        userId: req.user!.id,
-        createdBy: req.user!.id
-      });
+      // Create a separate referral for EACH license plate
+      const licensePlates = finalReferralData.licensePlates || [];
+      const createdReferrals = [];
+      
+      for (const plate of licensePlates) {
+        // Create a copy of referralData without licensePlates, then add single plate
+        const { licensePlates: _, ...referralDataWithoutPlates } = finalReferralData;
+        
+        const referralForPlate = await storage.createReferral({
+          ...referralDataWithoutPlates,
+          licensePlates: [plate], // Pass single plate in array for storage
+          userId: req.user!.id,
+          createdBy: req.user!.id
+        });
+        createdReferrals.push(referralForPlate);
+      }
 
-      // Send SMS notification to user about new referral
+      // Send SMS notification to user about new referral(s)
       const user = await storage.getUserById(req.user!.id);
-      if (user?.phone) {
+      if (user?.phone && createdReferrals.length > 0) {
         try {
           const { sendReferralNotification } = await import('./sms-service');
+          // Send notification for first referral (or we could mention "X placas cadastradas")
           await sendReferralNotification(
             user.phone,
             user.fullName,
-            referral.id
+            createdReferrals[0].id
           );
-          console.log(`SMS notification sent to ${user.phone} for new referral #${referral.id}`);
+          console.log(`SMS notification sent to ${user.phone} for ${createdReferrals.length} new referral(s)`);
         } catch (smsError) {
           console.log('SMS notification failed (non-critical):', smsError);
           // Don't fail the referral creation if SMS fails
         }
       }
       
-      return res.status(201).json(referral);
+      // Return all created referrals (or just the first one for backward compatibility)
+      return res.status(201).json({
+        success: true,
+        count: createdReferrals.length,
+        referrals: createdReferrals,
+        // For backward compatibility, also return first referral at root level
+        ...createdReferrals[0]
+      });
     } catch (error) {
       console.error("Error creating referral:", error);
       return res.status(500).json({ error: "Erro ao criar indicação" });

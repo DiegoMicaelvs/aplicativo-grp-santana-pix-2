@@ -198,12 +198,19 @@ export default function NewReferralPage() {
       const res = await apiRequest("POST", "/api/referrals", data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['/api/referrals'] });
       queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
       setSubmitted(true);
+      
+      // Show count of created referrals if multiple plates were submitted
+      const count = response?.count || 1;
+      const message = count > 1 
+        ? `${count} indicações criadas com sucesso (uma para cada placa)!`
+        : "Indicação enviada com sucesso!";
+      
       toast({
-        title: "Indicação enviada com sucesso!",
+        title: message,
         description: "Você será notificado sobre o status da sua indicação.",
       });
     },
