@@ -690,17 +690,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const conversionRate = validatedReferrals > 0 ? (convertedReferrals / validatedReferrals) * 100 : 0;
 
-      // Calculate commissions ONLY for validated/converted/paid referrals (valores gastos = actually spent)
-      const paidReferrals = companyReferrals.filter((r: any) => 
-        r.status === 'validated' || r.status === 'converted' || r.status === 'paid'
-      );
+      // Calculate commissions based on whether we're filtering by month or not
+      let totalCommissionIndicators = 0;
+      let totalCommissionPromoters = 0;
       
-      const totalCommissionIndicators = paidReferrals.reduce((sum: number, r: any) => 
-        sum + (parseFloat(r.commissionIndicator) || 0), 0
-      );
-      const totalCommissionPromoters = paidReferrals.reduce((sum: number, r: any) => 
-        sum + (parseFloat(r.commissionPromoter) || 0), 0
-      );
+      if (monthFilter && monthFilter !== "all_time") {
+        // Monthly view: calculate only commissions GENERATED in this specific month
+        const [year, month] = monthFilter.split('-');
+        const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+        
+        // Get ALL referrals for the company (not just filtered ones)
+        const allCompanyReferrals = await storage.getReferralsByCompanyId(companyId);
+        
+        for (const referral of allCompanyReferrals) {
+          // Check if validated in this month
+          if (referral.validatedAt) {
+            const validatedDate = new Date(referral.validatedAt);
+            if (validatedDate >= startDate && validatedDate <= endDate) {
+              totalCommissionIndicators += 3; // Validation commission for indicator
+              totalCommissionPromoters += 1; // Validation commission for promoter
+            }
+          }
+          
+          // Check if converted in this month
+          if ((referral.status === 'converted' || referral.status === 'paid') && referral.updatedAt) {
+            const convertedDate = new Date(referral.updatedAt);
+            if (convertedDate >= startDate && convertedDate <= endDate) {
+              totalCommissionIndicators += 50; // Conversion commission for indicator
+              totalCommissionPromoters += 10; // Conversion commission for promoter
+            }
+          }
+        }
+      } else {
+        // All-time view: use total accumulated commissions
+        const paidReferrals = companyReferrals.filter((r: any) => 
+          r.status === 'validated' || r.status === 'converted' || r.status === 'paid'
+        );
+        
+        totalCommissionIndicators = paidReferrals.reduce((sum: number, r: any) => 
+          sum + (parseFloat(r.commissionIndicator) || 0), 0
+        );
+        totalCommissionPromoters = paidReferrals.reduce((sum: number, r: any) => 
+          sum + (parseFloat(r.commissionPromoter) || 0), 0
+        );
+      }
+      
       const totalCommissions = totalCommissionIndicators + totalCommissionPromoters;
 
       // Get unique users involved with this company
@@ -822,17 +857,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const conversionRate = validatedReferrals > 0 ? (convertedReferrals / validatedReferrals) * 100 : 0;
 
-      // Calculate commissions ONLY for validated/converted/paid referrals
-      const paidReferrals = companyReferrals.filter((r: any) => 
-        r.status === 'validated' || r.status === 'converted' || r.status === 'paid'
-      );
+      // Calculate commissions based on whether we're filtering by month or not
+      let totalCommissionIndicators = 0;
+      let totalCommissionPromoters = 0;
       
-      const totalCommissionIndicators = paidReferrals.reduce((sum: number, r: any) => 
-        sum + (parseFloat(r.commissionIndicator) || 0), 0
-      );
-      const totalCommissionPromoters = paidReferrals.reduce((sum: number, r: any) => 
-        sum + (parseFloat(r.commissionPromoter) || 0), 0
-      );
+      if (monthFilter && monthFilter !== "all_time") {
+        // Monthly view: calculate only commissions GENERATED in this specific month
+        const [year, month] = monthFilter.split('-');
+        const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+        
+        // Get ALL referrals for the company (not just filtered ones)
+        const allCompanyReferrals = await storage.getReferralsByCompanyId(companyId);
+        
+        for (const referral of allCompanyReferrals) {
+          // Check if validated in this month
+          if (referral.validatedAt) {
+            const validatedDate = new Date(referral.validatedAt);
+            if (validatedDate >= startDate && validatedDate <= endDate) {
+              totalCommissionIndicators += 3; // Validation commission for indicator
+              totalCommissionPromoters += 1; // Validation commission for promoter
+            }
+          }
+          
+          // Check if converted in this month
+          if ((referral.status === 'converted' || referral.status === 'paid') && referral.updatedAt) {
+            const convertedDate = new Date(referral.updatedAt);
+            if (convertedDate >= startDate && convertedDate <= endDate) {
+              totalCommissionIndicators += 50; // Conversion commission for indicator
+              totalCommissionPromoters += 10; // Conversion commission for promoter
+            }
+          }
+        }
+      } else {
+        // All-time view: use total accumulated commissions
+        const paidReferrals = companyReferrals.filter((r: any) => 
+          r.status === 'validated' || r.status === 'converted' || r.status === 'paid'
+        );
+        
+        totalCommissionIndicators = paidReferrals.reduce((sum: number, r: any) => 
+          sum + (parseFloat(r.commissionIndicator) || 0), 0
+        );
+        totalCommissionPromoters = paidReferrals.reduce((sum: number, r: any) => 
+          sum + (parseFloat(r.commissionPromoter) || 0), 0
+        );
+      }
+      
       const totalCommissions = totalCommissionIndicators + totalCommissionPromoters;
 
       // Get unique users involved with this company
