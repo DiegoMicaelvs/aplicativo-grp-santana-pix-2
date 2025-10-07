@@ -290,18 +290,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // 2. Verificar duplicatas locais (placas e telefone)
+      // 2. Verificar duplicatas locais (placas APENAS - telefone pode repetir para múltiplas placas)
       // Get all plates to check - support both new licensePlates array and legacy single plate
       const platesToCheck = validatedData.licensePlates || [];
       let allDuplicates: any[] = [];
       
-      // Check phone duplicates
-      if (validatedData.phone) {
-        const phoneDuplicates = await storage.checkDuplicateReferralWithOwner(validatedData.phone);
-        allDuplicates.push(...phoneDuplicates);
-      }
-      
-      // Check each plate for duplicates
+      // Check each plate for duplicates (NOT phone - phone can be same for multiple plates)
       for (const plate of platesToCheck) {
         if (plate) {
           const plateDuplicates = await storage.checkDuplicateReferralWithOwner(undefined, plate);
@@ -320,23 +314,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const ownerState = duplicate.createdByState || '';
         const ownerInfo = ownerState ? `${ownerFirstName} (${ownerState})` : ownerFirstName;
         
-        let errorMessage = "Cadastro duplicado encontrado:\n";
-        if (duplicate.phone && duplicate.phone.toLowerCase() === validatedData.phone.toLowerCase()) {
-          errorMessage += `• Telefone ${validatedData.phone} já cadastrado por ${ownerInfo}\n`;
-        }
-        
-        // Check which plates are duplicated
+        // Find which specific plate is duplicated
+        let duplicatedPlate = '';
         for (const plate of platesToCheck) {
           if (duplicate.licensePlate && duplicate.licensePlate.toLowerCase() === plate.toLowerCase()) {
-            errorMessage += `• Placa ${plate} já cadastrada por ${ownerInfo}\n`;
-            break; // Only show first duplicate plate
+            duplicatedPlate = plate;
+            break;
           }
         }
         
+        let errorMessage = `Placa ${duplicatedPlate} já cadastrada por ${ownerInfo}\n`;
         errorMessage += `Data do primeiro cadastro: ${new Date(duplicate.createdAt).toLocaleDateString('pt-BR')}`;
         
         return res.status(400).json({ 
-          error: "Duplicata encontrada",
+          error: "Placa duplicada",
           details: errorMessage,
           duplicatedBy: ownerInfo,
           originalDate: duplicate.createdAt
