@@ -380,20 +380,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create a separate referral for EACH license plate
       const licensePlates = finalReferralData.licensePlates || [];
+      console.log(`[CREATE REFERRAL] Number of plates to create: ${licensePlates.length}`, licensePlates);
       const createdReferrals = [];
       
       for (const plate of licensePlates) {
         // Create a copy of referralData without licensePlates, then add single plate
         const { licensePlates: _, ...referralDataWithoutPlates } = finalReferralData;
         
+        console.log(`[CREATE REFERRAL] Creating referral for plate: ${plate}`);
         const referralForPlate = await storage.createReferral({
           ...referralDataWithoutPlates,
           licensePlates: [plate], // Pass single plate in array for storage
           userId: req.user!.id,
           createdBy: req.user!.id
         });
+        console.log(`[CREATE REFERRAL] Created referral ID: ${referralForPlate.id} for plate: ${plate}`);
         createdReferrals.push(referralForPlate);
       }
+      
+      console.log(`[CREATE REFERRAL] Total referrals created: ${createdReferrals.length}`);
 
       // Send SMS notification to user about new referral(s)
       const user = await storage.getUserById(req.user!.id);
