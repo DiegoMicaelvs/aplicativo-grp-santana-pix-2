@@ -200,7 +200,7 @@ export default function PublicCompanyDashboard() {
                 {metrics.conversionRate.toFixed(1)}%
               </div>
               <p className="text-xs text-muted-foreground">
-                {metrics.convertedReferrals} de {metrics.totalReferrals} indicações
+                {metrics.convertedReferrals} de {metrics.validatedReferrals} validadas
               </p>
             </CardContent>
           </Card>

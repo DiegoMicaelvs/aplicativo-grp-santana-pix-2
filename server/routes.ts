@@ -688,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         r.status === 'rejected' || r.status === 'false' || r.status === 'not_converted'
       ).length;
 
-      const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
+      const conversionRate = validatedReferrals > 0 ? (convertedReferrals / validatedReferrals) * 100 : 0;
 
       // Calculate commissions ONLY for validated/converted/paid referrals (valores gastos = actually spent)
       const paidReferrals = companyReferrals.filter((r: any) => 
@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         r.status === 'rejected' || r.status === 'false' || r.status === 'not_converted'
       ).length;
 
-      const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals) * 100 : 0;
+      const conversionRate = validatedReferrals > 0 ? (convertedReferrals / validatedReferrals) * 100 : 0;
 
       // Calculate commissions ONLY for validated/converted/paid referrals
       const paidReferrals = companyReferrals.filter((r: any) => 
@@ -1229,7 +1229,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalPromoters = users.filter(u => u.role === "promotor").length;
       const totalReferrals = referrals.length;
       const pendingReferrals = referrals.filter(r => r.status === "pending").length;
-      const convertedReferrals = referrals.filter(r => r.status === "converted" || r.status === "validated").length;
+      const validatedReferrals = referrals.filter(r => r.status === "validated").length;
+      const convertedReferrals = referrals.filter(r => r.status === "converted" || r.status === "paid").length;
       
       return res.json({
         totalIndicators,
@@ -1237,7 +1238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReferrals,
         pendingReferrals,
         convertedReferrals,
-        conversionRate: totalReferrals > 0 ? (convertedReferrals / totalReferrals * 100).toFixed(1) : "0"
+        conversionRate: validatedReferrals > 0 ? (convertedReferrals / validatedReferrals * 100).toFixed(1) : "0"
       });
     } catch (error) {
       console.error("Error fetching analyst stats:", error);
@@ -1436,14 +1437,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalIndicadores = users.filter(u => u.role === "indicador").length;
       const totalReferrals = referrals.length;
       const pendingReferrals = referrals.filter(r => r.status === "pending").length;
-      const convertedReferrals = referrals.filter(r => r.status === "converted" || r.status === "validated").length;
+      const validatedReferrals = referrals.filter(r => r.status === "validated").length;
+      const convertedReferrals = referrals.filter(r => r.status === "converted" || r.status === "paid").length;
       
       return res.json({
         totalIndicadores,
         totalReferrals,
         pendingReferrals,
         convertedReferrals,
-        conversionRate: totalReferrals > 0 ? (convertedReferrals / totalReferrals * 100).toFixed(1) : "0"
+        conversionRate: validatedReferrals > 0 ? (convertedReferrals / validatedReferrals * 100).toFixed(1) : "0"
       });
     } catch (error) {
       console.error("Error fetching stats:", error);

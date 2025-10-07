@@ -578,7 +578,7 @@ export default function CompanyDashboard() {
                   {metrics.conversionRate.toFixed(1)}%
                 </div>
                 <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground`}>
-                  {metrics.convertedReferrals} de {metrics.totalReferrals} indicações
+                  {metrics.convertedReferrals} de {metrics.validatedReferrals} validadas
                 </p>
               </CardContent>
             </Card>
