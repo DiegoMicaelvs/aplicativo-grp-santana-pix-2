@@ -136,7 +136,7 @@ export function ReferralLinksPage() {
   const handleEdit = (link: ReferralLink) => {
     setSelectedLink(link);
     setFormData({
-      name: link.name,
+      name: link.linkToken, // Use linkToken as name
       isActive: link.isActive
     });
     setEditDialogOpen(true);
@@ -149,7 +149,7 @@ export function ReferralLinksPage() {
   };
 
   const handleDelete = (link: ReferralLink) => {
-    if (confirm(`Tem certeza que deseja excluir o link "${link.name}"?`)) {
+    if (confirm(`Tem certeza que deseja excluir o link "${link.linkToken}"?`)) {
       deleteMutation.mutate(link.id);
     }
   };
@@ -338,7 +338,7 @@ export function ReferralLinksPage() {
               <TableBody>
                 {links.map((link) => (
                   <TableRow key={link.id}>
-                    <TableCell className="font-medium">{link.name}</TableCell>
+                    <TableCell className="font-medium">{link.linkToken}</TableCell>
                     <TableCell>
                       <Badge variant={link.isActive ? "default" : "secondary"}>
                         {link.isActive ? "Ativo" : "Inativo"}

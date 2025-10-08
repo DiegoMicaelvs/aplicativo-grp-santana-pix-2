@@ -214,10 +214,9 @@ export const ticketResponses = pgTable("ticket_responses", {
 export const referralLinks = pgTable("referral_links", {
   id: serial("id").primaryKey(),
   userId: integer("promoter_id").references(() => users.id).notNull(), // User who created the link (promoter, admin, analyst level 3)
-  linkToken: text("slug").notNull().unique(), // Unique token for the link (stored as 'slug' in DB for compatibility)
-  name: text("slug").notNull().default(''), // Maps to same slug column for compatibility - will show linkToken value
+  linkToken: text("slug").notNull().unique(), // Unique token/slug for the link (DB column: slug)
   clicks: integer("click_count").default(0).notNull(), // Number of clicks on the link
-  registrations: integer("signup_count").default(0).notNull(), // Number of successful registrations (stored as 'signup_count' in DB)
+  registrations: integer("signup_count").default(0).notNull(), // Number of successful registrations
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -644,12 +643,13 @@ export type ReferralPlate = typeof referralPlates.$inferSelect;
 export type CreateReferralPlate = z.infer<typeof createReferralPlateSchema>;
 
 // Referral Links schemas
-export const createReferralLinkSchema = createInsertSchema(referralLinks, {
-  name: (schema) => schema.min(1, "Nome do link é obrigatório"),
-}).omit({ id: true, linkToken: true, clicks: true, registrations: true, createdAt: true, updatedAt: true, userId: true });
+export const createReferralLinkSchema = z.object({
+  name: z.string().min(1, "Nome do link é obrigatório"), // Frontend sends name, backend converts to linkToken
+  isActive: z.boolean().optional(),
+});
 
 export const updateReferralLinkSchema = z.object({
-  name: z.string().min(1, "Nome do link é obrigatório"),
+  name: z.string().min(1, "Nome do link é obrigatório"), // Frontend sends name, backend converts to linkToken
   isActive: z.boolean(),
 });
 

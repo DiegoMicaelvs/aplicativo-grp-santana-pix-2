@@ -2201,7 +2201,7 @@ class DatabaseStorage implements IStorage {
         action: 'delete_referral_link',
         entityType: 'referral_link',
         entityId: id,
-        details: `Deleted referral link: ${existingLink.name}`
+        details: `Deleted referral link: ${existingLink.linkToken}`
       });
     } catch (error) {
       console.error('Error deleting referral link:', error);
