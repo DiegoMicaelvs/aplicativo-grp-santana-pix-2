@@ -214,10 +214,10 @@ export const ticketResponses = pgTable("ticket_responses", {
 export const referralLinks = pgTable("referral_links", {
   id: serial("id").primaryKey(),
   userId: integer("promoter_id").references(() => users.id).notNull(), // User who created the link (promoter, admin, analyst level 3)
-  linkToken: text("link_token").notNull().unique(), // Unique token for the link
-  name: text("name").notNull(), // Custom name for the link
+  linkToken: text("slug").notNull().unique(), // Unique token for the link (stored as 'slug' in DB for compatibility)
+  name: text("slug").notNull(), // Maps to same slug column for compatibility - will show linkToken value
   clicks: integer("click_count").default(0).notNull(), // Number of clicks on the link
-  registrations: integer("registration_count").default(0).notNull(), // Number of successful registrations
+  registrations: integer("signup_count").default(0).notNull(), // Number of successful registrations (stored as 'signup_count' in DB)
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

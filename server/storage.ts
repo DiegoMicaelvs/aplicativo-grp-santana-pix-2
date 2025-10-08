@@ -2046,13 +2046,16 @@ class DatabaseStorage implements IStorage {
 
     while (retries < maxRetries) {
       try {
-        // Generate collision-resistant token
-        const token = crypto.randomUUID().replace(/-/g, '');
+        // Generate slug using name (sanitized) - this serves as both token and identifier
+        const slug = data.name.trim().toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '') + '-' + crypto.randomUUID().split('-')[0];
         
+        // Insert both name and linkToken with same value since they map to same column 'slug'
         const [newLink] = await db.insert(referralLinks).values({
           userId,
-          linkToken: token,
-          name: data.name.trim(),
+          linkToken: slug,
+          name: slug, // Same as linkToken - both map to 'slug' column in DB
           isActive: data.isActive ?? true,
         }).returning();
 
@@ -2062,13 +2065,13 @@ class DatabaseStorage implements IStorage {
           action: 'create_referral_link',
           entityType: 'referral_link',
           entityId: newLink.id,
-          details: `Created referral link: ${data.name}`
+          details: `Created referral link: ${slug}`
         });
 
         return newLink;
       } catch (error: any) {
-        // Check for unique constraint violation on token
-        if (error.code === '23505' && error.detail?.includes('link_token')) {
+        // Check for unique constraint violation on slug
+        if (error.code === '23505' && error.detail?.includes('slug')) {
           retries++;
           if (retries >= maxRetries) {
             throw new Error('Failed to generate unique token after multiple attempts');
@@ -2133,9 +2136,15 @@ class DatabaseStorage implements IStorage {
         throw new Error('Insufficient permissions');
       }
 
+      // Generate new slug from name
+      const slug = data.name.trim().toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      
       const [updatedLink] = await db.update(referralLinks)
         .set({
-          name: data.name.trim(),
+          linkToken: slug, // Update slug/token
+          name: slug, // Both map to same 'slug' column
           isActive: data.isActive,
           updatedAt: new Date()
         })
