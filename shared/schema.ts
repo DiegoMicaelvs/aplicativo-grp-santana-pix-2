@@ -215,7 +215,7 @@ export const referralLinks = pgTable("referral_links", {
   id: serial("id").primaryKey(),
   userId: integer("promoter_id").references(() => users.id).notNull(), // User who created the link (promoter, admin, analyst level 3)
   linkToken: text("slug").notNull().unique(), // Unique token for the link (stored as 'slug' in DB for compatibility)
-  name: text("slug").notNull(), // Maps to same slug column for compatibility - will show linkToken value
+  name: text("slug").notNull().default(''), // Maps to same slug column for compatibility - will show linkToken value
   clicks: integer("click_count").default(0).notNull(), // Number of clicks on the link
   registrations: integer("signup_count").default(0).notNull(), // Number of successful registrations (stored as 'signup_count' in DB)
   isActive: boolean("is_active").default(true).notNull(),
