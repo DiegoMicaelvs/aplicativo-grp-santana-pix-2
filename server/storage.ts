@@ -2143,8 +2143,7 @@ class DatabaseStorage implements IStorage {
       const [updatedLink] = await db.update(referralLinks)
         .set({
           linkToken: slug, // Update slug/token (name will have same value automatically)
-          isActive: data.isActive,
-          updatedAt: new Date()
+          isActive: data.isActive
         })
         .where(eq(referralLinks.id, id))
         .returning();
@@ -2189,8 +2188,7 @@ class DatabaseStorage implements IStorage {
       // Soft delete - set isActive to false
       await db.update(referralLinks)
         .set({
-          isActive: false,
-          updatedAt: new Date()
+          isActive: false
         })
         .where(eq(referralLinks.id, id));
 
@@ -2212,8 +2210,7 @@ class DatabaseStorage implements IStorage {
     try {
       const result = await db.update(referralLinks)
         .set({
-          clicks: sql`COALESCE(${referralLinks.clicks}, 0) + 1`,
-          updatedAt: new Date()
+          clicks: sql`COALESCE(${referralLinks.clicks}, 0) + 1`
         })
         .where(and(
           eq(referralLinks.linkToken, token),
@@ -2266,8 +2263,7 @@ class DatabaseStorage implements IStorage {
             // Increment registrations count
             await tx.update(referralLinks)
               .set({
-                registrations: sql`COALESCE(${referralLinks.registrations}, 0) + 1`,
-                updatedAt: new Date()
+                registrations: sql`COALESCE(${referralLinks.registrations}, 0) + 1`
               })
               .where(eq(referralLinks.id, link.id));
           }
