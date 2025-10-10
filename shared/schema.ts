@@ -214,12 +214,12 @@ export const ticketResponses = pgTable("ticket_responses", {
 export const referralLinks = pgTable("referral_links", {
   id: serial("id").primaryKey(),
   userId: integer("promoter_id").references(() => users.id).notNull(), // User who created the link (promoter, admin, analyst level 3)
-  linkToken: text("link_token").notNull().unique(), // Unique token for the link (DB column: link_token)
+  linkToken: text("slug").notNull().unique(), // Unique token/slug for the link (DB column: slug)
   clicks: integer("click_count").default(0).notNull(), // Number of clicks on the link
   registrations: integer("signup_count").default(0).notNull(), // Number of successful registrations
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
 });
 
 // Sales Pipeline - CRM for Vendedor role

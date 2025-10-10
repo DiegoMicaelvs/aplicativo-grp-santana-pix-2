@@ -2051,12 +2051,12 @@ class DatabaseStorage implements IStorage {
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '') + '-' + crypto.randomUUID().split('-')[0];
         
-        // Insert only linkToken (which maps to 'slug' column)
-        // Name will automatically have the same value since it maps to the same column
+        // Insert linkToken (which maps to 'slug' column in the database)
         const [newLink] = await db.insert(referralLinks).values({
           userId,
           linkToken: slug,
           isActive: data.isActive ?? true,
+          updatedAt: new Date(),
         }).returning();
 
         // Log audit trail
