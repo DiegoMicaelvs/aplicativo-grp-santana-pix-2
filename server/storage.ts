@@ -2056,7 +2056,6 @@ class DatabaseStorage implements IStorage {
           userId,
           linkToken: slug,
           isActive: data.isActive ?? true,
-          updatedAt: new Date(),
         }).returning();
 
         // Log audit trail

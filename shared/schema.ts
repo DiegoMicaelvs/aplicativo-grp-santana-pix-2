@@ -219,7 +219,6 @@ export const referralLinks = pgTable("referral_links", {
   registrations: integer("signup_count").default(0).notNull(), // Number of successful registrations
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
 });
 
 // Sales Pipeline - CRM for Vendedor role
