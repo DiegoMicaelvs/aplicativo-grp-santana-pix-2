@@ -1358,16 +1358,40 @@ class DatabaseStorage implements IStorage {
   
   // Company methods
   async getAllCompanies() {
-    return await db.query.companies.findMany({
+    const companiesList = await db.query.companies.findMany({
       orderBy: asc(companies.name)
     });
+
+    const companiesWithSettings = await Promise.all(
+      companiesList.map(async (company) => {
+        const settings = await this.getCompanySettings(company.id);
+        return {
+          ...company,
+          cashBalance: settings?.cashBalance || '0.00'
+        };
+      })
+    );
+
+    return companiesWithSettings;
   }
   
   async getActiveCompanies() {
-    return await db.query.companies.findMany({
+    const companiesList = await db.query.companies.findMany({
       where: eq(companies.isActive, true),
       orderBy: asc(companies.name)
     });
+
+    const companiesWithSettings = await Promise.all(
+      companiesList.map(async (company) => {
+        const settings = await this.getCompanySettings(company.id);
+        return {
+          ...company,
+          cashBalance: settings?.cashBalance || '0.00'
+        };
+      })
+    );
+
+    return companiesWithSettings;
   }
   
   async createCompany(name: string, isActive: boolean = true) {
