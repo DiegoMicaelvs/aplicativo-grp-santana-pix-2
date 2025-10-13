@@ -6,6 +6,7 @@ import {
   referralPlates,
   referralLinks,
   companies,
+  companySettings,
   withdrawalRequests,
   cashFlow,
   supportTickets,
@@ -1390,6 +1391,40 @@ class DatabaseStorage implements IStorage {
       .returning();
     
     return company;
+  }
+
+  async getCompanySettings(companyId: number) {
+    const settings = await db.query.companySettings.findFirst({
+      where: eq(companySettings.companyId, companyId)
+    });
+    
+    if (!settings) {
+      // Create default settings if none exist
+      const [newSettings] = await db.insert(companySettings)
+        .values({
+          companyId,
+          cashBalance: "0.00"
+        })
+        .returning();
+      return newSettings;
+    }
+    
+    return settings;
+  }
+
+  async updateCompanyCashBalance(companyId: number, cashBalance: string, updatedBy: number) {
+    const existing = await this.getCompanySettings(companyId);
+    
+    const [updated] = await db.update(companySettings)
+      .set({
+        cashBalance,
+        updatedBy,
+        updatedAt: new Date()
+      })
+      .where(eq(companySettings.companyId, companyId))
+      .returning();
+    
+    return updated;
   }
   
   // Withdrawal methods

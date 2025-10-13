@@ -70,6 +70,16 @@ export const companies = pgTable("companies", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Company settings - stores additional configuration per company
+export const companySettings = pgTable("company_settings", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id).notNull().unique(),
+  cashBalance: decimal("cash_balance", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  updatedBy: integer("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Referral statuses
 export type ReferralStatus = "pending" | "analyzing" | "validated" | "converted" | "rejected" | "paid" | "false" | "not_validated" | "not_converted";
 
@@ -481,6 +491,10 @@ export const updateReferralStatusSchema = z.object({
 export const createCompanySchema = createInsertSchema(companies, {
   name: (schema) => schema.min(1, "Nome da empresa é obrigatório"),
 }).omit({ id: true, createdAt: true });
+
+export const companySettingsInsertSchema = createInsertSchema(companySettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const companySettingsSelectSchema = createSelectSchema(companySettings);
+export type CompanySettings = z.infer<typeof companySettingsSelectSchema>;
 
 export const createWithdrawalRequestSchema = z.object({
   amount: z.coerce.number().positive("Valor deve ser maior que zero"),

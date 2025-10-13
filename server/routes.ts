@@ -625,7 +625,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update company cash balance (admin only)
-  // Note: Cash balance is now managed through cash_flow table, not stored in companies table
   app.patch("/api/admin/companies/:id/cash-balance", requireAdmin, async (req, res) => {
     try {
       const companyId = parseInt(req.params.id);
@@ -645,8 +644,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Empresa não encontrada" });
       }
 
-      // Return success - cash balance is now calculated from cash_flow table
-      return res.json({ ...company, message: "Saldo do caixa é gerenciado através do fluxo de caixa" });
+      // Update company cash balance in company_settings table
+      const settings = await storage.updateCompanyCashBalance(companyId, cashBalance.toString(), req.user.id);
+      
+      return res.json({ ...company, cashBalance: settings.cashBalance });
     } catch (error) {
       console.error("Error updating company cash balance:", error);
       return res.status(500).json({ error: "Erro ao atualizar caixa da empresa" });
@@ -789,10 +790,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalPaidToPromoters = 0;
       const totalPaidValues = 0;
 
+      // Get cash balance from company settings
+      const settings = await storage.getCompanySettings(companyId);
+
       const metrics = {
         companyId,
         companyName: company.name,
-        cashBalance: parseFloat((company as any).cashBalance || '0'),
+        cashBalance: parseFloat(settings.cashBalance || '0'),
         totalIndicators,
         totalPromoters,
         totalReferrals,
@@ -955,10 +959,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalPaidToPromoters = 0;
       const totalPaidValues = 0;
 
+      // Get cash balance from company settings
+      const settings = await storage.getCompanySettings(companyId);
+
       const metrics = {
         companyId,
         companyName: company.name,
-        cashBalance: parseFloat((company as any).cashBalance || '0'),
+        cashBalance: parseFloat(settings.cashBalance || '0'),
         totalIndicators,
         totalPromoters,
         totalReferrals,
