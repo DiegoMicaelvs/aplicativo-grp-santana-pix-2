@@ -716,8 +716,7 @@ class DatabaseStorage implements IStorage {
       where: eq(referrals.id, id),
       with: {
         user: true,
-        company: true,
-        plates: true
+        company: true
       }
     });
   }
@@ -1496,26 +1495,7 @@ class DatabaseStorage implements IStorage {
       orderBy: desc(withdrawalRequests.requestedAt)
     });
 
-    // For each withdrawal, get the user's latest referral to populate license plate if not already present
-    const withdrawalsWithReferralInfo = await Promise.all(withdrawals.map(async (withdrawal) => {
-      // Get the most recent referral for this user to get license plate if not set
-      let licensePlate = withdrawal.licensePlate;
-      
-      if (!licensePlate) {
-        const latestReferral = await db.query.referrals.findFirst({
-          where: eq(referrals.userId, withdrawal.userId),
-          orderBy: desc(referrals.createdAt)
-        });
-        licensePlate = latestReferral?.licensePlate || null;
-      }
-
-      return {
-        ...withdrawal,
-        licensePlate
-      };
-    }));
-
-    return withdrawalsWithReferralInfo;
+    return withdrawals;
   }
   
   async getWithdrawalRequestById(id: number) {
@@ -1591,14 +1571,6 @@ class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async updateWithdrawalInsurance(id: number, hasInsurance: boolean) {
-    const [updated] = await db.update(withdrawalRequests)
-      .set({ hasInsurance })
-      .where(eq(withdrawalRequests.id, id))
-      .returning();
-    
-    return updated;
-  }
   
   // Cash flow methods
   async createCashFlowEntry(entry: CreateCashFlow & { createdBy: number }) {
