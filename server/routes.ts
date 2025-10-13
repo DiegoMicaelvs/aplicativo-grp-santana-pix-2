@@ -615,8 +615,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/companies/:id", requireAdmin, async (req, res) => {
     try {
       const companyId = parseInt(req.params.id);
-      const { name, isActive, cashBalance } = req.body;
-      const company = await storage.updateCompany(companyId, { name, isActive, cashBalance });
+      const { name, isActive } = req.body;
+      const company = await storage.updateCompany(companyId, { name, isActive });
       return res.json(company);
     } catch (error) {
       console.error("Error updating company:", error);
@@ -625,6 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update company cash balance (admin only)
+  // Note: Cash balance is now managed through cash_flow table, not stored in companies table
   app.patch("/api/admin/companies/:id/cash-balance", requireAdmin, async (req, res) => {
     try {
       const companyId = parseInt(req.params.id);
@@ -638,8 +639,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Valor de caixa inválido" });
       }
 
-      const company = await storage.updateCompany(companyId, { cashBalance: cashBalance.toString() });
-      return res.json(company);
+      // Get company to confirm it exists
+      const company = await storage.getCompanyById(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Empresa não encontrada" });
+      }
+
+      // Return success - cash balance is now calculated from cash_flow table
+      return res.json({ ...company, message: "Saldo do caixa é gerenciado através do fluxo de caixa" });
     } catch (error) {
       console.error("Error updating company cash balance:", error);
       return res.status(500).json({ error: "Erro ao atualizar caixa da empresa" });
