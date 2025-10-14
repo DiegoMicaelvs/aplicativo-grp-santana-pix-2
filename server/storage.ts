@@ -826,14 +826,72 @@ class DatabaseStorage implements IStorage {
   }
   
   async getAllReferrals() {
-    return await db.query.referrals.findMany({
-      with: {
-        user: true,
-        company: true,
-        createdByUser: true
-      },
-      orderBy: desc(referrals.createdAt)
-    });
+    // OPTIMIZED: Use explicit JOIN instead of 'with' to avoid N+1 queries
+    const userAlias = sql`"user"`.as('user');
+    const createdByAlias = sql`"createdByUser"`.as('createdByUser');
+    
+    const results = await db
+      .select({
+        id: referrals.id,
+        userId: referrals.userId,
+        createdBy: referrals.createdBy,
+        companyId: referrals.companyId,
+        fullName: referrals.fullName,
+        phone: referrals.phone,
+        city: referrals.city,
+        state: referrals.state,
+        licensePlate: referrals.licensePlate,
+        hasInsurance: referrals.hasInsurance,
+        status: referrals.status,
+        notes: referrals.notes,
+        vehicleBrand: referrals.vehicleBrand,
+        vehicleModel: referrals.vehicleModel,
+        vehicleYear: referrals.vehicleYear,
+        commissionIndicator: referrals.commissionIndicator,
+        commissionPromoter: referrals.commissionPromoter,
+        statusHistory: referrals.statusHistory,
+        createdAt: referrals.createdAt,
+        updatedAt: referrals.updatedAt,
+        validatedBy: referrals.validatedBy,
+        validatedAt: referrals.validatedAt,
+        nameCorrect: referrals.nameCorrect,
+        plateCorrect: referrals.plateCorrect,
+        phoneCorrect: referrals.phoneCorrect,
+        validationNotes: referrals.validationNotes,
+        // User relation
+        user: {
+          id: users.id,
+          username: users.username,
+          fullName: users.fullName,
+          cpf: users.cpf,
+          phone: users.phone,
+          role: users.role,
+          isActive: users.isActive,
+          balance: users.balance,
+          totalEarnings: users.totalEarnings,
+          promoterId: users.promoterId,
+          supervisorId: users.supervisorId,
+          createdBy: users.createdBy,
+          permissions: users.permissions,
+          analystLevel: users.analystLevel,
+          state: users.state,
+          city: users.city,
+          createdAt: users.createdAt
+        },
+        // Company relation  
+        company: {
+          id: companies.id,
+          name: companies.name,
+          isActive: companies.isActive,
+          createdAt: companies.createdAt
+        }
+      })
+      .from(referrals)
+      .leftJoin(users, eq(referrals.userId, users.id))
+      .leftJoin(companies, eq(referrals.companyId, companies.id))
+      .orderBy(desc(referrals.createdAt));
+
+    return results;
   }
 
   async getReferralsByCompanyId(companyId: number) {
