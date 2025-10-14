@@ -925,7 +925,7 @@ class DatabaseStorage implements IStorage {
     
     if (conditions.length === 0) return [];
     
-    // Search in main referrals table
+    // OPTIMIZED: Removed slow SPLIT_PART SQL function - frontend can split if needed
     const referralResults = await db.select({
       id: referrals.id,
       fullName: referrals.fullName,
@@ -933,14 +933,13 @@ class DatabaseStorage implements IStorage {
       licensePlate: referrals.licensePlate,
       createdAt: referrals.createdAt,
       createdByName: users.fullName,
-      createdByFirstName: sql`SPLIT_PART(${users.fullName}, ' ', 1)`.as('createdByFirstName'),
       createdByState: users.state
     }).from(referrals)
       .leftJoin(users, eq(referrals.createdBy, users.id))
       .where(or(...conditions))
       .orderBy(asc(referrals.createdAt));
     
-    return referralResults.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return referralResults;
   }
 
   async getTodayReferralsByUserId(userId: number, startDate: Date) {
