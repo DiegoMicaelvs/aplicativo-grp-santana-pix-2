@@ -1276,40 +1276,34 @@ class DatabaseStorage implements IStorage {
   
   // Método removido - comissões agora são calculadas em updateReferralStatus
   
-  // Company methods
+  // Company methods - OPTIMIZED (single query with JOIN)
   async getAllCompanies() {
-    const companiesList = await db.query.companies.findMany({
-      orderBy: asc(companies.name)
-    });
-
-    const companiesWithSettings = await Promise.all(
-      companiesList.map(async (company) => {
-        const settings = await this.getCompanySettings(company.id);
-        return {
-          ...company,
-          cashBalance: settings?.cashBalance || '0.00'
-        };
-      })
-    );
+    const companiesWithSettings = await db.select({
+      id: companies.id,
+      name: companies.name,
+      isActive: companies.isActive,
+      createdAt: companies.createdAt,
+      cashBalance: sql`COALESCE(${companySettings.cashBalance}, '0.00')`.as('cashBalance')
+    })
+    .from(companies)
+    .leftJoin(companySettings, eq(companies.id, companySettings.companyId))
+    .orderBy(asc(companies.name));
 
     return companiesWithSettings;
   }
   
   async getActiveCompanies() {
-    const companiesList = await db.query.companies.findMany({
-      where: eq(companies.isActive, true),
-      orderBy: asc(companies.name)
-    });
-
-    const companiesWithSettings = await Promise.all(
-      companiesList.map(async (company) => {
-        const settings = await this.getCompanySettings(company.id);
-        return {
-          ...company,
-          cashBalance: settings?.cashBalance || '0.00'
-        };
-      })
-    );
+    const companiesWithSettings = await db.select({
+      id: companies.id,
+      name: companies.name,
+      isActive: companies.isActive,
+      createdAt: companies.createdAt,
+      cashBalance: sql`COALESCE(${companySettings.cashBalance}, '0.00')`.as('cashBalance')
+    })
+    .from(companies)
+    .leftJoin(companySettings, eq(companies.id, companySettings.companyId))
+    .where(eq(companies.isActive, true))
+    .orderBy(asc(companies.name));
 
     return companiesWithSettings;
   }
