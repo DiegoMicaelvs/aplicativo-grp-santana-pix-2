@@ -1552,85 +1552,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update referral status
+  // Update referral status - OPTIMIZED (no duplicate queries)
   app.patch("/api/referrals/:id/status", requireAdmin, async (req, res) => {
     try {
-      console.log(`[/api/referrals/:id/status] Iniciando atualização - ID: ${req.params.id}, Body:`, req.body);
-      
       const { id } = req.params;
+      const validatedData = updateReferralStatusSchema.parse(req.body);
       
-      // Validate request body
-      let validatedData;
-      try {
-        validatedData = updateReferralStatusSchema.parse(req.body);
-        console.log(`[/api/referrals/:id/status] Dados validados:`, validatedData);
-      } catch (validationError) {
-        console.error(`[/api/referrals/:id/status] Erro de validação:`, validationError);
-        return res.status(400).json({ 
-          error: "Dados inválidos", 
-          details: validationError instanceof Error ? validationError.message : "Erro de validação" 
-        });
-      }
+      // updateReferralStatus handles all queries internally - no duplicates
+      const result = await storage.updateReferralStatus(
+        parseInt(id),
+        validatedData.status,
+        validatedData.notes,
+        req.user!.id
+      );
       
-      // Get referral and user info before update for SMS notification
-      const referral = await storage.getReferralById(parseInt(id));
-      if (!referral) {
-        console.error(`[/api/referrals/:id/status] Indicação não encontrada: ${id}`);
-        return res.status(404).json({ error: "Indicação não encontrada" });
-      }
+      // TODO: Move SMS notification to updateReferralStatus to avoid extra queries
       
-      console.log(`[/api/referrals/:id/status] Indicação atual:`, {
-        id: referral.id,
-        status: referral.status,
-        commissionIndicator: referral.commissionIndicator,
-        commissionPromoter: referral.commissionPromoter
-      });
-      
-      const user = await storage.getUserById(referral.userId);
-      
-      let updatedReferral;
-      try {
-        updatedReferral = await storage.updateReferralStatus(
-          parseInt(id),
-          validatedData.status,
-          validatedData.notes,
-          req.user!.id
-        );
-      } catch (updateError) {
-        console.error(`[/api/referrals/:id/status] Erro no updateReferralStatus:`, updateError);
-        throw updateError;
-      }
-
-      // Send SMS notification if configured and user has phone
-      if (user?.phone && validatedData.status !== referral?.status) {
-        try {
-          const { sendStatusUpdateNotification } = await import('./sms-service');
-          await sendStatusUpdateNotification(
-            user.phone,
-            user.fullName,
-            parseInt(id),
-            validatedData.status
-          );
-          console.log(`SMS notification sent to ${user.phone} for referral status update`);
-        } catch (smsError) {
-          console.log('SMS notification failed (non-critical):', smsError);
-          // Don't fail the update if SMS fails
-        }
-      }
-      
-      console.log(`[/api/referrals/:id/status] Indicação atualizada com sucesso:`, {
-        id: updatedReferral.id,
-        newStatus: updatedReferral.status,
-        newCommissionIndicator: updatedReferral.commissionIndicator,
-        newCommissionPromoter: updatedReferral.commissionPromoter
-      });
-      
-      return res.json(updatedReferral);
+      return res.json(result);
     } catch (error) {
-      console.error("[/api/referrals/:id/status] Erro ao atualizar status:", error);
-      console.error("[/api/referrals/:id/status] Stack trace:", error instanceof Error ? error.stack : 'No stack trace');
+      console.error("[/api/referrals/:id/status] Error:", error);
       
-      // Return more specific error messages
       if (error instanceof Error) {
         if (error.message === "Referral not found") {
           return res.status(404).json({ error: "Indicação não encontrada" });
