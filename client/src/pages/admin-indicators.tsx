@@ -345,29 +345,30 @@ export default function AdminIndicatorsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>CPF</TableHead>
-                  <TableHead>Função</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Atribuição</TableHead>
-                  <TableHead>Cadastrado por</TableHead>
-                  <TableHead>Indicações</TableHead>
-                  <TableHead>Ganhos Totais</TableHead>
-                  <TableHead>Data Cadastro</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredIndicators.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.fullName}</TableCell>
-                    <TableCell>{user.username}</TableCell>
-                    <TableCell>{user.cpf}</TableCell>
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[150px]">Nome</TableHead>
+                    <TableHead className="min-w-[200px]">Email</TableHead>
+                    <TableHead className="min-w-[120px]">CPF</TableHead>
+                    <TableHead className="min-w-[100px]">Função</TableHead>
+                    <TableHead className="min-w-[80px]">Status</TableHead>
+                    <TableHead className="min-w-[180px]">Atribuição</TableHead>
+                    <TableHead className="min-w-[150px]">Cadastrado por</TableHead>
+                    <TableHead className="min-w-[90px]">Indicações</TableHead>
+                    <TableHead className="min-w-[120px]">Ganhos Totais</TableHead>
+                    <TableHead className="min-w-[100px]">Data Cadastro</TableHead>
+                    <TableHead className="min-w-[100px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredIndicators.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.fullName}</TableCell>
+                      <TableCell className="truncate max-w-[200px]">{user.username}</TableCell>
+                      <TableCell className="font-mono text-sm">{user.cpf}</TableCell>
                     <TableCell>
                       <Badge className={getRoleBadgeColor(user.role)}>
                         {user.role}
@@ -436,10 +437,10 @@ export default function AdminIndicatorsPage() {
                     </TableCell>
                     <TableCell>{getRegisteredBy(user.id)}</TableCell>
                     <TableCell className="text-center">{getReferralsCount(user.id)}</TableCell>
-                    <TableCell className="text-green-600 font-semibold">
+                    <TableCell className="text-green-600 font-semibold whitespace-nowrap">
                       R$ {getTotalEarnings(user.id).toFixed(2)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       {user.createdAt ? format(new Date(user.createdAt), "dd/MM/yyyy", { locale: ptBR }) : "-"}
                     </TableCell>
                     <TableCell>
@@ -456,6 +457,7 @@ export default function AdminIndicatorsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             
             {filteredIndicators.length === 0 && (
               <div className="text-center py-8">
