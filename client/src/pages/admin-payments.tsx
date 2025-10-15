@@ -359,7 +359,9 @@ export default function AdminPaymentsPage() {
                       </Select>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {withdrawal.licensePlate || "-"}
+                      {withdrawal.plates && withdrawal.plates.length > 0 
+                        ? withdrawal.plates.join(", ") 
+                        : "-"}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeColor(withdrawal.status)}>
@@ -423,7 +425,11 @@ export default function AdminPaymentsPage() {
                                     <strong>Adesão:</strong> {selectedWithdrawal.hasInsurance ? "Sim" : "Não"}
                                   </div>
                                   <div>
-                                    <strong>Placa:</strong> {selectedWithdrawal.licensePlate || "N/A"}
+                                    <strong>Placa(s):</strong> {
+                                      selectedWithdrawal.plates && selectedWithdrawal.plates.length > 0 
+                                        ? selectedWithdrawal.plates.join(", ") 
+                                        : "N/A"
+                                    }
                                   </div>
                                   <div>
                                     <strong>Status:</strong> {getStatusLabel(selectedWithdrawal.status)}

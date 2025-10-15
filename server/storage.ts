@@ -1469,7 +1469,35 @@ class DatabaseStorage implements IStorage {
       orderBy: desc(withdrawalRequests.requestedAt)
     });
 
-    return withdrawals;
+    // For each withdrawal, get the license plates from user's referrals
+    const withdrawalsWithPlates = await Promise.all(
+      withdrawals.map(async (withdrawal) => {
+        // Get license plates from user's validated/converted/paid referrals
+        const userReferrals = await db.query.referrals.findMany({
+          where: and(
+            eq(referrals.userId, withdrawal.userId),
+            or(
+              eq(referrals.status, 'validated'),
+              eq(referrals.status, 'converted'),
+              eq(referrals.status, 'paid')
+            )
+          ),
+          columns: {
+            licensePlate: true
+          }
+        });
+
+        // Get unique plates
+        const plates = Array.from(new Set(userReferrals.map(r => r.licensePlate).filter(Boolean)));
+        
+        return {
+          ...withdrawal,
+          plates: plates
+        };
+      })
+    );
+
+    return withdrawalsWithPlates;
   }
   
   async getWithdrawalRequestById(id: number) {
