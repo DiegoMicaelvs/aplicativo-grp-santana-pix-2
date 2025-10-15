@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown } from "lucide-react";
+import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -613,7 +613,9 @@ export default function AdminReferralsDetailedPage() {
   const stats = {
     totalReferrals: referrals.length,
     pendingReferrals: referrals.filter((r: any) => r.status === "pending").length,
+    analyzingReferrals: referrals.filter((r: any) => r.status === "analyzing").length,
     validatedReferrals: referrals.filter((r: any) => r.status === "validated").length,
+    rejectedReferrals: referrals.filter((r: any) => r.status === "rejected").length,
     totalCommissions: referrals
       .filter((r: any) => ['validated', 'converted'].includes(r.status))
       .reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0)
@@ -690,7 +692,7 @@ export default function AdminReferralsDetailedPage() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 lg:gap-6 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
             <CardTitle className="text-xs sm:text-sm font-medium">Total de Indicações</CardTitle>
@@ -713,6 +715,16 @@ export default function AdminReferralsDetailedPage() {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Em Análise</CardTitle>
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+          </CardHeader>
+          <CardContent className="px-3 md:px-6">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">{stats.analyzingReferrals}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
             <CardTitle className="text-xs sm:text-sm font-medium">Validadas</CardTitle>
             <Check className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
           </CardHeader>
@@ -721,7 +733,17 @@ export default function AdminReferralsDetailedPage() {
           </CardContent>
         </Card>
         
-        <Card className="col-span-2 md:col-span-1">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Rejeitadas</CardTitle>
+            <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+          </CardHeader>
+          <CardContent className="px-3 md:px-6">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-red-600">{stats.rejectedReferrals}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
             <CardTitle className="text-xs sm:text-sm font-medium">Comissões Totais</CardTitle>
             <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
