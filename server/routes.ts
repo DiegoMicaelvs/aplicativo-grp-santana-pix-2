@@ -645,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update company cash balance in company_settings table
-      const settings = await storage.updateCompanyCashBalance(companyId, cashBalance.toString(), req.user.id);
+      const settings = await storage.updateCompanyCashBalance(companyId, cashBalance.toString(), req.user!.id);
       
       return res.json({ ...company, cashBalance: settings.cashBalance });
     } catch (error) {
@@ -973,6 +973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const metrics = {
         companyId,
         companyName: company.name,
+        publicToken: company.publicToken,
         cashBalance: parseFloat(settings.cashBalance || '0'),
         totalIndicators,
         totalPromoters,

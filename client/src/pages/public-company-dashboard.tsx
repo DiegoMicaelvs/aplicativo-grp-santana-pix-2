@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useSearch } from "wouter";
-import { useMemo } from "react";
+import { useParams, useSearch, useLocation } from "wouter";
+import { useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Users, Target, DollarSign, Activity, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ const formatCurrency = (value: number | string): string => {
 interface CompanyMetrics {
   companyId: number;
   companyName: string;
+  publicToken: string | null;
   cashBalance: number;
   totalIndicators: number;
   totalPromoters: number;
@@ -43,6 +44,7 @@ export default function PublicCompanyDashboard() {
   const { tokenOrId } = useParams();
   const searchParams = new URLSearchParams(useSearch());
   const monthFilter = searchParams.get('month') || 'all_time';
+  const [, setLocation] = useLocation();
 
   // Fetch company metrics using either token or ID
   const { data: metrics, isLoading, error } = useQuery<CompanyMetrics>({
@@ -59,6 +61,21 @@ export default function PublicCompanyDashboard() {
       return response.json();
     },
   });
+
+  // Update URL to use token if currently using numeric ID
+  useEffect(() => {
+    if (metrics && tokenOrId) {
+      // Check if current URL param is a numeric ID
+      const isNumericId = /^\d+$/.test(tokenOrId);
+      
+      // If it's numeric and we have a token, update the URL
+      if (isNumericId && metrics.publicToken) {
+        const currentSearch = window.location.search;
+        const newPath = `/public-dashboard/${metrics.publicToken}${currentSearch}`;
+        window.history.replaceState(null, '', newPath);
+      }
+    }
+  }, [metrics, tokenOrId]);
 
   // Fetch current month metrics separately (always show current month data)
   const currentMonth = useMemo(() => {

@@ -60,13 +60,16 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 - **API Updates**:
   - Modified `/api/public/company-metrics/:tokenOrId` to accept both tokens and IDs (backward compatible)
   - Added `getCompanyByToken()` method in storage layer
+  - API now returns `publicToken` in response for URL updating
 - **Frontend Updates**:
   - Updated public dashboard route to `/public-dashboard/:tokenOrId`
   - Company dashboard now generates shareable links using secure tokens instead of IDs
   - Example: Changed from `/public-dashboard/7` to `/public-dashboard/GgoPst9Svd1CqULS`
+  - **URL Auto-Update**: When accessing via old numeric link, browser URL automatically updates to show token-based URL
+  - Uses `window.history.replaceState` to seamlessly update URL without page reload
 - **Token Generation**: Created `scripts/generate-company-tokens.ts` to generate tokens for existing companies
 - **Backward Compatibility**: System still accepts numeric IDs for existing links
-- Result: Significantly improved security and privacy for company dashboard sharing
+- Result: Significantly improved security and privacy for company dashboard sharing with seamless URL migration
 
 ### 2025-10-15 - Admin Referrals Page Enhancement
 - Added "Em Análise" and "Rejeitadas" metrics cards to admin referrals detailed page
