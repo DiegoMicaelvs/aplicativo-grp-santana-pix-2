@@ -2323,6 +2323,7 @@ class DatabaseStorage implements IStorage {
           city: userData.city || 'Não informado',
           state: userData.state || 'N/A',
           zipCode: userData.zipCode || '00000-000',
+          shirtSize: userData.shirtSize || 'M',
           // Ensure null values are converted to undefined for compatibility
           createdBy: userData.createdBy ?? undefined,
           promoterId: assignmentData.promoterId ?? userData.promoterId ?? undefined,
