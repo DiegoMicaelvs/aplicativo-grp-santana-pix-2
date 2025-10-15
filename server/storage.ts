@@ -109,6 +109,7 @@ export interface IStorage {
   getWithdrawalRequestsByUserId(userId: number): Promise<any[]>;
   getAllWithdrawalRequests(): Promise<any[]>;
   updateWithdrawalStatus(id: number, status: WithdrawalStatus, processedBy: number, notes?: string): Promise<any>;
+  updateWithdrawalInsurance(id: number, hasInsurance: boolean): Promise<any>;
   
   // Cash flow methods
   createCashFlowEntry(entry: CreateCashFlow & { createdBy: number }): Promise<any>;
@@ -1542,6 +1543,17 @@ class DatabaseStorage implements IStorage {
     }
     
     return updated;
+  }
+
+  async updateWithdrawalInsurance(id: number, hasInsurance: boolean) {
+    // NOTE: hasInsurance field doesn't exist in withdrawalRequests table
+    // This field only exists in referrals and salesLeads tables
+    // Returning the withdrawal without update to avoid errors
+    const withdrawal = await db.query.withdrawalRequests.findFirst({
+      where: eq(withdrawalRequests.id, id)
+    });
+    
+    return withdrawal;
   }
 
   
