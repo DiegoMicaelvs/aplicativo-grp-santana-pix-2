@@ -39,6 +39,10 @@ export default function AdminIndicatorsPage() {
     queryKey: ["/api/admin/promoters"]
   });
 
+  const { data: referralLinks = [] } = useQuery({
+    queryKey: ["/api/referral-links"]
+  });
+
   // Get analysts level 3
   const analysts = (users as any[]).filter((u: any) => 
     u.role === "analista" && u.analystLevel === 3
@@ -81,6 +85,18 @@ export default function AdminIndicatorsPage() {
   // Get who registered each indicator
   const getRegisteredBy = (userId: number) => {
     const user = (users as any[]).find((u: any) => u.id === userId);
+    
+    // Check if registered via referral link
+    // User has promoterId but no createdBy (or createdBy is null) = registered via link
+    if (user?.promoterId && !user?.createdBy) {
+      const linkOwner = (users as any[]).find((u: any) => u.id === user.promoterId);
+      if (linkOwner) {
+        return `Link de referência - ${linkOwner.fullName}`;
+      }
+      return "Link de referência";
+    }
+    
+    // Normal registration by another user
     if (user?.createdBy) {
       const creator = (users as any[]).find((u: any) => u.id === user.createdBy);
       if (creator) {
