@@ -350,6 +350,7 @@ export default function AdminIndicatorsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="sticky left-0 bg-background z-10 min-w-[100px]">Ações</TableHead>
                     <TableHead className="min-w-[150px]">Nome</TableHead>
                     <TableHead className="min-w-[200px]">Email</TableHead>
                     <TableHead className="min-w-[120px]">CPF</TableHead>
@@ -360,12 +361,21 @@ export default function AdminIndicatorsPage() {
                     <TableHead className="min-w-[90px]">Indicações</TableHead>
                     <TableHead className="min-w-[120px]">Ganhos Totais</TableHead>
                     <TableHead className="min-w-[100px]">Data Cadastro</TableHead>
-                    <TableHead className="min-w-[100px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredIndicators.map((user) => (
                     <TableRow key={user.id}>
+                      <TableCell className="sticky left-0 bg-background z-10">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(`/admin/user-details/${user.id}`, '_blank')}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Detalhes
+                        </Button>
+                      </TableCell>
                       <TableCell className="font-medium">{user.fullName}</TableCell>
                       <TableCell className="truncate max-w-[200px]">{user.username}</TableCell>
                       <TableCell className="font-mono text-sm">{user.cpf}</TableCell>
@@ -442,16 +452,6 @@ export default function AdminIndicatorsPage() {
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       {user.createdAt ? format(new Date(user.createdAt), "dd/MM/yyyy", { locale: ptBR }) : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(`/admin/user-details/${user.id}`, '_blank')}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Detalhes
-                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
