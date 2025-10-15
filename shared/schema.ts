@@ -139,9 +139,12 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   status: text("status").default("pending").notNull().$type<WithdrawalStatus>(),
   requestedAt: timestamp("requested_at").defaultNow().notNull(),
   processedAt: timestamp("processed_at"), // Data de aprovação/rejeição
+  paidAt: timestamp("paid_at"), // Data do pagamento efetivo
   processedBy: integer("processed_by").references(() => users.id),
   notes: text("notes"),
   rejectionReason: text("rejection_reason"),
+  hasInsurance: boolean("has_insurance").default(false), // Se possui adesão de seguro
+  licensePlate: text("license_plate"), // Placa do veículo (se aplicável)
 });
 
 // Audit trail for all system actions

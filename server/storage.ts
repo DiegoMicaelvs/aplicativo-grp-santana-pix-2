@@ -1546,14 +1546,16 @@ class DatabaseStorage implements IStorage {
   }
 
   async updateWithdrawalInsurance(id: number, hasInsurance: boolean) {
-    // NOTE: hasInsurance field doesn't exist in withdrawalRequests table
-    // This field only exists in referrals and salesLeads tables
-    // Returning the withdrawal without update to avoid errors
-    const withdrawal = await db.query.withdrawalRequests.findFirst({
+    await db.update(withdrawalRequests)
+      .set({ hasInsurance })
+      .where(eq(withdrawalRequests.id, id));
+    
+    // Fetch and return the complete updated withdrawal
+    const updated = await db.query.withdrawalRequests.findFirst({
       where: eq(withdrawalRequests.id, id)
     });
     
-    return withdrawal;
+    return updated;
   }
 
   
