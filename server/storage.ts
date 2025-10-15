@@ -102,6 +102,7 @@ export interface IStorage {
   // Company methods
   getAllCompanies(): Promise<Company[]>;
   getCompanyById(id: number): Promise<Company | undefined>;
+  getCompanyByToken(token: string): Promise<Company | undefined>;
   createCompany(name: string): Promise<Company>;
   
   // Withdrawal methods
@@ -1340,6 +1341,7 @@ class DatabaseStorage implements IStorage {
     const companiesWithSettings = await db.select({
       id: companies.id,
       name: companies.name,
+      publicToken: companies.publicToken,
       isActive: companies.isActive,
       createdAt: companies.createdAt,
       cashBalance: sql`COALESCE(${companySettings.cashBalance}, '0.00')`.as('cashBalance')
@@ -1355,6 +1357,7 @@ class DatabaseStorage implements IStorage {
     const companiesWithSettings = await db.select({
       id: companies.id,
       name: companies.name,
+      publicToken: companies.publicToken,
       isActive: companies.isActive,
       createdAt: companies.createdAt,
       cashBalance: sql`COALESCE(${companySettings.cashBalance}, '0.00')`.as('cashBalance')
@@ -1378,6 +1381,12 @@ class DatabaseStorage implements IStorage {
   async getCompanyById(id: number) {
     return await db.query.companies.findFirst({
       where: eq(companies.id, id)
+    });
+  }
+
+  async getCompanyByToken(token: string) {
+    return await db.query.companies.findFirst({
+      where: eq(companies.publicToken, token)
     });
   }
 

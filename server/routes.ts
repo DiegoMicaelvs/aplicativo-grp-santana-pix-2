@@ -825,18 +825,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Public company metrics (no authentication required)
-  app.get("/api/public/company-metrics/:companyId", async (req, res) => {
+  app.get("/api/public/company-metrics/:tokenOrId", async (req, res) => {
     try {
-      const companyId = parseInt(req.params.companyId);
+      const tokenOrId = req.params.tokenOrId;
       const monthFilter = req.query.month as string;
       
-      // Validate companyId parameter
-      if (isNaN(companyId) || companyId <= 0) {
-        return res.status(400).json({ error: "ID da empresa inválido" });
+      // Try to get company by token first (new method), then by ID (backward compatibility)
+      let company = null;
+      let companyId = 0;
+      
+      // Check if it's a numeric ID (backward compatibility)
+      const numericId = parseInt(tokenOrId);
+      if (!isNaN(numericId) && numericId > 0) {
+        company = await storage.getCompanyById(numericId);
+        companyId = numericId;
+      } else {
+        // It's a token, search by token
+        company = await storage.getCompanyByToken(tokenOrId);
+        companyId = company?.id || 0;
       }
       
-      // Get company info
-      const company = await storage.getCompanyById(companyId);
       if (!company) {
         return res.status(404).json({ error: "Empresa não encontrada" });
       }

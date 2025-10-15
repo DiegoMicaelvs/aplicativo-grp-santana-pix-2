@@ -66,6 +66,7 @@ export const users = pgTable("users", {
 export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
+  publicToken: text("public_token").unique(), // Token único para acesso público ao dashboard
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

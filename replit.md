@@ -51,6 +51,29 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-10-15 - Enhanced Public Dashboard Security with Token-Based Links
+- Implemented secure token-based system for public company dashboard links
+- **Security Improvement**: Replaced predictable numeric IDs with random 16-character tokens
+- **Database Changes**:
+  - Added `publicToken` field to companies table (unique, indexed)
+  - Generated unique secure tokens for all existing companies using crypto.randomBytes
+- **API Updates**:
+  - Modified `/api/public/company-metrics/:tokenOrId` to accept both tokens and IDs (backward compatible)
+  - Added `getCompanyByToken()` method in storage layer
+- **Frontend Updates**:
+  - Updated public dashboard route to `/public-dashboard/:tokenOrId`
+  - Company dashboard now generates shareable links using secure tokens instead of IDs
+  - Example: Changed from `/public-dashboard/7` to `/public-dashboard/GgoPst9Svd1CqULS`
+- **Token Generation**: Created `scripts/generate-company-tokens.ts` to generate tokens for existing companies
+- **Backward Compatibility**: System still accepts numeric IDs for existing links
+- Result: Significantly improved security and privacy for company dashboard sharing
+
+### 2025-10-15 - Admin Referrals Page Enhancement
+- Added "Em Análise" and "Rejeitadas" metrics cards to admin referrals detailed page
+- Enhanced statistics dashboard with 6 total cards: Total, Pendentes, Em Análise, Validadas, Rejeitadas, Comissões
+- Improved visual organization with responsive grid layout (2 cols mobile, 3 cols tablet, 6 cols desktop)
+- Added XCircle icon for rejected referrals visual indicator
+
 ### 2025-08-11 - Critical Authentication Fix Implementation
 - Fixed critical login authentication issue affecting multiple users
 - Problem identified: Some users had password hashes that were incompatible with current authentication system

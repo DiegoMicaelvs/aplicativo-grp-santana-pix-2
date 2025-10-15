@@ -40,20 +40,20 @@ interface CompanyMetrics {
 }
 
 export default function PublicCompanyDashboard() {
-  const { companyId } = useParams();
+  const { tokenOrId } = useParams();
   const searchParams = new URLSearchParams(useSearch());
   const monthFilter = searchParams.get('month') || 'all_time';
 
-  // Fetch company metrics
+  // Fetch company metrics using either token or ID
   const { data: metrics, isLoading, error } = useQuery<CompanyMetrics>({
-    queryKey: [`/api/public/company-metrics/${companyId}`, monthFilter],
-    enabled: !!companyId,
+    queryKey: [`/api/public/company-metrics/${tokenOrId}`, monthFilter],
+    enabled: !!tokenOrId,
     queryFn: async () => {
       const params = new URLSearchParams();
       if (monthFilter !== "all_time") {
         params.append('month', monthFilter);
       }
-      const url = `/api/public/company-metrics/${companyId}${params.toString() ? '?' + params.toString() : ''}`;
+      const url = `/api/public/company-metrics/${tokenOrId}${params.toString() ? '?' + params.toString() : ''}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch metrics');
       return response.json();
@@ -67,12 +67,12 @@ export default function PublicCompanyDashboard() {
   }, []);
 
   const { data: monthlyMetrics } = useQuery<CompanyMetrics>({
-    queryKey: [`/api/public/company-metrics/${companyId}/monthly`, currentMonth],
-    enabled: !!companyId,
+    queryKey: [`/api/public/company-metrics/${tokenOrId}/monthly`, currentMonth],
+    enabled: !!tokenOrId,
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('month', currentMonth);
-      const url = `/api/public/company-metrics/${companyId}?${params.toString()}`;
+      const url = `/api/public/company-metrics/${tokenOrId}?${params.toString()}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch monthly metrics');
       return response.json();

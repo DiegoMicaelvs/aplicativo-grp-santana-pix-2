@@ -55,7 +55,7 @@ function Router() {
       <Route path="/contato" component={ContatoPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/signup" component={SignupPage} />
-      <Route path="/public-dashboard/:companyId" component={PublicCompanyDashboard} />
+      <Route path="/public-dashboard/:tokenOrId" component={PublicCompanyDashboard} />
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/referrals" component={ReferralsPage} />
       <ProtectedRoute path="/new-referral" component={NewReferralPage} />

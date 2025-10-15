@@ -65,6 +65,7 @@ interface CompanyMetrics {
 interface Company {
   id: number;
   name: string;
+  publicToken?: string;
   isActive: boolean;
 }
 
@@ -302,12 +303,16 @@ export default function CompanyDashboard() {
   const handleGenerateShareableLink = () => {
     if (selectedCompanyId === "all_companies") return;
     
+    // Find the selected company to get its public token
+    const selectedCompany = companies?.find((c: Company) => c.id.toString() === selectedCompanyId);
+    const companyIdentifier = selectedCompany?.publicToken || selectedCompanyId; // Use token if available, fallback to ID
+    
     const params = new URLSearchParams();
     if (selectedMonth !== "all_time") {
       params.append('month', selectedMonth);
     }
     
-    const shareableUrl = `${window.location.origin}/public-dashboard/${selectedCompanyId}${params.toString() ? '?' + params.toString() : ''}`;
+    const shareableUrl = `${window.location.origin}/public-dashboard/${companyIdentifier}${params.toString() ? '?' + params.toString() : ''}`;
     
     navigator.clipboard.writeText(shareableUrl).then(() => {
       toast({
