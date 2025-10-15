@@ -2319,6 +2319,10 @@ class DatabaseStorage implements IStorage {
         const userDataWithAssignment = {
           ...userData,
           ...assignmentData,
+          // Ensure required fields have default values if not provided
+          city: userData.city || 'Não informado',
+          state: userData.state || 'N/A',
+          zipCode: userData.zipCode || '00000-000',
           // Ensure null values are converted to undefined for compatibility
           createdBy: userData.createdBy ?? undefined,
           promoterId: assignmentData.promoterId ?? userData.promoterId ?? undefined,
