@@ -331,8 +331,6 @@ export default function PromoterDashboard() {
         return <Badge variant="outline" className="bg-emerald-100 text-emerald-800">Pago</Badge>;
       case 'not_validated':
         return <Badge variant="outline" className="bg-gray-100 text-gray-800">Não validado</Badge>;
-      case 'processing':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Em processamento</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -441,7 +439,7 @@ export default function PromoterDashboard() {
                       <FormItem>
                         <FormLabel>Endereço</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -456,7 +454,7 @@ export default function PromoterDashboard() {
                         <FormItem>
                           <FormLabel>Cidade</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input {...field} value={field.value || ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -470,7 +468,7 @@ export default function PromoterDashboard() {
                         <FormItem>
                           <FormLabel>Estado (UF)</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="BA" maxLength={2} />
+                            <Input {...field} value={field.value || ""} placeholder="BA" maxLength={2} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -484,7 +482,7 @@ export default function PromoterDashboard() {
                         <FormItem>
                           <FormLabel>CEP</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="00000-000" />
+                            <Input {...field} value={field.value || ""} placeholder="00000-000" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -499,7 +497,7 @@ export default function PromoterDashboard() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Tamanho da Camisa</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Selecione o tamanho" />
@@ -584,28 +582,30 @@ export default function PromoterDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-3">
-              <span className="hidden sm:inline">Visão Geral</span>
-              <span className="sm:hidden">Geral</span>
-            </TabsTrigger>
-            <TabsTrigger value="my-referrals" className="text-xs sm:text-sm px-2 sm:px-3">
-              <span className="hidden sm:inline">Minhas Indicações</span>
-              <span className="sm:hidden">Minhas</span>
-            </TabsTrigger>
-            <TabsTrigger value="team-referrals" className="text-xs sm:text-sm px-2 sm:px-3">
-              <span className="hidden sm:inline">Indicações da Equipe</span>
-              <span className="sm:hidden">Equipe</span>
-            </TabsTrigger>
-            <TabsTrigger value="indicadores" className="text-xs sm:text-sm px-2 sm:px-3">
-              <span className="hidden sm:inline">Meus Indicadores</span>
-              <span className="sm:hidden">Indicadores</span>
-            </TabsTrigger>
-            <TabsTrigger value="referral-links" className="text-xs sm:text-sm px-2 sm:px-3">
-              <span className="hidden sm:inline">Links de Referência</span>
-              <span className="sm:hidden">Links</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex min-w-full sm:grid sm:grid-cols-5 gap-1">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
+                <span className="hidden sm:inline">Visão Geral</span>
+                <span className="sm:hidden">Geral</span>
+              </TabsTrigger>
+              <TabsTrigger value="my-referrals" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
+                <span className="hidden sm:inline">Minhas Indicações</span>
+                <span className="sm:hidden">Minhas</span>
+              </TabsTrigger>
+              <TabsTrigger value="team-referrals" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
+                <span className="hidden sm:inline">Indicações da Equipe</span>
+                <span className="sm:hidden">Equipe</span>
+              </TabsTrigger>
+              <TabsTrigger value="indicadores" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
+                <span className="hidden sm:inline">Meus Indicadores</span>
+                <span className="sm:hidden">Indicadores</span>
+              </TabsTrigger>
+              <TabsTrigger value="referral-links" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
+                <span className="hidden sm:inline">Links de Referência</span>
+                <span className="sm:hidden">Links</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-6">
             {/* Profile Card */}
@@ -645,7 +645,7 @@ export default function PromoterDashboard() {
             )}
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total de Indicadores</CardTitle>
@@ -707,12 +707,12 @@ export default function PromoterDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-blue-50 rounded-lg gap-2">
                     <div>
                       <h4 className="font-medium">Comissões da Equipe</h4>
                       <p className="text-sm text-gray-600">Ganhos com indicações dos seus indicadores</p>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <p className="text-2xl font-bold text-blue-600">R$ {teamStats.totalCommission.toFixed(2)}</p>
                       <p className="text-sm text-gray-600">
                         R$ {teamStats.totalCommissionRegistration.toFixed(2)} cadastros + R$ {teamStats.totalCommissionConversion.toFixed(2)} vendas
@@ -720,12 +720,12 @@ export default function PromoterDashboard() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-green-50 rounded-lg gap-2">
                     <div>
                       <h4 className="font-medium">Comissões Próprias</h4>
                       <p className="text-sm text-gray-600">Ganhos com suas próprias indicações</p>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <p className="text-2xl font-bold text-green-600">R$ {myStats.commission.toFixed(2)}</p>
                       <p className="text-sm text-gray-600">{myStats.converted} vendas convertidas</p>
                     </div>
@@ -733,8 +733,8 @@ export default function PromoterDashboard() {
                   
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-lg font-semibold">Total Geral</h4>
-                      <p className="text-2xl font-bold">
+                      <h4 className="text-base sm:text-lg font-semibold">Total Geral</h4>
+                      <p className="text-xl sm:text-2xl font-bold">
                         R$ {(teamStats.totalCommission + myStats.commission).toFixed(2)}
                       </p>
                     </div>
@@ -760,42 +760,46 @@ export default function PromoterDashboard() {
                     Nenhuma indicação própria ainda
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Cidade/Estado</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Comissão</TableHead>
-                        <TableHead>Data</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {myReferrals.map((referral) => (
-                        <TableRow key={referral.id}>
-                          <TableCell>{referral.fullName}</TableCell>
-                          <TableCell>{referral.phone}</TableCell>
-                          <TableCell>
-                            {referral.city && referral.state ? (
-                              <span className="text-sm">
-                                {referral.city}/{referral.state}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(referral.status)}</TableCell>
-                          <TableCell>
-                            R$ {referral.commissionIndicator ? parseFloat(referral.commissionIndicator).toFixed(2) : '0.00'}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(referral.createdAt).toLocaleDateString('pt-BR')}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="min-w-[120px]">Nome</TableHead>
+                            <TableHead className="min-w-[100px]">Telefone</TableHead>
+                            <TableHead className="min-w-[120px]">Cidade/Estado</TableHead>
+                            <TableHead className="min-w-[100px]">Status</TableHead>
+                            <TableHead className="min-w-[80px]">Comissão</TableHead>
+                            <TableHead className="min-w-[80px]">Data</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {myReferrals.map((referral) => (
+                            <TableRow key={referral.id}>
+                              <TableCell className="font-medium">{referral.fullName}</TableCell>
+                              <TableCell>{referral.phone}</TableCell>
+                              <TableCell>
+                                {referral.city && referral.state ? (
+                                  <span className="text-sm whitespace-nowrap">
+                                    {referral.city}/{referral.state}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>{getStatusBadge(referral.status)}</TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                R$ {referral.commissionIndicator ? parseFloat(referral.commissionIndicator).toFixed(2) : '0.00'}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {new Date(referral.createdAt).toLocaleDateString('pt-BR')}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -817,61 +821,65 @@ export default function PromoterDashboard() {
                     Sua equipe ainda não fez indicações
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Indicador</TableHead>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Cidade/Estado</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Sua Comissão</TableHead>
-                        <TableHead>Data</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {teamReferrals.map((referral) => {
-                        const registered = (referral.status === 'validated' || referral.status === 'converted' || referral.status === 'paid') ? 1.0 : 0;
-                        const converted = (referral.status === 'converted' || referral.status === 'paid') ? 10.0 : 0;
-                        const commission = registered + converted;
-                        
-                        return (
-                          <TableRow key={referral.id}>
-                            <TableCell>
-                              {indicadores.find(i => i.id === referral.createdBy)?.fullName || 'Indicador'}
-                            </TableCell>
-                            <TableCell>{referral.fullName}</TableCell>
-                            <TableCell>{referral.phone}</TableCell>
-                            <TableCell>
-                              {referral.city && referral.state ? (
-                                <span className="text-sm">
-                                  {referral.city}/{referral.state}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{getStatusBadge(referral.status)}</TableCell>
-                            <TableCell>
-                              <div>
-                                <span className="font-medium">R$ {commission.toFixed(2)}</span>
-                                {commission > 0 && (
-                                  <p className="text-xs text-gray-500">
-                                    {registered > 0 && `R$ ${registered.toFixed(2)} cadastro`}
-                                    {registered > 0 && converted > 0 && ' + '}
-                                    {converted > 0 && `R$ ${converted.toFixed(2)} venda`}
-                                  </p>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(referral.createdAt).toLocaleDateString('pt-BR')}
-                            </TableCell>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="min-w-[120px]">Indicador</TableHead>
+                            <TableHead className="min-w-[120px]">Cliente</TableHead>
+                            <TableHead className="min-w-[100px]">Telefone</TableHead>
+                            <TableHead className="min-w-[120px]">Cidade/Estado</TableHead>
+                            <TableHead className="min-w-[100px]">Status</TableHead>
+                            <TableHead className="min-w-[120px]">Sua Comissão</TableHead>
+                            <TableHead className="min-w-[80px]">Data</TableHead>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {teamReferrals.map((referral) => {
+                            const registered = (referral.status === 'validated' || referral.status === 'converted' || referral.status === 'paid') ? 1.0 : 0;
+                            const converted = (referral.status === 'converted' || referral.status === 'paid') ? 10.0 : 0;
+                            const commission = registered + converted;
+                            
+                            return (
+                              <TableRow key={referral.id}>
+                                <TableCell className="font-medium">
+                                  {indicadores.find(i => i.id === referral.createdBy)?.fullName || 'Indicador'}
+                                </TableCell>
+                                <TableCell>{referral.fullName}</TableCell>
+                                <TableCell>{referral.phone}</TableCell>
+                                <TableCell>
+                                  {referral.city && referral.state ? (
+                                    <span className="text-sm whitespace-nowrap">
+                                      {referral.city}/{referral.state}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>{getStatusBadge(referral.status)}</TableCell>
+                                <TableCell>
+                                  <div className="whitespace-nowrap">
+                                    <span className="font-medium">R$ {commission.toFixed(2)}</span>
+                                    {commission > 0 && (
+                                      <p className="text-xs text-gray-500">
+                                        {registered > 0 && `R$ ${registered.toFixed(2)} cadastro`}
+                                        {registered > 0 && converted > 0 && ' + '}
+                                        {converted > 0 && `R$ ${converted.toFixed(2)} venda`}
+                                      </p>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
+                                  {new Date(referral.createdAt).toLocaleDateString('pt-BR')}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -903,39 +911,43 @@ export default function PromoterDashboard() {
                     Nenhum indicador cadastrado ainda
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Indicações</TableHead>
-                        <TableHead>Saldo</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {indicadores.map((indicador) => {
-                        const indicadorReferrals = teamReferrals.filter(r => r.userId === indicador.id);
-                        const totalReferrals = indicadorReferrals.length;
-                        
-                        return (
-                          <TableRow key={indicador.id}>
-                            <TableCell className="font-medium">{indicador.fullName}</TableCell>
-                            <TableCell>{indicador.email}</TableCell>
-                            <TableCell>{indicador.phone}</TableCell>
-                            <TableCell>{totalReferrals}</TableCell>
-                            <TableCell>R$ {parseFloat(indicador.balance || "0").toFixed(2)}</TableCell>
-                            <TableCell>
-                              <Badge variant={indicador.isActive ? "default" : "secondary"}>
-                                {indicador.isActive ? "Ativo" : "Inativo"}
-                              </Badge>
-                            </TableCell>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="min-w-[150px]">Nome</TableHead>
+                            <TableHead className="min-w-[180px]">Email</TableHead>
+                            <TableHead className="min-w-[100px]">Telefone</TableHead>
+                            <TableHead className="min-w-[80px]">Indicações</TableHead>
+                            <TableHead className="min-w-[80px]">Saldo</TableHead>
+                            <TableHead className="min-w-[80px]">Status</TableHead>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {indicadores.map((indicador) => {
+                            const indicadorReferrals = teamReferrals.filter(r => r.userId === indicador.id);
+                            const totalReferrals = indicadorReferrals.length;
+                            
+                            return (
+                              <TableRow key={indicador.id}>
+                                <TableCell className="font-medium">{indicador.fullName}</TableCell>
+                                <TableCell className="truncate max-w-[180px]">{indicador.email}</TableCell>
+                                <TableCell>{indicador.phone}</TableCell>
+                                <TableCell>{totalReferrals}</TableCell>
+                                <TableCell className="whitespace-nowrap">R$ {parseFloat(indicador.balance || "0").toFixed(2)}</TableCell>
+                                <TableCell>
+                                  <Badge variant={indicador.isActive ? "default" : "secondary"}>
+                                    {indicador.isActive ? "Ativo" : "Inativo"}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -955,31 +967,31 @@ export default function PromoterDashboard() {
               <CardContent>
                 {/* Statistics Summary */}
                 {referralLinks.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+                    <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <MousePointer className="h-4 w-4 text-blue-600" />
                         <span className="text-sm font-medium text-blue-600">Total de Cliques</span>
                       </div>
-                      <p className="text-2xl font-bold text-blue-700">
+                      <p className="text-xl sm:text-2xl font-bold text-blue-700">
                         {referralLinks.reduce((sum, link) => sum + (link.clicks || 0), 0)}
                       </p>
                     </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Users className="h-4 w-4 text-green-600" />
                         <span className="text-sm font-medium text-green-600">Cadastros</span>
                       </div>
-                      <p className="text-2xl font-bold text-green-700">
+                      <p className="text-xl sm:text-2xl font-bold text-green-700">
                         {referralLinks.reduce((sum, link) => sum + (link.registrations || 0), 0)}
                       </p>
                     </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
+                    <div className="bg-purple-50 p-3 sm:p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <TrendingUp className="h-4 w-4 text-purple-600" />
                         <span className="text-sm font-medium text-purple-600">Conversão Média</span>
                       </div>
-                      <p className="text-2xl font-bold text-purple-700">
+                      <p className="text-xl sm:text-2xl font-bold text-purple-700">
                         {referralLinks.length > 0 && referralLinks.reduce((sum, link) => sum + (link.clicks || 0), 0) > 0 
                           ? calculateConversionRate(
                               referralLinks.reduce((sum, link) => sum + (link.clicks || 0), 0),
@@ -993,11 +1005,11 @@ export default function PromoterDashboard() {
                 )}
 
                 {/* Create New Link Button */}
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium">Seus Links de Referência</h3>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
+                  <h3 className="text-base sm:text-lg font-medium">Seus Links de Referência</h3>
                   <Dialog open={createLinkDialogOpen} onOpenChange={setCreateLinkDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button className="w-full sm:w-auto">
                         <Plus className="h-4 w-4 mr-2" />
                         Criar Link
                       </Button>
@@ -1058,84 +1070,86 @@ export default function PromoterDashboard() {
                     </p>
                   </div>
                 ) : (
-                  <div className="border rounded-lg">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead className="text-center">Cliques</TableHead>
-                          <TableHead className="text-center">Cadastros</TableHead>
-                          <TableHead className="text-center">Conversão</TableHead>
-                          <TableHead className="text-center">Status</TableHead>
-                          <TableHead className="text-center">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {referralLinks.map((link) => (
-                          <TableRow key={link.id}>
-                            <TableCell className="font-medium">
-                              <div>
-                                <p className="font-medium">{link.name}</p>
-                                <p className="text-xs text-muted-foreground truncate max-w-xs">
-                                  {window.location.origin}/ref/{link.linkToken}
-                                </p>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <MousePointer className="h-3 w-3 text-blue-500" />
-                                {link.clicks || 0}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <Users className="h-3 w-3 text-green-500" />
-                                {link.registrations || 0}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant="outline">
-                                {calculateConversionRate(link.clicks || 0, link.registrations || 0)}%
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge variant={link.isActive ? "default" : "secondary"}>
-                                {link.isActive ? "Ativo" : "Inativo"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyLinkToClipboard(link.linkToken)}
-                                  title="Copiar link"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditLink(link)}
-                                  title="Editar"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteLink(link)}
-                                  title="Excluir"
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                  <div className="border rounded-lg overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="min-w-[180px]">Nome</TableHead>
+                            <TableHead className="text-center min-w-[80px]">Cliques</TableHead>
+                            <TableHead className="text-center min-w-[90px]">Cadastros</TableHead>
+                            <TableHead className="text-center min-w-[90px]">Conversão</TableHead>
+                            <TableHead className="text-center min-w-[80px]">Status</TableHead>
+                            <TableHead className="text-center min-w-[120px]">Ações</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {referralLinks.map((link) => (
+                            <TableRow key={link.id}>
+                              <TableCell className="font-medium">
+                                <div className="max-w-[200px]">
+                                  <p className="font-medium truncate">{link.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {window.location.origin}/ref/{link.linkToken}
+                                  </p>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                  <MousePointer className="h-3 w-3 text-blue-500" />
+                                  {link.clicks || 0}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                                  <Users className="h-3 w-3 text-green-500" />
+                                  {link.registrations || 0}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className="whitespace-nowrap">
+                                  {calculateConversionRate(link.clicks || 0, link.registrations || 0)}%
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant={link.isActive ? "default" : "secondary"} className="whitespace-nowrap">
+                                  {link.isActive ? "Ativo" : "Inativo"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex items-center justify-center gap-1 flex-nowrap">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => copyLinkToClipboard(link.linkToken)}
+                                    title="Copiar link"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditLink(link)}
+                                    title="Editar"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteLink(link)}
+                                    title="Excluir"
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 )}
 
