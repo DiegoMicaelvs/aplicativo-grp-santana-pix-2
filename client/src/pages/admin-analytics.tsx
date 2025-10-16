@@ -44,7 +44,7 @@ export default function AdminAnalyticsPage() {
 
   // Registration Analysis
   const registrationStats = {
-    totalIndicators: filteredUsers.filter((u: any) => u.role === "indicador").length,
+    totalIndicators: filteredUsers.filter((u: any) => u.role === "indicador" || u.role === "indicador_nivel_1").length,
     totalPromoters: filteredUsers.filter((u: any) => u.role === "promotor").length,
     totalAnalysts: filteredUsers.filter((u: any) => u.role === "analista").length,
     activeUsers: filteredUsers.filter((u: any) => u.status === "active").length,
@@ -76,7 +76,7 @@ export default function AdminAnalyticsPage() {
       timeline[dateKey] = 0;
     }
 
-    filteredUsers.filter((u: any) => u.role === "indicador").forEach((user: any) => {
+    filteredUsers.filter((u: any) => u.role === "indicador" || u.role === "indicador_nivel_1").forEach((user: any) => {
       const dateKey = format(new Date(user.createdAt), "dd/MM");
       if (timeline[dateKey] !== undefined) {
         timeline[dateKey]++;
@@ -89,7 +89,7 @@ export default function AdminAnalyticsPage() {
   // Top performers
   const getTopPerformers = () => {
     const indicatorPerformance = users
-      .filter((u: any) => u.role === "indicador")
+      .filter((u: any) => u.role === "indicador" || u.role === "indicador_nivel_1")
       .map((user: any) => {
         const userReferrals = filteredReferrals.filter((r: any) => r.userId === user.id);
         const validatedReferrals = userReferrals.filter((r: any) => r.status === "validated");
@@ -113,8 +113,8 @@ export default function AdminAnalyticsPage() {
   // Registration source analysis
   const getRegistrationSources = () => {
     const sources = {
-      "Auto-cadastro": filteredUsers.filter((u: any) => u.role === "indicador" && !u.createdBy).length,
-      "Criado por Admin": filteredUsers.filter((u: any) => u.role === "indicador" && u.createdBy).length
+      "Auto-cadastro": filteredUsers.filter((u: any) => (u.role === "indicador" || u.role === "indicador_nivel_1") && !u.createdBy).length,
+      "Criado por Admin": filteredUsers.filter((u: any) => (u.role === "indicador" || u.role === "indicador_nivel_1") && u.createdBy).length
     };
 
     return Object.entries(sources).map(([name, value]) => ({ name, value }));
@@ -123,7 +123,7 @@ export default function AdminAnalyticsPage() {
   // Role distribution
   const getRoleDistribution = () => {
     const roles = {
-      "Indicadores": filteredUsers.filter((u: any) => u.role === "indicador").length,
+      "Indicadores": filteredUsers.filter((u: any) => u.role === "indicador" || u.role === "indicador_nivel_1").length,
       "Promotores": filteredUsers.filter((u: any) => u.role === "promotor").length,
       "Analistas": filteredUsers.filter((u: any) => u.role === "analista").length,
       "Administradores": filteredUsers.filter((u: any) => u.role === "admin").length
