@@ -567,7 +567,7 @@ export const updateAnalystPermissionsSchema = z.object({
 export const validateReferralSchema = z.object({
   vehicleBrand: z.string().min(1, "Marca do veículo é obrigatória"),
   vehicleModel: z.string().min(1, "Modelo do veículo é obrigatório"),
-  vehicleYear: z.string().min(4, "Ano do veículo é obrigatório").max(4, "Ano deve ter 4 dígitos"),
+  vehicleYear: z.string().min(1, "Ano do veículo é obrigatório"),
   nameCorrect: z.boolean(),
   plateCorrect: z.boolean(),
   phoneCorrect: z.boolean(),
