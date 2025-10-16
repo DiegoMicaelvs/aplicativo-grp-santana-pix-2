@@ -93,6 +93,7 @@ export default function AdminAnalyticsPage() {
       .map((user: any) => {
         const userReferrals = filteredReferrals.filter((r: any) => r.userId === user.id);
         const validatedReferrals = userReferrals.filter((r: any) => r.status === "validated");
+        const convertedReferrals = userReferrals.filter((r: any) => r.status === "converted");
         const totalEarnings = validatedReferrals.reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
         
         return {
@@ -100,6 +101,7 @@ export default function AdminAnalyticsPage() {
           name: user.fullName,
           totalReferrals: userReferrals.length,
           validatedReferrals: validatedReferrals.length,
+          convertedReferrals: convertedReferrals.length,
           totalEarnings,
           conversionRate: userReferrals.length > 0 ? (validatedReferrals.length / userReferrals.length * 100) : 0
         };
@@ -348,6 +350,7 @@ export default function AdminAnalyticsPage() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Indicações Totais</TableHead>
                   <TableHead>Indicações Validadas</TableHead>
+                  <TableHead>Indicações Convertidas</TableHead>
                   <TableHead>Taxa de Conversão</TableHead>
                   <TableHead>Ganhos Totais</TableHead>
                 </TableRow>
@@ -368,6 +371,7 @@ export default function AdminAnalyticsPage() {
                     <TableCell className="font-medium">{performer.name}</TableCell>
                     <TableCell>{performer.totalReferrals}</TableCell>
                     <TableCell className="text-green-600">{performer.validatedReferrals}</TableCell>
+                    <TableCell className="text-blue-600">{performer.convertedReferrals}</TableCell>
                     <TableCell>
                       <Badge className={
                         performer.conversionRate >= 80 ? "bg-green-100 text-green-800" :
