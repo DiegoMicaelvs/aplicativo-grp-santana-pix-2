@@ -284,7 +284,7 @@ export default function AdminDashboard() {
   };
   
   // Calculate dashboard stats
-  const totalReferrers = users?.filter(u => u.role === "indicador").length || 0;
+  const totalReferrers = users?.filter(u => u.role === "indicador" && u.isActive).length || 0;
   const totalReferrals = referrals?.length || 0;
   const convertedReferrals = referrals?.filter(r => r.status === 'converted').length || 0;
   const conversionRate = totalReferrals > 0 ? (convertedReferrals / totalReferrals * 100).toFixed(1) : "0";

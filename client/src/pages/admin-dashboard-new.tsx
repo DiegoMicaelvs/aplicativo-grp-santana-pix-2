@@ -60,8 +60,8 @@ export default function AdminDashboard() {
   // Calculate key metrics
   const stats = {
     totalUsers: users.length,
-    totalIndicators: users.filter(u => u.role === "indicador").length,
-    totalPromoters: users.filter(u => u.role === "promotor").length,
+    totalIndicators: users.filter(u => u.role === "indicador" && u.isActive).length,
+    totalPromoters: users.filter(u => u.role === "promotor" && u.isActive).length,
     totalReferrals: referrals.length,
     pendingReferrals: referrals.filter(r => r.status === "pending").length,
     validatedReferrals: referrals.filter(r => r.status === "validated").length,
@@ -569,7 +569,7 @@ export default function AdminDashboard() {
                   <div className="text-xs sm:text-sm text-gray-600">Total de Indicadores</div>
                 </div>
                 <div className="text-center p-3 sm:p-4 border rounded-lg">
-                  <div className="text-xl sm:text-2xl font-bold text-green-600">{users.filter(u => u.role === "indicador").length}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-green-600">{users.filter(u => u.role === "indicador" && u.isActive).length}</div>
                   <div className="text-xs sm:text-sm text-gray-600">Indicadores Ativos</div>
                 </div>
                 <div className="text-center p-3 sm:p-4 border rounded-lg">
