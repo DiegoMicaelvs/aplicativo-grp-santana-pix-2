@@ -155,8 +155,7 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
                 <Input
                   value={formData.vehicleYear}
                   onChange={(e) => setFormData({...formData, vehicleYear: e.target.value})}
-                  placeholder="Ex: 2020"
-                  maxLength={4}
+                  placeholder="Ex: 2020 ou 2022/2023"
                 />
               </div>
             </div>
