@@ -94,7 +94,11 @@ export default function AdminAnalyticsPage() {
         const userReferrals = filteredReferrals.filter((r: any) => r.userId === user.id);
         const validatedReferrals = userReferrals.filter((r: any) => r.status === "validated");
         const convertedReferrals = userReferrals.filter((r: any) => r.status === "converted");
-        const totalEarnings = validatedReferrals.reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
+        
+        // Calculate total earnings from both validated and converted referrals
+        const validatedEarnings = validatedReferrals.reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
+        const convertedEarnings = convertedReferrals.reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
+        const totalEarnings = validatedEarnings + convertedEarnings;
         
         return {
           id: user.id,
