@@ -834,9 +834,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let company = null;
       let companyId = 0;
       
-      // Check if it's a numeric ID (backward compatibility)
-      const numericId = parseInt(tokenOrId);
-      if (!isNaN(numericId) && numericId > 0) {
+      // Check if it's a FULLY numeric ID (backward compatibility)
+      // Use regex to ensure the ENTIRE string is numeric, not just starts with a number
+      const isFullyNumeric = /^\d+$/.test(tokenOrId);
+      if (isFullyNumeric) {
+        const numericId = parseInt(tokenOrId);
         company = await storage.getCompanyById(numericId);
         companyId = numericId;
       } else {
