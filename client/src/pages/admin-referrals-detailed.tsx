@@ -455,11 +455,23 @@ export default function AdminReferralsDetailedPage() {
   const filteredReferrals = referrals.filter((referral: any) => {
     const user = users.find((u: any) => u.id === referral.userId);
     
-    // Check if search term matches date
+    // Check if search term matches date - use appropriate date based on status filter
     let matchesDate = false;
     if (searchTerm.includes('/')) {
       try {
-        const referralDate = new Date(referral.createdAt);
+        // Determine which date to use based on status filter (same logic as month filter)
+        let dateToUse = referral.createdAt;
+        
+        // For validated status, use validatedAt if available
+        if (statusFilter === "validated" && referral.validatedAt) {
+          dateToUse = referral.validatedAt;
+        }
+        // For converted/paid status, use updatedAt (when status was changed)
+        else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
+          dateToUse = referral.updatedAt;
+        }
+        
+        const referralDate = new Date(dateToUse);
         const formattedDate = format(referralDate, "dd/MM/yyyy", { locale: ptBR });
         const shortDate = format(referralDate, "dd/MM", { locale: ptBR });
         const mediumDate = format(referralDate, "dd/MM/yy", { locale: ptBR });
@@ -492,8 +504,8 @@ export default function AdminReferralsDetailedPage() {
       if (statusFilter === "validated" && referral.validatedAt) {
         dateToUse = referral.validatedAt;
       }
-      // For converted status, use updatedAt (when status was changed to converted)
-      else if (statusFilter === "converted") {
+      // For converted/paid status, use updatedAt (when status was changed)
+      else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
         dateToUse = referral.updatedAt;
       }
       
@@ -529,8 +541,8 @@ export default function AdminReferralsDetailedPage() {
     if (statusFilter === "validated" && referral.validatedAt) {
       return referral.validatedAt;
     }
-    // Show conversion date (updatedAt) when filtering by converted status
-    if (statusFilter === "converted") {
+    // Show conversion date (updatedAt) when filtering by converted/paid status
+    if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
       return referral.updatedAt;
     }
     // Default to creation date
