@@ -274,17 +274,54 @@ export default function CompanyDashboard() {
 
   const handleShareDashboard = async () => {
     try {
+      if (selectedCompanyId === "all_companies") {
+        toast({
+          title: "Selecione uma empresa",
+          description: "Por favor, selecione uma empresa específica antes de compartilhar.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Find the selected company to get its public token
+      const selectedCompany = companies?.find((c: Company) => c.id.toString() === selectedCompanyId);
+      
+      if (!selectedCompany) {
+        console.error("Empresa não encontrada:", selectedCompanyId);
+        toast({
+          title: "Erro",
+          description: "Não foi possível encontrar a empresa selecionada.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const companyIdentifier = selectedCompany.publicToken || selectedCompanyId;
+      console.log("Compartilhando dashboard:", { 
+        companyId: selectedCompanyId, 
+        companyName: selectedCompany.name,
+        publicToken: selectedCompany.publicToken,
+        identifier: companyIdentifier 
+      });
+      
+      const params = new URLSearchParams();
+      if (selectedMonth !== "all_time") {
+        params.append('month', selectedMonth);
+      }
+      
+      const shareableUrl = `${window.location.origin}/public-dashboard/${companyIdentifier}${params.toString() ? '?' + params.toString() : ''}`;
+      
       const shareData = {
         title: `Dashboard de Acompanhamento - ${metrics?.companyName || 'Empresa'}`,
         text: `Confira as métricas da empresa: Taxa de conversão: ${metrics?.conversionRate.toFixed(1)}%, Total de indicações: ${metrics?.totalReferrals}`,
-        url: window.location.href,
+        url: shareableUrl,
       };
 
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
         // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(shareableUrl);
         toast({
           title: "Link copiado!",
           description: "O link do dashboard foi copiado para a área de transferência.",
@@ -301,11 +338,35 @@ export default function CompanyDashboard() {
   };
 
   const handleGenerateShareableLink = () => {
-    if (selectedCompanyId === "all_companies") return;
+    if (selectedCompanyId === "all_companies") {
+      toast({
+        title: "Selecione uma empresa",
+        description: "Por favor, selecione uma empresa específica antes de gerar o link.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Find the selected company to get its public token
     const selectedCompany = companies?.find((c: Company) => c.id.toString() === selectedCompanyId);
-    const companyIdentifier = selectedCompany?.publicToken || selectedCompanyId; // Use token if available, fallback to ID
+    
+    if (!selectedCompany) {
+      console.error("Empresa não encontrada:", selectedCompanyId);
+      toast({
+        title: "Erro",
+        description: "Não foi possível encontrar a empresa selecionada.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const companyIdentifier = selectedCompany.publicToken || selectedCompanyId;
+    console.log("Gerando link compartilhável:", { 
+      companyId: selectedCompanyId, 
+      companyName: selectedCompany.name,
+      publicToken: selectedCompany.publicToken,
+      identifier: companyIdentifier 
+    });
     
     const params = new URLSearchParams();
     if (selectedMonth !== "all_time") {
