@@ -626,6 +626,7 @@ export default function AdminReferralsDetailedPage() {
     pendingReferrals: referrals.filter((r: any) => r.status === "pending").length,
     analyzingReferrals: referrals.filter((r: any) => r.status === "analyzing").length,
     validatedReferrals: referrals.filter((r: any) => r.status === "validated").length,
+    convertedReferrals: referrals.filter((r: any) => r.status === "converted" || r.status === "paid").length,
     rejectedReferrals: referrals.filter((r: any) => r.status === "rejected").length,
     totalCommissions: referrals
       .filter((r: any) => ['validated', 'converted'].includes(r.status))
@@ -703,7 +704,7 @@ export default function AdminReferralsDetailedPage() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 md:gap-4 lg:gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
             <CardTitle className="text-xs sm:text-sm font-medium">Total de Indicações</CardTitle>
@@ -741,6 +742,16 @@ export default function AdminReferralsDetailedPage() {
           </CardHeader>
           <CardContent className="px-3 md:px-6">
             <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{stats.validatedReferrals}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 md:px-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Convertidas</CardTitle>
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+          </CardHeader>
+          <CardContent className="px-3 md:px-6">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-purple-600">{stats.convertedReferrals}</div>
           </CardContent>
         </Card>
         
