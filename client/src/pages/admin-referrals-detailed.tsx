@@ -812,7 +812,10 @@ export default function AdminReferralsDetailedPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all_users">Todos os Indicadores</SelectItem>
-                  {users.filter(u => u.role === "indicador").map(user => (
+                  {users.filter(u => 
+                    (u.role === "indicador" || u.role === "indicador_nivel_1") && 
+                    u.isActive === true
+                  ).map(user => (
                     <SelectItem key={user.id} value={user.id.toString()}>
                       {user.fullName}
                     </SelectItem>
