@@ -1113,6 +1113,48 @@ export default function AdminReferralsDetailedPage() {
                                 </div>
                               </div>
                               
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">📅 Data da Indicação</label>
+                                <div className="p-2 bg-gray-50 rounded border mb-2">
+                                  <p className="text-xs text-gray-600">Data atual:</p>
+                                  <p className="text-sm font-medium">
+                                    {selectedReferral.createdAt 
+                                      ? format(new Date(selectedReferral.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                                      : "Não definida"
+                                    }
+                                  </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-xs text-gray-600">Data</label>
+                                    <Input
+                                      type="date"
+                                      value={editFormData.createdAt ? editFormData.createdAt.split('T')[0] : ''}
+                                      onChange={(e) => {
+                                        const date = e.target.value;
+                                        const time = editFormData.createdAt ? editFormData.createdAt.split('T')[1] || '00:00' : '00:00';
+                                        setEditFormData({...editFormData, createdAt: `${date}T${time}`});
+                                      }}
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-gray-600">Hora (HH:MM)</label>
+                                    <Input
+                                      type="time"
+                                      value={editFormData.createdAt ? editFormData.createdAt.split('T')[1] || '00:00' : '00:00'}
+                                      onChange={(e) => {
+                                        const time = e.target.value;
+                                        const date = editFormData.createdAt ? editFormData.createdAt.split('T')[0] : new Date().toISOString().split('T')[0];
+                                        setEditFormData({...editFormData, createdAt: `${date}T${time}`});
+                                      }}
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                </div>
+                                <p className="text-xs text-gray-500">Altere a data e hora se necessário</p>
+                              </div>
+                              
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                   <label className="text-sm font-medium flex items-center gap-2">

@@ -1261,6 +1261,7 @@ class DatabaseStorage implements IStorage {
     if (updates.notes !== undefined) updateData.notes = updates.notes;
     if (updates.commissionIndicator !== undefined) updateData.commissionIndicator = updates.commissionIndicator;
     if (updates.commissionPromoter !== undefined) updateData.commissionPromoter = updates.commissionPromoter;
+    if (updates.createdAt !== undefined) updateData.createdAt = updates.createdAt;
     
     // Handle user reassignment - transfer commissions and update promoter relationship
     if (updates.userId !== undefined && updates.userId !== currentReferral.userId) {
