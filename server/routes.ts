@@ -1799,7 +1799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const referralId = parseInt(req.params.id);
-      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes } = req.body;
+      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes, createdAt } = req.body;
       
       console.log("[PATCH /api/referrals/:id] Dados recebidos:", req.body);
       
@@ -1822,6 +1822,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (notes !== undefined) updateData.notes = notes;
       if (commissionIndicator !== undefined) updateData.commissionIndicator = commissionIndicator;
       if (commissionPromoter !== undefined) updateData.commissionPromoter = commissionPromoter;
+      
+      // Only allow admin to change createdAt
+      if (createdAt !== undefined && req.user!.role === "admin") {
+        updateData.createdAt = new Date(createdAt);
+        console.log("[PATCH /api/referrals/:id] Admin alterando data de criação:", { old: existingReferral.createdAt, new: updateData.createdAt });
+      }
       
       updateData.updatedAt = new Date();
       

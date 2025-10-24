@@ -294,7 +294,8 @@ export default function AdminReferralsDetailedPage() {
     companyId: 0,
     userId: 0,
     commissionIndicator: "0",
-    commissionPromoter: "0"
+    commissionPromoter: "0",
+    createdAt: ""
   });
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userDropdownOpenMobile, setUserDropdownOpenMobile] = useState(false);
@@ -1037,7 +1038,8 @@ export default function AdminReferralsDetailedPage() {
                           companyId: referral.companyId || 1,
                           userId: referral.userId,
                           commissionIndicator: referral.commissionIndicator || "0",
-                          commissionPromoter: referral.commissionPromoter || "0"
+                          commissionPromoter: referral.commissionPromoter || "0",
+                          createdAt: referral.createdAt ? new Date(referral.createdAt).toISOString().slice(0, 16) : ""
                         });
                       }
                     }}>
@@ -1564,6 +1566,17 @@ export default function AdminReferralsDetailedPage() {
                                           ))}
                                         </SelectContent>
                                       </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium">📅 Data da Indicação</label>
+                                      <Input
+                                        type="datetime-local"
+                                        value={editFormData.createdAt}
+                                        onChange={(e) => setEditFormData({...editFormData, createdAt: e.target.value})}
+                                        className="text-sm"
+                                      />
+                                      <p className="text-xs text-gray-500">Altere a data e hora de criação da indicação</p>
                                     </div>
                                   </div>
                                   
