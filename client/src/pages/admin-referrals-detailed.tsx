@@ -1495,7 +1495,8 @@ export default function AdminReferralsDetailedPage() {
                               companyId: referral.companyId || 1,
                               userId: referral.userId,
                               commissionIndicator: referral.commissionIndicator || "0",
-                              commissionPromoter: referral.commissionPromoter || "0"
+                              commissionPromoter: referral.commissionPromoter || "0",
+                              createdAt: referral.createdAt ? new Date(referral.createdAt).toISOString().slice(0, 16) : ""
                             });
                           }
                         }}>
@@ -1579,12 +1580,34 @@ export default function AdminReferralsDetailedPage() {
                                           }
                                         </p>
                                       </div>
-                                      <Input
-                                        type="datetime-local"
-                                        value={editFormData.createdAt}
-                                        onChange={(e) => setEditFormData({...editFormData, createdAt: e.target.value})}
-                                        className="text-sm"
-                                      />
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <label className="text-xs text-gray-600">Data</label>
+                                          <Input
+                                            type="date"
+                                            value={editFormData.createdAt ? editFormData.createdAt.split('T')[0] : ''}
+                                            onChange={(e) => {
+                                              const date = e.target.value;
+                                              const time = editFormData.createdAt ? editFormData.createdAt.split('T')[1] || '00:00' : '00:00';
+                                              setEditFormData({...editFormData, createdAt: `${date}T${time}`});
+                                            }}
+                                            className="text-sm"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-xs text-gray-600">Hora (HH:MM)</label>
+                                          <Input
+                                            type="time"
+                                            value={editFormData.createdAt ? editFormData.createdAt.split('T')[1] || '00:00' : '00:00'}
+                                            onChange={(e) => {
+                                              const time = e.target.value;
+                                              const date = editFormData.createdAt ? editFormData.createdAt.split('T')[0] : new Date().toISOString().split('T')[0];
+                                              setEditFormData({...editFormData, createdAt: `${date}T${time}`});
+                                            }}
+                                            className="text-sm"
+                                          />
+                                        </div>
+                                      </div>
                                       <p className="text-xs text-gray-500">Altere a data e hora se necessário</p>
                                     </div>
                                   </div>
