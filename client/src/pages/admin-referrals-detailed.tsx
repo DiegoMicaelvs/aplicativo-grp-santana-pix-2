@@ -285,6 +285,7 @@ export default function AdminReferralsDetailedPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<ReferralStatus>("pending");
   const [statusNotes, setStatusNotes] = useState("");
+  const [paymentProof, setPaymentProof] = useState<string>("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     fullName: "",
@@ -324,19 +325,19 @@ export default function AdminReferralsDetailedPage() {
   );
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ referralId, status, notes }: { referralId: number; status: ReferralStatus; notes: string }) => {
+    mutationFn: async ({ referralId, status, notes, paymentProof }: { referralId: number; status: ReferralStatus; notes: string; paymentProof?: string }) => {
       console.log(`[updateStatusMutation] Iniciando atualização: referralId=${referralId}, status=${status}`);
       
       const response = await fetch(`/api/referrals/${referralId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include", // Incluir cookies de autenticação
-        body: JSON.stringify({ status, notes }),
+        body: JSON.stringify({ status, notes, paymentProof }),
       });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.details || errorData.error || "Erro ao atualizar status";
+        const errorMessage = errorData.message || errorData.details || errorData.error || "Erro ao atualizar status";
         console.error(`[updateStatusMutation] Erro na resposta:`, errorData);
         throw new Error(errorMessage);
       }
@@ -673,9 +674,46 @@ export default function AdminReferralsDetailedPage() {
       updateStatusMutation.mutate({
         referralId: selectedReferral.id,
         status: newStatus,
-        notes: statusNotes
+        notes: statusNotes,
+        paymentProof: paymentProof || undefined
       });
     }
+  };
+
+  // Function to convert file to base64
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ 
+        title: "Arquivo inválido", 
+        description: "Por favor, selecione uma imagem (JPG, PNG, etc.)",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ 
+        title: "Arquivo muito grande", 
+        description: "O tamanho máximo permitido é 5MB",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPaymentProof(reader.result as string);
+      toast({ 
+        title: "Comprovante carregado", 
+        description: "Clique em 'Atualizar Status' para salvar"
+      });
+    };
+    reader.readAsDataURL(file);
   };
 
   if (referralsLoading || usersLoading) {
@@ -991,6 +1029,7 @@ export default function AdminReferralsDetailedPage() {
                       if (open) {
                         setSelectedReferral(referral);
                         setNewStatus(referral.status);
+                        setPaymentProof(""); // Reset payment proof when opening dialog
                         setEditFormData({
                           fullName: referral.fullName,
                           phone: referral.phone,
@@ -1665,6 +1704,57 @@ export default function AdminReferralsDetailedPage() {
                                       placeholder="Adicione observações sobre a mudança de status..."
                                       rows={3}
                                     />
+                                  </div>
+
+                                  {/* Comprovante de Pagamento */}
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium flex items-center gap-2">
+                                      📎 Comprovante de Pagamento
+                                      {newStatus === "converted" && (!selectedReferral.paymentProof && !paymentProof) && (
+                                        <span className="text-red-600 text-xs">(Obrigatório para conversão)</span>
+                                      )}
+                                    </label>
+                                    
+                                    {selectedReferral.paymentProof && !paymentProof && (
+                                      <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                        <p className="text-sm text-green-700 mb-2">✅ Comprovante já anexado anteriormente</p>
+                                        <img 
+                                          src={selectedReferral.paymentProof} 
+                                          alt="Comprovante de pagamento" 
+                                          className="max-w-full h-auto max-h-40 rounded border cursor-pointer"
+                                          onClick={() => window.open(selectedReferral.paymentProof, '_blank')}
+                                        />
+                                      </div>
+                                    )}
+                                    
+                                    {paymentProof && (
+                                      <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <p className="text-sm text-blue-700 mb-2">📎 Novo comprovante selecionado</p>
+                                        <img 
+                                          src={paymentProof} 
+                                          alt="Preview do comprovante" 
+                                          className="max-w-full h-auto max-h-40 rounded border"
+                                        />
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          onClick={() => setPaymentProof("")}
+                                          className="mt-2"
+                                        >
+                                          Remover
+                                        </Button>
+                                      </div>
+                                    )}
+                                    
+                                    <Input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={handleFileChange}
+                                      className="cursor-pointer"
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                      Formatos aceitos: JPG, PNG, etc. (máx. 5MB)
+                                    </p>
                                   </div>
                                 
                                 {/* Histórico de Status com Observações */}

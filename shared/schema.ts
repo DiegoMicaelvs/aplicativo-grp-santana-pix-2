@@ -110,6 +110,10 @@ export const referrals = pgTable("referrals", {
   validatedBy: integer("validated_by").references(() => users.id), // Quem fez a validação
   validatedAt: timestamp("validated_at"), // Quando foi validado
   notes: text("notes"),
+  // Campos de comprovante de pagamento
+  paymentProof: text("payment_proof"), // URL ou caminho do comprovante de pagamento
+  paymentProofUploadedAt: timestamp("payment_proof_uploaded_at"), // Quando o comprovante foi enviado
+  paymentProofUploadedBy: integer("payment_proof_uploaded_by").references(() => users.id), // Quem enviou o comprovante
   // Campos de localização da indicação
   city: text("city"), // Cidade onde foi feita a indicação
   state: text("state"), // Estado onde foi feita a indicação
@@ -491,6 +495,7 @@ export const createAuditLogSchema = createInsertSchema(auditLog).omit({ id: true
 export const updateReferralStatusSchema = z.object({
   status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted"]),
   notes: z.string().optional(),
+  paymentProof: z.string().optional(), // Base64 encoded image or file path
 });
 
 export const createCompanySchema = createInsertSchema(companies, {

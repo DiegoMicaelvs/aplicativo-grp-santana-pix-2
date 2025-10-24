@@ -1569,12 +1569,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const validatedData = updateReferralStatusSchema.parse(req.body);
       
+      // Get current referral to check if it already has payment proof
+      const currentReferral = await storage.getReferralById(parseInt(id));
+      if (!currentReferral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Validate payment proof requirement for converted status
+      if (validatedData.status === "converted") {
+        // If referral is being converted and doesn't have proof yet, require it
+        if (!currentReferral.paymentProof && !validatedData.paymentProof) {
+          return res.status(400).json({ 
+            error: "Comprovante de pagamento obrigatório",
+            message: "Para converter uma indicação é obrigatório anexar um comprovante de pagamento."
+          });
+        }
+      }
+      
       // updateReferralStatus handles all queries internally - no duplicates
       const result = await storage.updateReferralStatus(
         parseInt(id),
         validatedData.status,
         validatedData.notes,
-        req.user!.id
+        req.user!.id,
+        validatedData.paymentProof
       );
       
       // TODO: Move SMS notification to updateReferralStatus to avoid extra queries

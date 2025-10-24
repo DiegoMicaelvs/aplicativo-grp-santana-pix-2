@@ -1021,7 +1021,7 @@ class DatabaseStorage implements IStorage {
     console.log(`[calculateCommissions] Called for referral ${referralId} - commissions are calculated in updateReferralStatus`);
   }
   
-  async updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number) {
+  async updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number, paymentProof?: string) {
     try {
       console.log(`[updateReferralStatus] Starting update for referral ${id} to status ${status}`);
       
@@ -1092,15 +1092,25 @@ class DatabaseStorage implements IStorage {
       // REMOVIDO: Não atualizar totalEarnings quando indicação é paga
       // O totalEarnings deve ser atualizado apenas quando um SAQUE é pago, não quando uma indicação é paga
       
+      // Prepare update data
+      const updateData: any = {
+        status, 
+        notes,
+        commissionIndicator: newCommissionIndicator.toFixed(2),
+        commissionPromoter: newCommissionPromoter.toFixed(2),
+        statusHistory: [...currentHistory, newHistoryEntry],
+        updatedAt: new Date()
+      };
+      
+      // Add payment proof if provided
+      if (paymentProof) {
+        updateData.paymentProof = paymentProof;
+        updateData.paymentProofUploadedAt = new Date();
+        updateData.paymentProofUploadedBy = adminUserId;
+      }
+      
       const [updatedReferral] = await db.update(referrals)
-        .set({ 
-          status, 
-          notes,
-          commissionIndicator: newCommissionIndicator.toFixed(2),
-          commissionPromoter: newCommissionPromoter.toFixed(2),
-          statusHistory: [...currentHistory, newHistoryEntry],
-          updatedAt: new Date()
-        })
+        .set(updateData)
         .where(eq(referrals.id, id))
         .returning();
       
