@@ -1570,13 +1570,22 @@ export default function AdminReferralsDetailedPage() {
 
                                     <div className="space-y-2">
                                       <label className="text-sm font-medium">📅 Data da Indicação</label>
+                                      <div className="p-2 bg-gray-50 rounded border mb-2">
+                                        <p className="text-xs text-gray-600">Data atual:</p>
+                                        <p className="text-sm font-medium">
+                                          {selectedReferral.createdAt 
+                                            ? format(new Date(selectedReferral.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                                            : "Não definida"
+                                          }
+                                        </p>
+                                      </div>
                                       <Input
                                         type="datetime-local"
                                         value={editFormData.createdAt}
                                         onChange={(e) => setEditFormData({...editFormData, createdAt: e.target.value})}
                                         className="text-sm"
                                       />
-                                      <p className="text-xs text-gray-500">Altere a data e hora de criação da indicação</p>
+                                      <p className="text-xs text-gray-500">Altere a data e hora se necessário</p>
                                     </div>
                                   </div>
                                   
