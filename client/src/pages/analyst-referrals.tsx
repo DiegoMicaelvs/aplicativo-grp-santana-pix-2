@@ -48,6 +48,7 @@ const editSchema = z.object({
   companyId: z.number().positive("Empresa é obrigatória"),
   notes: z.string().optional(),
   status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted", "contact_list"]),
+  paymentProof: z.string().optional(),
 });
 
 type EditFormValues = z.infer<typeof editSchema>;
@@ -89,6 +90,7 @@ export default function AnalystReferrals() {
   const [isValidateDialogOpen, setIsValidateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [paymentProof, setPaymentProof] = useState<string>("");
 
   // Fetch referrals with automatic refresh for real-time updates
   const { data: referrals = [], isLoading, refetch: refetchReferrals, isFetching } = useQuery<Referral[]>({
@@ -255,6 +257,7 @@ export default function AnalystReferrals() {
       toast({ title: "Sucesso", description: "Indicação editada com sucesso!" });
       setIsEditDialogOpen(false);
       setSelectedReferral(null);
+      setPaymentProof(""); // Reset payment proof
       editForm.reset();
     },
     onError: (error: Error) => {
@@ -279,6 +282,39 @@ export default function AnalystReferrals() {
     return matchesSearch && matchesStatus;
   });
 
+  // Function to convert file to base64
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione apenas arquivos de imagem (JPG, PNG, etc.)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Erro",
+        description: "O arquivo deve ter no máximo 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setPaymentProof(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleValidateClick = (referral: Referral) => {
     setSelectedReferral(referral);
     form.reset({
@@ -295,6 +331,7 @@ export default function AnalystReferrals() {
 
   const handleEditClick = (referral: Referral) => {
     setSelectedReferral(referral);
+    setPaymentProof(""); // Reset payment proof when opening edit dialog
     editForm.reset({
       fullName: referral.fullName,
       phone: referral.phone,
@@ -314,9 +351,25 @@ export default function AnalystReferrals() {
   };
 
   const onEditSubmit = (data: EditFormValues) => {
-    if (selectedReferral) {
-      editMutation.mutate({ id: selectedReferral.id, data });
+    if (!selectedReferral) return;
+
+    // Validate payment proof is required for converted status
+    if (data.status === "converted" && !selectedReferral.paymentProof && !paymentProof) {
+      toast({
+        title: "Comprovante Obrigatório",
+        description: "Para converter uma indicação, é obrigatório anexar o comprovante de pagamento.",
+        variant: "destructive"
+      });
+      return;
     }
+
+    editMutation.mutate({ 
+      id: selectedReferral.id, 
+      data: {
+        ...data,
+        paymentProof: paymentProof || undefined
+      }
+    });
   };
 
   // Export to Excel function
@@ -894,7 +947,12 @@ export default function AnalystReferrals() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) {
+          setPaymentProof(""); // Reset payment proof when closing dialog
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Indicação</DialogTitle>
@@ -1048,6 +1106,59 @@ export default function AnalystReferrals() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Comprovante de Pagamento */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  📎 Comprovante de Pagamento
+                  {editForm.watch("status") === "converted" && !selectedReferral?.paymentProof && !paymentProof && (
+                    <span className="text-red-600 text-xs font-semibold">(Obrigatório para conversão)</span>
+                  )}
+                </label>
+                
+                {selectedReferral?.paymentProof && !paymentProof && (
+                  <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-700 mb-2">✅ Comprovante já anexado anteriormente</p>
+                    <img 
+                      src={selectedReferral.paymentProof} 
+                      alt="Comprovante de pagamento" 
+                      className="max-w-full h-auto max-h-40 rounded border cursor-pointer"
+                      onClick={() => selectedReferral.paymentProof && window.open(selectedReferral.paymentProof, '_blank')}
+                    />
+                  </div>
+                )}
+                
+                {paymentProof && (
+                  <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700 mb-2">📎 Novo comprovante selecionado</p>
+                    <img 
+                      src={paymentProof} 
+                      alt="Preview do comprovante" 
+                      className="max-w-full h-auto max-h-40 rounded border"
+                    />
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setPaymentProof("")}
+                      className="mt-2 text-red-600 hover:text-red-700"
+                    >
+                      Remover comprovante
+                    </Button>
+                  </div>
+                )}
+                
+                <Input
+                  id="payment-proof-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-gray-500">
+                  Formatos aceitos: JPG, PNG. Tamanho máximo: 5MB
+                </p>
               </div>
 
               <div>
