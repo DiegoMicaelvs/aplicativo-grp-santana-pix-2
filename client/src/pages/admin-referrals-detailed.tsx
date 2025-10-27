@@ -646,6 +646,7 @@ export default function AdminReferralsDetailedPage() {
       case "false": return "bg-gray-900 text-white";
       case "not_validated": return "bg-orange-100 text-orange-800";
       case "not_converted": return "bg-indigo-100 text-indigo-800";
+      case "contact_list": return "bg-cyan-100 text-cyan-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -661,6 +662,7 @@ export default function AdminReferralsDetailedPage() {
       case "false": return "Falso";
       case "not_validated": return "Não validado";
       case "not_converted": return "Não convertido";
+      case "contact_list": return "Lista de contato";
       default: return status;
     }
   };
