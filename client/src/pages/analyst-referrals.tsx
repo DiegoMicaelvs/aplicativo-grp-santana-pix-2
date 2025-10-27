@@ -29,13 +29,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield, RefreshCw } from "lucide-react";
+import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield, RefreshCw, Download } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import type { Referral, User, Company, AnalystPermission } from "@shared/schema";
 import { validateReferralSchema } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
+import * as XLSX from 'xlsx';
 
 type ValidateFormValues = z.infer<typeof validateReferralSchema>;
 
@@ -318,6 +319,64 @@ export default function AnalystReferrals() {
     }
   };
 
+  // Export to Excel function
+  const exportToExcel = () => {
+    try {
+      // Prepare data for export
+      const exportData = filteredReferrals.map((referral) => {
+        const indicador = users.find((u) => u.id === referral.userId);
+        const company = companies.find((c) => c.id === referral.companyId);
+        
+        return {
+          'ID': referral.id,
+          'Nome': referral.fullName,
+          'Telefone': referral.phone,
+          'Placa': referral.licensePlate,
+          'Marca': referral.vehicleBrand || '',
+          'Modelo': referral.vehicleModel || '',
+          'Ano': referral.vehicleYear || '',
+          'Tem Seguro': referral.hasInsurance ? 'Sim' : 'Não',
+          'Indicador': indicador?.fullName || 'N/A',
+          'Empresa': company?.name || 'N/A',
+          'Status': statusLabels[referral.status] || referral.status,
+          'Cidade': referral.city || '',
+          'Estado': referral.state || '',
+          'Data de Criação': new Date(referral.createdAt).toLocaleDateString('pt-BR'),
+          'Observações': referral.notes || ''
+        };
+      });
+
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Indicações');
+      
+      // Generate filename with current date and filter info
+      let filename = `indicacoes_analista_${new Date().toISOString().split('T')[0]}`;
+      if (statusFilter !== "all") {
+        filename += `_${statusLabels[statusFilter] || statusFilter}`;
+      }
+      filename += '.xlsx';
+      
+      // Download file
+      XLSX.writeFile(workbook, filename);
+      
+      toast({ 
+        title: "Exportação concluída!",
+        description: `${filteredReferrals.length} indicações exportadas com sucesso.`
+      });
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast({ 
+        title: "Erro ao exportar",
+        description: "Não foi possível exportar os dados para Excel.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!user || (user.role !== "analista" && user.role !== "admin")) {
     return (
       <div className="container mx-auto py-6">
@@ -439,12 +498,25 @@ export default function AnalystReferrals() {
       {/* Referrals Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Indicações ({filteredReferrals.length})</CardTitle>
-          <CardDescription>
-            {canEdit
-              ? "Clique em uma indicação para validar ou editar o status"
-              : "Você tem permissão apenas para visualizar"}
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>Indicações ({filteredReferrals.length})</CardTitle>
+              <CardDescription>
+                {canEdit
+                  ? "Clique em uma indicação para validar ou editar o status"
+                  : "Você tem permissão apenas para visualizar"}
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={exportToExcel} 
+              variant="outline"
+              disabled={filteredReferrals.length === 0}
+              className="shrink-0"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar Excel
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
