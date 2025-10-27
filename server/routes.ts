@@ -48,7 +48,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       'paid': 'Pago',
       'false': 'Falso',
       'not_validated': 'Não validado',
-      'not_converted': 'Não convertido'
+      'not_converted': 'Não convertido',
+      'contact_list': 'Lista de contato'
     };
     return labels[status] || status;
   };

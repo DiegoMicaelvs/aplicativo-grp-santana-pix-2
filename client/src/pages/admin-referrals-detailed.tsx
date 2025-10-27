@@ -853,6 +853,7 @@ export default function AdminReferralsDetailedPage() {
                   <SelectItem value="false">Falso</SelectItem>
                   <SelectItem value="not_validated">Não validado</SelectItem>
                   <SelectItem value="not_converted">Não convertido</SelectItem>
+                  <SelectItem value="contact_list">Lista de contato</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -1280,6 +1281,7 @@ export default function AdminReferralsDetailedPage() {
                                     <SelectItem value="false">Falso</SelectItem>
                                     <SelectItem value="not_validated">Não validado</SelectItem>
                                     <SelectItem value="not_converted">Não convertido</SelectItem>
+                                    <SelectItem value="contact_list">Lista de contato</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -1779,6 +1781,7 @@ export default function AdminReferralsDetailedPage() {
                                         <SelectItem value="false">Falso</SelectItem>
                                         <SelectItem value="not_validated">Não validado</SelectItem>
                                         <SelectItem value="not_converted">Não convertido</SelectItem>
+                                        <SelectItem value="contact_list">Lista de contato</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
