@@ -1155,37 +1155,8 @@ class DatabaseStorage implements IStorage {
       throw new Error("Referral not found");
     }
 
-    // Calculate commission values for validated status
-    const newCommissionIndicator = 3; // R$ 3 por validado
-    const newCommissionPromoter = 1; // R$ 1 para o promotor
-    
-    // Calculate commission differences for user balance updates
-    const previousCommissionIndicator = parseFloat(referral.commissionIndicator?.toString() || '0');
-    const previousCommissionPromoter = parseFloat(referral.commissionPromoter?.toString() || '0');
-    const commissionDifferenceIndicator = newCommissionIndicator - previousCommissionIndicator;
-    const commissionDifferencePromoter = newCommissionPromoter - previousCommissionPromoter;
-    
-    // Update user balances
-    if (commissionDifferenceIndicator !== 0) {
-      await this.updateUserBalance(referral.userId, commissionDifferenceIndicator);
-    }
-    
-    // Update promoter balance if exists
-    const user = await this.getUserById(referral.userId);
-    if (user?.promoterId && commissionDifferencePromoter !== 0) {
-      await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
-    }
-
-    // Add validation entry to status history
-    const currentHistory = referral.statusHistory || [];
-    const validationHistoryEntry = {
-      status: 'validated',
-      changedBy: validatorUserId,
-      changedAt: new Date().toISOString(),
-      notes: validationData.validationNotes || `Validação: ${validationData.vehicleBrand} ${validationData.vehicleModel} ${validationData.vehicleYear}`
-    };
-
-    // Update referral with validation data and add to status history
+    // Update referral with validation data only - DO NOT change status or commissions
+    // Status must be changed manually by the user
     const [updatedReferral] = await db.update(referrals)
       .set({
         vehicleBrand: validationData.vehicleBrand,
@@ -1197,10 +1168,7 @@ class DatabaseStorage implements IStorage {
         validationNotes: validationData.validationNotes,
         validatedBy: validatorUserId,
         validatedAt: new Date(),
-        status: 'validated', // Set status to validated
-        commissionIndicator: newCommissionIndicator.toFixed(2),
-        commissionPromoter: newCommissionPromoter.toFixed(2),
-        statusHistory: [...currentHistory, validationHistoryEntry],
+        // DO NOT SET STATUS OR COMMISSIONS - user must do it manually
         updatedAt: new Date()
       })
       .where(eq(referrals.id, id))
@@ -1214,7 +1182,7 @@ class DatabaseStorage implements IStorage {
         entityType: 'referral',
         entityId: id,
         newValues: validationData,
-        details: `Indicação validada: ${validationData.vehicleBrand} ${validationData.vehicleModel} ${validationData.vehicleYear}${validationData.validationNotes ? ` - ${validationData.validationNotes}` : ''}`
+        details: `Dados de validação salvos: ${validationData.vehicleBrand} ${validationData.vehicleModel} ${validationData.vehicleYear}${validationData.validationNotes ? ` - ${validationData.validationNotes}` : ''}`
       });
     } catch (error) {
       console.warn('Failed to log validation:', error);
