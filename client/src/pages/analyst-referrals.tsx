@@ -420,11 +420,15 @@ export default function AnalystReferrals() {
                 <SelectContent>
                   <SelectItem value="all">Todos os Status</SelectItem>
                   <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="processing">Em Processamento</SelectItem>
+                  <SelectItem value="analyzing">Em Análise</SelectItem>
                   <SelectItem value="validated">Validado</SelectItem>
                   <SelectItem value="converted">Convertido</SelectItem>
                   <SelectItem value="rejected">Rejeitado</SelectItem>
                   <SelectItem value="paid">Pago</SelectItem>
+                  <SelectItem value="false">Falso</SelectItem>
+                  <SelectItem value="not_validated">Não Validado</SelectItem>
+                  <SelectItem value="not_converted">Não Convertido</SelectItem>
+                  <SelectItem value="contact_list">Lista de contato</SelectItem>
                 </SelectContent>
               </Select>
             </div>
