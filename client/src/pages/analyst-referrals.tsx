@@ -44,8 +44,9 @@ const editSchema = z.object({
   phone: z.string().min(1, "Telefone é obrigatório"),
   licensePlate: z.string().min(1, "Placa é obrigatória"),
   hasInsurance: z.boolean(),
+  companyId: z.number().positive("Empresa é obrigatória"),
   notes: z.string().optional(),
-  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted"]),
+  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted", "contact_list"]),
 });
 
 type EditFormValues = z.infer<typeof editSchema>;
@@ -61,6 +62,7 @@ const statusColors: Record<string, string> = {
   false: "bg-orange-100 text-orange-800",
   not_validated: "bg-gray-100 text-gray-800",
   not_converted: "bg-gray-100 text-gray-800",
+  contact_list: "bg-cyan-100 text-cyan-800",
 };
 
 const statusLabels: Record<string, string> = {
@@ -74,6 +76,7 @@ const statusLabels: Record<string, string> = {
   false: "Falso",
   not_validated: "Não Validado",
   not_converted: "Não Convertido",
+  contact_list: "Lista de contato",
 };
 
 export default function AnalystReferrals() {
@@ -296,6 +299,7 @@ export default function AnalystReferrals() {
       phone: referral.phone,
       licensePlate: referral.licensePlate,
       hasInsurance: referral.hasInsurance || false,
+      companyId: referral.companyId,
       notes: referral.notes || "",
       status: referral.status,
     });
@@ -871,6 +875,30 @@ export default function AnalystReferrals() {
               </div>
             </div>
 
+            <div className="border-t pt-4">
+              <Label htmlFor="edit-companyId">Empresa</Label>
+              <Select
+                value={editForm.watch("companyId")?.toString()}
+                onValueChange={(value) => editForm.setValue("companyId", parseInt(value))}
+              >
+                <SelectTrigger id="edit-companyId">
+                  <SelectValue placeholder="Selecione a empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id.toString()}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {editForm.formState.errors.companyId && (
+                <p className="text-sm text-red-600 mt-1">
+                  {editForm.formState.errors.companyId.message}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-4 border-t pt-4">
               <div>
                 <Label htmlFor="edit-status">Status da Indicação</Label>
@@ -934,6 +962,12 @@ export default function AnalystReferrals() {
                       <div className="flex items-center">
                         <XCircle className="h-4 w-4 mr-2 text-gray-700" />
                         Não Convertido
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="contact_list">
+                      <div className="flex items-center">
+                        <Info className="h-4 w-4 mr-2 text-cyan-600" />
+                        Lista de contato
                       </div>
                     </SelectItem>
                   </SelectContent>

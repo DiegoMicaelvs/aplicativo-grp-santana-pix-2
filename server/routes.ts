@@ -1800,7 +1800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const referralId = parseInt(req.params.id);
-      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes, createdAt } = req.body;
+      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes, hasInsurance, createdAt } = req.body;
       
       console.log("[PATCH /api/referrals/:id] Dados recebidos:", req.body);
       
@@ -1821,6 +1821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (userId !== undefined) updateData.userId = parseInt(userId);
       if (status !== undefined) updateData.status = status;
       if (notes !== undefined) updateData.notes = notes;
+      if (hasInsurance !== undefined) updateData.hasInsurance = hasInsurance;
       if (commissionIndicator !== undefined) updateData.commissionIndicator = commissionIndicator;
       if (commissionPromoter !== undefined) updateData.commissionPromoter = commissionPromoter;
       
