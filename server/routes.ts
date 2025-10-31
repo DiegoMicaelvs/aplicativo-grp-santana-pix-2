@@ -1186,16 +1186,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = createIndicadorSchema.parse(req.body);
       
-      // Hash the password before saving
-      const hashedPassword = await hashPassword(validatedData.password);
-      
       // Get promoter info to check if they have a supervisor
       const promoter = await storage.getUserById(req.user!.id);
       
       // Add promoter relationship
       const userData = {
         ...validatedData,
-        password: hashedPassword,
         promoterId: req.user!.id,
         createdBy: req.user!.id,
         analystId: undefined, // Explicitly set to undefined
@@ -2041,12 +2037,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new user (admin only)
   app.post("/api/admin/users", requireAdmin, async (req, res) => {
     try {
-      // Hash the password before saving
-      const hashedPassword = await hashPassword(req.body.password);
-      
       const userData = {
         ...req.body,
-        password: hashedPassword,
         createdBy: req.user!.id
       };
       
@@ -2075,9 +2067,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new indicador (analysts with permission can create)
   app.post("/api/analyst/indicadores", requireAnalystPermission("create_indicadores"), async (req, res) => {
     try {
-      // Hash the password before saving
-      const hashedPassword = await hashPassword(req.body.password);
-      
       // Get analyst info to check if level 3
       const analyst = await storage.getUserById(req.user!.id);
       
@@ -2091,7 +2080,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Force role to be indicador and set analyst as creator
       const userData = {
         ...req.body,
-        password: hashedPassword,
         role: "indicador",
         createdBy: req.user!.id,
         // If analyst is level 3, set them as supervisor
@@ -2124,9 +2112,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new promotor (analysts with permission can create)
   app.post("/api/analyst/promotores", requireAnalystPermission("create_promotores"), async (req, res) => {
     try {
-      // Hash the password before saving
-      const hashedPassword = await hashPassword(req.body.password);
-      
       // Get analyst info to check if level 3
       const analyst = await storage.getUserById(req.user!.id);
       
@@ -2140,7 +2125,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Force role to be promotor and set analyst as creator
       const userData = {
         ...req.body,
-        password: hashedPassword,
         role: "promotor",
         createdBy: req.user!.id,
         // If analyst is level 3, set them as supervisor
