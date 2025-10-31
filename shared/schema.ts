@@ -493,7 +493,7 @@ export const selectReferralPlateSchema = createSelectSchema(referralPlates);
 export const createAuditLogSchema = createInsertSchema(auditLog).omit({ id: true, createdAt: true });
 
 export const updateReferralStatusSchema = z.object({
-  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted"]),
+  status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted", "contact_list"]),
   notes: z.string().optional(),
   paymentProof: z.string().optional(), // Base64 encoded image or file path
 });
