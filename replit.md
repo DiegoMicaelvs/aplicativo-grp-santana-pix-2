@@ -51,6 +51,23 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 
 ## Recent Changes
 
+### 2025-10-31 - Critical Password Creation Bug Fix
+- **Problem Identified**: Passwords set during user creation were not working - users could only login after admin used "Redefinir senha" feature
+- **Root Cause**: Password hashing was being applied TWICE during user creation:
+  - First hash applied in API route endpoints (`/api/admin/users`, `/api/analyst/indicadores`, `/api/analyst/promotores`, `/api/users/indicador`)
+  - Second hash applied inside `storage.createUser()` function
+  - This resulted in a "hash of a hash" that failed password verification during login
+- **Fix Applied**: Removed duplicate password hashing from all user creation endpoints:
+  - `/api/admin/users` - Admin user creation
+  - `/api/analyst/indicadores` - Analyst creating indicadores
+  - `/api/analyst/promotores` - Analyst creating promotores
+  - `/api/users/indicador` - Promoter creating indicadores
+- **Technical Details**: 
+  - Password hashing now happens only once in `storage.createUser()` using Node.js crypto.scrypt
+  - Password reset functionality was unaffected as it already used single hashing
+  - All new users can now login immediately with their created passwords
+- **Impact**: Eliminates need for manual password reset after user creation, improving admin workflow efficiency
+
 ### 2025-10-15 - Enhanced Public Dashboard Security with Token-Based Links
 - Implemented secure token-based system for public company dashboard links
 - **Security Improvement**: Replaced predictable numeric IDs with random 16-character tokens
