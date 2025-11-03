@@ -1499,6 +1499,27 @@ class DatabaseStorage implements IStorage {
   }
   
   async updateWithdrawalStatus(id: number, status: WithdrawalStatus, processedBy: number, notes?: string) {
+    // IDEMPOTENCY CHECK: Get current withdrawal status first
+    const currentWithdrawal = await db.query.withdrawalRequests.findFirst({
+      where: eq(withdrawalRequests.id, id)
+    });
+    
+    if (!currentWithdrawal) {
+      throw new Error(`Withdrawal request #${id} not found`);
+    }
+    
+    // Prevent duplicate processing - if already in the target status, return early
+    if (currentWithdrawal.status === status) {
+      console.log(`[updateWithdrawalStatus] Withdrawal #${id} already has status "${status}" - skipping duplicate processing`);
+      return currentWithdrawal;
+    }
+    
+    // Special check for "paid" status to prevent duplicate cash flow entries
+    if (status === 'paid' && currentWithdrawal.status === 'paid') {
+      console.log(`[updateWithdrawalStatus] Withdrawal #${id} already paid - preventing duplicate cash flow entry`);
+      return currentWithdrawal;
+    }
+    
     const updateData: any = {
       status,
       processedBy,
