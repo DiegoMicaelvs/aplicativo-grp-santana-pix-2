@@ -1,206 +1,7 @@
 # Replit Project Information
 
-## Project Overview
-A comprehensive digital referral platform for Grupo Santana, transforming vehicle insurance networking through intelligent technological solutions.
-
-### Key Features
-- Multi-role authentication system (indicador, promotor, analista, gerente, admin, vendedor)
-- Advanced location-based SMS notification system
-- Real-time referral status tracking and management  
-- Detailed audit trails for comprehensive referral oversight
-- Enhanced geographic referral tracking with city and state display
-- Supervisor-based filtering for Analyst Level 3 users
-
-### Technologies
-- **Frontend**: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
-- **Backend**: Express.js, TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Passport.js with session-based auth
-- **SMS Service**: Twilio integration
-
-## Project Architecture
-
-### Database Schema
-- **Users Table**: Multi-role users with hierarchical relationships
-  - `supervisorId`: Links users to their Analyst Level 3 supervisor
-  - `promoterId`: Links indicadores to their promoter
-  - `analystLevel`: Defines analyst seniority (1-3)
-  - Permissions system for granular access control
-
-- **Referrals Table**: Complete referral lifecycle management
-  - Status tracking with history
-  - Commission management
-  - Geographic location tracking (city/state)
-  - Validation fields for data quality
-
-- **Supporting Tables**: Companies, Withdrawals, Audit Log, Cash Flow, Support Tickets
-
-### API Architecture
-- RESTful API with role-based middleware
-- Separate endpoints for each role (admin, analyst, promoter, etc.)
-- Automatic filtering for Analyst Level 3 users:
-  - `/api/analyst/users` - Returns only supervised users
-  - `/api/analyst/referrals` - Returns only referrals from supervised users
-  - `/api/analyst/stats` - Shows statistics only for supervised users
-
-### Frontend Structure
-- Role-based routing and dashboards
-- Responsive design with mobile optimization
-- Real-time updates using React Query
-- Visual indicators for filtered data (Analyst Level 3)
-
-## Recent Changes
-
-### 2025-10-31 - Critical Password Creation Bug Fix
-- **Problem Identified**: Passwords set during user creation were not working - users could only login after admin used "Redefinir senha" feature
-- **Root Cause**: Password hashing was being applied TWICE during user creation:
-  - First hash applied in API route endpoints (`/api/admin/users`, `/api/analyst/indicadores`, `/api/analyst/promotores`, `/api/users/indicador`)
-  - Second hash applied inside `storage.createUser()` function
-  - This resulted in a "hash of a hash" that failed password verification during login
-- **Fix Applied**: Removed duplicate password hashing from all user creation endpoints:
-  - `/api/admin/users` - Admin user creation
-  - `/api/analyst/indicadores` - Analyst creating indicadores
-  - `/api/analyst/promotores` - Analyst creating promotores
-  - `/api/users/indicador` - Promoter creating indicadores
-- **Technical Details**: 
-  - Password hashing now happens only once in `storage.createUser()` using Node.js crypto.scrypt
-  - Password reset functionality was unaffected as it already used single hashing
-  - All new users can now login immediately with their created passwords
-- **Impact**: Eliminates need for manual password reset after user creation, improving admin workflow efficiency
-
-### 2025-10-15 - Enhanced Public Dashboard Security with Token-Based Links
-- Implemented secure token-based system for public company dashboard links
-- **Security Improvement**: Replaced predictable numeric IDs with random 16-character tokens
-- **Database Changes**:
-  - Added `publicToken` field to companies table (unique, indexed)
-  - Generated unique secure tokens for all existing companies using crypto.randomBytes
-- **API Updates**:
-  - Modified `/api/public/company-metrics/:tokenOrId` to accept both tokens and IDs (backward compatible)
-  - Added `getCompanyByToken()` method in storage layer
-  - API now returns `publicToken` in response for URL updating
-- **Frontend Updates**:
-  - Updated public dashboard route to `/public-dashboard/:tokenOrId`
-  - Company dashboard now generates shareable links using secure tokens instead of IDs
-  - Example: Changed from `/public-dashboard/7` to `/public-dashboard/GgoPst9Svd1CqULS`
-  - **URL Auto-Update**: When accessing via old numeric link, browser URL automatically updates to show token-based URL
-  - Uses `window.history.replaceState` to seamlessly update URL without page reload
-- **Token Generation**: Created `scripts/generate-company-tokens.ts` to generate tokens for existing companies
-- **Backward Compatibility**: System still accepts numeric IDs for existing links
-- Result: Significantly improved security and privacy for company dashboard sharing with seamless URL migration
-
-### 2025-10-15 - Admin Referrals Page Enhancement
-- Added "Em Análise" and "Rejeitadas" metrics cards to admin referrals detailed page
-- Enhanced statistics dashboard with 6 total cards: Total, Pendentes, Em Análise, Validadas, Rejeitadas, Comissões
-- Improved visual organization with responsive grid layout (2 cols mobile, 3 cols tablet, 6 cols desktop)
-- Added XCircle icon for rejected referrals visual indicator
-
-### 2025-08-11 - Critical Authentication Fix Implementation
-- Fixed critical login authentication issue affecting multiple users
-- Problem identified: Some users had password hashes that were incompatible with current authentication system
-- Root cause: Environment detection for cookie security was overly aggressive, treating development as production
-- Solutions implemented:
-  - Corrected production environment detection to only use `REPLIT_DEPLOYMENT=1` for secure cookies
-  - Fixed cookie `sameSite` and `secure` settings for proper development environment operation
-  - Created diagnostic scripts to identify and fix user password issues
-  - Reset passwords for 6 affected users (admin accounts with outdated hashes)
-  - Enhanced authentication logging for better troubleshooting
-  - Removed debug endpoints and excessive logging post-fix
-- Result: All 70 users can now login successfully with their credentials
-- Standard password for reset users: "123456" (users prompted to change on first login)
-- Authentication system now stable and properly configured for both development and production
-
-### 2025-08-08 - Complete Metis da Pix Rebranding Implementation  
-- Replaced all "Kong Pix" references with "Metis da Pix" branding throughout the application
-- Updated header to display new Metis logo (attached_assets/image_1754684172138.png) alongside "Metis da Pix" text
-- Updated privacy policy dialog to consistently use "Metis da Pix" instead of "Kong Pix"
-- Implemented clean logo with transparent background and professional text styling
-- Updated contact information with authentic Metis Brasil details:
-  - Address: Av. Otacílio Negrão de Lima, 800, São Luiz, Belo Horizonte - MG
-  - Phone: (31) 3514-6533 and (31) 9 9824-1928
-  - 24h assistance: 0800 400 3013 and 0800 941 8282
-- Updated social media links to @metisbrasil
-- Changed website references to metisbrasil.com.br
-- Updated email addresses to use @metisbrasil.com.br domain
-- Applied Metis Brasil blue color palette throughout application
-- Updated favicon and logo references in HTML and components
-- Modified page titles and metadata to reflect new branding
-- Updated script files and production setup with correct company information
-
-### 2025-08-08 - Analyst Level 1 Real-Time Updates Fix
-- Fixed critical issue where analyst level 1 users were seeing outdated referral attributions
-- Corrected referral display to show current assigned user (userId) instead of creator (createdBy)
-- Implemented enhanced React Query cache invalidation:
-  - Reduced polling interval to 15 seconds for faster updates
-  - Added refetchOnWindowFocus and refetchOnMount for immediate updates
-  - Improved cache invalidation across all analyst-related queries
-- Added visual distinction between referral creator and current assigned user
-- Implemented manual refresh button with visual feedback for analysts
-- Enhanced server-side logging for better debugging of referral assignments
-- Created diagnostic scripts to verify data consistency and real-time update behavior
-- Fixed TypeScript type errors in analyst components for better stability
-
-### 2025-08-07 - Plate Search Feature for All Users
-- Implemented plate search functionality available for all authenticated users
-- Created new `/plate-search` page with automatic Brazilian plate formatting
-- Added "Consultar Placa" button to all users' dashboards
-- API endpoint `/api/search-plate` accessible by any authenticated user
-- Backward compatibility maintained with old `/api/indicador/search-plate` endpoint
-- Real-time validation shows if plate is already registered with status and date
-- Prevents duplicate vehicle registrations in the platform
-
-### 2025-08-07 - Balance and Earnings Logic Correction
-- Fixed critical issue where user balances were showing R$0 when users had available funds
-- Corrected business logic for balance and totalEarnings:
-  - `balance`: Available withdrawal balance (pending commissions from validated/converted referrals)
-  - `totalEarnings`: Total amount already paid to user (only withdrawals with status "paid")
-- When referrals are reassigned to different users, commissions are now automatically transferred
-- Created fix-user-balances.ts script to recalculate all user balances based on current referrals
-- totalEarnings now only updates when a withdrawal is marked as "paid", not when referrals are paid
-
-### 2025-08-06 - Analyst Edit Permissions Fix
-- Fixed issue where analysts (especially level 1) couldn't edit referral status
-- Added `edit_referral_status` permission to all analysts automatically
-- Created ensure-analyst-permissions.ts script to manage analyst permissions by level
-- Modified storage.createUser to automatically assign correct permissions when creating analysts
-- All analysts now have proper permissions to edit referral status
-
-### 2025-08-05 - Promoter Profile Display Enhancement
-- Updated admin-indicators.tsx to correctly display analyst level 3 assignments for promoters
-- Modified getAnalystAssignment function to check promoter's supervisorId field
-- Promoters now show the name of their assigned analyst level 3 in the "Atribuição" column
-- Added profile card in promoter dashboard showing assigned analyst information
-
-### 2025-02-03 - Withdrawal System Improvements
-- Removed restrictive PIX key validation that required exact match with profile
-- Users can now use any valid PIX key for withdrawals
-- Removed CPF validation that forced users to use only their registered CPF
-- Improved user experience allowing flexibility in withdrawal requests
-- Fixed balance deduction logic to prevent negative balances:
-  - Balance is deducted only once when withdrawal is created
-  - Rejected withdrawals now properly return the amount to user's balance
-  - Approved/Paid status changes no longer affect user balance
-
-### 2025-02-03 - Simplified Company Selection for Non-Admin Users
-- Modified new referral page to show only "Metis da Pix" for non-admin users
-- Admin users retain full company selection capabilities
-- Automatically assigns Metis da Pix (ID 1) for all non-admin referrals
-- Fixed validation error ensuring companyId is always a positive number
-
-### 2025-01-03 - Analyst Level 3 Filtering Implementation
-- Added supervisor-based filtering for Analyst Level 3 users
-- When Analyst Level 3 users access the system, they now see:
-  - Only users assigned to them (via supervisorId field)
-  - Only referrals created by their supervised users
-  - Statistics filtered to their supervised team
-- Added visual indicators in the UI to show when data is filtered
-- Assigned initial users to existing Analyst Level 3 for testing
-
-### Implementation Details
-- Backend filtering implemented in routes:
-  - `storage.getAllUsersBySupervisor()` - Gets all users under supervision
-  - `storage.getReferralsBySupervisor()` - Gets referrals from supervised users
-- Frontend shows badges indicating filtered view for Level 3 analysts
-- Automatic assignment of supervisorId when Level 3 analysts create new users
+## Overview
+This project is a digital referral platform for Grupo Santana, aiming to revolutionize vehicle insurance networking through intelligent technological solutions. Its core purpose is to streamline the referral process, manage user roles and permissions, track referral statuses, and provide advanced analytics. Key capabilities include a multi-role authentication system, location-based SMS notifications, real-time referral tracking, and detailed audit trails. The platform seeks to enhance operational efficiency and drive business growth within the vehicle insurance sector.
 
 ## User Preferences
 - Language: Portuguese (pt-BR) for all user-facing content
@@ -208,10 +9,34 @@ A comprehensive digital referral platform for Grupo Santana, transforming vehicl
 - Maintain existing design patterns and color schemes
 - Preserve all existing functionality while adding new features
 
-## Development Guidelines
-- Always test with different user roles
-- Maintain backward compatibility
-- Update documentation when adding new features
-- Follow existing code patterns and conventions
-- Use TypeScript for type safety
-- Implement proper error handling and user feedback
+## System Architecture
+
+### UI/UX Decisions
+The platform features role-based routing and dashboards, responsive design with mobile optimization, and visual indicators for filtered data (e.g., for Analyst Level 3 users). The design maintains the "Metis da Pix" branding, including logos, color palettes, and contact information.
+
+### Technical Implementations
+- **Frontend**: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui. Utilizes React Query for real-time updates.
+- **Backend**: Express.js, TypeScript, providing a RESTful API with role-based middleware.
+- **Database**: PostgreSQL with Drizzle ORM.
+- **Authentication**: Passport.js with session-based authentication and multi-role support.
+- **SMS Service**: Twilio integration for location-based SMS notifications.
+
+### Feature Specifications
+- **Multi-role authentication**: Supports `indicador`, `promotor`, `analista` (levels 1-3), `gerente`, `admin`, and `vendedor` roles with hierarchical relationships and granular access control via `supervisorId` and `promoterId` links.
+- **Referral Management**: Complete lifecycle tracking including status, commission management, geographic location (city/state), and data validation fields.
+- **Supervisor-based Filtering**: Analyst Level 3 users automatically view only users, referrals, and statistics relevant to their supervised teams.
+- **Public Dashboard Security**: Secure token-based links for public company dashboards, replacing predictable IDs with random tokens.
+- **Plate Search Functionality**: Available for all authenticated users to check vehicle registration status and prevent duplicates.
+- **Withdrawal System**: Allows users to use any valid PIX key for withdrawals, with corrected balance deduction logic to prevent negative balances and ensure proper return of funds for rejected withdrawals.
+- **Company Selection**: Simplified for non-admin users, defaulting to "Metis da Pix."
+
+### System Design Choices
+- **Database Schema**: Includes `Users`, `Referrals`, `Companies`, `Withdrawals`, `Audit Log`, `Cash Flow`, and `Support Tickets` tables. `Users` table defines `supervisorId`, `promoterId`, and `analystLevel`. `Referrals` table tracks status history, commission, and geographic data.
+- **API Architecture**: Role-based endpoints with automatic filtering for Analyst Level 3 users to retrieve supervised users, referrals, and statistics.
+- **Authentication System**: Critical fixes ensure password hashing is applied only once during user creation and environment detection for cookie security is accurate.
+
+## External Dependencies
+- **Twilio**: For SMS notification services.
+- **PostgreSQL**: Relational database management system.
+- **Drizzle ORM**: Object-Relational Mapper for database interactions.
+- **Passport.js**: Authentication middleware for Node.js.
