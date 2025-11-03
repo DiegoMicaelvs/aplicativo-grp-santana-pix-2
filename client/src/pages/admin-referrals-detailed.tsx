@@ -274,6 +274,30 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
   );
 }
 
+// Helper function to convert UTC date to local datetime-local format
+function convertToLocalDateTimeString(utcDateString: string): string {
+  if (!utcDateString) return "";
+  
+  const date = new Date(utcDateString);
+  
+  // Get local date and time components
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// Helper function to convert local datetime-local format back to ISO UTC
+function convertLocalToUTC(localDateTimeString: string): string {
+  if (!localDateTimeString) return "";
+  
+  const localDate = new Date(localDateTimeString);
+  return localDate.toISOString();
+}
+
 export default function AdminReferralsDetailedPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all_statuses");
@@ -1042,7 +1066,7 @@ export default function AdminReferralsDetailedPage() {
                           userId: referral.userId,
                           commissionIndicator: referral.commissionIndicator || "0",
                           commissionPromoter: referral.commissionPromoter || "0",
-                          createdAt: referral.createdAt ? new Date(referral.createdAt).toISOString().slice(0, 16) : ""
+                          createdAt: referral.createdAt ? convertToLocalDateTimeString(referral.createdAt) : ""
                         });
                       }
                     }}>
@@ -1251,9 +1275,16 @@ export default function AdminReferralsDetailedPage() {
                                 onClick={() => {
                                   console.log("[Update Referral Mobile] Enviando dados:", editFormData);
                                   console.log("[Update Referral Mobile] CompanyId:", editFormData.companyId);
+                                  
+                                  // Convert local datetime back to UTC before sending
+                                  const dataToSend = {
+                                    ...editFormData,
+                                    createdAt: editFormData.createdAt ? convertLocalToUTC(editFormData.createdAt) : editFormData.createdAt
+                                  };
+                                  
                                   updateReferralMutation.mutate({
                                     referralId: selectedReferral.id,
-                                    data: editFormData
+                                    data: dataToSend
                                   });
                                 }}
                                 disabled={updateReferralMutation.isPending}
@@ -1542,7 +1573,7 @@ export default function AdminReferralsDetailedPage() {
                               userId: referral.userId,
                               commissionIndicator: referral.commissionIndicator || "0",
                               commissionPromoter: referral.commissionPromoter || "0",
-                              createdAt: referral.createdAt ? new Date(referral.createdAt).toISOString().slice(0, 16) : ""
+                              createdAt: referral.createdAt ? convertToLocalDateTimeString(referral.createdAt) : ""
                             });
                           }
                         }}>
@@ -1751,9 +1782,16 @@ export default function AdminReferralsDetailedPage() {
                                     onClick={() => {
                                       console.log("[Update Referral] Enviando dados:", editFormData);
                                       console.log("[Update Referral] CompanyId:", editFormData.companyId);
+                                      
+                                      // Convert local datetime back to UTC before sending
+                                      const dataToSend = {
+                                        ...editFormData,
+                                        createdAt: editFormData.createdAt ? convertLocalToUTC(editFormData.createdAt) : editFormData.createdAt
+                                      };
+                                      
                                       updateReferralMutation.mutate({
                                         referralId: selectedReferral.id,
-                                        data: editFormData
+                                        data: dataToSend
                                       });
                                     }}
                                     disabled={updateReferralMutation.isPending}
