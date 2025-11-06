@@ -72,13 +72,20 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
       if (!response.ok) throw new Error("Erro ao validar indicação");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidate and refetch all related queries immediately
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/user"], refetchType: 'active' }),
+      ]);
+      
       toast({ title: "Indicação validada com sucesso!" });
       setIsOpen(false);
       onValidate();
-      // Also invalidate user and referrals queries
-      queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: () => {
       toast({ title: "Erro ao validar indicação", variant: "destructive" });
@@ -371,21 +378,21 @@ export default function AdminReferralsDetailedPage() {
       console.log(`[updateStatusMutation] Resposta bem-sucedida:`, result);
       return result;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log(`[updateStatusMutation] onSuccess - dados recebidos:`, data);
-      // Invalidate all related queries to ensure UI updates for all user types
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/team/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
-      // Forçar refetch imediato das queries de analistas
-      queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
-      queryClient.refetchQueries({ queryKey: ["/api/analyst/stats"] });
+      // Invalidate and refetch all related queries immediately
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/user"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/team/stats"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"], refetchType: 'active' }),
+      ]);
+      
       toast({ title: "Status atualizado com sucesso!" });
       setIsDialogOpen(false);
       setStatusNotes("");
@@ -418,22 +425,21 @@ export default function AdminReferralsDetailedPage() {
       
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log("[updateReferralMutation] Dados atualizados:", data);
-      // Invalidar todas as queries relacionadas para garantir atualização para todos os tipos de usuário
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/team/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
-      // Forçar refetch imediato das queries de analistas
-      queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
-      queryClient.refetchQueries({ queryKey: ["/api/analyst/users"] });
+      // Invalidate and refetch all related queries immediately
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/companies"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/user"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/team/stats"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"], refetchType: 'active' }),
+      ]);
       toast({ title: "Indicação atualizada com sucesso!" });
       setIsDialogOpen(false);
       setSelectedReferral(null);
@@ -461,8 +467,18 @@ export default function AdminReferralsDetailedPage() {
       
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+    onSuccess: async () => {
+      // Invalidate and refetch all related queries immediately
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/user"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/team/stats"], refetchType: 'active' }),
+      ]);
+      
       toast({ title: "Indicação deletada com sucesso!" });
       setIsDialogOpen(false);
       setIsDeleteDialogOpen(false);
