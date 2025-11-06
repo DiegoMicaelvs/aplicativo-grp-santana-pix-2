@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import * as XLSX from 'xlsx';
 
-type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid" | "false" | "not_validated" | "not_converted";
+type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid" | "false" | "not_validated" | "not_converted" | "contact_list";
 
 // Componente de validação
 function ValidationDialog({ referral, onValidate }: { referral: any; onValidate: () => void }) {
@@ -336,13 +336,13 @@ export default function AdminReferralsDetailedPage() {
 
   const { data: referrals = [], isLoading: referralsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/referrals"],
-    refetchInterval: 15000, // Atualiza automaticamente a cada 15 segundos
+    refetchInterval: 30000, // Atualiza automaticamente a cada 30 segundos para reduzir carga
     refetchOnWindowFocus: true, // Atualiza quando o usuário volta à aba
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
+    refetchInterval: 60000, // Atualiza a cada 60 segundos (usuários mudam menos)
     refetchOnWindowFocus: true,
   });
 
@@ -353,13 +353,16 @@ export default function AdminReferralsDetailedPage() {
   // Fetch all users instead of just indicadores
   const { data: allUsers = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
-    refetchInterval: 30000,
+    refetchInterval: 60000,
     refetchOnWindowFocus: true,
   });
   
-  // Sort users alphabetically by fullName
-  const sortedUsers = [...allUsers].sort((a, b) => 
-    (a.fullName || '').localeCompare(b.fullName || '', 'pt-BR')
+  // Sort users alphabetically by fullName - memoized to avoid re-sorting on every render
+  const sortedUsers = useMemo(() => 
+    [...allUsers].sort((a, b) => 
+      (a.fullName || '').localeCompare(b.fullName || '', 'pt-BR')
+    ),
+    [allUsers]
   );
 
   const updateStatusMutation = useMutation({
@@ -499,15 +502,54 @@ export default function AdminReferralsDetailedPage() {
     },
   });
 
-  // Filter referrals
-  const filteredReferrals = referrals.filter((referral: any) => {
-    const user = users.find((u: any) => u.id === referral.userId);
-    
-    // Check if search term matches date - use appropriate date based on status filter
-    let matchesDate = false;
-    if (searchTerm.includes('/')) {
-      try {
-        // Determine which date to use based on status filter (same logic as month filter)
+  // Filter referrals - memoized to avoid refiltering on every render
+  const filteredReferrals = useMemo(() => {
+    return referrals.filter((referral: any) => {
+      const user = users.find((u: any) => u.id === referral.userId);
+      
+      // Check if search term matches date - use appropriate date based on status filter
+      let matchesDate = false;
+      if (searchTerm.includes('/')) {
+        try {
+          // Determine which date to use based on status filter (same logic as month filter)
+          let dateToUse = referral.createdAt;
+          
+          // For validated status, use validatedAt if available
+          if (statusFilter === "validated" && referral.validatedAt) {
+            dateToUse = referral.validatedAt;
+          }
+          // For converted/paid status, use updatedAt (when status was changed)
+          else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
+            dateToUse = referral.updatedAt;
+          }
+          
+          const referralDate = new Date(dateToUse);
+          const formattedDate = format(referralDate, "dd/MM/yyyy", { locale: ptBR });
+          const shortDate = format(referralDate, "dd/MM", { locale: ptBR });
+          const mediumDate = format(referralDate, "dd/MM/yy", { locale: ptBR });
+          
+          // Match against various date formats
+          matchesDate = formattedDate.includes(searchTerm) || 
+                       shortDate.includes(searchTerm) || 
+                       mediumDate.includes(searchTerm);
+        } catch (error) {
+          // If date parsing fails, just skip date matching
+          matchesDate = false;
+        }
+      }
+      
+      const matchesSearch = referral.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           referral.phone?.includes(searchTerm) ||
+                           referral.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           matchesDate;
+      const matchesStatus = statusFilter === "all_statuses" || referral.status === statusFilter;
+      const matchesUser = userFilter === "all_users" || referral.userId.toString() === userFilter;
+      const matchesCompany = companyFilter === "all_companies" || referral.companyId?.toString() === companyFilter;
+      
+      // Month filter - use appropriate date based on status filter
+      let matchesMonth = true;
+      if (monthFilter !== "all_months") {
         let dateToUse = referral.createdAt;
         
         // For validated status, use validatedAt if available
@@ -520,62 +562,25 @@ export default function AdminReferralsDetailedPage() {
         }
         
         const referralDate = new Date(dateToUse);
-        const formattedDate = format(referralDate, "dd/MM/yyyy", { locale: ptBR });
-        const shortDate = format(referralDate, "dd/MM", { locale: ptBR });
-        const mediumDate = format(referralDate, "dd/MM/yy", { locale: ptBR });
-        
-        // Match against various date formats
-        matchesDate = formattedDate.includes(searchTerm) || 
-                     shortDate.includes(searchTerm) || 
-                     mediumDate.includes(searchTerm);
-      } catch (error) {
-        // If date parsing fails, just skip date matching
-        matchesDate = false;
-      }
-    }
-    
-    const matchesSearch = referral.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         referral.phone?.includes(searchTerm) ||
-                         referral.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         matchesDate;
-    const matchesStatus = statusFilter === "all_statuses" || referral.status === statusFilter;
-    const matchesUser = userFilter === "all_users" || referral.userId.toString() === userFilter;
-    const matchesCompany = companyFilter === "all_companies" || referral.companyId?.toString() === companyFilter;
-    
-    // Month filter - use appropriate date based on status filter
-    let matchesMonth = true;
-    if (monthFilter !== "all_months") {
-      let dateToUse = referral.createdAt;
-      
-      // For validated status, use validatedAt if available
-      if (statusFilter === "validated" && referral.validatedAt) {
-        dateToUse = referral.validatedAt;
-      }
-      // For converted/paid status, use updatedAt (when status was changed)
-      else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
-        dateToUse = referral.updatedAt;
+        const referralMonth = referralDate.getMonth();
+        const referralYear = referralDate.getFullYear();
+        const [filterYear, filterMonth] = monthFilter.split("-").map(Number);
+        matchesMonth = referralYear === filterYear && referralMonth === filterMonth - 1; // JavaScript months are 0-indexed
       }
       
-      const referralDate = new Date(dateToUse);
-      const referralMonth = referralDate.getMonth();
-      const referralYear = referralDate.getFullYear();
-      const [filterYear, filterMonth] = monthFilter.split("-").map(Number);
-      matchesMonth = referralYear === filterYear && referralMonth === filterMonth - 1; // JavaScript months are 0-indexed
-    }
-    
-    // Local filter (by state only)
-    let matchesLocal = true;
-    if (localFilter !== "all_locals") {
-      if (localFilter === "no_state") {
-        matchesLocal = !referral.state;
-      } else {
-        matchesLocal = referral.state === localFilter;
+      // Local filter (by state only)
+      let matchesLocal = true;
+      if (localFilter !== "all_locals") {
+        if (localFilter === "no_state") {
+          matchesLocal = !referral.state;
+        } else {
+          matchesLocal = referral.state === localFilter;
+        }
       }
-    }
-    
-    return matchesSearch && matchesStatus && matchesUser && matchesCompany && matchesMonth && matchesLocal;
-  });
+      
+      return matchesSearch && matchesStatus && matchesUser && matchesCompany && matchesMonth && matchesLocal;
+    });
+  }, [referrals, users, searchTerm, statusFilter, userFilter, companyFilter, monthFilter, localFilter]);
 
   // Helper function to get company name by ID
   const getCompanyName = (companyId: number) => {
@@ -668,8 +673,8 @@ export default function AdminReferralsDetailedPage() {
     }
   };
 
-  // Calculate statistics
-  const stats = {
+  // Calculate statistics - memoized to avoid recalculating on every render
+  const stats = useMemo(() => ({
     totalReferrals: referrals.length,
     pendingReferrals: referrals.filter((r: any) => r.status === "pending").length,
     analyzingReferrals: referrals.filter((r: any) => r.status === "analyzing").length,
@@ -679,7 +684,7 @@ export default function AdminReferralsDetailedPage() {
     totalCommissions: referrals
       .filter((r: any) => ['validated', 'converted'].includes(r.status))
       .reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0) + (parseFloat(r.commissionPromoter) || 0), 0)
-  };
+  }), [referrals]);
 
   const getStatusBadgeColor = (status: ReferralStatus) => {
     switch (status) {
