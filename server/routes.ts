@@ -277,16 +277,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // === SISTEMA DE SEGURANÇA PARA LEADS ===
       
-      // 1. Verificar limite de 50 referrals por dia (não aplicar para indicador_nivel_1)
-      if (req.user!.role !== "indicador_nivel_1") {
+      // 1. Verificar limite de 100 referrals por dia (não aplicar para indicador_nivel_1 e admin)
+      if (req.user!.role !== "indicador_nivel_1" && req.user!.role !== "admin") {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayReferrals = await storage.getTodayReferralsByUserId(req.user!.id, today);
         
-        if (todayReferrals.length >= 50) {
+        if (todayReferrals.length >= 100) {
           return res.status(400).json({ 
             error: "Limite diário atingido",
-            details: `Você já cadastrou ${todayReferrals.length} clientes hoje. Limite máximo: 50 por dia.`
+            details: `Você já cadastrou ${todayReferrals.length} clientes hoje. Limite máximo: 100 por dia.`
           });
         }
       }
@@ -474,8 +474,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       today.setHours(0, 0, 0, 0);
       const todayReferrals = await storage.getTodayReferralsByUserId(req.user!.id, today);
       
-      // For indicador_nivel_1 users, return unlimited stats
-      if (req.user!.role === "indicador_nivel_1") {
+      // For indicador_nivel_1 and admin users, return unlimited stats
+      if (req.user!.role === "indicador_nivel_1" || req.user!.role === "admin") {
         return res.json({
           count: todayReferrals.length,
           limit: null,
@@ -484,11 +484,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // For all other users, return standard 50-limit stats
+      // For all other users, return standard 100-limit stats
       return res.json({
         count: todayReferrals.length,
-        limit: 50,
-        remaining: Math.max(0, 50 - todayReferrals.length),
+        limit: 100,
+        remaining: Math.max(0, 100 - todayReferrals.length),
         isUnlimited: false
       });
     } catch (error) {

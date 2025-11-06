@@ -368,10 +368,10 @@ export default function NewReferralPage() {
                   <AlertDescription className="text-blue-800">
                     <div className="font-semibold mb-2">🔒 Sistema de Segurança</div>
                     <div className="text-sm space-y-1">
-                      {user?.role === 'indicador_nivel_1' ? (
+                      {(user?.role === 'indicador_nivel_1' || user?.role === 'admin') ? (
                         <p>• <strong>Limite diário:</strong> Ilimitado ⭐</p>
                       ) : (
-                        <p>• <strong>Limite diário:</strong> Máximo 50 cadastros</p>
+                        <p>• <strong>Limite diário:</strong> Máximo 100 cadastros</p>
                       )}
                       <p>• <strong>Sem duplicatas:</strong> Telefone e placa únicos</p>
                       <p>• <strong>Proteção automática</strong> contra fraudes</p>
@@ -380,7 +380,7 @@ export default function NewReferralPage() {
                 </Alert>
 
                 {/* Contador de cadastros diários */}
-                {user?.role === 'indicador_nivel_1' ? (
+                {(user?.role === 'indicador_nivel_1' || user?.role === 'admin') ? (
                   <Alert className="border-2 border-purple-200 bg-purple-50">
                     <Check className="h-4 w-4 text-purple-600" />
                     <AlertDescription className="text-purple-800">
@@ -389,7 +389,7 @@ export default function NewReferralPage() {
                         {todayStats?.count || 0} indicações
                       </div>
                       <div className="text-sm">
-                        Perfil Indicador Nível 1 - Sem limites! ⭐
+                        {user?.role === 'admin' ? 'Perfil Admin - Sem limites! ⭐' : 'Perfil Indicador Nível 1 - Sem limites! ⭐'}
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                         <div className="h-2 rounded-full bg-purple-500 w-full"></div>
@@ -397,12 +397,12 @@ export default function NewReferralPage() {
                     </AlertDescription>
                   </Alert>
                 ) : (
-                  <Alert className={`border-2 ${todayStats?.count >= 45 ? 'border-red-200 bg-red-50' : todayStats?.count >= 40 ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
-                    <Check className={`h-4 w-4 ${todayStats?.count >= 45 ? 'text-red-600' : todayStats?.count >= 40 ? 'text-yellow-600' : 'text-green-600'}`} />
-                    <AlertDescription className={todayStats?.count >= 45 ? 'text-red-800' : todayStats?.count >= 40 ? 'text-yellow-800' : 'text-green-800'}>
+                  <Alert className={`border-2 ${todayStats?.count >= 90 ? 'border-red-200 bg-red-50' : todayStats?.count >= 80 ? 'border-yellow-200 bg-yellow-50' : 'border-green-200 bg-green-50'}`}>
+                    <Check className={`h-4 w-4 ${todayStats?.count >= 90 ? 'text-red-600' : todayStats?.count >= 80 ? 'text-yellow-600' : 'text-green-600'}`} />
+                    <AlertDescription className={todayStats?.count >= 90 ? 'text-red-800' : todayStats?.count >= 80 ? 'text-yellow-800' : 'text-green-800'}>
                       <div className="font-semibold mb-2">📊 Cadastros de Hoje</div>
                       <div className="text-lg font-bold">
-                        {todayStats?.count || 0} / 50
+                        {todayStats?.count || 0} / 100
                       </div>
                       <div className="text-sm">
                         {todayStats?.remaining > 0 ? (
@@ -413,8 +413,8 @@ export default function NewReferralPage() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                         <div 
-                          className={`h-2 rounded-full transition-all ${todayStats?.count >= 45 ? 'bg-red-500' : todayStats?.count >= 40 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                          style={{ width: `${Math.min(100, ((todayStats?.count || 0) / 50) * 100)}%` }}
+                          className={`h-2 rounded-full transition-all ${todayStats?.count >= 90 ? 'bg-red-500' : todayStats?.count >= 80 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                          style={{ width: `${Math.min(100, ((todayStats?.count || 0) / 100) * 100)}%` }}
                         ></div>
                       </div>
                     </AlertDescription>
