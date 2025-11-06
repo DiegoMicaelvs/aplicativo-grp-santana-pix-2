@@ -582,6 +582,36 @@ export default function AdminReferralsDetailedPage() {
     });
   }, [referrals, users, searchTerm, statusFilter, userFilter, companyFilter, monthFilter, localFilter]);
 
+  // Memoized filter options to prevent recalculation on every render
+  const activeIndicators = useMemo(() => {
+    return users.filter(u => 
+      (u.role === "indicador" || u.role === "indicador_nivel_1") && 
+      u.isActive === true
+    );
+  }, [users]);
+
+  const monthOptions = useMemo(() => {
+    const months = [];
+    const currentDate = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      months.push({ value: monthYear, label: monthName });
+    }
+    return months;
+  }, []);
+
+  const uniqueStates = useMemo(() => {
+    const stateSet = new Set<string>();
+    referrals.forEach((referral: any) => {
+      if (referral.state) {
+        stateSet.add(referral.state);
+      }
+    });
+    return Array.from(stateSet).sort();
+  }, [referrals]);
+
   // Helper function to get company name by ID
   const getCompanyName = (companyId: number) => {
     const company = companies.find((c: any) => c.id === companyId);
@@ -600,17 +630,6 @@ export default function AdminReferralsDetailedPage() {
     }
     // Default to creation date
     return referral.createdAt;
-  };
-
-  // Helper function to get unique states for filter
-  const getUniqueStates = () => {
-    const stateSet = new Set<string>();
-    referrals.forEach((referral: any) => {
-      if (referral.state) {
-        stateSet.add(referral.state);
-      }
-    });
-    return Array.from(stateSet).sort();
   };
 
   // Export to Excel function - exports only filtered referrals
@@ -916,10 +935,7 @@ export default function AdminReferralsDetailedPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all_users">Todos os Indicadores</SelectItem>
-                  {users.filter(u => 
-                    (u.role === "indicador" || u.role === "indicador_nivel_1") && 
-                    u.isActive === true
-                  ).map(user => (
+                  {activeIndicators.map(user => (
                     <SelectItem key={user.id} value={user.id.toString()}>
                       {user.fullName}
                     </SelectItem>
@@ -947,21 +963,11 @@ export default function AdminReferralsDetailedPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all_months">Todos os Meses</SelectItem>
-                  {(() => {
-                    const months = [];
-                    const currentDate = new Date();
-                    for (let i = 0; i < 12; i++) {
-                      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-                      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                      const monthName = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-                      months.push({ value: monthYear, label: monthName });
-                    }
-                    return months.map(month => (
-                      <SelectItem key={month.value} value={month.value}>
-                        {month.label}
-                      </SelectItem>
-                    ));
-                  })()}
+                  {monthOptions.map(month => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               
@@ -972,7 +978,7 @@ export default function AdminReferralsDetailedPage() {
                 <SelectContent>
                   <SelectItem value="all_locals">Todos os Estados</SelectItem>
                   <SelectItem value="no_state">Sem Estado</SelectItem>
-                  {getUniqueStates().map(state => (
+                  {uniqueStates.map(state => (
                     <SelectItem key={state} value={state}>
                       {state}
                     </SelectItem>
