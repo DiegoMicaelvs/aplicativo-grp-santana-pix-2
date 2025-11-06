@@ -335,11 +335,15 @@ export default function AdminReferralsDetailedPage() {
   const { user } = useAuth();
 
   const { data: referrals = [], isLoading: referralsLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/referrals"]
+    queryKey: ["/api/admin/referrals"],
+    refetchInterval: 15000, // Atualiza automaticamente a cada 15 segundos
+    refetchOnWindowFocus: true, // Atualiza quando o usuário volta à aba
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/users"]
+    queryKey: ["/api/admin/users"],
+    refetchInterval: 30000, // Atualiza a cada 30 segundos
+    refetchOnWindowFocus: true,
   });
 
   const { data: companies = [] } = useQuery<any[]>({
@@ -348,7 +352,9 @@ export default function AdminReferralsDetailedPage() {
 
   // Fetch all users instead of just indicadores
   const { data: allUsers = [] } = useQuery<any[]>({
-    queryKey: ["/api/admin/users"]
+    queryKey: ["/api/admin/users"],
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
   
   // Sort users alphabetically by fullName
