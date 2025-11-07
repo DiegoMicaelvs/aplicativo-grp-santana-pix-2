@@ -52,10 +52,15 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4 md:justify-start md:space-x-10">
           <div className="flex justify-start lg:w-0 lg:flex-1">
-            <Link href="/" className="flex items-center space-x-3">
+            <Link href="/" className="flex items-center space-x-4 group">
               <span className="sr-only">LeadFlow</span>
-              <img src={logoIcon} alt="LeadFlow Logo" className="h-12 w-auto" />
-              <span className="text-xl font-bold text-primary font-heading">LeadFlow</span>
+              <img 
+                src={logoIcon} 
+                alt="LeadFlow Logo" 
+                className="h-16 w-auto transition-transform duration-200 group-hover:scale-105" 
+                style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))' }}
+              />
+              <span className="text-2xl font-bold text-primary font-heading">LeadFlow</span>
             </Link>
           </div>
 
