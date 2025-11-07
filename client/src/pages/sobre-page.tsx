@@ -9,7 +9,7 @@ export default function SobrePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">
-            Sobre o Grupo Santana
+            Sobre o LeadFlow
           </h1>
           
           <div className="space-y-8">
@@ -18,7 +18,7 @@ export default function SobrePage() {
                 Quem Somos
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                O Grupo Santana é um programa de indicação inovador desenvolvido pelo Grupo Santana 
+                O LeadFlow é um programa de indicação inovador desenvolvido pelo Grupo G3PROFIT 
                 que conecta pessoas que possuem veículos sem proteção veicular com nossa rede de proteção. 
                 Como uma das principais empresas de proteção patrimonial do Brasil, nosso objetivo é 
                 democratizar o acesso à proteção veicular através de um sistema de indicações que 
@@ -33,7 +33,7 @@ export default function SobrePage() {
               <p className="text-gray-600 leading-relaxed">
                 Facilitar o acesso à proteção veicular através de um programa de 
                 indicações transparente e lucrativo, conectando proprietários de 
-                veículos com as soluções de proteção Grupo Santana - reconhecidas 
+                veículos com as soluções de proteção LeadFlow - reconhecidas 
                 pela qualidade, acessibilidade e atendimento 24 horas em todo Brasil.
               </p>
             </section>
