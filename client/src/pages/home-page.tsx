@@ -354,7 +354,7 @@ export default function HomePage() {
                   Quantos cadastros posso fazer por dia?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  Quantos quiser! Mas com apenas 100 cadastros validados diários, você já garante R$6.600 por mês.
+                  O usuário tem um limite de 100 cadastros diários. Alcance 100 cadastros VALIDADOS por dia e conquista uma renda mensal de R$ 6.600 por mês
                 </AccordionContent>
               </AccordionItem>
               
