@@ -1,19 +1,24 @@
 {
-  "name": "Grupo Santana Pix - Indique e Ganhe",
-  "short_name": "Grupo Santana",
+  "name": "LeadFlow - Indique e Ganhe",
+  "short_name": "LeadFlow",
   "description": "Programa de indicação que realmente paga. Ganhe R$3 por cadastro validado + R$50 de bônus na conversão.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4B5320",
+  "background_color": "#000000",
+  "theme_color": "#1D3A5A",
   "icons": [
     {
-      "src": "/images/logos/gs-favicon.png",
+      "src": "/favicon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/images/logos/gs-favicon.png",
+      "src": "/favicon.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
