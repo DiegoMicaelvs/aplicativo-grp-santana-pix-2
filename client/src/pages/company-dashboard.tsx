@@ -93,22 +93,22 @@ const generateMonthOptions = () => {
   return options;
 };
 
-// Chart colors using the new green military palette
+// Chart colors using the new brand palette
 const CHART_COLORS = {
-  primary: '#4B5320', // Verde Militar
-  secondary: '#808080', // Cinza
-  success: '#6B7240', // Verde militar mais claro
-  warning: '#B8860B', // Dourado escuro
-  error: '#8B4513', // Marrom avermelhado
-  info: '#5F6A6B', // Cinza azulado
-  light: '#A8B19C', // Verde militar claro
+  primary: '#1D3A5A', // Azul Marinho
+  secondary: '#F3861D', // Amarelo Ouro
+  success: '#3EAE7E', // Verde
+  warning: '#F3861D', // Amarelo Ouro
+  error: '#ef4444', // Vermelho
+  info: '#2B579A', // Azul
+  light: '#86C5B6', // Verde Ciano
 };
 
 // Prepare chart data with memoization
 const prepareReferralStatusData = (metrics: CompanyMetrics) => [
   { name: 'Pendentes', value: metrics.pendingReferrals, color: CHART_COLORS.warning },
   { name: 'Convertidas', value: metrics.convertedReferrals, color: CHART_COLORS.success },
-  { name: 'Validadas', value: metrics.validatedReferrals, color: '#10b981' },
+  { name: 'Validadas', value: metrics.validatedReferrals, color: CHART_COLORS.info },
   { name: 'Rejeitadas', value: metrics.rejectedReferrals, color: CHART_COLORS.error }
 ];
 
@@ -1055,7 +1055,7 @@ export default function CompanyDashboard() {
                 </div>
                 
                 <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
-                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: '#3b82f6' }}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: CHART_COLORS.primary }}>
                     {metrics.analyzingReferrals}
                   </div>
                   <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Em análise</p>
@@ -1069,7 +1069,7 @@ export default function CompanyDashboard() {
                 </div>
                 
                 <div className={`${isMobile ? 'bg-gray-50 p-2 rounded-lg' : ''} text-center`}>
-                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: '#10b981' }}>
+                  <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`} style={{ color: CHART_COLORS.light }}>
                     {metrics.validatedReferrals}
                   </div>
                   <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>Validadas</p>

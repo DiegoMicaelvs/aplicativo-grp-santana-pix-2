@@ -135,7 +135,7 @@ export default function AdminAnalyticsPage() {
       "Administradores": filteredUsers.filter((u: any) => u.role === "admin").length
     };
 
-    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
+    const colors = ["#2B579A", "#3EAE7E", "#F3861D", "#1D3A5A"];
     return Object.entries(roles).map(([name, value], index) => ({ 
       name, 
       value, 
@@ -276,7 +276,7 @@ export default function AdminAnalyticsPage() {
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#3b82f6" />
+                <Bar dataKey="count" fill="#2B579A" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -298,7 +298,7 @@ export default function AdminAnalyticsPage() {
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="#1D3A5A"
                   dataKey="value"
                 >
                   {roleDistribution.map((entry, index) => (
