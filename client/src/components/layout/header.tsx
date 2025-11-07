@@ -21,6 +21,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
+import logoIcon from "@assets/fivicon_1762523082268.png";
+
 export default function Header() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
@@ -51,9 +53,9 @@ export default function Header() {
         <div className="flex justify-between items-center py-4 md:justify-start md:space-x-10">
           <div className="flex justify-start lg:w-0 lg:flex-1">
             <Link href="/" className="flex items-center space-x-3">
-              <span className="sr-only">Grupo Santana Pix</span>
-              <img src="/images/logos/gs-logo.png" alt="Grupo Santana Logo" className="h-24 w-auto" />
-              <span className="text-xl font-bold text-primary font-heading">Santana Pix</span>
+              <span className="sr-only">LeadFlow</span>
+              <img src={logoIcon} alt="LeadFlow Logo" className="h-12 w-auto" />
+              <span className="text-xl font-bold text-primary font-heading">LeadFlow</span>
             </Link>
           </div>
 
@@ -67,7 +69,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                  <SheetTitle className="font-heading">Grupo Santana Pix</SheetTitle>
+                  <SheetTitle className="font-heading">LeadFlow</SheetTitle>
                   <SheetDescription>
                     Cadastrou, validou é PIX! Indique e ganhe comissões
                   </SheetDescription>
