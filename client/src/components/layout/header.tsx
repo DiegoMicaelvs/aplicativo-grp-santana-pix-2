@@ -57,10 +57,10 @@ export default function Header() {
               <img 
                 src={logoIcon} 
                 alt="LeadFlow Logo" 
-                className="h-20 w-auto transition-transform duration-200 group-hover:scale-105" 
+                className="h-24 w-auto transition-transform duration-200 group-hover:scale-105" 
                 style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))' }}
               />
-              <span className="text-2xl font-bold text-primary font-heading">LeadFlow</span>
+              <span className="text-3xl font-bold text-primary font-heading">LeadFlow</span>
             </Link>
           </div>
 
