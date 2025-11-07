@@ -178,8 +178,8 @@ export default function HomePage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                      <DollarSign className="h-6 w-6 text-white" />
+                    <div className="flex-shrink-0 bg-secondary rounded-md p-3">
+                      <DollarSign className="h-6 w-6 text-primary" />
                     </div>
                     <div className="ml-5">
                       <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Renda extra real e imediata</h3>
@@ -197,7 +197,7 @@ export default function HomePage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-accent rounded-md p-3">
+                    <div className="flex-shrink-0 bg-primary rounded-md p-3">
                       <Shield className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
@@ -216,8 +216,8 @@ export default function HomePage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                      <Users className="h-6 w-6 text-white" />
+                    <div className="flex-shrink-0 bg-secondary rounded-md p-3">
+                      <Users className="h-6 w-6 text-primary" />
                     </div>
                     <div className="ml-5">
                       <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Kit credencial incluso</h3>
@@ -235,7 +235,7 @@ export default function HomePage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-accent rounded-md p-3">
+                    <div className="flex-shrink-0 bg-primary rounded-md p-3">
                       <HeadphonesIcon className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
@@ -254,8 +254,8 @@ export default function HomePage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-accent rounded-md p-3">
-                      <Clock className="h-6 w-6 text-white" />
+                    <div className="flex-shrink-0 bg-secondary rounded-md p-3">
+                      <Clock className="h-6 w-6 text-primary" />
                     </div>
                     <div className="ml-5">
                       <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Flexibilidade total</h3>
@@ -273,7 +273,7 @@ export default function HomePage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-accent rounded-md p-3">
+                    <div className="flex-shrink-0 bg-primary rounded-md p-3">
                       <BarChart className="h-6 w-6 text-white" />
                     </div>
                     <div className="ml-5">
@@ -292,11 +292,11 @@ export default function HomePage() {
         </div>
       </div>
       {/* Registration CTA */}
-      <div className="bg-primary-700">
+      <div className="bg-primary">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-heading">
-            <span className="block text-[#0a0a0a]">Pronto para começar?</span>
-            <span className="block text-[#000000]">Junte-se a mais de 600 indicadores ativos.</span>
+            <span className="block">Pronto para começar?</span>
+            <span className="block text-secondary">Junte-se a mais de 600 indicadores ativos.</span>
           </h2>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 lg:mt-0 lg:flex-shrink-0">
             <div className="flex-1 sm:flex-initial">
