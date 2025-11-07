@@ -584,10 +584,12 @@ export default function AdminReferralsDetailedPage() {
 
   // Memoized filter options to prevent recalculation on every render
   const activeIndicators = useMemo(() => {
-    return users.filter(u => 
-      (u.role === "indicador" || u.role === "indicador_nivel_1") && 
-      u.isActive === true
-    );
+    return users
+      .filter(u => 
+        (u.role === "indicador" || u.role === "indicador_nivel_1") && 
+        u.isActive === true
+      )
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
   }, [users]);
 
   const monthOptions = useMemo(() => {
