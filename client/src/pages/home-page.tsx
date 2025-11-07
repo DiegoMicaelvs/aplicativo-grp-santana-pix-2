@@ -14,7 +14,7 @@ import { ChevronDown, Clock, DollarSign, Shield, Users, BarChart, HeadphonesIcon
 import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
 
-import logoLeadFlow from "@assets/NOVO_LOGO_PNG_1753205053860.png";
+import logoLeadFlow from "@assets/Logo completo Vetor_1762526418274.png";
 
 export default function HomePage() {
   const { user } = useAuth();
