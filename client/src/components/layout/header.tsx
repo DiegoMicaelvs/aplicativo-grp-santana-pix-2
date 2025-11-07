@@ -21,7 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-import logoIcon from "@assets/unnamed_1762527785298.jpg";
+import logoIcon from "@assets/fivicon (3)_1762537559063.png";
 
 export default function Header() {
   const [location] = useLocation();
