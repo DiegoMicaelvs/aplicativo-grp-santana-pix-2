@@ -14,7 +14,7 @@ import { ChevronDown, Clock, DollarSign, Shield, Users, BarChart, HeadphonesIcon
 import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
 
-import logoLeadFlow from "@assets/logo fundo branco_1762522838617.png";
+import logoLeadFlow from "@assets/NOVO_LOGO_PNG_1753205053860.png";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -352,7 +352,7 @@ export default function HomePage() {
                   Quantos cadastros posso fazer por dia?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  O usuário tem um limite de 100 cadastros diários. Alcance 100 cadastros VALIDADOS por dia e conquiste uma renda de 6.600 por mês.
+                  O usuário tem um limite de 100 cadastros diários. Alcance 100 cadastros VALIDADOS por dia e conquiste uma renda de R$ 6.600 por mês.
                 </AccordionContent>
               </AccordionItem>
               
