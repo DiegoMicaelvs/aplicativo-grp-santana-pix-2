@@ -14,7 +14,7 @@ import { ChevronDown, Clock, DollarSign, Shield, Users, BarChart, HeadphonesIcon
 import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
 
-import logoLeadFlow from "@assets/unnamed_1762527270255.jpg";
+import logoLeadFlow from "@assets/Logo_completo_Vetor-removebg-preview_1762537140803.png";
 
 export default function HomePage() {
   const { user } = useAuth();
