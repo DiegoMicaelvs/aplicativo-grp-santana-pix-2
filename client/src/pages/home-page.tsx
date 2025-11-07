@@ -262,9 +262,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="mt-4">
-                    <p className="text-base text-gray-600">
-                      Trabalhe nas horas vagas, nas ruas, em casa ou onde quiser.
-                    </p>
+                    <p className="text-base text-gray-600">Trabalhe nas horas vagas, nas ruas ou onde quiser.</p>
                   </div>
                 </CardContent>
               </Card>
