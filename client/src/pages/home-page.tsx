@@ -85,7 +85,7 @@ export default function HomePage() {
         </div>
         <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 flex items-center justify-center">
           <img
-            className="h-72 w-auto object-contain object-center sm:h-80 md:h-[28rem] lg:h-96 xl:h-[32rem]"
+            className="h-80 w-auto object-contain object-center sm:h-96 md:h-[32rem] lg:h-[28rem] xl:h-[40rem]"
             src={logoLeadFlow}
             alt="LeadFlow - Grupo G3PROFIT"
             style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
