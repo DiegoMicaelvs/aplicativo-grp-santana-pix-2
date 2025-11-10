@@ -100,6 +100,9 @@ export default function ReferralsPage() {
   const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
   const [bulkEditCompanyId, setBulkEditCompanyId] = useState<string>("");
   
+  console.log('DEBUG - User role:', user?.role, 'User:', user);
+  console.log('DEBUG - Is admin?', user?.role === 'admin');
+  
   const itemsPerPage = 10;
   
   // Fetch all referrals
