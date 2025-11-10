@@ -287,7 +287,7 @@ export default function ReferralsPage() {
                                   <Checkbox
                                     checked={selectedReferralIds.includes(referral.id)}
                                     onCheckedChange={(checked) => handleSelectReferral(referral.id, checked as boolean)}
-                                    className="mt-1"
+                                    className="mt-1 h-5 w-5 border-2"
                                   />
                                 )}
                                 <div>
@@ -356,11 +356,14 @@ export default function ReferralsPage() {
                       <TableHeader>
                         <TableRow>
                           {user?.role === 'admin' && (
-                            <TableHead className="w-[50px]">
-                              <Checkbox
-                                checked={paginatedReferrals.length > 0 && paginatedReferrals.every(r => selectedReferralIds.includes(r.id))}
-                                onCheckedChange={handleSelectAll}
-                              />
+                            <TableHead className="w-[70px]">
+                              <div className="flex items-center justify-center">
+                                <Checkbox
+                                  checked={paginatedReferrals.length > 0 && paginatedReferrals.every(r => selectedReferralIds.includes(r.id))}
+                                  onCheckedChange={handleSelectAll}
+                                  className="h-5 w-5 border-2"
+                                />
+                              </div>
                             </TableHead>
                           )}
                           <TableHead>Nome</TableHead>
@@ -380,10 +383,13 @@ export default function ReferralsPage() {
                           <TableRow key={referral.id}>
                             {user?.role === 'admin' && (
                               <TableCell>
-                                <Checkbox
-                                  checked={selectedReferralIds.includes(referral.id)}
-                                  onCheckedChange={(checked) => handleSelectReferral(referral.id, checked as boolean)}
-                                />
+                                <div className="flex items-center justify-center">
+                                  <Checkbox
+                                    checked={selectedReferralIds.includes(referral.id)}
+                                    onCheckedChange={(checked) => handleSelectReferral(referral.id, checked as boolean)}
+                                    className="h-5 w-5 border-2"
+                                  />
+                                </div>
                               </TableCell>
                             )}
                             <TableCell className="font-medium">
