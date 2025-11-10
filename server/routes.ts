@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
+import { db } from "@db";
+import { z } from "zod";
 import { 
   updateReferralStatusSchema,
   updateReferralWithCommissionSchema,
@@ -1872,6 +1874,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating referral:", error);
       return res.status(500).json({ error: "Erro ao editar indicação" });
+    }
+  });
+
+  // Bulk update referral company (admin only)
+  app.patch("/api/referrals/bulk-company-update", requireAdmin, async (req, res) => {
+    try {
+      // Define validation schema for bulk update
+      const bulkUpdateSchema = z.object({
+        ids: z.array(z.number().int().positive()).min(1, "Selecione pelo menos uma indicação"),
+        companyId: z.number().int().positive("ID da empresa inválido")
+      });
+      
+      // Validate request body
+      const validatedData = bulkUpdateSchema.parse(req.body);
+      const { ids, companyId } = validatedData;
+      
+      console.log(`[BULK UPDATE] Admin ${req.user!.id} atualizando ${ids.length} indicações para empresa ${companyId}`);
+      
+      // Verify company exists
+      const company = await storage.getCompanyById(companyId);
+      if (!company) {
+        return res.status(404).json({ error: "Empresa não encontrada" });
+      }
+      
+      // Use transaction for all-or-nothing update
+      const { inArray } = await import('drizzle-orm');
+      const { referrals } = await import('@shared/schema.ts');
+      
+      const result = await db.transaction(async (tx) => {
+        // Get all referrals to update for audit trail
+        const referralsToUpdate = await tx.query.referrals.findMany({
+          where: inArray(referrals.id, ids)
+        });
+        
+        if (referralsToUpdate.length === 0) {
+          throw new Error("Nenhuma indicação encontrada");
+        }
+        
+        // Update all referrals
+        const updated = await tx
+          .update(referrals)
+          .set({ 
+            companyId,
+            updatedAt: new Date()
+          })
+          .where(inArray(referrals.id, ids))
+          .returning();
+        
+        // Add to status history for each referral
+        for (const ref of referralsToUpdate) {
+          const oldCompany = await storage.getCompanyById(ref.companyId);
+          const statusHistoryEntry = {
+            status: 'system',
+            changedBy: req.user!.id,
+            changedAt: new Date().toISOString(),
+            notes: `Seguradora alterada de "${oldCompany?.name || ref.companyId}" para "${company.name}" (Edição em massa)`
+          };
+          
+          const newHistory = [...(ref.statusHistory || []), statusHistoryEntry];
+          
+          await tx
+            .update(referrals)
+            .set({ statusHistory: newHistory as any })
+            .where(inArray(referrals.id, [ref.id]));
+        }
+        
+        // Log audit trail
+        await storage.logUserAction({
+          userId: req.user!.id,
+          action: "bulk_update_referral_company",
+          entityType: "referral",
+          entityId: undefined,
+          details: `Atualização em massa: ${ids.length} indicações alteradas para empresa "${company.name}" (ID: ${companyId}). IDs: ${ids.join(', ')}`
+        });
+        
+        return { count: updated.length };
+      });
+      
+      console.log(`[BULK UPDATE] ${result.count} indicações atualizadas com sucesso`);
+      
+      return res.json({ 
+        success: true,
+        count: result.count,
+        message: `${result.count} indicação(ões) atualizada(s) com sucesso` 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Dados inválidos", 
+          details: error.errors 
+        });
+      }
+      console.error("Error in bulk update:", error);
+      return res.status(500).json({ error: error instanceof Error ? error.message : "Erro ao atualizar indicações em massa" });
     }
   });
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   Table, 
@@ -34,11 +34,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Checkbox } from "@/components/ui/checkbox";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { BackButton } from "@/components/ui/back-button";
 import { ReferralConversationComponent } from "@/components/ui/referral-conversation";
-import { Eye, FilterIcon, Loader2 } from "lucide-react";
+import { Eye, FilterIcon, Loader2, Edit } from "lucide-react";
 import { Link } from "wouter";
 import { 
   Dialog,
@@ -49,6 +50,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Referral, ReferralStatus, Company } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Helper function to get appropriate badge color based on status
 const getStatusBadge = (status: ReferralStatus) => {
@@ -88,10 +91,14 @@ const formatCurrency = (value: number | string | null | undefined) => {
 
 export default function ReferralsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedReferralIds, setSelectedReferralIds] = useState<number[]>([]);
+  const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
+  const [bulkEditCompanyId, setBulkEditCompanyId] = useState<string>("");
   
   const itemsPerPage = 10;
   
@@ -121,6 +128,77 @@ export default function ReferralsPage() {
     setDialogOpen(true);
   };
   
+  // Handle checkbox selection
+  const handleSelectReferral = (referralId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedReferralIds(prev => [...prev, referralId]);
+    } else {
+      setSelectedReferralIds(prev => prev.filter(id => id !== referralId));
+    }
+  };
+  
+  // Handle select all
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedReferralIds(paginatedReferrals.map(r => r.id));
+    } else {
+      setSelectedReferralIds([]);
+    }
+  };
+  
+  // Bulk edit mutation
+  const bulkEditMutation = useMutation({
+    mutationFn: async (data: { ids: number[], companyId: number }) => {
+      const response = await fetch("/api/referrals/bulk-company-update", {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao atualizar indicações");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (data: { count: number }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/referrals'] });
+      toast({
+        title: "Sucesso!",
+        description: `${data.count} indicação(ões) atualizada(s) com sucesso.`,
+      });
+      setSelectedReferralIds([]);
+      setBulkEditDialogOpen(false);
+      setBulkEditCompanyId("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar indicações em massa.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle bulk edit submit
+  const handleBulkEdit = () => {
+    if (!bulkEditCompanyId || selectedReferralIds.length === 0) {
+      toast({
+        title: "Atenção",
+        description: "Selecione uma empresa e pelo menos uma indicação.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    bulkEditMutation.mutate({
+      ids: selectedReferralIds,
+      companyId: parseInt(bulkEditCompanyId)
+    });
+  };
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -147,30 +225,45 @@ export default function ReferralsPage() {
           
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle>Todas as Indicações</CardTitle>
                   <CardDescription>
                     {isLoading ? 'Carregando...' : `Total: ${filteredReferrals.length} indicação(ões)`}
+                    {selectedReferralIds.length > 0 && ` • ${selectedReferralIds.length} selecionada(s)`}
                   </CardDescription>
                 </div>
                 
-                <div className="mt-4 sm:mt-0 flex items-center space-x-2">
-                  <FilterIcon className="text-gray-400 h-4 w-4" />
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os Status</SelectItem>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="processing">Em análise</SelectItem>
-                      <SelectItem value="converted">Convertido</SelectItem>
-                      <SelectItem value="rejected">Não convertido</SelectItem>
-                      <SelectItem value="validated">Validado</SelectItem>
-                      <SelectItem value="paid">Pago</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  {user?.role === 'admin' && selectedReferralIds.length > 0 && (
+                    <Button 
+                      onClick={() => setBulkEditDialogOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      disabled={!companies || companies.length === 0}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar Seguradora ({selectedReferralIds.length})
+                    </Button>
+                  )}
+                  
+                  <div className="flex items-center space-x-2">
+                    <FilterIcon className="text-gray-400 h-4 w-4" />
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os Status</SelectItem>
+                        <SelectItem value="pending">Pendente</SelectItem>
+                        <SelectItem value="processing">Em análise</SelectItem>
+                        <SelectItem value="converted">Convertido</SelectItem>
+                        <SelectItem value="rejected">Não convertido</SelectItem>
+                        <SelectItem value="validated">Validado</SelectItem>
+                        <SelectItem value="paid">Pago</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -189,9 +282,18 @@ export default function ReferralsPage() {
                         <Card key={referral.id} className="shadow-sm">
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h3 className="font-medium text-base">{referral.fullName}</h3>
-                                <p className="text-sm text-gray-600">{referral.phone}</p>
+                              <div className="flex items-start gap-3">
+                                {user?.role === 'admin' && (
+                                  <Checkbox
+                                    checked={selectedReferralIds.includes(referral.id)}
+                                    onCheckedChange={(checked) => handleSelectReferral(referral.id, checked as boolean)}
+                                    className="mt-1"
+                                  />
+                                )}
+                                <div>
+                                  <h3 className="font-medium text-base">{referral.fullName}</h3>
+                                  <p className="text-sm text-gray-600">{referral.phone}</p>
+                                </div>
                               </div>
                               <div className="flex flex-col items-end gap-2">
                                 {getStatusBadge(referral.status)}
@@ -253,6 +355,14 @@ export default function ReferralsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          {user?.role === 'admin' && (
+                            <TableHead className="w-[50px]">
+                              <Checkbox
+                                checked={paginatedReferrals.length > 0 && paginatedReferrals.every(r => selectedReferralIds.includes(r.id))}
+                                onCheckedChange={handleSelectAll}
+                              />
+                            </TableHead>
+                          )}
                           <TableHead>Nome</TableHead>
                           <TableHead>Veículo</TableHead>
                           {user?.role !== "indicador_nivel_1" && user?.role !== "indicador" && user?.role !== "promotor" && <TableHead>Empresa</TableHead>}
@@ -268,6 +378,14 @@ export default function ReferralsPage() {
                           const company = companies?.find((c) => c.id === referral.companyId);
                           return (
                           <TableRow key={referral.id}>
+                            {user?.role === 'admin' && (
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedReferralIds.includes(referral.id)}
+                                  onCheckedChange={(checked) => handleSelectReferral(referral.id, checked as boolean)}
+                                />
+                              </TableCell>
+                            )}
                             <TableCell className="font-medium">
                               <div>
                                 {referral.fullName}
@@ -450,6 +568,68 @@ export default function ReferralsPage() {
               
               <div className="flex justify-end pt-4 border-t">
                 <Button onClick={() => setDialogOpen(false)}>Fechar</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Bulk Edit Dialog */}
+          <Dialog open={bulkEditDialogOpen} onOpenChange={setBulkEditDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-heading">Editar Seguradora em Massa</DialogTitle>
+                <DialogDescription>
+                  Altere a seguradora de {selectedReferralIds.length} indicação(ões) selecionada(s)
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label htmlFor="company-select" className="text-sm font-medium">
+                    Selecione a nova seguradora:
+                  </label>
+                  <Select value={bulkEditCompanyId} onValueChange={setBulkEditCompanyId}>
+                    <SelectTrigger id="company-select">
+                      <SelectValue placeholder="Escolha uma seguradora" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies?.map((company) => (
+                        <SelectItem key={company.id} value={company.id.toString()}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <p className="text-sm text-gray-600">
+                  Esta ação atualizará a seguradora de todas as indicações selecionadas.
+                </p>
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setBulkEditDialogOpen(false);
+                    setBulkEditCompanyId("");
+                  }}
+                  disabled={bulkEditMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleBulkEdit}
+                  disabled={bulkEditMutation.isPending || !bulkEditCompanyId}
+                >
+                  {bulkEditMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Atualizando...
+                    </>
+                  ) : (
+                    'Atualizar Seguradora'
+                  )}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
