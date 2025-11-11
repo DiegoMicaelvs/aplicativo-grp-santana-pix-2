@@ -230,15 +230,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === REFERRAL ROUTES ===
   
-  // Get current user's referrals
+  // Get current user's referrals with server-side pagination
   app.get("/api/referrals", requireAuth, async (req, res) => {
     try {
-      let userReferrals;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const status = req.query.status as string;
       
-      // Para todos os perfis, mostrar indicações atribuídas a eles (userId)
-      userReferrals = await storage.getReferralsByUserId(req.user!.id);
+      // Get referrals with pagination
+      const result = await storage.getReferralsByUserIdPaginated(
+        req.user!.id,
+        page,
+        limit,
+        status && status !== 'all' ? status : undefined
+      );
       
-      return res.json(userReferrals);
+      return res.json(result);
     } catch (error) {
       console.error("Error fetching referrals:", error);
       return res.status(500).json({ error: "Erro ao buscar indicações" });
@@ -1531,7 +1538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get basic stats (accessible by admin and analyst)
+  // Get basic stats (accessible by admin and analyst) - OPTIMIZED with aggregations
   app.get("/api/admin/stats", requireAuth, async (req, res) => {
     try {
       // Only admin and analyst can access
@@ -1539,23 +1546,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
-      const users = await storage.getAllUsers();
-      const referrals = await storage.getAllReferrals();
-      const withdrawals = await storage.getAllWithdrawalRequests();
+      // Use efficient aggregation queries instead of loading all data
+      const stats = await storage.getAdminStats();
       
-      const totalIndicadores = users.filter(u => u.role === "indicador").length;
-      const totalReferrals = referrals.length;
-      const pendingReferrals = referrals.filter(r => r.status === "pending").length;
-      const validatedReferrals = referrals.filter(r => r.status === "validated").length;
-      const convertedReferrals = referrals.filter(r => r.status === "converted" || r.status === "paid").length;
-      
-      return res.json({
-        totalIndicadores,
-        totalReferrals,
-        pendingReferrals,
-        convertedReferrals,
-        conversionRate: validatedReferrals > 0 ? (convertedReferrals / validatedReferrals * 100).toFixed(1) : "0"
-      });
+      return res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);
       return res.status(500).json({ error: "Erro ao buscar estatísticas" });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { 
@@ -100,54 +100,61 @@ export default function ReferralsPage() {
   const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
   const [bulkEditCompanyId, setBulkEditCompanyId] = useState<string>("");
   
-  console.log('DEBUG - User role:', user?.role, 'User:', user);
-  console.log('DEBUG - Is admin?', user?.role === 'admin');
-  
   const itemsPerPage = 10;
   
-  // Fetch all referrals
-  const { data: referrals, isLoading } = useQuery<Referral[]>({
-    queryKey: ['/api/referrals'],
+  // Fetch referrals with server-side pagination
+  const { data: referralsResponse, isLoading } = useQuery<{
+    data: Referral[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>({
+    queryKey: ['/api/referrals', { page: currentPage, limit: itemsPerPage, status: statusFilter }],
   });
 
-  // Fetch all companies
+  // Fetch all companies once
   const { data: companies } = useQuery<Company[]>({
     queryKey: ['/api/companies'],
   });
   
-  // Filter referrals based on status
-  const filteredReferrals = referrals?.filter(referral => 
-    statusFilter === "all" || referral.status === statusFilter
-  ) || [];
+  // Create companies map for O(1) lookups
+  const companiesMap = useMemo(() => {
+    if (!companies) return new Map<number, Company>();
+    return new Map(companies.map(c => [c.id, c]));
+  }, [companies]);
   
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredReferrals.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedReferrals = filteredReferrals.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedReferrals = referralsResponse?.data || [];
+  const totalPages = referralsResponse?.totalPages || 0;
   
-  // Handle referral details view
-  const handleViewDetails = (referral: Referral) => {
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
+  
+  // Handle referral details view - memoized to avoid re-creating on every render
+  const handleViewDetails = useCallback((referral: Referral) => {
     setSelectedReferral(referral);
     setDialogOpen(true);
-  };
+  }, []);
   
-  // Handle checkbox selection
-  const handleSelectReferral = (referralId: number, checked: boolean) => {
+  // Handle checkbox selection - memoized
+  const handleSelectReferral = useCallback((referralId: number, checked: boolean) => {
     if (checked) {
       setSelectedReferralIds(prev => [...prev, referralId]);
     } else {
       setSelectedReferralIds(prev => prev.filter(id => id !== referralId));
     }
-  };
+  }, []);
   
-  // Handle select all
-  const handleSelectAll = (checked: boolean) => {
+  // Handle select all - memoized with paginatedReferrals dependency
+  const handleSelectAll = useCallback((checked: boolean) => {
     if (checked) {
       setSelectedReferralIds(paginatedReferrals.map(r => r.id));
     } else {
       setSelectedReferralIds([]);
     }
-  };
+  }, [paginatedReferrals]);
   
   // Bulk edit mutation
   const bulkEditMutation = useMutation({
@@ -232,7 +239,7 @@ export default function ReferralsPage() {
                 <div>
                   <CardTitle>Todas as Indicações</CardTitle>
                   <CardDescription>
-                    {isLoading ? 'Carregando...' : `Total: ${filteredReferrals.length} indicação(ões)`}
+                    {isLoading ? 'Carregando...' : `Total: ${referralsResponse?.total || 0} indicação(ões)`}
                     {selectedReferralIds.length > 0 && ` • ${selectedReferralIds.length} selecionada(s)`}
                   </CardDescription>
                 </div>
@@ -259,7 +266,7 @@ export default function ReferralsPage() {
                       <SelectContent>
                         <SelectItem value="all">Todos os Status</SelectItem>
                         <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="processing">Em análise</SelectItem>
+                        <SelectItem value="analyzing">Em análise</SelectItem>
                         <SelectItem value="converted">Convertido</SelectItem>
                         <SelectItem value="rejected">Não convertido</SelectItem>
                         <SelectItem value="validated">Validado</SelectItem>
@@ -275,12 +282,12 @@ export default function ReferralsPage() {
                 <div className="flex justify-center items-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : filteredReferrals.length > 0 ? (
+              ) : paginatedReferrals.length > 0 ? (
                 <>
                   {/* Mobile Card View */}
                   <div className="block md:hidden space-y-4">
                     {paginatedReferrals.map((referral) => {
-                      const company = companies?.find((c) => c.id === referral.companyId);
+                      const company = companiesMap.get(referral.companyId);
                       return (
                         <Card key={referral.id} className="shadow-sm">
                           <CardContent className="p-4">
@@ -381,7 +388,7 @@ export default function ReferralsPage() {
                       </TableHeader>
                       <TableBody>
                         {paginatedReferrals.map((referral) => {
-                          const company = companies?.find((c) => c.id === referral.companyId);
+                          const company = companiesMap.get(referral.companyId);
                           return (
                           <TableRow key={referral.id}>
                             {user?.role === 'admin' && (

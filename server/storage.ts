@@ -82,6 +82,7 @@ export interface IStorage {
   getReferralById(id: number): Promise<any>;
   getAllReferralsForMetisViewer(): Promise<any[]>;
   getReferralsByUserId(userId: number): Promise<any[]>;
+  getReferralsByUserIdPaginated(userId: number, page?: number, limit?: number, status?: string): Promise<{ data: any[], total: number, page: number, limit: number, totalPages: number }>;
   getReferralsByUsers(userIds: number[]): Promise<any[]>;
   getAllReferrals(): Promise<any[]>;
   getReferralsByStatus(status: ReferralStatus): Promise<any[]>;
@@ -147,6 +148,9 @@ export interface IStorage {
   getUserTeamStats(userId: number): Promise<{ totalReferrals: number; convertedReferrals: number; totalCommissions: number }>;
   validateCpfForWithdrawal(userId: number, cpfKey: string): Promise<boolean>;
   generateTicketNumber(): Promise<string>;
+  
+  // Admin stats with efficient aggregations
+  getAdminStats(): Promise<{ totalIndicadores: number; totalReferrals: number; pendingReferrals: number; convertedReferrals: number; conversionRate: string }>;
   
   // Referral Link methods
   createReferralLink(userId: number, data: CreateReferralLink): Promise<ReferralLink>;
@@ -405,6 +409,56 @@ class DatabaseStorage implements IStorage {
       statusCounts,
       companyName: "Metis",
       companyId: 5
+    };
+  }
+
+  // Get admin stats with efficient SQL aggregations - OPTIMIZED
+  async getAdminStats() {
+    // Count indicadores using SQL aggregation
+    const indicadoresResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users)
+      .where(eq(users.role, 'indicador'));
+    const totalIndicadores = indicadoresResult[0]?.count || 0;
+
+    // Count total referrals
+    const totalReferralsResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(referrals);
+    const totalReferrals = totalReferralsResult[0]?.count || 0;
+
+    // Count pending referrals
+    const pendingResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(referrals)
+      .where(eq(referrals.status, 'pending'));
+    const pendingReferrals = pendingResult[0]?.count || 0;
+
+    // Count validated referrals (for conversion rate calculation)
+    const validatedResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(referrals)
+      .where(eq(referrals.status, 'validated'));
+    const validatedReferrals = validatedResult[0]?.count || 0;
+
+    // Count converted/paid referrals
+    const convertedResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(referrals)
+      .where(or(eq(referrals.status, 'converted'), eq(referrals.status, 'paid')));
+    const convertedReferrals = convertedResult[0]?.count || 0;
+
+    // Calculate conversion rate
+    const conversionRate = validatedReferrals > 0 
+      ? (convertedReferrals / validatedReferrals * 100).toFixed(1) 
+      : "0";
+
+    return {
+      totalIndicadores,
+      totalReferrals,
+      pendingReferrals,
+      convertedReferrals,
+      conversionRate
     };
   }
   
@@ -801,6 +855,46 @@ class DatabaseStorage implements IStorage {
       },
       orderBy: desc(referrals.createdAt)
     });
+  }
+
+  async getReferralsByUserIdPaginated(userId: number, page: number = 1, limit: number = 10, status?: string) {
+    // Guard against invalid pagination parameters
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.max(1, Math.min(100, limit)); // Cap at 100 items per page
+    const offset = (safePage - 1) * safeLimit;
+    
+    // Build where conditions
+    let whereCondition = eq(referrals.userId, userId);
+    if (status) {
+      whereCondition = and(whereCondition, eq(referrals.status, status as ReferralStatus)) as any;
+    }
+    
+    // Get total count
+    const totalResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(referrals)
+      .where(whereCondition);
+    const total = totalResult[0]?.count || 0;
+    
+    // Get paginated data
+    const data = await db.query.referrals.findMany({
+      where: whereCondition,
+      with: {
+        company: true,
+        createdByUser: true
+      },
+      orderBy: desc(referrals.createdAt),
+      limit: safeLimit,
+      offset
+    });
+    
+    return {
+      data,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit)
+    };
   }
 
   async getReferralsByCreator(creatorId: number) {
