@@ -1792,7 +1792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const referralId = parseInt(req.params.id);
-      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes, hasInsurance, createdAt } = req.body;
+      const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes, hasInsurance, createdAt, paymentProof } = req.body;
       
       console.log("[PATCH /api/referrals/:id] Dados recebidos:", req.body);
       
@@ -1800,6 +1800,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingReferral = await storage.getReferralById(referralId);
       if (!existingReferral) {
         return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Validate payment proof requirement for converted status
+      // Check both: if setting to converted, or if already converted
+      const isConverting = status === "converted";
+      const isAlreadyConverted = existingReferral.status === "converted";
+      
+      if (isConverting || isAlreadyConverted) {
+        // Check if we have a valid payment proof (existing or new)
+        const hasExistingProof = existingReferral.paymentProof && existingReferral.paymentProof.trim().length > 0;
+        const hasNewProof = paymentProof && typeof paymentProof === 'string' && paymentProof.trim().length > 0;
+        
+        // If converting without existing proof, require new proof
+        if (isConverting && !hasExistingProof && !hasNewProof) {
+          return res.status(400).json({ 
+            error: "Comprovante obrigatório",
+            message: "Para converter uma indicação é obrigatório anexar um comprovante de pagamento."
+          });
+        }
+        
+        // Prevent clearing proof from converted referrals (reject null/empty paymentProof)
+        if (paymentProof !== undefined && !hasNewProof) {
+          return res.status(400).json({ 
+            error: "Comprovante inválido",
+            message: "Não é permitido remover o comprovante de uma indicação convertida."
+          });
+        }
       }
       
       // Prepare update data
@@ -1816,6 +1843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (hasInsurance !== undefined) updateData.hasInsurance = hasInsurance;
       if (commissionIndicator !== undefined) updateData.commissionIndicator = commissionIndicator;
       if (commissionPromoter !== undefined) updateData.commissionPromoter = commissionPromoter;
+      if (paymentProof !== undefined) updateData.paymentProof = paymentProof;
       
       // Only allow admin to change createdAt
       if (createdAt !== undefined && req.user!.role === "admin") {
