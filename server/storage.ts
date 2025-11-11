@@ -1324,6 +1324,7 @@ class DatabaseStorage implements IStorage {
     if (updates.commissionIndicator !== undefined) updateData.commissionIndicator = updates.commissionIndicator;
     if (updates.commissionPromoter !== undefined) updateData.commissionPromoter = updates.commissionPromoter;
     if (updates.createdAt !== undefined) updateData.createdAt = updates.createdAt;
+    if (updates.paymentProof !== undefined) updateData.paymentProof = updates.paymentProof;
     
     // Handle user reassignment - transfer commissions and update promoter relationship
     if (updates.userId !== undefined && updates.userId !== currentReferral.userId) {
@@ -1367,7 +1368,7 @@ class DatabaseStorage implements IStorage {
     // Handle status update separately to ensure commission calculations
     if (updates.status !== undefined && updates.status !== currentReferral.status) {
       // Use updateReferralStatus for status changes to handle commissions
-      return await this.updateReferralStatus(id, updates.status, updates.notes, editorUserId);
+      return await this.updateReferralStatus(id, updates.status, updates.notes, editorUserId, updates.paymentProof);
     }
 
     // Update referral
