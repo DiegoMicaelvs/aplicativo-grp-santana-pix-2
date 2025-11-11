@@ -1209,6 +1209,7 @@ class DatabaseStorage implements IStorage {
         .returning();
       
       console.log(`[updateReferralStatus] Referral updated successfully`);
+      console.log(`[updateReferralStatus] PaymentProof saved:`, updatedReferral.paymentProof ? `Yes (${updatedReferral.paymentProof.length} chars)` : 'No');
       
       // Log audit trail (with error handling)
       if (adminUserId) {
