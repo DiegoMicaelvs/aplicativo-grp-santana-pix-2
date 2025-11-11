@@ -244,7 +244,7 @@ export default function AnalystReferrals() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       // Invalidar todas as queries relacionadas para garantir sincronização entre analistas
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
@@ -252,8 +252,10 @@ export default function AnalystReferrals() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
+      
       // Forçar refetch imediato
-      queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
+      
       toast({ title: "Sucesso", description: "Indicação editada com sucesso!" });
       setIsEditDialogOpen(false);
       setSelectedReferral(null);
@@ -310,7 +312,10 @@ export default function AnalystReferrals() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const result = event.target?.result as string;
+      console.log('[handleFileChange] Comprovante carregado, tamanho:', result.length);
       setPaymentProof(result);
+      // Also update the form value so it's included in the submit
+      editForm.setValue("paymentProof", result);
     };
     reader.readAsDataURL(file);
   };
@@ -376,8 +381,16 @@ export default function AnalystReferrals() {
   const onEditSubmit = (data: EditFormValues) => {
     if (!selectedReferral) return;
 
+    // Use form value or local state (form value takes precedence since we're updating it now)
+    const finalPaymentProof = data.paymentProof || paymentProof || undefined;
+    
+    console.log('[onEditSubmit] Data being sent:', {
+      ...data,
+      paymentProof: finalPaymentProof ? `base64 string (${finalPaymentProof.length} chars)` : 'none'
+    });
+
     // Validate payment proof is required for converted status
-    if (data.status === "converted" && !selectedReferral.paymentProof && !paymentProof) {
+    if (data.status === "converted" && !selectedReferral.paymentProof && !finalPaymentProof) {
       toast({
         title: "Comprovante Obrigatório",
         description: "Para converter uma indicação, é obrigatório anexar o comprovante de pagamento.",
@@ -390,7 +403,7 @@ export default function AnalystReferrals() {
       id: selectedReferral.id, 
       data: {
         ...data,
-        paymentProof: paymentProof || undefined
+        paymentProof: finalPaymentProof
       }
     });
   };
