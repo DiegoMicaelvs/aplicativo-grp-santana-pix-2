@@ -315,6 +315,29 @@ export default function AnalystReferrals() {
     reader.readAsDataURL(file);
   };
 
+  // Function to download base64 image
+  const downloadPaymentProof = (base64Data: string, referralId: number) => {
+    try {
+      const link = document.createElement('a');
+      link.href = base64Data;
+      link.download = `comprovante-pagamento-${referralId}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        title: "Download iniciado",
+        description: "O comprovante está sendo baixado"
+      });
+    } catch (error) {
+      console.error('Error downloading payment proof:', error);
+      toast({
+        title: "Erro ao baixar",
+        description: "Não foi possível baixar o comprovante",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleValidateClick = (referral: Referral) => {
     setSelectedReferral(referral);
     form.reset({
@@ -1123,9 +1146,20 @@ export default function AnalystReferrals() {
                     <img 
                       src={selectedReferral.paymentProof} 
                       alt="Comprovante de pagamento" 
-                      className="max-w-full h-auto max-h-40 rounded border cursor-pointer"
+                      className="max-w-full h-auto max-h-40 rounded border cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => selectedReferral.paymentProof && window.open(selectedReferral.paymentProof, '_blank')}
+                      title="Clique para visualizar em tamanho completo"
                     />
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => downloadPaymentProof(selectedReferral.paymentProof!, selectedReferral.id)}
+                      className="mt-2"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Baixar Comprovante
+                    </Button>
                   </div>
                 )}
                 
@@ -1135,17 +1169,30 @@ export default function AnalystReferrals() {
                     <img 
                       src={paymentProof} 
                       alt="Preview do comprovante" 
-                      className="max-w-full h-auto max-h-40 rounded border"
+                      className="max-w-full h-auto max-h-40 rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => window.open(paymentProof, '_blank')}
+                      title="Clique para visualizar em tamanho completo"
                     />
-                    <Button 
-                      type="button"
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setPaymentProof("")}
-                      className="mt-2 text-red-600 hover:text-red-700"
-                    >
-                      Remover comprovante
-                    </Button>
+                    <div className="flex gap-2 mt-2">
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => selectedReferral && downloadPaymentProof(paymentProof, selectedReferral.id)}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Baixar
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setPaymentProof("")}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Remover
+                      </Button>
+                    </div>
                   </div>
                 )}
                 
