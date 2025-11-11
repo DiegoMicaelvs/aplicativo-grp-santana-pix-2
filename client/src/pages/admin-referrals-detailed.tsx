@@ -1338,7 +1338,7 @@ export default function AdminReferralsDetailedPage() {
                                   const dataToSend = {
                                     ...editFormData,
                                     createdAt: editFormData.createdAt ? convertLocalToUTC(editFormData.createdAt) : editFormData.createdAt,
-                                    paymentProof: selectedReferral.paymentProof // Preserve existing payment proof
+                                    paymentProof: paymentProof || selectedReferral.paymentProof // Use new proof or preserve existing
                                   };
                                   
                                   updateReferralMutation.mutate({
@@ -1846,7 +1846,7 @@ export default function AdminReferralsDetailedPage() {
                                       const dataToSend = {
                                         ...editFormData,
                                         createdAt: editFormData.createdAt ? convertLocalToUTC(editFormData.createdAt) : editFormData.createdAt,
-                                        paymentProof: selectedReferral.paymentProof // Preserve existing payment proof
+                                        paymentProof: paymentProof || selectedReferral.paymentProof // Use new proof or preserve existing
                                       };
                                       
                                       updateReferralMutation.mutate({
