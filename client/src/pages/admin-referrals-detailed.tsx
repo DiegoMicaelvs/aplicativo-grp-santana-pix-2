@@ -1337,7 +1337,8 @@ export default function AdminReferralsDetailedPage() {
                                   // Convert local datetime back to UTC before sending
                                   const dataToSend = {
                                     ...editFormData,
-                                    createdAt: editFormData.createdAt ? convertLocalToUTC(editFormData.createdAt) : editFormData.createdAt
+                                    createdAt: editFormData.createdAt ? convertLocalToUTC(editFormData.createdAt) : editFormData.createdAt,
+                                    paymentProof: selectedReferral.paymentProof // Preserve existing payment proof
                                   };
                                   
                                   updateReferralMutation.mutate({
@@ -1844,7 +1845,8 @@ export default function AdminReferralsDetailedPage() {
                                       // Convert local datetime back to UTC before sending
                                       const dataToSend = {
                                         ...editFormData,
-                                        createdAt: editFormData.createdAt ? convertLocalToUTC(editFormData.createdAt) : editFormData.createdAt
+                                        createdAt: editFormData.createdAt ? convertLocalToUTC(editFormData.createdAt) : editFormData.createdAt,
+                                        paymentProof: selectedReferral.paymentProof // Preserve existing payment proof
                                       };
                                       
                                       updateReferralMutation.mutate({
