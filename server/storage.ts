@@ -954,6 +954,8 @@ class DatabaseStorage implements IStorage {
         plateCorrect: referrals.plateCorrect,
         phoneCorrect: referrals.phoneCorrect,
         validationNotes: referrals.validationNotes,
+        paymentProof: referrals.paymentProof,
+        promoterId: referrals.promoterId,
         // User relation
         user: {
           id: users.id,
