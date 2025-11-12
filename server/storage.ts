@@ -1270,10 +1270,36 @@ class DatabaseStorage implements IStorage {
       // REMOVIDO: Não atualizar totalEarnings quando indicação é paga
       // O totalEarnings deve ser atualizado apenas quando um SAQUE é pago, não quando uma indicação é paga
       
+      // Concatenate notes with timestamp and author to preserve history
+      let updatedNotes = referral.notes || '';
+      if (notes && notes.trim()) {
+        const timestamp = new Date().toLocaleString('pt-BR', { 
+          timeZone: 'America/Sao_Paulo',
+          day: '2-digit',
+          month: '2-digit', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        // Get admin user name if available
+        let adminName = 'Sistema';
+        if (adminUserId) {
+          const adminUser = await this.getUserById(adminUserId);
+          adminName = adminUser?.fullName || adminUser?.username || `Usuário ${adminUserId}`;
+        }
+        
+        // Append new note with timestamp and author
+        const newNoteEntry = `[${timestamp} - ${adminName}] ${notes}`;
+        updatedNotes = updatedNotes 
+          ? `${updatedNotes}\n\n${newNoteEntry}`
+          : newNoteEntry;
+      }
+      
       // Prepare update data
       const updateData: any = {
         status, 
-        notes,
+        notes: updatedNotes,
         commissionIndicator: newCommissionIndicator.toFixed(2),
         commissionPromoter: newCommissionPromoter.toFixed(2),
         statusHistory: [...currentHistory, newHistoryEntry],
