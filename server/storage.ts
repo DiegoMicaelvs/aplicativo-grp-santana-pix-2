@@ -1360,22 +1360,36 @@ class DatabaseStorage implements IStorage {
       throw new Error("Referral not found");
     }
 
+    // Prepare update data
+    const updateData: any = {
+      vehicleBrand: validationData.vehicleBrand,
+      vehicleModel: validationData.vehicleModel,
+      vehicleYear: validationData.vehicleYear,
+      nameCorrect: validationData.nameCorrect,
+      plateCorrect: validationData.plateCorrect,
+      phoneCorrect: validationData.phoneCorrect,
+      validationNotes: validationData.validationNotes,
+      validatedBy: validatorUserId,
+      validatedAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    // If validationNotes is provided, add it to statusHistory
+    if (validationData.validationNotes && validationData.validationNotes.trim()) {
+      const currentHistory = (referral.statusHistory as any[]) || [];
+      const newHistoryEntry = {
+        status: referral.status,
+        changedBy: validatorUserId,
+        changedAt: new Date().toISOString(),
+        notes: validationData.validationNotes.trim()
+      };
+      updateData.statusHistory = [...currentHistory, newHistoryEntry];
+    }
+
     // Update referral with validation data only - DO NOT change status or commissions
     // Status must be changed manually by the user
     const [updatedReferral] = await db.update(referrals)
-      .set({
-        vehicleBrand: validationData.vehicleBrand,
-        vehicleModel: validationData.vehicleModel,
-        vehicleYear: validationData.vehicleYear,
-        nameCorrect: validationData.nameCorrect,
-        plateCorrect: validationData.plateCorrect,
-        phoneCorrect: validationData.phoneCorrect,
-        validationNotes: validationData.validationNotes,
-        validatedBy: validatorUserId,
-        validatedAt: new Date(),
-        // DO NOT SET STATUS OR COMMISSIONS - user must do it manually
-        updatedAt: new Date()
-      })
+      .set(updateData)
       .where(eq(referrals.id, id))
       .returning();
 
