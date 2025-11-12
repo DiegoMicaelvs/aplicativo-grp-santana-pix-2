@@ -201,16 +201,25 @@ export default function AnalystReferrals() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      // Invalidar todas as queries relacionadas para garantir sincronização entre analistas
+    onSuccess: (updatedReferral: Referral) => {
+      // Surgical cache update: update only the affected referral in the base list
+      queryClient.setQueryData<Referral[]>(["/api/analyst/referrals"], (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map((ref) => 
+          ref.id === updatedReferral.id ? updatedReferral : ref
+        );
+      });
+      
+      // Invalidate all analyst referral queries to update filtered views and variants
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+      
+      // Invalidate related queries for cross-role synchronization
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
-      // Forçar refetch imediato
-      queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
+      
       toast({ title: "Sucesso", description: "Indicação validada com sucesso!" });
       setIsValidateDialogOpen(false);
       setSelectedReferral(null);
