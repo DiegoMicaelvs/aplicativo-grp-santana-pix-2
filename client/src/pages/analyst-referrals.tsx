@@ -41,11 +41,6 @@ import * as XLSX from 'xlsx';
 type ValidateFormValues = z.infer<typeof validateReferralSchema>;
 
 const editSchema = z.object({
-  fullName: z.string().min(1, "Nome é obrigatório"),
-  phone: z.string().min(1, "Telefone é obrigatório"),
-  licensePlate: z.string().min(1, "Placa é obrigatória"),
-  hasInsurance: z.boolean(),
-  companyId: z.number().positive("Empresa é obrigatória"),
   notes: z.string().optional(),
   status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted", "contact_list"]),
   paymentProof: z.string().optional(),
@@ -187,10 +182,6 @@ export default function AnalystReferrals() {
   const editForm = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
     defaultValues: {
-      fullName: "",
-      phone: "",
-      licensePlate: "",
-      hasInsurance: false,
       notes: "",
       status: "pending",
     },
@@ -233,28 +224,34 @@ export default function AnalystReferrals() {
   // Edit referral mutation
   const editMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: EditFormValues }) => {
-      const response = await fetch(`/api/referrals/${id}`, {
+      // Use status endpoint to preserve note history and update statusHistory
+      const response = await fetch(`/api/referrals/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          status: data.status,
+          notes: data.notes,
+          paymentProof: data.paymentProof
+        }),
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Erro ao editar indicação");
+        throw new Error(error.message || error.error || "Erro ao editar indicação");
       }
       return response.json();
     },
-    onSuccess: async () => {
-      // Invalidar todas as queries relacionadas para garantir sincronização entre analistas
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+    onSuccess: async (updatedReferral) => {
+      // Update only the specific referral in the cache (surgical update)
+      queryClient.setQueryData(["/api/analyst/referrals"], (old: any[] = []) =>
+        old.map(ref => ref.id === updatedReferral.id ? updatedReferral : ref)
+      );
+      
+      // Invalidar queries relacionadas para sincronização cross-role
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
-      
-      // Forçar refetch imediato
-      await queryClient.refetchQueries({ queryKey: ["/api/analyst/referrals"] });
       
       toast({ title: "Sucesso", description: "Indicação editada com sucesso!" });
       setIsEditDialogOpen(false);
@@ -361,12 +358,7 @@ export default function AnalystReferrals() {
     setSelectedReferral(referral);
     setPaymentProof(""); // Reset payment proof when opening edit dialog
     editForm.reset({
-      fullName: referral.fullName,
-      phone: referral.phone,
-      licensePlate: referral.licensePlate,
-      hasInsurance: referral.hasInsurance || false,
-      companyId: referral.companyId,
-      notes: referral.notes || "",
+      notes: "", // Start with empty notes field to encourage new observations
       status: referral.status,
     });
     setIsEditDialogOpen(true);
@@ -991,85 +983,13 @@ export default function AnalystReferrals() {
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Editar Indicação</DialogTitle>
+            <DialogTitle>Alterar Status e Observações</DialogTitle>
+            <p className="text-sm text-gray-500 mt-2">
+              Cliente: <strong>{selectedReferral?.fullName}</strong> | Placa: <strong>{selectedReferral?.licensePlate}</strong>
+            </p>
           </DialogHeader>
           <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-fullName">Nome Completo</Label>
-                <Input
-                  id="edit-fullName"
-                  {...editForm.register("fullName")}
-                  placeholder="Nome completo"
-                />
-                {editForm.formState.errors.fullName && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {editForm.formState.errors.fullName.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="edit-phone">Telefone</Label>
-                <Input
-                  id="edit-phone"
-                  {...editForm.register("phone")}
-                  placeholder="(00) 00000-0000"
-                />
-                {editForm.formState.errors.phone && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {editForm.formState.errors.phone.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="edit-licensePlate">Placa do Veículo</Label>
-                <Input
-                  id="edit-licensePlate"
-                  {...editForm.register("licensePlate")}
-                  placeholder="ABC-1234"
-                />
-                {editForm.formState.errors.licensePlate && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {editForm.formState.errors.licensePlate.message}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="edit-hasInsurance"
-                  {...editForm.register("hasInsurance")}
-                  className="rounded"
-                />
-                <Label htmlFor="edit-hasInsurance">Tem Seguro?</Label>
-              </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <Label htmlFor="edit-companyId">Empresa</Label>
-              <Select
-                value={editForm.watch("companyId")?.toString()}
-                onValueChange={(value) => editForm.setValue("companyId", parseInt(value))}
-              >
-                <SelectTrigger id="edit-companyId">
-                  <SelectValue placeholder="Selecione a empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id.toString()}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {editForm.formState.errors.companyId && (
-                <p className="text-sm text-red-600 mt-1">
-                  {editForm.formState.errors.companyId.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-4 border-t pt-4">
+            <div className="space-y-4">
               <div>
                 <Label htmlFor="edit-status">Status da Indicação</Label>
                 <Select

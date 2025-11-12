@@ -152,6 +152,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
   };
 
+  // Middleware to check if user can edit referral status (admin or analyst with permission)
+  const requireStatusEditPermission = async (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Não autorizado" });
+    }
+    
+    // Admin always has permission
+    if (req.user.role === "admin") {
+      return next();
+    }
+    
+    // Check if analyst has edit_referral_status permission
+    if (req.user.role === "analista") {
+      try {
+        const user = await storage.getUserById(req.user.id);
+        const userPermissions = user?.permissions as string[] || [];
+        if (userPermissions.includes("edit_referral_status")) {
+          return next();
+        }
+      } catch (error) {
+        console.error("[requireStatusEditPermission] Error checking permissions:", error);
+        return res.status(500).json({ error: "Erro ao verificar permissões" });
+      }
+    }
+    
+    return res.status(403).json({ error: "Você não tem permissão para editar status de indicações" });
+  };
+
   // === USER ROUTES ===
   
   // Get current user info
@@ -1566,7 +1594,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update referral status - OPTIMIZED (no duplicate queries)
-  app.patch("/api/referrals/:id/status", requireAdmin, async (req, res) => {
+  // Accessible by admin or analyst with edit_referral_status permission
+  app.patch("/api/referrals/:id/status", requireStatusEditPermission, async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = updateReferralStatusSchema.parse(req.body);
