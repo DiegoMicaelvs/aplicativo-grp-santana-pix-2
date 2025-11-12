@@ -1267,11 +1267,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all referrals
+  // Get all referrals (with optional pagination)
   app.get("/api/admin/referrals", requireAdmin, async (req, res) => {
     try {
-      const allReferrals = await storage.getAllReferrals();
-      return res.json(allReferrals);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const paginated = req.query.paginated === 'true';
+      
+      if (paginated) {
+        const result = await storage.getAllReferralsPaginated(page, limit);
+        return res.json(result);
+      } else {
+        const allReferrals = await storage.getAllReferrals();
+        return res.json(allReferrals);
+      }
     } catch (error) {
       console.error("Error fetching all referrals:", error);
       return res.status(500).json({ error: "Erro ao buscar indicações" });

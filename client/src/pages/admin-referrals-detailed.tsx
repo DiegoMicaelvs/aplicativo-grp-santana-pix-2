@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown, XCircle } from "lucide-react";
+import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown, XCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -336,8 +336,9 @@ export default function AdminReferralsDetailedPage() {
 
   const { data: referrals = [], isLoading: referralsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/referrals"],
-    refetchInterval: 30000, // Atualiza automaticamente a cada 30 segundos para reduzir carga
-    refetchOnWindowFocus: true, // Atualiza quando o usuário volta à aba
+    refetchInterval: false, // Desabilitado para melhorar performance
+    refetchOnWindowFocus: false, // Desabilitado para reduzir carga
+    staleTime: 5 * 60 * 1000, // Cache válido por 5 minutos
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
@@ -389,17 +390,12 @@ export default function AdminReferralsDetailedPage() {
     },
     onSuccess: async (data) => {
       console.log(`[updateStatusMutation] onSuccess - dados recebidos:`, data);
-      // Invalidate and refetch all related queries immediately
+      // Invalidate critical queries for cross-role sync
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/user"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/team/stats"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] }),
       ]);
       
       toast({ title: "Status atualizado com sucesso!" });
@@ -1025,15 +1021,27 @@ export default function AdminReferralsDetailedPage() {
                 {filteredReferrals.length} de {referrals.length} indicações encontradas
               </CardDescription>
             </div>
-            <Button 
-              onClick={handleExportExcel}
-              className="flex items-center justify-center gap-2 text-sm md:text-base w-full sm:w-auto"
-              variant="outline"
-              size="sm"
-            >
-              <Download className="h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Exportar</span> Excel
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] })}
+                className="flex items-center justify-center gap-2 text-sm md:text-base"
+                variant="outline"
+                size="sm"
+                disabled={referralsLoading}
+              >
+                <RefreshCw className={`h-3 w-3 md:h-4 md:w-4 ${referralsLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Atualizar</span>
+              </Button>
+              <Button 
+                onClick={handleExportExcel}
+                className="flex items-center justify-center gap-2 text-sm md:text-base"
+                variant="outline"
+                size="sm"
+              >
+                <Download className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Exportar</span> Excel
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0 md:p-6">

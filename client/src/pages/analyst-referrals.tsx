@@ -92,22 +92,22 @@ export default function AnalystReferrals() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [paymentProof, setPaymentProof] = useState<string>("");
 
-  // Fetch referrals with automatic refresh for real-time updates
+  // Fetch referrals with reduced refresh for better performance
   const { data: referrals = [], isLoading, refetch: refetchReferrals, isFetching } = useQuery<Referral[]>({
     queryKey: ["/api/analyst/referrals"],
-    refetchInterval: 15000, // Atualizar a cada 15 segundos para mudanças mais rápidas
-    refetchIntervalInBackground: true, // Atualizar mesmo quando a aba não está ativa
-    staleTime: 5000, // Dados são considerados obsoletos após 5 segundos
-    refetchOnWindowFocus: true, // Refetch quando a janela ganha foco
-    refetchOnMount: true, // Sempre refetch ao montar
+    refetchInterval: false, // Desabilitado para melhorar performance
+    refetchIntervalInBackground: false,
+    staleTime: 5 * 60 * 1000, // Cache válido por 5 minutos
+    refetchOnWindowFocus: false, // Desabilitado para reduzir carga
+    refetchOnMount: true,
   });
 
   // Fetch users for display - use analyst endpoint for proper permissions
   const { data: users = [], refetch: refetchUsers } = useQuery<User[]>({
     queryKey: ["/api/analyst/users"],
-    refetchInterval: 30000, // Atualizar usuários a cada 30 segundos
-    staleTime: 15000, // Dados de usuários podem mudar com reatribuições
-    refetchOnWindowFocus: true, // Refetch quando a janela ganha foco
+    refetchInterval: false, // Desabilitado para melhorar performance
+    staleTime: 5 * 60 * 1000, // Cache válido por 5 minutos
+    refetchOnWindowFocus: false,
   });
 
   // Coletar IDs únicos de usuários do histórico de status para buscar informações específicas
