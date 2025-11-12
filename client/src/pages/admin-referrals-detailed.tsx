@@ -1050,7 +1050,13 @@ export default function AdminReferralsDetailedPage() {
             </div>
             <div className="flex gap-2">
               <Button 
-                onClick={() => refetchReferrals()}
+                onClick={async () => {
+                  await refetchReferrals();
+                  toast({ 
+                    title: "✅ Dados atualizados!",
+                    description: "A lista de indicações foi atualizada com sucesso."
+                  });
+                }}
                 className="flex items-center justify-center gap-2 text-sm md:text-base"
                 variant="outline"
                 size="sm"
