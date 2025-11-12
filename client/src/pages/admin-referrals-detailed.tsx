@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -306,6 +306,7 @@ function convertLocalToUTC(localDateTimeString: string): string {
 }
 
 export default function AdminReferralsDetailedPage() {
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all_statuses");
   const [userFilter, setUserFilter] = useState<string>("all_users");
@@ -317,6 +318,14 @@ export default function AdminReferralsDetailedPage() {
   const [newStatus, setNewStatus] = useState<ReferralStatus>("pending");
   const [statusNotes, setStatusNotes] = useState("");
   const [paymentProof, setPaymentProof] = useState<string>("");
+  
+  // Debounce search input to avoid filtering on every keystroke
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     fullName: "",
@@ -498,62 +507,51 @@ export default function AdminReferralsDetailedPage() {
     },
   });
 
-  // Filter referrals - memoized to avoid refiltering on every render
+  // Create user lookup map for O(1) access - memoized
+  const userLookupMap = useMemo(() => {
+    const map = new Map();
+    users.forEach((user: any) => {
+      map.set(user.id, user);
+    });
+    return map;
+  }, [users]);
+
+  // Filter referrals - optimized to avoid expensive operations
   const filteredReferrals = useMemo(() => {
+    // Early return if no filters and no search
+    if (searchTerm === "" && 
+        statusFilter === "all_statuses" && 
+        userFilter === "all_users" && 
+        companyFilter === "all_companies" && 
+        monthFilter === "all_months" && 
+        localFilter === "all_locals") {
+      return referrals;
+    }
+    
+    const searchLower = searchTerm.toLowerCase();
+    const hasDateSearch = searchTerm.includes('/');
+    
     return referrals.filter((referral: any) => {
-      const user = users.find((u: any) => u.id === referral.userId);
+      // Quick filters first (cheapest operations)
+      if (statusFilter !== "all_statuses" && referral.status !== statusFilter) return false;
+      if (userFilter !== "all_users" && referral.userId.toString() !== userFilter) return false;
+      if (companyFilter !== "all_companies" && referral.companyId?.toString() !== companyFilter) return false;
       
-      // Check if search term matches date - use appropriate date based on status filter
-      let matchesDate = false;
-      if (searchTerm.includes('/')) {
-        try {
-          // Determine which date to use based on status filter (same logic as month filter)
-          let dateToUse = referral.createdAt;
-          
-          // For validated status, use validatedAt if available
-          if (statusFilter === "validated" && referral.validatedAt) {
-            dateToUse = referral.validatedAt;
-          }
-          // For converted/paid status, use updatedAt (when status was changed)
-          else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
-            dateToUse = referral.updatedAt;
-          }
-          
-          const referralDate = new Date(dateToUse);
-          const formattedDate = format(referralDate, "dd/MM/yyyy", { locale: ptBR });
-          const shortDate = format(referralDate, "dd/MM", { locale: ptBR });
-          const mediumDate = format(referralDate, "dd/MM/yy", { locale: ptBR });
-          
-          // Match against various date formats
-          matchesDate = formattedDate.includes(searchTerm) || 
-                       shortDate.includes(searchTerm) || 
-                       mediumDate.includes(searchTerm);
-        } catch (error) {
-          // If date parsing fails, just skip date matching
-          matchesDate = false;
+      // Local filter
+      if (localFilter !== "all_locals") {
+        if (localFilter === "no_state") {
+          if (referral.state) return false;
+        } else if (referral.state !== localFilter) {
+          return false;
         }
       }
       
-      const matchesSearch = referral.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           referral.phone?.includes(searchTerm) ||
-                           referral.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           matchesDate;
-      const matchesStatus = statusFilter === "all_statuses" || referral.status === statusFilter;
-      const matchesUser = userFilter === "all_users" || referral.userId.toString() === userFilter;
-      const matchesCompany = companyFilter === "all_companies" || referral.companyId?.toString() === companyFilter;
-      
-      // Month filter - use appropriate date based on status filter
-      let matchesMonth = true;
+      // Month filter (only if needed)
       if (monthFilter !== "all_months") {
         let dateToUse = referral.createdAt;
-        
-        // For validated status, use validatedAt if available
         if (statusFilter === "validated" && referral.validatedAt) {
           dateToUse = referral.validatedAt;
-        }
-        // For converted/paid status, use updatedAt (when status was changed)
-        else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
+        } else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
           dateToUse = referral.updatedAt;
         }
         
@@ -561,22 +559,51 @@ export default function AdminReferralsDetailedPage() {
         const referralMonth = referralDate.getMonth();
         const referralYear = referralDate.getFullYear();
         const [filterYear, filterMonth] = monthFilter.split("-").map(Number);
-        matchesMonth = referralYear === filterYear && referralMonth === filterMonth - 1; // JavaScript months are 0-indexed
+        if (referralYear !== filterYear || referralMonth !== filterMonth - 1) return false;
       }
       
-      // Local filter (by state only)
-      let matchesLocal = true;
-      if (localFilter !== "all_locals") {
-        if (localFilter === "no_state") {
-          matchesLocal = !referral.state;
-        } else {
-          matchesLocal = referral.state === localFilter;
+      // Search term (most expensive - do last and only if needed)
+      if (searchTerm !== "") {
+        const user = userLookupMap.get(referral.userId);
+        
+        // Check simple fields first (cheapest)
+        if (referral.fullName?.toLowerCase().includes(searchLower) ||
+            referral.phone?.includes(searchTerm) ||
+            referral.licensePlate?.toLowerCase().includes(searchLower) ||
+            user?.fullName?.toLowerCase().includes(searchLower)) {
+          return true;
         }
+        
+        // Only check date if search contains '/' and nothing else matched
+        if (hasDateSearch) {
+          try {
+            let dateToUse = referral.createdAt;
+            if (statusFilter === "validated" && referral.validatedAt) {
+              dateToUse = referral.validatedAt;
+            } else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
+              dateToUse = referral.updatedAt;
+            }
+            
+            const referralDate = new Date(dateToUse);
+            const formattedDate = format(referralDate, "dd/MM/yyyy", { locale: ptBR });
+            if (formattedDate.includes(searchTerm)) return true;
+            
+            const shortDate = format(referralDate, "dd/MM", { locale: ptBR });
+            if (shortDate.includes(searchTerm)) return true;
+            
+            const mediumDate = format(referralDate, "dd/MM/yy", { locale: ptBR });
+            if (mediumDate.includes(searchTerm)) return true;
+          } catch (error) {
+            // Date parsing failed, skip
+          }
+        }
+        
+        return false;
       }
       
-      return matchesSearch && matchesStatus && matchesUser && matchesCompany && matchesMonth && matchesLocal;
+      return true;
     });
-  }, [referrals, users, searchTerm, statusFilter, userFilter, companyFilter, monthFilter, localFilter]);
+  }, [referrals, userLookupMap, searchTerm, statusFilter, userFilter, companyFilter, monthFilter, localFilter]);
 
   // Memoized filter options to prevent recalculation on every render
   const activeIndicators = useMemo(() => {
@@ -923,8 +950,8 @@ export default function AdminReferralsDetailedPage() {
               <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
               <Input
                 placeholder="Buscar por cliente, telefone, placa, indicador ou data"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-10 text-sm md:text-base"
               />
             </div>
