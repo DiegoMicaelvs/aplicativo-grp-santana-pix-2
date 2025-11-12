@@ -397,11 +397,16 @@ export default function AdminReferralsDetailedPage() {
       console.log(`[updateStatusMutation] Resposta bem-sucedida:`, result);
       return result;
     },
-    onSuccess: async (data) => {
-      console.log(`[updateStatusMutation] onSuccess - dados recebidos:`, data);
-      // Invalidate critical queries for cross-role sync
+    onSuccess: async (updatedReferral) => {
+      console.log(`[updateStatusMutation] onSuccess - dados recebidos:`, updatedReferral);
+      
+      // Update only the specific referral in the cache (surgical update)
+      queryClient.setQueryData(["/api/admin/referrals"], (old: any[] = []) =>
+        old.map(ref => ref.id === updatedReferral.id ? updatedReferral : ref)
+      );
+      
+      // Invalidate critical queries for cross-role sync (lazy refetch)
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] }),
