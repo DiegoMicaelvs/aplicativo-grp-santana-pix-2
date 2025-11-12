@@ -625,7 +625,7 @@ export default function NewReferralPage() {
                                     <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
                                   ) : companies && companies.length > 0 ? (
                                     <>
-                                      {companies.map((company) => (
+                                      {companies.filter((company) => company.isActive).map((company) => (
                                         <SelectItem key={company.id} value={company.id.toString()}>
                                           {company.name}
                                         </SelectItem>

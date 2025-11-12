@@ -1002,7 +1002,7 @@ export default function AdminReferralsDetailedPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all_companies">Todas as Seguradoras</SelectItem>
-                  {companies.map(company => (
+                  {companies.filter(company => company.isActive).map(company => (
                     <SelectItem key={company.id} value={company.id.toString()}>
                       {company.name}
                     </SelectItem>
@@ -1234,9 +1234,9 @@ export default function AdminReferralsDetailedPage() {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {companies.map((company) => (
+                                      {companies.filter((company) => company.isActive || company.id === editFormData.companyId).map((company) => (
                                         <SelectItem key={company.id} value={company.id.toString()}>
-                                          {company.name}
+                                          {company.name} {!company.isActive && "(Inativa)"}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
@@ -1742,9 +1742,9 @@ export default function AdminReferralsDetailedPage() {
                                           <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                          {companies.map((company) => (
+                                          {companies.filter((company) => company.isActive || company.id === editFormData.companyId).map((company) => (
                                             <SelectItem key={company.id} value={company.id.toString()}>
-                                              {company.name}
+                                              {company.name} {!company.isActive && "(Inativa)"}
                                             </SelectItem>
                                           ))}
                                         </SelectContent>

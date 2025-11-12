@@ -608,7 +608,7 @@ export default function ReferralsPage() {
                       <SelectValue placeholder="Escolha uma seguradora" />
                     </SelectTrigger>
                     <SelectContent>
-                      {companies?.map((company) => (
+                      {companies?.filter((company) => company.isActive).map((company) => (
                         <SelectItem key={company.id} value={company.id.toString()}>
                           {company.name}
                         </SelectItem>

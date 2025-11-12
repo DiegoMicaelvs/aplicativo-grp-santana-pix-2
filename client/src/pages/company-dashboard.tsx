@@ -497,9 +497,9 @@ export default function CompanyDashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all_companies">Todas as Empresas</SelectItem>
-                  {companies?.map((company: Company) => (
+                  {companies?.filter((company: Company) => company.isActive).map((company: Company) => (
                     <SelectItem key={company.id} value={company.id.toString()}>
-                      {company.name} {!company.isActive && "(Inativa)"}
+                      {company.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
