@@ -343,7 +343,7 @@ export default function AdminReferralsDetailedPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const { data: referrals = [], isLoading: referralsLoading } = useQuery<any[]>({
+  const { data: referrals = [], isLoading: referralsLoading, refetch: refetchReferrals } = useQuery<any[]>({
     queryKey: ["/api/admin/referrals"],
     refetchInterval: false, // Desabilitado para melhorar performance
     refetchOnWindowFocus: false, // Desabilitado para reduzir carga
@@ -1050,7 +1050,7 @@ export default function AdminReferralsDetailedPage() {
             </div>
             <div className="flex gap-2">
               <Button 
-                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] })}
+                onClick={() => refetchReferrals()}
                 className="flex items-center justify-center gap-2 text-sm md:text-base"
                 variant="outline"
                 size="sm"
