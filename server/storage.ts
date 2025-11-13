@@ -1450,6 +1450,8 @@ class DatabaseStorage implements IStorage {
     if (updates.commissionPromoter !== undefined) updateData.commissionPromoter = updates.commissionPromoter;
     if (updates.createdAt !== undefined) updateData.createdAt = updates.createdAt;
     if (updates.paymentProof !== undefined) updateData.paymentProof = updates.paymentProof;
+    if (updates.city !== undefined) updateData.city = updates.city;
+    if (updates.state !== undefined) updateData.state = updates.state;
     
     // Handle user reassignment - transfer commissions and update promoter relationship
     if (updates.userId !== undefined && updates.userId !== currentReferral.userId) {
@@ -1521,7 +1523,9 @@ class DatabaseStorage implements IStorage {
           vehicleYear: currentReferral.vehicleYear,
           notes: currentReferral.notes,
           commissionIndicator: currentReferral.commissionIndicator,
-          commissionPromoter: currentReferral.commissionPromoter
+          commissionPromoter: currentReferral.commissionPromoter,
+          city: currentReferral.city,
+          state: currentReferral.state
         },
         newValues: updateData,
         details: `Indicação editada: ${updatedReferral.fullName} - ${updatedReferral.licensePlate}`

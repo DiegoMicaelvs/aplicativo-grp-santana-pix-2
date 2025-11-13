@@ -335,7 +335,9 @@ export default function AdminReferralsDetailedPage() {
     userId: 0,
     commissionIndicator: "0",
     commissionPromoter: "0",
-    createdAt: ""
+    createdAt: "",
+    city: "",
+    state: ""
   });
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userDropdownOpenMobile, setUserDropdownOpenMobile] = useState(false);
@@ -1170,7 +1172,9 @@ export default function AdminReferralsDetailedPage() {
                           userId: referral.userId,
                           commissionIndicator: referral.commissionIndicator || "0",
                           commissionPromoter: referral.commissionPromoter || "0",
-                          createdAt: referral.createdAt ? convertToLocalDateTimeString(referral.createdAt) : ""
+                          createdAt: referral.createdAt ? convertToLocalDateTimeString(referral.createdAt) : "",
+                          city: referral.city || "",
+                          state: referral.state || ""
                         });
                       }
                     }}>
@@ -1241,6 +1245,24 @@ export default function AdminReferralsDetailedPage() {
                                       ))}
                                     </SelectContent>
                                   </Select>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Cidade</label>
+                                  <Input
+                                    value={editFormData.city}
+                                    onChange={(e) => setEditFormData({...editFormData, city: e.target.value})}
+                                    placeholder="Ex: São Paulo"
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Estado</label>
+                                  <Input
+                                    value={editFormData.state}
+                                    onChange={(e) => setEditFormData({...editFormData, state: e.target.value})}
+                                    placeholder="Ex: SP"
+                                  />
                                 </div>
                               </div>
                               
@@ -1678,7 +1700,9 @@ export default function AdminReferralsDetailedPage() {
                               userId: referral.userId,
                               commissionIndicator: referral.commissionIndicator || "0",
                               commissionPromoter: referral.commissionPromoter || "0",
-                              createdAt: referral.createdAt ? convertToLocalDateTimeString(referral.createdAt) : ""
+                              createdAt: referral.createdAt ? convertToLocalDateTimeString(referral.createdAt) : "",
+                              city: referral.city || "",
+                              state: referral.state || ""
                             });
                           }
                         }}>
@@ -1749,6 +1773,24 @@ export default function AdminReferralsDetailedPage() {
                                           ))}
                                         </SelectContent>
                                       </Select>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium">Cidade</label>
+                                      <Input
+                                        value={editFormData.city}
+                                        onChange={(e) => setEditFormData({...editFormData, city: e.target.value})}
+                                        placeholder="Ex: São Paulo"
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium">Estado</label>
+                                      <Input
+                                        value={editFormData.state}
+                                        onChange={(e) => setEditFormData({...editFormData, state: e.target.value})}
+                                        placeholder="Ex: SP"
+                                      />
                                     </div>
 
                                     <div className="space-y-2">
