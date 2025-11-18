@@ -540,22 +540,38 @@ export default function AdminIndicatorsPage() {
               .filter((r: any) => r.status === 'validated' || r.status === 'converted')
               .reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
             
-            // Helper function to get validation date from statusHistory
+            // Helper function to get validation date from statusHistory (gets LAST occurrence)
             const getValidationDate = (referral: any): Date | null => {
               if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) {
                 return null;
               }
-              const validatedEntry = referral.statusHistory.find((entry: any) => entry.status === 'validated');
-              return validatedEntry ? new Date(validatedEntry.changedAt) : null;
+              // Find ALL validated entries and get the most recent one
+              const validatedEntries = referral.statusHistory.filter((entry: any) => entry.status === 'validated');
+              if (validatedEntries.length === 0) return null;
+              
+              // Sort by date and get the last one
+              const lastValidated = validatedEntries.sort((a: any, b: any) => 
+                new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+              )[0];
+              
+              return new Date(lastValidated.changedAt);
             };
 
-            // Helper function to get conversion date from statusHistory
+            // Helper function to get conversion date from statusHistory (gets LAST occurrence)
             const getConversionDate = (referral: any): Date | null => {
               if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) {
                 return null;
               }
-              const convertedEntry = referral.statusHistory.find((entry: any) => entry.status === 'converted');
-              return convertedEntry ? new Date(convertedEntry.changedAt) : null;
+              // Find ALL converted entries and get the most recent one
+              const convertedEntries = referral.statusHistory.filter((entry: any) => entry.status === 'converted');
+              if (convertedEntries.length === 0) return null;
+              
+              // Sort by date and get the last one
+              const lastConverted = convertedEntries.sort((a: any, b: any) => 
+                new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+              )[0];
+              
+              return new Date(lastConverted.changedAt);
             };
 
             // Filter referrals by date range if selected - using validation date
@@ -597,18 +613,36 @@ export default function AdminIndicatorsPage() {
               convertedInPeriod = allUserReferrals.filter((r: any) => r.status === 'converted');
             }
 
+            // Calculate total earnings without duplicates
+            const calculateEarnings = (validated: any[], converted: any[]) => {
+              const processedIds = new Set<number>();
+              let total = 0;
+              
+              // Process converted first (higher commission)
+              converted.forEach((r: any) => {
+                if (!processedIds.has(r.id)) {
+                  total += parseFloat(r.commissionIndicator) || 0;
+                  processedIds.add(r.id);
+                }
+              });
+              
+              // Process validated that weren't converted
+              validated.forEach((r: any) => {
+                if (!processedIds.has(r.id)) {
+                  total += parseFloat(r.commissionIndicator) || 0;
+                  processedIds.add(r.id);
+                }
+              });
+              
+              return total;
+            };
+
             const userStats = {
               totalReferrals: userReferrals.length,
               validatedReferrals: validatedInPeriod.length,
               convertedReferrals: convertedInPeriod.length,
               pendingReferrals: userReferrals.filter((r: any) => r.status === 'pending').length,
-              totalEarnings: 
-                validatedInPeriod.reduce((sum: number, r: any) => 
-                  sum + (parseFloat(r.commissionIndicator) || 0), 0
-                ) +
-                convertedInPeriod.reduce((sum: number, r: any) => 
-                  sum + (parseFloat(r.commissionIndicator) || 0), 0
-                )
+              totalEarnings: calculateEarnings(validatedInPeriod, convertedInPeriod)
             };
 
             // Monthly comparison - based on validation date
@@ -670,30 +704,43 @@ export default function AdminIndicatorsPage() {
               });
             });
 
+            // Calculate earnings without duplicates (a referral validated AND converted in same month should only be counted once)
+            const calculateMonthEarnings = (validated: any[], converted: any[]) => {
+              // Use Set to avoid counting same referral twice
+              const processedIds = new Set<number>();
+              let total = 0;
+              
+              // Add all converted referrals first (they have higher commission)
+              converted.forEach((r: any) => {
+                if (!processedIds.has(r.id)) {
+                  total += parseFloat(r.commissionIndicator) || 0;
+                  processedIds.add(r.id);
+                }
+              });
+              
+              // Add validated referrals that weren't already counted as converted
+              validated.forEach((r: any) => {
+                if (!processedIds.has(r.id)) {
+                  total += parseFloat(r.commissionIndicator) || 0;
+                  processedIds.add(r.id);
+                }
+              });
+              
+              return total;
+            };
+
             const currentMonthStats = {
               total: currentMonthReferrals.length,
               validated: currentMonthValidated.length,
               converted: currentMonthConverted.length,
-              earnings: 
-                currentMonthValidated.reduce((sum: number, r: any) => 
-                  sum + (parseFloat(r.commissionIndicator) || 0), 0
-                ) +
-                currentMonthConverted.reduce((sum: number, r: any) => 
-                  sum + (parseFloat(r.commissionIndicator) || 0), 0
-                )
+              earnings: calculateMonthEarnings(currentMonthValidated, currentMonthConverted)
             };
 
             const previousMonthStats = {
               total: previousMonthReferrals.length,
               validated: previousMonthValidated.length,
               converted: previousMonthConverted.length,
-              earnings: 
-                previousMonthValidated.reduce((sum: number, r: any) => 
-                  sum + (parseFloat(r.commissionIndicator) || 0), 0
-                ) +
-                previousMonthConverted.reduce((sum: number, r: any) => 
-                  sum + (parseFloat(r.commissionIndicator) || 0), 0
-                )
+              earnings: calculateMonthEarnings(previousMonthValidated, previousMonthConverted)
             };
 
             const calculatePercentage = (current: number, previous: number) => {
