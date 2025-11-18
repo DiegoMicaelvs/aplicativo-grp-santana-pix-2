@@ -190,25 +190,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
       
-      // Calculate total earnings based on paid withdrawals
-      const withdrawalRequests = await storage.getWithdrawalRequestsByUserId(user.id);
-      let realTotalEarnings = 0;
-      
-      // Sum only paid withdrawals
-      for (const withdrawal of withdrawalRequests) {
-        if (withdrawal.status === 'paid') {
-          realTotalEarnings += parseFloat(withdrawal.amount || '0');
-        }
-      }
-      
       // Don't send password
       const { password, ...userWithoutPassword } = user;
       
-      // Override totalEarnings with the real calculated value
-      return res.json({
-        ...userWithoutPassword,
-        totalEarnings: realTotalEarnings.toFixed(2)
-      });
+      return res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       return res.status(500).json({ error: "Erro ao buscar usuário" });
