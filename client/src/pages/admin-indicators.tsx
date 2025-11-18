@@ -752,19 +752,19 @@ export default function AdminIndicatorsPage() {
                         </div>
                       </div>
 
-                      <div className="border-t pt-4 space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">Saldo Atual</span>
-                          <span className="text-lg font-bold text-green-600">
+                      <div className="border-t pt-4 space-y-2 text-center">
+                        <div>
+                          <div className="text-sm font-medium text-gray-500 mb-1">Saldo Atual</div>
+                          <div className="text-2xl font-bold text-green-600">
                             R$ {parseFloat(detailsUser.balance || 0).toFixed(2)}
-                          </span>
+                          </div>
                         </div>
                         
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">Total Ganho</span>
-                          <span className="text-sm">
+                        <div className="pt-2">
+                          <div className="text-sm font-medium text-gray-500 mb-1">Total Ganho</div>
+                          <div className="text-lg font-semibold">
                             R$ {parseFloat(detailsUser.totalEarnings || 0).toFixed(2)}
-                          </span>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
