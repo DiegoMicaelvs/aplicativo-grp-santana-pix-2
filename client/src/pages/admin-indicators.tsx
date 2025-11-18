@@ -533,33 +533,6 @@ export default function AdminIndicatorsPage() {
           </DialogHeader>
           
           {detailsUser && (() => {
-            // Filter referrals by date range if selected
-            let userReferrals = (referrals as any[]).filter((r: any) => r.userId === detailsUser.id);
-            
-            if (dateFrom && dateTo) {
-              userReferrals = userReferrals.filter((r: any) => {
-                const refDate = new Date(r.createdAt);
-                return isWithinInterval(refDate, { 
-                  start: startOfDay(dateFrom), 
-                  end: endOfDay(dateTo) 
-                });
-              });
-            }
-
-            const userStats = {
-              totalReferrals: userReferrals.length,
-              validatedReferrals: userReferrals.filter((r: any) => r.status === 'validated').length,
-              convertedReferrals: userReferrals.filter((r: any) => r.status === 'converted').length,
-              pendingReferrals: userReferrals.filter((r: any) => r.status === 'pending').length,
-              totalEarnings: userReferrals.reduce((sum: number, r: any) => 
-                sum + (parseFloat(r.commissionIndicator) || 0), 0
-              )
-            };
-
-            // Monthly comparison - based on validation date
-            const currentMonth = new Date();
-            const previousMonth = subMonths(currentMonth, 1);
-            
             const allUserReferrals = (referrals as any[]).filter((r: any) => r.userId === detailsUser.id);
             
             // Helper function to get validation date from statusHistory
@@ -579,6 +552,59 @@ export default function AdminIndicatorsPage() {
               const convertedEntry = referral.statusHistory.find((entry: any) => entry.status === 'converted');
               return convertedEntry ? new Date(convertedEntry.changedAt) : null;
             };
+
+            // Filter referrals by date range if selected - using validation date
+            let userReferrals = allUserReferrals;
+            let validatedInPeriod: any[] = [];
+            let convertedInPeriod: any[] = [];
+            
+            if (dateFrom && dateTo) {
+              // For total referrals, use creation date
+              userReferrals = allUserReferrals.filter((r: any) => {
+                const refDate = new Date(r.createdAt);
+                return isWithinInterval(refDate, { 
+                  start: startOfDay(dateFrom), 
+                  end: endOfDay(dateTo) 
+                });
+              });
+
+              // For validated referrals, use validation date from statusHistory
+              validatedInPeriod = allUserReferrals.filter((r: any) => {
+                const validationDate = getValidationDate(r);
+                if (!validationDate) return false;
+                return isWithinInterval(validationDate, {
+                  start: startOfDay(dateFrom),
+                  end: endOfDay(dateTo)
+                });
+              });
+
+              // For converted referrals, use conversion date from statusHistory
+              convertedInPeriod = allUserReferrals.filter((r: any) => {
+                const conversionDate = getConversionDate(r);
+                if (!conversionDate) return false;
+                return isWithinInterval(conversionDate, {
+                  start: startOfDay(dateFrom),
+                  end: endOfDay(dateTo)
+                });
+              });
+            } else {
+              validatedInPeriod = allUserReferrals.filter((r: any) => r.status === 'validated');
+              convertedInPeriod = allUserReferrals.filter((r: any) => r.status === 'converted');
+            }
+
+            const userStats = {
+              totalReferrals: userReferrals.length,
+              validatedReferrals: validatedInPeriod.length,
+              convertedReferrals: convertedInPeriod.length,
+              pendingReferrals: userReferrals.filter((r: any) => r.status === 'pending').length,
+              totalEarnings: validatedInPeriod.reduce((sum: number, r: any) => 
+                sum + (parseFloat(r.commissionIndicator) || 0), 0
+              )
+            };
+
+            // Monthly comparison - based on validation date
+            const currentMonth = new Date();
+            const previousMonth = subMonths(currentMonth, 1);
 
             // Filter referrals by creation date (for total count)
             const currentMonthReferrals = allUserReferrals.filter((r: any) => {
