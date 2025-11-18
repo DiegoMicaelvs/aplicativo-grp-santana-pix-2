@@ -535,6 +535,11 @@ export default function AdminIndicatorsPage() {
           {detailsUser && (() => {
             const allUserReferrals = (referrals as any[]).filter((r: any) => r.userId === detailsUser.id);
             
+            // Calculate total generated from all commissions (validated + converted)
+            const totalGeneratedFromCommissions = allUserReferrals
+              .filter((r: any) => r.status === 'validated' || r.status === 'converted')
+              .reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
+            
             // Helper function to get validation date from statusHistory
             const getValidationDate = (referral: any): Date | null => {
               if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) {
@@ -773,7 +778,7 @@ export default function AdminIndicatorsPage() {
                         <div className="bg-blue-50 p-3 rounded-lg">
                           <div className="text-xs font-medium text-blue-700 mb-1">Total Gerado</div>
                           <div className="text-xl font-bold text-blue-600">
-                            R$ {parseFloat(detailsUser.totalEarnings || 0).toFixed(2)}
+                            R$ {totalGeneratedFromCommissions.toFixed(2)}
                           </div>
                         </div>
                       </div>
