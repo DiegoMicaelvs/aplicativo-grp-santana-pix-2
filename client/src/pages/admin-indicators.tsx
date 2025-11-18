@@ -597,9 +597,13 @@ export default function AdminIndicatorsPage() {
               validatedReferrals: validatedInPeriod.length,
               convertedReferrals: convertedInPeriod.length,
               pendingReferrals: userReferrals.filter((r: any) => r.status === 'pending').length,
-              totalEarnings: validatedInPeriod.reduce((sum: number, r: any) => 
-                sum + (parseFloat(r.commissionIndicator) || 0), 0
-              )
+              totalEarnings: 
+                validatedInPeriod.reduce((sum: number, r: any) => 
+                  sum + (parseFloat(r.commissionIndicator) || 0), 0
+                ) +
+                convertedInPeriod.reduce((sum: number, r: any) => 
+                  sum + (parseFloat(r.commissionIndicator) || 0), 0
+                )
             };
 
             // Monthly comparison - based on validation date
@@ -665,18 +669,26 @@ export default function AdminIndicatorsPage() {
               total: currentMonthReferrals.length,
               validated: currentMonthValidated.length,
               converted: currentMonthConverted.length,
-              earnings: currentMonthValidated.reduce((sum: number, r: any) => 
-                sum + (parseFloat(r.commissionIndicator) || 0), 0
-              )
+              earnings: 
+                currentMonthValidated.reduce((sum: number, r: any) => 
+                  sum + (parseFloat(r.commissionIndicator) || 0), 0
+                ) +
+                currentMonthConverted.reduce((sum: number, r: any) => 
+                  sum + (parseFloat(r.commissionIndicator) || 0), 0
+                )
             };
 
             const previousMonthStats = {
               total: previousMonthReferrals.length,
               validated: previousMonthValidated.length,
               converted: previousMonthConverted.length,
-              earnings: previousMonthValidated.reduce((sum: number, r: any) => 
-                sum + (parseFloat(r.commissionIndicator) || 0), 0
-              )
+              earnings: 
+                previousMonthValidated.reduce((sum: number, r: any) => 
+                  sum + (parseFloat(r.commissionIndicator) || 0), 0
+                ) +
+                previousMonthConverted.reduce((sum: number, r: any) => 
+                  sum + (parseFloat(r.commissionIndicator) || 0), 0
+                )
             };
 
             const calculatePercentage = (current: number, previous: number) => {
@@ -759,7 +771,7 @@ export default function AdminIndicatorsPage() {
                         </div>
                         
                         <div className="bg-blue-50 p-3 rounded-lg">
-                          <div className="text-xs font-medium text-blue-700 mb-1">Total Ganho</div>
+                          <div className="text-xs font-medium text-blue-700 mb-1">Total Gerado</div>
                           <div className="text-xl font-bold text-blue-600">
                             R$ {parseFloat(detailsUser.totalEarnings || 0).toFixed(2)}
                           </div>
@@ -890,7 +902,7 @@ export default function AdminIndicatorsPage() {
                     
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Ganho</CardTitle>
+                        <CardTitle className="text-sm font-medium">Total Gerado</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
@@ -1046,10 +1058,10 @@ export default function AdminIndicatorsPage() {
                         </div>
                       </div>
 
-                      {/* Total Ganho */}
+                      {/* Total Gerado */}
                       <div>
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold text-sm">Total Ganho em Comissões</h4>
+                          <h4 className="font-semibold text-sm">Total Gerado</h4>
                           <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? '↑' : '↓'} 
                             {Math.abs(calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings)).toFixed(1)}%
