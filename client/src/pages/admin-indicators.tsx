@@ -556,12 +556,31 @@ export default function AdminIndicatorsPage() {
               )
             };
 
-            // Monthly comparison
+            // Monthly comparison - based on validation date
             const currentMonth = new Date();
             const previousMonth = subMonths(currentMonth, 1);
             
             const allUserReferrals = (referrals as any[]).filter((r: any) => r.userId === detailsUser.id);
             
+            // Helper function to get validation date from statusHistory
+            const getValidationDate = (referral: any): Date | null => {
+              if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) {
+                return null;
+              }
+              const validatedEntry = referral.statusHistory.find((entry: any) => entry.status === 'validated');
+              return validatedEntry ? new Date(validatedEntry.changedAt) : null;
+            };
+
+            // Helper function to get conversion date from statusHistory
+            const getConversionDate = (referral: any): Date | null => {
+              if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) {
+                return null;
+              }
+              const convertedEntry = referral.statusHistory.find((entry: any) => entry.status === 'converted');
+              return convertedEntry ? new Date(convertedEntry.changedAt) : null;
+            };
+
+            // Filter referrals by creation date (for total count)
             const currentMonthReferrals = allUserReferrals.filter((r: any) => {
               const refDate = new Date(r.createdAt);
               return isWithinInterval(refDate, { 
@@ -578,20 +597,58 @@ export default function AdminIndicatorsPage() {
               });
             });
 
+            // Filter referrals validated in current/previous month
+            const currentMonthValidated = allUserReferrals.filter((r: any) => {
+              const validationDate = getValidationDate(r);
+              if (!validationDate) return false;
+              return isWithinInterval(validationDate, {
+                start: startOfMonth(currentMonth),
+                end: endOfMonth(currentMonth)
+              });
+            });
+
+            const previousMonthValidated = allUserReferrals.filter((r: any) => {
+              const validationDate = getValidationDate(r);
+              if (!validationDate) return false;
+              return isWithinInterval(validationDate, {
+                start: startOfMonth(previousMonth),
+                end: endOfMonth(previousMonth)
+              });
+            });
+
+            // Filter referrals converted in current/previous month
+            const currentMonthConverted = allUserReferrals.filter((r: any) => {
+              const conversionDate = getConversionDate(r);
+              if (!conversionDate) return false;
+              return isWithinInterval(conversionDate, {
+                start: startOfMonth(currentMonth),
+                end: endOfMonth(currentMonth)
+              });
+            });
+
+            const previousMonthConverted = allUserReferrals.filter((r: any) => {
+              const conversionDate = getConversionDate(r);
+              if (!conversionDate) return false;
+              return isWithinInterval(conversionDate, {
+                start: startOfMonth(previousMonth),
+                end: endOfMonth(previousMonth)
+              });
+            });
+
             const currentMonthStats = {
               total: currentMonthReferrals.length,
-              validated: currentMonthReferrals.filter((r: any) => r.status === 'validated').length,
-              converted: currentMonthReferrals.filter((r: any) => r.status === 'converted').length,
-              earnings: currentMonthReferrals.reduce((sum: number, r: any) => 
+              validated: currentMonthValidated.length,
+              converted: currentMonthConverted.length,
+              earnings: currentMonthValidated.reduce((sum: number, r: any) => 
                 sum + (parseFloat(r.commissionIndicator) || 0), 0
               )
             };
 
             const previousMonthStats = {
               total: previousMonthReferrals.length,
-              validated: previousMonthReferrals.filter((r: any) => r.status === 'validated').length,
-              converted: previousMonthReferrals.filter((r: any) => r.status === 'converted').length,
-              earnings: previousMonthReferrals.reduce((sum: number, r: any) => 
+              validated: previousMonthValidated.length,
+              converted: previousMonthConverted.length,
+              earnings: previousMonthValidated.reduce((sum: number, r: any) => 
                 sum + (parseFloat(r.commissionIndicator) || 0), 0
               )
             };
