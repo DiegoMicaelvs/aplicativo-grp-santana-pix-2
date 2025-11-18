@@ -603,74 +603,6 @@ export default function AdminIndicatorsPage() {
 
             return (
               <div className="space-y-6">
-                {/* Date Filter */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CalendarDays className="h-5 w-5" />
-                      Filtrar por Período
-                      {dateFrom && dateTo && (
-                        <Badge variant="secondary" className="ml-2">
-                          Filtro Ativo
-                        </Badge>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-4 items-end">
-                      <div className="flex-1 min-w-[200px]">
-                        <label className="text-sm font-medium mb-2 block">Data Inicial</label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal">
-                              <CalendarDays className="mr-2 h-4 w-4" />
-                              {dateFrom ? format(dateFrom, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={dateFrom}
-                              onSelect={setDateFrom}
-                              locale={ptBR}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      <div className="flex-1 min-w-[200px]">
-                        <label className="text-sm font-medium mb-2 block">Data Final</label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start text-left font-normal">
-                              <CalendarDays className="mr-2 h-4 w-4" />
-                              {dateTo ? format(dateTo, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={dateTo}
-                              onSelect={setDateTo}
-                              locale={ptBR}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setDateFrom(undefined);
-                          setDateTo(undefined);
-                        }}
-                      >
-                        Limpar Filtros
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 {/* User Information Card */}
                 <Card>
                   <CardHeader>
@@ -755,118 +687,70 @@ export default function AdminIndicatorsPage() {
                     </CardContent>
                 </Card>
 
-                {/* Monthly Comparison */}
+                {/* Date Filter */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <ArrowUpDown className="h-5 w-5" />
-                      Comparação Mensal Detalhada
+                      <CalendarDays className="h-5 w-5" />
+                      Filtrar por Período
+                      {dateFrom && dateTo && (
+                        <Badge variant="secondary" className="ml-2">
+                          Filtro Ativo
+                        </Badge>
+                      )}
                     </CardTitle>
-                    <CardDescription>
-                      Comparativo de desempenho entre {format(previousMonth, "MMMM/yyyy", { locale: ptBR })} e {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
-                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-6">
-                      {/* Total de Indicações */}
-                      <div className="border-b pb-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold text-sm">Total de Indicações</h4>
-                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? '↑' : '↓'} 
-                            {Math.abs(calculatePercentage(currentMonthStats.total, previousMonthStats.total)).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="text-xs text-gray-500 mb-1">
-                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
-                            </div>
-                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.total}</div>
-                          </div>
-                          <div className="bg-blue-50 p-3 rounded-lg">
-                            <div className="text-xs text-blue-600 mb-1">
-                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
-                            </div>
-                            <div className="text-2xl font-bold text-blue-600">{currentMonthStats.total}</div>
-                          </div>
-                        </div>
+                    <div className="flex flex-wrap gap-4 items-end">
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="text-sm font-medium mb-2 block">Data Inicial</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal">
+                              <CalendarDays className="mr-2 h-4 w-4" />
+                              {dateFrom ? format(dateFrom, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={dateFrom}
+                              onSelect={setDateFrom}
+                              locale={ptBR}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
-                      {/* Indicações Validadas */}
-                      <div className="border-b pb-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold text-sm">Indicações Validadas</h4>
-                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? '↑' : '↓'} 
-                            {Math.abs(calculatePercentage(currentMonthStats.validated, previousMonthStats.validated)).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="text-xs text-gray-500 mb-1">
-                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
-                            </div>
-                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.validated}</div>
-                          </div>
-                          <div className="bg-green-50 p-3 rounded-lg">
-                            <div className="text-xs text-green-600 mb-1">
-                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
-                            </div>
-                            <div className="text-2xl font-bold text-green-600">{currentMonthStats.validated}</div>
-                          </div>
-                        </div>
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="text-sm font-medium mb-2 block">Data Final</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal">
+                              <CalendarDays className="mr-2 h-4 w-4" />
+                              {dateTo ? format(dateTo, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={dateTo}
+                              onSelect={setDateTo}
+                              locale={ptBR}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
-                      {/* Indicações Convertidas */}
-                      <div className="border-b pb-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold text-sm">Indicações Convertidas</h4>
-                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.converted, previousMonthStats.converted) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {calculatePercentage(currentMonthStats.converted, previousMonthStats.converted) >= 0 ? '↑' : '↓'} 
-                            {Math.abs(calculatePercentage(currentMonthStats.converted, previousMonthStats.converted)).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="text-xs text-gray-500 mb-1">
-                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
-                            </div>
-                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.converted}</div>
-                          </div>
-                          <div className="bg-purple-50 p-3 rounded-lg">
-                            <div className="text-xs text-purple-600 mb-1">
-                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
-                            </div>
-                            <div className="text-2xl font-bold text-purple-600">{currentMonthStats.converted}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Total Ganho */}
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold text-sm">Total Ganho em Comissões</h4>
-                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? '↑' : '↓'} 
-                            {Math.abs(calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings)).toFixed(1)}%
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="text-xs text-gray-500 mb-1">
-                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
-                            </div>
-                            <div className="text-2xl font-bold text-gray-700">R$ {previousMonthStats.earnings.toFixed(2)}</div>
-                          </div>
-                          <div className="bg-emerald-50 p-3 rounded-lg">
-                            <div className="text-xs text-emerald-600 mb-1">
-                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
-                            </div>
-                            <div className="text-2xl font-bold text-emerald-600">R$ {currentMonthStats.earnings.toFixed(2)}</div>
-                          </div>
-                        </div>
-                      </div>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setDateFrom(undefined);
+                          setDateTo(undefined);
+                        }}
+                      >
+                        Limpar Filtros
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -992,6 +876,122 @@ export default function AdminIndicatorsPage() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Monthly Comparison */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ArrowUpDown className="h-5 w-5" />
+                      Comparação Mensal Detalhada
+                    </CardTitle>
+                    <CardDescription>
+                      Comparativo de desempenho entre {format(previousMonth, "MMMM/yyyy", { locale: ptBR })} e {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      {/* Total de Indicações */}
+                      <div className="border-b pb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-sm">Total de Indicações</h4>
+                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? '↑' : '↓'} 
+                            {Math.abs(calculatePercentage(currentMonthStats.total, previousMonthStats.total)).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.total}</div>
+                          </div>
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <div className="text-xs text-blue-600 mb-1">
+                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-blue-600">{currentMonthStats.total}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Indicações Validadas */}
+                      <div className="border-b pb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-sm">Indicações Validadas</h4>
+                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? '↑' : '↓'} 
+                            {Math.abs(calculatePercentage(currentMonthStats.validated, previousMonthStats.validated)).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.validated}</div>
+                          </div>
+                          <div className="bg-green-50 p-3 rounded-lg">
+                            <div className="text-xs text-green-600 mb-1">
+                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-green-600">{currentMonthStats.validated}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Indicações Convertidas */}
+                      <div className="border-b pb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-sm">Indicações Convertidas</h4>
+                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.converted, previousMonthStats.converted) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {calculatePercentage(currentMonthStats.converted, previousMonthStats.converted) >= 0 ? '↑' : '↓'} 
+                            {Math.abs(calculatePercentage(currentMonthStats.converted, previousMonthStats.converted)).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.converted}</div>
+                          </div>
+                          <div className="bg-purple-50 p-3 rounded-lg">
+                            <div className="text-xs text-purple-600 mb-1">
+                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-purple-600">{currentMonthStats.converted}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Total Ganho */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-sm">Total Ganho em Comissões</h4>
+                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? '↑' : '↓'} 
+                            {Math.abs(calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings)).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-700">R$ {previousMonthStats.earnings.toFixed(2)}</div>
+                          </div>
+                          <div className="bg-emerald-50 p-3 rounded-lg">
+                            <div className="text-xs text-emerald-600 mb-1">
+                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-emerald-600">R$ {currentMonthStats.earnings.toFixed(2)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             );
           })()}
