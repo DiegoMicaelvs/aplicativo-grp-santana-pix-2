@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Search, Filter, Users, DollarSign, TrendingUp, UserPlus, User, Mail, Phone, CreditCard, Calendar, MapPin, FileText } from "lucide-react";
-import { format } from "date-fns";
+import { Eye, Search, Filter, Users, DollarSign, TrendingUp, UserPlus, User, Mail, Phone, CreditCard, Calendar, MapPin, FileText, CalendarDays, ArrowUpDown } from "lucide-react";
+import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BackButton } from "@/components/ui/back-button";
 import { apiRequest } from "@/lib/queryClient";
@@ -25,6 +27,8 @@ export default function AdminIndicatorsPage() {
   const [selectedAnalystId, setSelectedAnalystId] = useState<string>("");
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [detailsUser, setDetailsUser] = useState<any>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -529,7 +533,16 @@ export default function AdminIndicatorsPage() {
           </DialogHeader>
           
           {detailsUser && (() => {
-            const userReferrals = (referrals as any[]).filter((r: any) => r.userId === detailsUser.id);
+            // Filter referrals by date range if selected
+            let userReferrals = (referrals as any[]).filter((r: any) => r.userId === detailsUser.id);
+            
+            if (dateFrom && dateTo) {
+              userReferrals = userReferrals.filter((r: any) => {
+                const refDate = new Date(r.createdAt);
+                return isWithinInterval(refDate, { start: dateFrom, end: dateTo });
+              });
+            }
+
             const userStats = {
               totalReferrals: userReferrals.length,
               validatedReferrals: userReferrals.filter((r: any) => r.status === 'validated').length,
@@ -540,10 +553,185 @@ export default function AdminIndicatorsPage() {
               )
             };
 
+            // Monthly comparison
+            const currentMonth = new Date();
+            const previousMonth = subMonths(currentMonth, 1);
+            
+            const allUserReferrals = (referrals as any[]).filter((r: any) => r.userId === detailsUser.id);
+            
+            const currentMonthReferrals = allUserReferrals.filter((r: any) => {
+              const refDate = new Date(r.createdAt);
+              return isWithinInterval(refDate, { 
+                start: startOfMonth(currentMonth), 
+                end: endOfMonth(currentMonth) 
+              });
+            });
+            
+            const previousMonthReferrals = allUserReferrals.filter((r: any) => {
+              const refDate = new Date(r.createdAt);
+              return isWithinInterval(refDate, { 
+                start: startOfMonth(previousMonth), 
+                end: endOfMonth(previousMonth) 
+              });
+            });
+
+            const currentMonthStats = {
+              total: currentMonthReferrals.length,
+              validated: currentMonthReferrals.filter((r: any) => r.status === 'validated').length,
+              earnings: currentMonthReferrals.reduce((sum: number, r: any) => 
+                sum + (parseFloat(r.commissionIndicator) || 0), 0
+              )
+            };
+
+            const previousMonthStats = {
+              total: previousMonthReferrals.length,
+              validated: previousMonthReferrals.filter((r: any) => r.status === 'validated').length,
+              earnings: previousMonthReferrals.reduce((sum: number, r: any) => 
+                sum + (parseFloat(r.commissionIndicator) || 0), 0
+              )
+            };
+
+            const calculatePercentage = (current: number, previous: number) => {
+              if (previous === 0) return current > 0 ? 100 : 0;
+              return ((current - previous) / previous) * 100;
+            };
+
             return (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* User Information Card */}
-                <div className="lg:col-span-1">
+              <div className="space-y-6">
+                {/* Date Filter */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CalendarDays className="h-5 w-5" />
+                      Filtrar por Período
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-4 items-end">
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="text-sm font-medium mb-2 block">Data Inicial</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal">
+                              <CalendarDays className="mr-2 h-4 w-4" />
+                              {dateFrom ? format(dateFrom, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={dateFrom}
+                              onSelect={setDateFrom}
+                              locale={ptBR}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="text-sm font-medium mb-2 block">Data Final</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-full justify-start text-left font-normal">
+                              <CalendarDays className="mr-2 h-4 w-4" />
+                              {dateTo ? format(dateTo, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={dateTo}
+                              onSelect={setDateTo}
+                              locale={ptBR}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setDateFrom(undefined);
+                          setDateTo(undefined);
+                        }}
+                      >
+                        Limpar Filtros
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Monthly Comparison */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ArrowUpDown className="h-5 w-5" />
+                      Comparação Mensal
+                    </CardTitle>
+                    <CardDescription>
+                      {format(previousMonth, "MMMM/yyyy", { locale: ptBR })} vs {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">Total de Indicações</div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-2xl font-bold">{currentMonthStats.total}</div>
+                            <div className="text-xs text-gray-400">Mês atual</div>
+                          </div>
+                          <div className={`text-sm font-medium ${calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? '↑' : '↓'} 
+                            {Math.abs(calculatePercentage(currentMonthStats.total, previousMonthStats.total)).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-2">
+                          Mês anterior: {previousMonthStats.total}
+                        </div>
+                      </div>
+
+                      <div className="p-4 border rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">Indicações Validadas</div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-2xl font-bold text-green-600">{currentMonthStats.validated}</div>
+                            <div className="text-xs text-gray-400">Mês atual</div>
+                          </div>
+                          <div className={`text-sm font-medium ${calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? '↑' : '↓'} 
+                            {Math.abs(calculatePercentage(currentMonthStats.validated, previousMonthStats.validated)).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-2">
+                          Mês anterior: {previousMonthStats.validated}
+                        </div>
+                      </div>
+
+                      <div className="p-4 border rounded-lg">
+                        <div className="text-sm text-gray-500 mb-1">Total Ganho</div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-2xl font-bold text-blue-600">R$ {currentMonthStats.earnings.toFixed(2)}</div>
+                            <div className="text-xs text-gray-400">Mês atual</div>
+                          </div>
+                          <div className={`text-sm font-medium ${calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? '↑' : '↓'} 
+                            {Math.abs(calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings)).toFixed(1)}%
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-2">
+                          Mês anterior: R$ {previousMonthStats.earnings.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* User Information and Referrals Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* User Information Card */}
+                  <div className="lg:col-span-1">
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -724,6 +912,7 @@ export default function AdminIndicatorsPage() {
                       </div>
                     </CardContent>
                   </Card>
+                </div>
                 </div>
               </div>
             );
