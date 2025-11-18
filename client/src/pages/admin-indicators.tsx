@@ -671,6 +671,90 @@ export default function AdminIndicatorsPage() {
                   </CardContent>
                 </Card>
 
+                {/* User Information Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Informações Pessoais
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">Status</span>
+                        <Badge variant={detailsUser.isActive ? "default" : "secondary"}>
+                          {detailsUser.isActive ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">Perfil</span>
+                        <Badge variant="outline">
+                          {detailsUser.role === 'indicador' ? 'Indicador' : 
+                           detailsUser.role === 'promotor' ? 'Promotor' : 
+                           detailsUser.role === 'admin' ? 'Administrador' : 
+                           detailsUser.role === 'analista' ? 'Analista' : detailsUser.role}
+                        </Badge>
+                      </div>
+
+                      <div className="border-t pt-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">{detailsUser.fullName}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">{detailsUser.username}</span>
+                        </div>
+                        
+                        {detailsUser.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{detailsUser.phone}</span>
+                          </div>
+                        )}
+                        
+                        {detailsUser.cpf && (
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{detailsUser.cpf}</span>
+                          </div>
+                        )}
+                        
+                        {detailsUser.address && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{detailsUser.address}</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">
+                            Cadastrado em {format(new Date(detailsUser.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Saldo Atual</span>
+                          <span className="text-lg font-bold text-green-600">
+                            R$ {parseFloat(detailsUser.balance || 0).toFixed(2)}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Total Ganho</span>
+                          <span className="text-sm">
+                            R$ {parseFloat(detailsUser.totalEarnings || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                </Card>
+
                 {/* Monthly Comparison */}
                 <Card>
                   <CardHeader>
@@ -787,96 +871,8 @@ export default function AdminIndicatorsPage() {
                   </CardContent>
                 </Card>
 
-                {/* User Information and Referrals Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* User Information Card */}
-                  <div className="lg:col-span-1">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <User className="h-5 w-5" />
-                        Informações Pessoais
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-500">Status</span>
-                        <Badge variant={detailsUser.isActive ? "default" : "secondary"}>
-                          {detailsUser.isActive ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-500">Perfil</span>
-                        <Badge variant="outline">
-                          {detailsUser.role === 'indicador' ? 'Indicador' : 
-                           detailsUser.role === 'promotor' ? 'Promotor' : 
-                           detailsUser.role === 'admin' ? 'Administrador' : 
-                           detailsUser.role === 'analista' ? 'Analista' : detailsUser.role}
-                        </Badge>
-                      </div>
-
-                      <div className="border-t pt-4 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{detailsUser.fullName}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{detailsUser.username}</span>
-                        </div>
-                        
-                        {detailsUser.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm">{detailsUser.phone}</span>
-                          </div>
-                        )}
-                        
-                        {detailsUser.cpf && (
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm">{detailsUser.cpf}</span>
-                          </div>
-                        )}
-                        
-                        {detailsUser.address && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm">{detailsUser.address}</span>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">
-                            Cadastrado em {format(new Date(detailsUser.createdAt), "dd/MM/yyyy", { locale: ptBR })}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="border-t pt-4 space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">Saldo Atual</span>
-                          <span className="text-lg font-bold text-green-600">
-                            R$ {parseFloat(detailsUser.balance || 0).toFixed(2)}
-                          </span>
-                        </div>
-                        
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">Total Ganho</span>
-                          <span className="text-sm">
-                            R$ {parseFloat(detailsUser.totalEarnings || 0).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
                 {/* Statistics and Referrals */}
-                <div className="lg:col-span-2">
+                <div>
                   {/* Period Indicator */}
                   {dateFrom && dateTo && (
                     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -995,7 +991,6 @@ export default function AdminIndicatorsPage() {
                       </div>
                     </CardContent>
                   </Card>
-                </div>
                 </div>
               </div>
             );
