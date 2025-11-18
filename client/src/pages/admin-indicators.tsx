@@ -23,6 +23,8 @@ export default function AdminIndicatorsPage() {
   const [selectedPromoterId, setSelectedPromoterId] = useState<string>("");
   const [assignmentType, setAssignmentType] = useState<"promotor" | "analista">("promotor");
   const [selectedAnalystId, setSelectedAnalystId] = useState<string>("");
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [detailsUser, setDetailsUser] = useState<any>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -386,7 +388,10 @@ export default function AdminIndicatorsPage() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.open(`/admin/user-details/${user.id}`, '_blank')}
+                          onClick={() => {
+                            setDetailsUser(user);
+                            setIsDetailsDialogOpen(true);
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Detalhes
@@ -483,6 +488,182 @@ export default function AdminIndicatorsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* User Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Usuário</DialogTitle>
+            <DialogDescription>
+              Informações completas sobre {detailsUser?.fullName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {detailsUser && (
+            <div className="space-y-6">
+              {/* Informações Pessoais */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg border-b pb-2">Informações Pessoais</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-500">Nome Completo</label>
+                    <p className="font-medium">{detailsUser.fullName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">CPF</label>
+                    <p className="font-medium font-mono">{detailsUser.cpf || "-"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">Email</label>
+                    <p className="font-medium truncate">{detailsUser.email || detailsUser.username}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">Telefone</label>
+                    <p className="font-medium">{detailsUser.phone || "-"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">Tipo de Chave PIX</label>
+                    <p className="font-medium">{detailsUser.pixKeyType || "-"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">Chave PIX</label>
+                    <p className="font-medium truncate">{detailsUser.pixKey || "-"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informações do Sistema */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg border-b pb-2">Informações do Sistema</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-500">Função</label>
+                    <div>
+                      <Badge className={getRoleBadgeColor(detailsUser.role)}>
+                        {detailsUser.role}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">Status</label>
+                    <div>
+                      <Badge className={getStatusBadgeColor(detailsUser.isActive ? "active" : "inactive")}>
+                        {detailsUser.isActive ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">Data de Cadastro</label>
+                    <p className="font-medium">
+                      {detailsUser.createdAt ? format(new Date(detailsUser.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">Cadastrado Por</label>
+                    <p className="font-medium">{getRegisteredBy(detailsUser.id)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hierarquia */}
+              {(detailsUser.role === "indicador" || detailsUser.role === "promotor") && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg border-b pb-2">Hierarquia</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {detailsUser.role === "indicador" && (
+                      <>
+                        {detailsUser.promoterId && (
+                          <div>
+                            <label className="text-sm text-gray-500">Promotor Responsável</label>
+                            <p className="font-medium text-green-600">
+                              {(users as any[]).find((u: any) => u.id === detailsUser.promoterId)?.fullName || "N/A"}
+                            </p>
+                          </div>
+                        )}
+                        {detailsUser.supervisorId && (
+                          <div>
+                            <label className="text-sm text-gray-500">Analista Supervisor</label>
+                            <p className="font-medium text-blue-600">
+                              {(users as any[]).find((u: any) => u.id === detailsUser.supervisorId)?.fullName || "N/A"}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {detailsUser.role === "promotor" && detailsUser.supervisorId && (
+                      <div>
+                        <label className="text-sm text-gray-500">Analista Supervisor</label>
+                        <p className="font-medium text-blue-600">
+                          {(users as any[]).find((u: any) => u.id === detailsUser.supervisorId)?.fullName || "N/A"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Estatísticas Financeiras */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg border-b pb-2">Estatísticas</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <label className="text-sm text-gray-600">Total de Indicações</label>
+                    <p className="text-2xl font-bold text-blue-600">{getReferralsCount(detailsUser.id)}</p>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <label className="text-sm text-gray-600">Saldo Disponível</label>
+                    <p className="text-2xl font-bold text-green-600">R$ {(parseFloat(detailsUser.balance) || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <label className="text-sm text-gray-600">Total Ganho</label>
+                    <p className="text-2xl font-bold text-purple-600">R$ {getTotalEarnings(detailsUser.id).toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Últimas Indicações */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg border-b pb-2">Últimas Indicações</h3>
+                {(() => {
+                  const userReferrals = (referrals as any[])
+                    .filter((r: any) => r.userId === detailsUser.id)
+                    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .slice(0, 5);
+                  
+                  if (userReferrals.length === 0) {
+                    return <p className="text-gray-500 text-sm">Nenhuma indicação cadastrada</p>;
+                  }
+                  
+                  return (
+                    <div className="space-y-2">
+                      {userReferrals.map((ref: any) => (
+                        <div key={ref.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{ref.fullName}</p>
+                            <p className="text-sm text-gray-500">{ref.licensePlate}</p>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline">{ref.status}</Badge>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {format(new Date(ref.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Assignment Dialog */}
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
