@@ -688,22 +688,18 @@ export default function AdminIndicatorsPage() {
               <div className="space-y-6">
                 {/* User Information Card */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2">
                       <User className="h-5 w-5" />
                       Informações Pessoais
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-500">Status</span>
+                  <CardContent className="space-y-3">
+                      {/* Status and Profile Badges */}
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant={detailsUser.isActive ? "default" : "secondary"}>
                           {detailsUser.isActive ? "Ativo" : "Inativo"}
                         </Badge>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-500">Perfil</span>
                         <Badge variant="outline">
                           {detailsUser.role === 'indicador' ? 'Indicador' : 
                            detailsUser.role === 'promotor' ? 'Promotor' : 
@@ -712,57 +708,59 @@ export default function AdminIndicatorsPage() {
                         </Badge>
                       </div>
 
-                      <div className="border-t pt-4 space-y-3">
+                      {/* Personal Info Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{detailsUser.fullName}</span>
+                          <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                          <span className="text-sm truncate">{detailsUser.fullName}</span>
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{detailsUser.username}</span>
+                          <Mail className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                          <span className="text-sm truncate">{detailsUser.username}</span>
                         </div>
                         
                         {detailsUser.phone && (
                           <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-gray-500" />
+                            <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
                             <span className="text-sm">{detailsUser.phone}</span>
                           </div>
                         )}
                         
                         {detailsUser.cpf && (
                           <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-gray-500" />
+                            <CreditCard className="h-4 w-4 text-gray-500 flex-shrink-0" />
                             <span className="text-sm">{detailsUser.cpf}</span>
                           </div>
                         )}
                         
-                        {detailsUser.address && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm">{detailsUser.address}</span>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-500" />
+                        <div className="flex items-center gap-2 md:col-span-2">
+                          <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                           <span className="text-sm">
                             Cadastrado em {format(new Date(detailsUser.createdAt), "dd/MM/yyyy", { locale: ptBR })}
                           </span>
                         </div>
+                        
+                        {detailsUser.address && (
+                          <div className="flex items-center gap-2 md:col-span-2">
+                            <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-sm">{detailsUser.address}</span>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="border-t pt-4 space-y-2 text-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-500 mb-1">Saldo Atual</div>
-                          <div className="text-2xl font-bold text-green-600">
+                      {/* Financial Metrics */}
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                        <div className="bg-green-50 p-3 rounded-lg">
+                          <div className="text-xs font-medium text-green-700 mb-1">Saldo Atual</div>
+                          <div className="text-xl font-bold text-green-600">
                             R$ {parseFloat(detailsUser.balance || 0).toFixed(2)}
                           </div>
                         </div>
                         
-                        <div className="pt-2">
-                          <div className="text-sm font-medium text-gray-500 mb-1">Total Ganho</div>
-                          <div className="text-lg font-semibold">
+                        <div className="bg-blue-50 p-3 rounded-lg">
+                          <div className="text-xs font-medium text-blue-700 mb-1">Total Ganho</div>
+                          <div className="text-xl font-bold text-blue-600">
                             R$ {parseFloat(detailsUser.totalEarnings || 0).toFixed(2)}
                           </div>
                         </div>
