@@ -1306,6 +1306,14 @@ class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       };
       
+      // Update validatedAt and validatedBy when status changes to validated
+      if (status === 'validated' && previousStatus !== 'validated') {
+        updateData.validatedAt = new Date();
+        if (adminUserId) {
+          updateData.validatedBy = adminUserId;
+        }
+      }
+      
       // Add payment proof if provided
       if (paymentProof) {
         updateData.paymentProof = paymentProof;

@@ -540,16 +540,21 @@ export default function AdminIndicatorsPage() {
               .filter((r: any) => r.status === 'validated' || r.status === 'converted')
               .reduce((sum: number, r: any) => sum + (parseFloat(r.commissionIndicator) || 0), 0);
             
-            // Helper function to get validation date from statusHistory (gets LAST occurrence)
+            // Helper function to get validation date - uses validatedAt field when available, same as the referrals list page
             const getValidationDate = (referral: any): Date | null => {
+              // Use validatedAt field if available (primary source, same as list page)
+              if (referral.validatedAt) {
+                return new Date(referral.validatedAt);
+              }
+              
+              // Fallback to statusHistory if validatedAt is not set
               if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) {
                 return null;
               }
-              // Find ALL validated entries and get the most recent one
+              
               const validatedEntries = referral.statusHistory.filter((entry: any) => entry.status === 'validated');
               if (validatedEntries.length === 0) return null;
               
-              // Sort by date and get the last one
               const lastValidated = validatedEntries.sort((a: any, b: any) => 
                 new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
               )[0];
@@ -557,16 +562,21 @@ export default function AdminIndicatorsPage() {
               return new Date(lastValidated.changedAt);
             };
 
-            // Helper function to get conversion date from statusHistory (gets LAST occurrence)
+            // Helper function to get conversion date - uses updatedAt when status is converted, same as the referrals list page
             const getConversionDate = (referral: any): Date | null => {
+              // For converted status, use updatedAt if available (primary source, same as list page)
+              if ((referral.status === 'converted' || referral.status === 'paid') && referral.updatedAt) {
+                return new Date(referral.updatedAt);
+              }
+              
+              // Fallback to statusHistory
               if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) {
                 return null;
               }
-              // Find ALL converted entries and get the most recent one
+              
               const convertedEntries = referral.statusHistory.filter((entry: any) => entry.status === 'converted');
               if (convertedEntries.length === 0) return null;
               
-              // Sort by date and get the last one
               const lastConverted = convertedEntries.sort((a: any, b: any) => 
                 new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
               )[0];
