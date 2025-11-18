@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Search, Filter, Users, DollarSign, TrendingUp, UserPlus } from "lucide-react";
+import { Eye, Search, Filter, Users, DollarSign, TrendingUp, UserPlus, User, Mail, Phone, CreditCard, Calendar, MapPin, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BackButton } from "@/components/ui/back-button";
@@ -110,6 +110,35 @@ export default function AdminIndicatorsPage() {
       return "Sistema";
     }
     return "Auto-cadastro";
+  };
+
+  // Status helpers for referrals
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'validated': return 'bg-green-100 text-green-800';
+      case 'converted': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'processing': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'validated': return 'Validada';
+      case 'converted': return 'Convertida';
+      case 'pending': return 'Pendente';
+      case 'rejected': return 'Rejeitada';
+      case 'processing': return 'Processando';
+      case 'paid': return 'Paga';
+      case 'analyzing': return 'Em Análise';
+      case 'false': return 'Falso';
+      case 'not_validated': return 'Não validado';
+      case 'not_converted': return 'Não convertido';
+      case 'contact_list': return 'Lista de contato';
+      default: return status;
+    }
   };
 
   // Get analyst assignment for promoters
@@ -491,171 +520,214 @@ export default function AdminIndicatorsPage() {
 
       {/* User Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes do Usuário</DialogTitle>
             <DialogDescription>
-              Informações completas sobre {detailsUser?.fullName}
+              Informações completas e histórico de atividades
             </DialogDescription>
           </DialogHeader>
           
-          {detailsUser && (
-            <div className="space-y-6">
-              {/* Informações Pessoais */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg border-b pb-2">Informações Pessoais</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-500">Nome Completo</label>
-                    <p className="font-medium">{detailsUser.fullName}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">CPF</label>
-                    <p className="font-medium font-mono">{detailsUser.cpf || "-"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">Email</label>
-                    <p className="font-medium truncate">{detailsUser.email || detailsUser.username}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">Telefone</label>
-                    <p className="font-medium">{detailsUser.phone || "-"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">Tipo de Chave PIX</label>
-                    <p className="font-medium">{detailsUser.pixKeyType || "-"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">Chave PIX</label>
-                    <p className="font-medium truncate">{detailsUser.pixKey || "-"}</p>
-                  </div>
-                </div>
-              </div>
+          {detailsUser && (() => {
+            const userReferrals = (referrals as any[]).filter((r: any) => r.userId === detailsUser.id);
+            const userStats = {
+              totalReferrals: userReferrals.length,
+              validatedReferrals: userReferrals.filter((r: any) => r.status === 'validated').length,
+              convertedReferrals: userReferrals.filter((r: any) => r.status === 'converted').length,
+              pendingReferrals: userReferrals.filter((r: any) => r.status === 'pending').length,
+              totalEarnings: userReferrals.reduce((sum: number, r: any) => 
+                sum + (parseFloat(r.commissionIndicator) || 0), 0
+              )
+            };
 
-              {/* Informações do Sistema */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg border-b pb-2">Informações do Sistema</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-500">Função</label>
-                    <div>
-                      <Badge className={getRoleBadgeColor(detailsUser.role)}>
-                        {detailsUser.role}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">Status</label>
-                    <div>
-                      <Badge className={getStatusBadgeColor(detailsUser.isActive ? "active" : "inactive")}>
-                        {detailsUser.isActive ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">Data de Cadastro</label>
-                    <p className="font-medium">
-                      {detailsUser.createdAt ? format(new Date(detailsUser.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">Cadastrado Por</label>
-                    <p className="font-medium">{getRegisteredBy(detailsUser.id)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Hierarquia */}
-              {(detailsUser.role === "indicador" || detailsUser.role === "promotor") && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-lg border-b pb-2">Hierarquia</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {detailsUser.role === "indicador" && (
-                      <>
-                        {detailsUser.promoterId && (
-                          <div>
-                            <label className="text-sm text-gray-500">Promotor Responsável</label>
-                            <p className="font-medium text-green-600">
-                              {(users as any[]).find((u: any) => u.id === detailsUser.promoterId)?.fullName || "N/A"}
-                            </p>
-                          </div>
-                        )}
-                        {detailsUser.supervisorId && (
-                          <div>
-                            <label className="text-sm text-gray-500">Analista Supervisor</label>
-                            <p className="font-medium text-blue-600">
-                              {(users as any[]).find((u: any) => u.id === detailsUser.supervisorId)?.fullName || "N/A"}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {detailsUser.role === "promotor" && detailsUser.supervisorId && (
-                      <div>
-                        <label className="text-sm text-gray-500">Analista Supervisor</label>
-                        <p className="font-medium text-blue-600">
-                          {(users as any[]).find((u: any) => u.id === detailsUser.supervisorId)?.fullName || "N/A"}
-                        </p>
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* User Information Card */}
+                <div className="lg:col-span-1">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Informações Pessoais
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">Status</span>
+                        <Badge variant={detailsUser.isActive ? "default" : "secondary"}>
+                          {detailsUser.isActive ? "Ativo" : "Inativo"}
+                        </Badge>
                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">Perfil</span>
+                        <Badge variant="outline">
+                          {detailsUser.role === 'indicador' ? 'Indicador' : 
+                           detailsUser.role === 'promotor' ? 'Promotor' : 
+                           detailsUser.role === 'admin' ? 'Administrador' : 
+                           detailsUser.role === 'analista' ? 'Analista' : detailsUser.role}
+                        </Badge>
+                      </div>
 
-              {/* Estatísticas Financeiras */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg border-b pb-2">Estatísticas</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <label className="text-sm text-gray-600">Total de Indicações</label>
-                    <p className="text-2xl font-bold text-blue-600">{getReferralsCount(detailsUser.id)}</p>
-                  </div>
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <label className="text-sm text-gray-600">Saldo Disponível</label>
-                    <p className="text-2xl font-bold text-green-600">R$ {(parseFloat(detailsUser.balance) || 0).toFixed(2)}</p>
-                  </div>
-                  <div className="p-4 bg-purple-50 rounded-lg">
-                    <label className="text-sm text-gray-600">Total Ganho</label>
-                    <p className="text-2xl font-bold text-purple-600">R$ {getTotalEarnings(detailsUser.id).toFixed(2)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Últimas Indicações */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg border-b pb-2">Últimas Indicações</h3>
-                {(() => {
-                  const userReferrals = (referrals as any[])
-                    .filter((r: any) => r.userId === detailsUser.id)
-                    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    .slice(0, 5);
-                  
-                  if (userReferrals.length === 0) {
-                    return <p className="text-gray-500 text-sm">Nenhuma indicação cadastrada</p>;
-                  }
-                  
-                  return (
-                    <div className="space-y-2">
-                      {userReferrals.map((ref: any) => (
-                        <div key={ref.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
-                          <div>
-                            <p className="font-medium">{ref.fullName}</p>
-                            <p className="text-sm text-gray-500">{ref.licensePlate}</p>
-                          </div>
-                          <div className="text-right">
-                            <Badge variant="outline">{ref.status}</Badge>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {format(new Date(ref.createdAt), "dd/MM/yyyy", { locale: ptBR })}
-                            </p>
-                          </div>
+                      <div className="border-t pt-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">{detailsUser.fullName}</span>
                         </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+                        
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">{detailsUser.username}</span>
+                        </div>
+                        
+                        {detailsUser.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{detailsUser.phone}</span>
+                          </div>
+                        )}
+                        
+                        {detailsUser.cpf && (
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{detailsUser.cpf}</span>
+                          </div>
+                        )}
+                        
+                        {detailsUser.address && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{detailsUser.address}</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">
+                            Cadastrado em {format(new Date(detailsUser.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Saldo Atual</span>
+                          <span className="text-lg font-bold text-green-600">
+                            R$ {parseFloat(detailsUser.balance || 0).toFixed(2)}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Total Ganho</span>
+                          <span className="text-sm">
+                            R$ {parseFloat(detailsUser.totalEarnings || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Statistics and Referrals */}
+                <div className="lg:col-span-2">
+                  {/* Statistics Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total de Indicações</CardTitle>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{userStats.totalReferrals}</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Validadas</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-green-600">{userStats.validatedReferrals}</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Convertidas</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-blue-600">{userStats.convertedReferrals}</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Ganho</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-green-600">R$ {userStats.totalEarnings.toFixed(2)}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Recent Referrals */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Histórico de Indicações</CardTitle>
+                      <CardDescription>
+                        Últimas indicações realizadas pelo usuário
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Telefone</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Comissão</TableHead>
+                              <TableHead>Data</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {userReferrals.slice(0, 10).map((referral: any) => (
+                              <TableRow key={referral.id}>
+                                <TableCell className="font-medium">
+                                  {referral.fullName}
+                                </TableCell>
+                                <TableCell>{referral.phone}</TableCell>
+                                <TableCell>
+                                  <Badge className={getStatusColor(referral.status)}>
+                                    {getStatusLabel(referral.status)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  R$ {parseFloat(referral.commissionIndicator || 0).toFixed(2)}
+                                </TableCell>
+                                <TableCell>
+                                  {format(new Date(referral.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        
+                        {userReferrals.length === 0 && (
+                          <div className="text-center py-8">
+                            <p className="text-gray-500">Nenhuma indicação encontrada para este usuário.</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
