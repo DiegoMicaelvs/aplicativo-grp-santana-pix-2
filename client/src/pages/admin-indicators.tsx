@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Search, Filter, Users, DollarSign, TrendingUp, UserPlus, User, Mail, Phone, CreditCard, Calendar, MapPin, FileText, CalendarDays, ArrowUpDown } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval, endOfDay, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BackButton } from "@/components/ui/back-button";
 import { apiRequest } from "@/lib/queryClient";
@@ -539,7 +539,10 @@ export default function AdminIndicatorsPage() {
             if (dateFrom && dateTo) {
               userReferrals = userReferrals.filter((r: any) => {
                 const refDate = new Date(r.createdAt);
-                return isWithinInterval(refDate, { start: dateFrom, end: dateTo });
+                return isWithinInterval(refDate, { 
+                  start: startOfDay(dateFrom), 
+                  end: endOfDay(dateTo) 
+                });
               });
             }
 
@@ -606,6 +609,11 @@ export default function AdminIndicatorsPage() {
                     <CardTitle className="flex items-center gap-2">
                       <CalendarDays className="h-5 w-5" />
                       Filtrar por Período
+                      {dateFrom && dateTo && (
+                        <Badge variant="secondary" className="ml-2">
+                          Filtro Ativo
+                        </Badge>
+                      )}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -869,6 +877,15 @@ export default function AdminIndicatorsPage() {
 
                 {/* Statistics and Referrals */}
                 <div className="lg:col-span-2">
+                  {/* Period Indicator */}
+                  {dateFrom && dateTo && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm font-medium text-blue-800">
+                        📊 Estatísticas do período: {format(dateFrom, "dd/MM/yyyy", { locale: ptBR })} até {format(dateTo, "dd/MM/yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Statistics Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <Card>
@@ -878,6 +895,9 @@ export default function AdminIndicatorsPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">{userStats.totalReferrals}</div>
+                        {dateFrom && dateTo && (
+                          <p className="text-xs text-gray-500 mt-1">No período filtrado</p>
+                        )}
                       </CardContent>
                     </Card>
                     
@@ -888,6 +908,9 @@ export default function AdminIndicatorsPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-green-600">{userStats.validatedReferrals}</div>
+                        {dateFrom && dateTo && (
+                          <p className="text-xs text-gray-500 mt-1">No período filtrado</p>
+                        )}
                       </CardContent>
                     </Card>
                     
@@ -898,6 +921,9 @@ export default function AdminIndicatorsPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-blue-600">{userStats.convertedReferrals}</div>
+                        {dateFrom && dateTo && (
+                          <p className="text-xs text-gray-500 mt-1">No período filtrado</p>
+                        )}
                       </CardContent>
                     </Card>
                     
@@ -908,6 +934,9 @@ export default function AdminIndicatorsPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-green-600">R$ {userStats.totalEarnings.toFixed(2)}</div>
+                        {dateFrom && dateTo && (
+                          <p className="text-xs text-gray-500 mt-1">No período filtrado</p>
+                        )}
                       </CardContent>
                     </Card>
                   </div>
@@ -917,7 +946,10 @@ export default function AdminIndicatorsPage() {
                     <CardHeader>
                       <CardTitle>Histórico de Indicações</CardTitle>
                       <CardDescription>
-                        Últimas indicações realizadas pelo usuário
+                        {dateFrom && dateTo 
+                          ? `Indicações do período: ${format(dateFrom, "dd/MM/yyyy", { locale: ptBR })} até ${format(dateTo, "dd/MM/yyyy", { locale: ptBR })}`
+                          : 'Últimas indicações realizadas pelo usuário'
+                        }
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
