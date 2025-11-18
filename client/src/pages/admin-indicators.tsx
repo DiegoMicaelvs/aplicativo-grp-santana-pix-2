@@ -578,6 +578,7 @@ export default function AdminIndicatorsPage() {
             const currentMonthStats = {
               total: currentMonthReferrals.length,
               validated: currentMonthReferrals.filter((r: any) => r.status === 'validated').length,
+              converted: currentMonthReferrals.filter((r: any) => r.status === 'converted').length,
               earnings: currentMonthReferrals.reduce((sum: number, r: any) => 
                 sum + (parseFloat(r.commissionIndicator) || 0), 0
               )
@@ -586,6 +587,7 @@ export default function AdminIndicatorsPage() {
             const previousMonthStats = {
               total: previousMonthReferrals.length,
               validated: previousMonthReferrals.filter((r: any) => r.status === 'validated').length,
+              converted: previousMonthReferrals.filter((r: any) => r.status === 'converted').length,
               earnings: previousMonthReferrals.reduce((sum: number, r: any) => 
                 sum + (parseFloat(r.commissionIndicator) || 0), 0
               )
@@ -666,62 +668,111 @@ export default function AdminIndicatorsPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <ArrowUpDown className="h-5 w-5" />
-                      Comparação Mensal
+                      Comparação Mensal Detalhada
                     </CardTitle>
                     <CardDescription>
-                      {format(previousMonth, "MMMM/yyyy", { locale: ptBR })} vs {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                      Comparativo de desempenho entre {format(previousMonth, "MMMM/yyyy", { locale: ptBR })} e {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 border rounded-lg">
-                        <div className="text-sm text-gray-500 mb-1">Total de Indicações</div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-2xl font-bold">{currentMonthStats.total}</div>
-                            <div className="text-xs text-gray-400">Mês atual</div>
-                          </div>
-                          <div className={`text-sm font-medium ${calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className="space-y-6">
+                      {/* Total de Indicações */}
+                      <div className="border-b pb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-sm">Total de Indicações</h4>
+                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {calculatePercentage(currentMonthStats.total, previousMonthStats.total) >= 0 ? '↑' : '↓'} 
                             {Math.abs(calculatePercentage(currentMonthStats.total, previousMonthStats.total)).toFixed(1)}%
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500 mt-2">
-                          Mês anterior: {previousMonthStats.total}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.total}</div>
+                          </div>
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <div className="text-xs text-blue-600 mb-1">
+                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-blue-600">{currentMonthStats.total}</div>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="p-4 border rounded-lg">
-                        <div className="text-sm text-gray-500 mb-1">Indicações Validadas</div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-2xl font-bold text-green-600">{currentMonthStats.validated}</div>
-                            <div className="text-xs text-gray-400">Mês atual</div>
-                          </div>
-                          <div className={`text-sm font-medium ${calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {/* Indicações Validadas */}
+                      <div className="border-b pb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-sm">Indicações Validadas</h4>
+                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {calculatePercentage(currentMonthStats.validated, previousMonthStats.validated) >= 0 ? '↑' : '↓'} 
                             {Math.abs(calculatePercentage(currentMonthStats.validated, previousMonthStats.validated)).toFixed(1)}%
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500 mt-2">
-                          Mês anterior: {previousMonthStats.validated}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.validated}</div>
+                          </div>
+                          <div className="bg-green-50 p-3 rounded-lg">
+                            <div className="text-xs text-green-600 mb-1">
+                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-green-600">{currentMonthStats.validated}</div>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="p-4 border rounded-lg">
-                        <div className="text-sm text-gray-500 mb-1">Total Ganho</div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-2xl font-bold text-blue-600">R$ {currentMonthStats.earnings.toFixed(2)}</div>
-                            <div className="text-xs text-gray-400">Mês atual</div>
+                      {/* Indicações Convertidas */}
+                      <div className="border-b pb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-sm">Indicações Convertidas</h4>
+                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.converted, previousMonthStats.converted) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {calculatePercentage(currentMonthStats.converted, previousMonthStats.converted) >= 0 ? '↑' : '↓'} 
+                            {Math.abs(calculatePercentage(currentMonthStats.converted, previousMonthStats.converted)).toFixed(1)}%
                           </div>
-                          <div className={`text-sm font-medium ${calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-700">{previousMonthStats.converted}</div>
+                          </div>
+                          <div className="bg-purple-50 p-3 rounded-lg">
+                            <div className="text-xs text-purple-600 mb-1">
+                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-purple-600">{currentMonthStats.converted}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Total Ganho */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-sm">Total Ganho em Comissões</h4>
+                          <div className={`flex items-center gap-1 text-sm font-medium ${calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings) >= 0 ? '↑' : '↓'} 
                             {Math.abs(calculatePercentage(currentMonthStats.earnings, previousMonthStats.earnings)).toFixed(1)}%
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500 mt-2">
-                          Mês anterior: R$ {previousMonthStats.earnings.toFixed(2)}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-1">
+                              {format(previousMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-700">R$ {previousMonthStats.earnings.toFixed(2)}</div>
+                          </div>
+                          <div className="bg-emerald-50 p-3 rounded-lg">
+                            <div className="text-xs text-emerald-600 mb-1">
+                              {format(currentMonth, "MMMM/yyyy", { locale: ptBR })}
+                            </div>
+                            <div className="text-2xl font-bold text-emerald-600">R$ {currentMonthStats.earnings.toFixed(2)}</div>
+                          </div>
                         </div>
                       </div>
                     </div>
