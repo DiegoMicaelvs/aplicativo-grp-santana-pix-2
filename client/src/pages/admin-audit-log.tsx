@@ -50,8 +50,13 @@ export default function AdminAuditLog() {
       if (filters.fromDate) params.append('fromDate', filters.fromDate.toISOString());
       if (filters.toDate) params.append('toDate', filters.toDate.toISOString());
       
-      const response = await fetch(`/api/admin/audit-log?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch audit logs');
+      const response = await fetch(`/api/admin/audit-log?${params.toString()}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch audit logs: ${errorText}`);
+      }
       return response.json();
     }
   });
