@@ -250,13 +250,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as string;
       
-      // Get referrals with pagination
-      const result = await storage.getReferralsByUserIdPaginated(
-        req.user!.id,
-        page,
-        limit,
-        status && status !== 'all' ? status : undefined
-      );
+      // For indicador_nivel_1, get referrals by createdBy instead of userId
+      let result;
+      if (req.user!.role === 'indicador_nivel_1') {
+        result = await storage.getReferralsByCreatorPaginated(
+          req.user!.id,
+          page,
+          limit,
+          status && status !== 'all' ? status : undefined
+        );
+      } else {
+        result = await storage.getReferralsByUserIdPaginated(
+          req.user!.id,
+          page,
+          limit,
+          status && status !== 'all' ? status : undefined
+        );
+      }
       
       return res.json(result);
     } catch (error) {

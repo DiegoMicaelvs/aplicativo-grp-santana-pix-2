@@ -83,6 +83,7 @@ export interface IStorage {
   getAllReferralsForMetisViewer(): Promise<any[]>;
   getReferralsByUserId(userId: number): Promise<any[]>;
   getReferralsByUserIdPaginated(userId: number, page?: number, limit?: number, status?: string): Promise<{ data: any[], total: number, page: number, limit: number, totalPages: number }>;
+  getReferralsByCreatorPaginated(creatorId: number, page?: number, limit?: number, status?: string): Promise<{ data: any[], total: number, page: number, limit: number, totalPages: number }>;
   getReferralsByUsers(userIds: number[]): Promise<any[]>;
   getAllReferrals(): Promise<any[]>;
   getReferralsByStatus(status: ReferralStatus): Promise<any[]>;
@@ -906,6 +907,46 @@ class DatabaseStorage implements IStorage {
       },
       orderBy: desc(referrals.createdAt)
     });
+  }
+  
+  async getReferralsByCreatorPaginated(creatorId: number, page: number = 1, limit: number = 10, status?: string) {
+    // Guard against invalid pagination parameters
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.max(1, Math.min(100, limit)); // Cap at 100 items per page
+    const offset = (safePage - 1) * safeLimit;
+    
+    // Build where conditions
+    let whereCondition = eq(referrals.createdBy, creatorId);
+    if (status) {
+      whereCondition = and(whereCondition, eq(referrals.status, status as ReferralStatus)) as any;
+    }
+    
+    // Get total count
+    const totalResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(referrals)
+      .where(whereCondition);
+    const total = totalResult[0]?.count || 0;
+    
+    // Get paginated data
+    const data = await db.query.referrals.findMany({
+      where: whereCondition,
+      with: {
+        company: true,
+        createdByUser: true
+      },
+      orderBy: desc(referrals.createdAt),
+      limit: safeLimit,
+      offset
+    });
+    
+    return {
+      data,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit)
+    };
   }
   
   async getReferralsByUsers(userIds: number[]) {
