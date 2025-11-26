@@ -1984,8 +1984,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update contact status (independent from referral status)
   app.patch("/api/referrals/:id/contact-status", requireAuth, async (req, res) => {
     try {
-      // Check if user is admin or analyst - all analysts can update contact status
-      if (req.user!.role !== "admin" && req.user!.role !== "analista") {
+      // Allow admins, analysts, indicators (all levels), promoters, sellers, and managers to update contact status
+      const allowedRoles = ["admin", "analista", "indicador", "indicador_nivel_1", "promotor", "vendedor", "gerente"];
+      if (!allowedRoles.includes(req.user!.role)) {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
