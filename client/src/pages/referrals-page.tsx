@@ -25,15 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -95,7 +86,6 @@ const formatCurrency = (value: number | string | null | undefined) => {
 export default function ReferralsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState<string>("");
@@ -112,18 +102,15 @@ export default function ReferralsPage() {
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [convertObservation, setConvertObservation] = useState<string>("");
   
-  const itemsPerPage = 10;
-  
   // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setCurrentPage(1);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
   
-  // Fetch referrals with server-side pagination and search
+  // Fetch all referrals with search and status filter (no pagination)
   const { data: referralsResponse, isLoading } = useQuery<{
     data: Referral[];
     total: number;
@@ -131,7 +118,7 @@ export default function ReferralsPage() {
     limit: number;
     totalPages: number;
   }>({
-    queryKey: ['/api/referrals', { page: currentPage, limit: itemsPerPage, status: statusFilter, search: debouncedSearch }],
+    queryKey: ['/api/referrals', { page: 1, limit: 10000, status: statusFilter, search: debouncedSearch }],
   });
 
   // Fetch all companies once
@@ -145,13 +132,7 @@ export default function ReferralsPage() {
     return new Map(companies.map(c => [c.id, c]));
   }, [companies]);
   
-  const paginatedReferrals = referralsResponse?.data || [];
-  const totalPages = referralsResponse?.totalPages || 0;
-  
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter]);
+  const allReferrals = referralsResponse?.data || [];
   
   // Handle referral details view - memoized to avoid re-creating on every render
   const handleViewDetails = useCallback((referral: Referral) => {
@@ -168,14 +149,14 @@ export default function ReferralsPage() {
     }
   }, []);
   
-  // Handle select all - memoized with paginatedReferrals dependency
+  // Handle select all - memoized with allReferrals dependency
   const handleSelectAll = useCallback((checked: boolean) => {
     if (checked) {
-      setSelectedReferralIds(paginatedReferrals.map(r => r.id));
+      setSelectedReferralIds(allReferrals.map(r => r.id));
     } else {
       setSelectedReferralIds([]);
     }
-  }, [paginatedReferrals]);
+  }, [allReferrals]);
   
   // Bulk edit mutation
   const bulkEditMutation = useMutation({
@@ -402,6 +383,13 @@ export default function ReferralsPage() {
                     Resultados para: <span className="font-medium">"{debouncedSearch}"</span>
                   </p>
                 )}
+                
+                {/* Total count indicator */}
+                {!isLoading && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    <span className="font-medium">{allReferrals.length}</span> indicação(ões) encontrada(s)
+                  </p>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -409,11 +397,11 @@ export default function ReferralsPage() {
                 <div className="flex justify-center items-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : paginatedReferrals.length > 0 ? (
+              ) : allReferrals.length > 0 ? (
                 <>
                   {/* Mobile Card View */}
                   <div className="block md:hidden space-y-4">
-                    {paginatedReferrals.map((referral) => {
+                    {allReferrals.map((referral) => {
                       const company = companiesMap.get(referral.companyId);
                       return (
                         <Card key={referral.id} className="shadow-sm">
@@ -508,7 +496,7 @@ export default function ReferralsPage() {
                             <TableHead className="w-[70px]">
                               <div className="flex items-center justify-center">
                                 <Checkbox
-                                  checked={paginatedReferrals.length > 0 && paginatedReferrals.every(r => selectedReferralIds.includes(r.id))}
+                                  checked={allReferrals.length > 0 && allReferrals.every(r => selectedReferralIds.includes(r.id))}
                                   onCheckedChange={handleSelectAll}
                                   className="h-5 w-5 border-2"
                                 />
@@ -526,7 +514,7 @@ export default function ReferralsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paginatedReferrals.map((referral) => {
+                        {allReferrals.map((referral) => {
                           const company = companiesMap.get(referral.companyId);
                           return (
                           <TableRow key={referral.id}>
@@ -601,58 +589,6 @@ export default function ReferralsPage() {
                     </Table>
                   </div>
                   
-                  {totalPages > 1 && (
-                    <div className="mt-6">
-                      <Pagination>
-                        <PaginationContent>
-                          <PaginationItem>
-                            <PaginationPrevious 
-                              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                            />
-                          </PaginationItem>
-                          
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                            // Show first page, last page, current page, and pages around current
-                            if (
-                              page === 1 || 
-                              page === totalPages || 
-                              (page >= currentPage - 1 && page <= currentPage + 1)
-                            ) {
-                              return (
-                                <PaginationItem key={page}>
-                                  <PaginationLink
-                                    isActive={page === currentPage}
-                                    onClick={() => setCurrentPage(page)}
-                                  >
-                                    {page}
-                                  </PaginationLink>
-                                </PaginationItem>
-                              );
-                            }
-                            
-                            // Show ellipsis for gaps
-                            if (page === currentPage - 2 || page === currentPage + 2) {
-                              return (
-                                <PaginationItem key={page}>
-                                  <PaginationEllipsis />
-                                </PaginationItem>
-                              );
-                            }
-                            
-                            return null;
-                          })}
-                          
-                          <PaginationItem>
-                            <PaginationNext 
-                              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                            />
-                          </PaginationItem>
-                        </PaginationContent>
-                      </Pagination>
-                    </div>
-                  )}
                 </>
               ) : (
                 <div className="text-center py-12">
