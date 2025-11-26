@@ -861,7 +861,7 @@ class DatabaseStorage implements IStorage {
   async getReferralsByUserIdPaginated(userId: number, page: number = 1, limit: number = 10, status?: string, search?: string) {
     // Guard against invalid pagination parameters
     const safePage = Math.max(1, page);
-    const safeLimit = Math.max(1, Math.min(100, limit)); // Cap at 100 items per page
+    const safeLimit = Math.max(1, limit); // No limit cap - allow fetching all referrals
     const offset = (safePage - 1) * safeLimit;
     
     // Build where conditions
@@ -929,7 +929,7 @@ class DatabaseStorage implements IStorage {
   async getReferralsByCreatorPaginated(creatorId: number, page: number = 1, limit: number = 10, status?: string, search?: string) {
     // Guard against invalid pagination parameters
     const safePage = Math.max(1, page);
-    const safeLimit = Math.max(1, Math.min(100, limit)); // Cap at 100 items per page
+    const safeLimit = Math.max(1, limit); // No limit cap - allow fetching all referrals
     const offset = (safePage - 1) * safeLimit;
     
     // Build where conditions

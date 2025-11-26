@@ -387,7 +387,7 @@ export default function ReferralsPage() {
                 {/* Total count indicator */}
                 {!isLoading && (
                   <p className="text-sm text-gray-600 mt-2">
-                    <span className="font-medium">{allReferrals.length}</span> indicação(ões) encontrada(s)
+                    <span className="font-medium">{referralsResponse?.total || allReferrals.length}</span> indicação(ões) encontrada(s)
                   </p>
                 )}
               </div>
