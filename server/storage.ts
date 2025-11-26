@@ -725,6 +725,10 @@ class DatabaseStorage implements IStorage {
     // Destructure referralData to exclude licensePlates field (not in database table)
     const { licensePlates, plates, ...referralDataForDB } = referralData;
     
+    // Get creator user name
+    const creator = await this.getUserById(referralData.createdBy);
+    const creatorName = creator?.fullName || creator?.username || 'Usuário';
+    
     const [referral] = await db.insert(referrals)
       .values({
         ...referralDataForDB,
@@ -733,6 +737,7 @@ class DatabaseStorage implements IStorage {
         statusHistory: [{
           status: 'pending',
           changedBy: referralData.createdBy,
+          changedByName: creatorName,
           changedAt: new Date().toISOString(),
           notes: 'Indicação criada'
         }]
@@ -1280,7 +1285,7 @@ class DatabaseStorage implements IStorage {
     console.log(`[calculateCommissions] Called for referral ${referralId} - commissions are calculated in updateReferralStatus`);
   }
   
-  async updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number, paymentProof?: string) {
+  async updateReferralStatus(id: number, status: ReferralStatus, notes?: string, adminUserId?: number, paymentProof?: string, adminUserName?: string) {
     try {
       console.log(`[updateReferralStatus] Starting update for referral ${id} to status ${status}`);
       
@@ -1295,11 +1300,19 @@ class DatabaseStorage implements IStorage {
       
       console.log(`[updateReferralStatus] Previous status: ${previousStatus}, commissions: indicator=${previousCommissionIndicator}, promoter=${previousCommissionPromoter}`);
       
+      // Get user name if not provided
+      let changedByName = adminUserName;
+      if (!changedByName && adminUserId) {
+        const adminUser = await this.getUserById(adminUserId);
+        changedByName = adminUser?.fullName || adminUser?.username || 'Usuário';
+      }
+      
       // Add to status history
       const currentHistory = referral.statusHistory || [];
       const newHistoryEntry = {
         status,
         changedBy: adminUserId || 0,
+        changedByName: changedByName || 'Sistema',
         changedAt: new Date().toISOString(),
         notes: notes || ''
       };
@@ -1466,9 +1479,13 @@ class DatabaseStorage implements IStorage {
     // If validationNotes is provided, add it to statusHistory
     if (validationData.validationNotes && validationData.validationNotes.trim()) {
       const currentHistory = (referral.statusHistory as any[]) || [];
+      // Get validator user name
+      const validator = await this.getUserById(validatorUserId);
+      const validatorName = validator?.fullName || validator?.username || 'Usuário';
       const newHistoryEntry = {
         status: referral.status,
         changedBy: validatorUserId,
+        changedByName: validatorName,
         changedAt: new Date().toISOString(),
         notes: validationData.validationNotes.trim()
       };

@@ -1656,7 +1656,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.status,
         validatedData.notes,
         req.user!.id,
-        validatedData.paymentProof
+        validatedData.paymentProof,
+        req.user!.fullName || req.user!.username
       );
       
       // Add observation as a conversation message if provided
@@ -2021,10 +2022,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const statusHistoryEntry = {
         status: 'contact_status',
         changedBy: req.user!.id,
+        changedByName: req.user!.fullName || req.user!.username,
         changedAt: new Date().toISOString(),
         notes: contactStatus 
-          ? `Status de contato: ${contactStatusLabels[contactStatus] || contactStatus} (${req.user!.fullName || req.user!.username})`
-          : `Status de contato removido (${req.user!.fullName || req.user!.username})`
+          ? `Status de contato: ${contactStatusLabels[contactStatus] || contactStatus}`
+          : `Status de contato removido`
       };
       
       const newHistory = [...(existingReferral.statusHistory || []), statusHistoryEntry];
@@ -2113,6 +2115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const statusHistoryEntry = {
             status: 'system',
             changedBy: req.user!.id,
+            changedByName: req.user!.fullName || req.user!.username,
             changedAt: new Date().toISOString(),
             notes: `Seguradora alterada de "${oldCompany?.name || ref.companyId}" para "${company.name}" (Edição em massa)`
           };

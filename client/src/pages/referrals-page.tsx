@@ -173,6 +173,25 @@ const getStatusBadge = (status: ReferralStatus) => {
   }
 };
 
+// Helper function to get status label text
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case "pending": return "Pendente";
+    case "analyzing": return "Em Análise";
+    case "converted": return "Convertida";
+    case "rejected": return "Rejeitada";
+    case "validated": return "Validada";
+    case "paid": return "Paga";
+    case "false": return "Falso";
+    case "not_validated": return "Não validado";
+    case "not_converted": return "Não convertido";
+    case "contact_list": return "Lista de contato";
+    case "contact_status": return "Contato";
+    case "system": return "Sistema";
+    default: return status;
+  }
+};
+
 // Format date to Brazilian format
 const formatDate = (dateStr: string | Date) => {
   const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
@@ -802,6 +821,58 @@ export default function ReferralsPage() {
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Notas do Sistema</h4>
                       <p className="mt-1 text-sm text-gray-600">{selectedReferral.notes}</p>
+                    </div>
+                  )}
+                  
+                  {/* Status History Section */}
+                  {(selectedReferral as any).statusHistory && (selectedReferral as any).statusHistory.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-500">Histórico de Alterações</h4>
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {(selectedReferral as any).statusHistory
+                          .sort((a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
+                          .map((entry: any, index: number) => {
+                            const entryDate = new Date(entry.changedAt);
+                            const isContactStatus = entry.status === 'contact_status';
+                            
+                            return (
+                              <div 
+                                key={index} 
+                                className={`p-3 rounded-lg border-l-4 ${
+                                  isContactStatus 
+                                    ? 'bg-purple-50 border-purple-400' 
+                                    : 'bg-gray-50 border-blue-200'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs ${
+                                        isContactStatus 
+                                          ? 'bg-purple-100 text-purple-700 border-purple-300' 
+                                          : ''
+                                      }`}
+                                    >
+                                      {getStatusLabel(entry.status)}
+                                    </Badge>
+                                    {entry.userName && (
+                                      <span className="text-xs text-gray-600 font-medium">
+                                        {entry.userName}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-gray-500">
+                                    {entryDate.toLocaleDateString('pt-BR')} às {entryDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                                {entry.notes && (
+                                  <p className="text-sm text-gray-700 mt-1">{entry.notes}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
                   )}
                   
