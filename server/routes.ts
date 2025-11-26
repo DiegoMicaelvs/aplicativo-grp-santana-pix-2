@@ -582,6 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const canAccess = req.user!.role === "admin" || 
                        req.user!.role === "analista" ||
                        referral.userId === req.user!.id ||
+                       referral.createdBy === req.user!.id ||
                        (req.user!.role === "promotor" && referral.promoterId === req.user!.id);
       
       if (!canAccess) {

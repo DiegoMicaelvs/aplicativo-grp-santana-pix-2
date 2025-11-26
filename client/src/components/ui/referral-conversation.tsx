@@ -110,11 +110,12 @@ export function ReferralConversationComponent({ referralId, userRole }: Referral
     }
   };
 
-  const canAddMessage = userRole === "admin" || userRole === "analista" || userRole === "indicador" || userRole === "promotor";
+  const canAddMessage = userRole === "admin" || userRole === "analista";
   const canAddInternalMessage = userRole === "admin" || userRole === "analista";
-
-  // Hide conversation history for level 1 indicators, indicators, and promoters
-  if (userRole === 'indicador_nivel_1' || userRole === 'indicador' || userRole === 'promotor') {
+  
+  // Show read-only view for indicador_nivel_1 (can see history but not add messages)
+  // Hide completely for regular indicador and promotor
+  if (userRole === 'indicador' || userRole === 'promotor') {
     return null;
   }
 
