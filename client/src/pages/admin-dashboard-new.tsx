@@ -46,7 +46,8 @@ export default function AdminDashboard() {
 
   const { data: withdrawals = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/withdrawals"],
-    refetchInterval: 30000, // Poll every 30 seconds for new withdrawals
+    staleTime: 5 * 60 * 1000, // Cache válido por 5 minutos
+    refetchInterval: false,
   });
 
   const handleLogout = () => {

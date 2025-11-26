@@ -213,11 +213,11 @@ export default function ReferralsPage() {
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [convertObservation, setConvertObservation] = useState<string>("");
   
-  // Debounce search query
+  // Debounce search query - increased to 500ms for better performance
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-    }, 300);
+    }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
   

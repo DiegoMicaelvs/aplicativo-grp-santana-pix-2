@@ -91,7 +91,8 @@ export default function PromoterDashboard() {
   // Fetch referral links
   const { data: referralLinks = [], isLoading: isLoadingLinks } = useQuery<ReferralLink[]>({
     queryKey: ["/api/referral-links"],
-    refetchInterval: 30000, // Refresh every 30 seconds for stats
+    staleTime: 5 * 60 * 1000, // Cache válido por 5 minutos
+    refetchInterval: false,
   });
 
   // Fetch current user info

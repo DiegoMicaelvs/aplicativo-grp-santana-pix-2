@@ -429,7 +429,7 @@ export default function AdminReferralsDetailedPage() {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setSearchTerm(searchInput);
-    }, 300);
+    }, 500);
     return () => clearTimeout(timer);
   }, [searchInput]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
