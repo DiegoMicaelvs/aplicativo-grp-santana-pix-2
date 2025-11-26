@@ -57,14 +57,17 @@ export function ReferralConversationComponent({ referralId, userRole }: Referral
     },
   });
 
-  const { data: conversations = [], isLoading } = useQuery<ReferralConversationWithUser[]>({
-    queryKey: ["/api/referrals", referralId, "conversations"],
+  const { data: conversationsData, isLoading } = useQuery<ReferralConversationWithUser[]>({
+    queryKey: [`/api/referrals/${referralId}/conversations`],
+    enabled: !!referralId,
   });
+  
+  const conversations = Array.isArray(conversationsData) ? conversationsData : [];
 
   const createConversationMutation = useMutation({
     mutationFn: (data: ConversationFormValues) => apiRequest("POST", `/api/referrals/${referralId}/conversations`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/referrals", referralId, "conversations"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/referrals/${referralId}/conversations`] });
       form.reset();
       toast({
         title: "Mensagem enviada",
