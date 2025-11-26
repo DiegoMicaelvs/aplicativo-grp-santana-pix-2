@@ -281,6 +281,115 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
   );
 }
 
+// Contact Status types and labels
+type ContactStatus = "retornar_contato" | "sem_sucesso" | "em_negociacao" | "aguardando_pagamento" | null;
+
+const contactStatusLabels: Record<string, string> = {
+  retornar_contato: "Retornar Contato",
+  sem_sucesso: "Sem Sucesso",
+  em_negociacao: "Em negociação",
+  aguardando_pagamento: "Aguardando pagamento"
+};
+
+const contactStatusColors: Record<string, string> = {
+  retornar_contato: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  sem_sucesso: "bg-red-100 text-red-800 border-red-300",
+  em_negociacao: "bg-blue-100 text-blue-800 border-blue-300",
+  aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300"
+};
+
+// Contact Status Dialog Component
+function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
+
+  const updateContactStatusMutation = useMutation({
+    mutationFn: async (contactStatus: ContactStatus) => {
+      const response = await fetch(`/api/referrals/${referral.id}/contact-status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ contactStatus }),
+      });
+      if (!response.ok) throw new Error("Erro ao atualizar status de contato");
+      return response.json();
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
+      ]);
+      toast({ title: "Status de contato atualizado!" });
+      setIsOpen(false);
+      onUpdate();
+    },
+    onError: () => {
+      toast({ title: "Erro ao atualizar status de contato", variant: "destructive" });
+    },
+  });
+
+  const handleStatusChange = (status: ContactStatus) => {
+    updateContactStatusMutation.mutate(status);
+  };
+
+  const currentStatus = referral.contactStatus as ContactStatus;
+  const buttonClass = currentStatus 
+    ? contactStatusColors[currentStatus] 
+    : "bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200";
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className={cn("text-xs px-2", buttonClass)}
+          title={currentStatus ? contactStatusLabels[currentStatus] : "Definir status de contato"}
+        >
+          <Clock className="h-3 w-3 mr-1" />
+          {currentStatus ? contactStatusLabels[currentStatus].substring(0, 8) + "..." : "Contato"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-2" align="end">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-gray-500 mb-2">Status do Contato</p>
+          {Object.entries(contactStatusLabels).map(([value, label]) => (
+            <Button
+              key={value}
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "w-full justify-start text-sm",
+                currentStatus === value && "bg-accent"
+              )}
+              onClick={() => handleStatusChange(value as ContactStatus)}
+              disabled={updateContactStatusMutation.isPending}
+            >
+              <div className={cn("w-2 h-2 rounded-full mr-2", contactStatusColors[value]?.split(' ')[0])} />
+              {label}
+            </Button>
+          ))}
+          {currentStatus && (
+            <>
+              <div className="border-t my-2" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-sm text-gray-500"
+                onClick={() => handleStatusChange(null)}
+                disabled={updateContactStatusMutation.isPending}
+              >
+                <X className="h-3 w-3 mr-2" />
+                Remover status
+              </Button>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // Helper function to convert UTC date to local datetime-local format
 function convertToLocalDateTimeString(utcDateString: string): string {
   if (!utcDateString) return "";
@@ -309,6 +418,7 @@ export default function AdminReferralsDetailedPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all_statuses");
+  const [contactStatusFilter, setContactStatusFilter] = useState<string>("all_contact_statuses");
   const [userFilter, setUserFilter] = useState<string>("all_users");
   const [companyFilter, setCompanyFilter] = useState<string>("all_companies");
   const [monthFilter, setMonthFilter] = useState<string>("all_months");
@@ -528,6 +638,7 @@ export default function AdminReferralsDetailedPage() {
     // Early return if no filters and no search
     if (searchTerm === "" && 
         statusFilter === "all_statuses" && 
+        contactStatusFilter === "all_contact_statuses" &&
         userFilter === "all_users" && 
         companyFilter === "all_companies" && 
         monthFilter === "all_months" && 
@@ -541,6 +652,13 @@ export default function AdminReferralsDetailedPage() {
     return referrals.filter((referral: any) => {
       // Quick filters first (cheapest operations)
       if (statusFilter !== "all_statuses" && referral.status !== statusFilter) return false;
+      if (contactStatusFilter !== "all_contact_statuses") {
+        if (contactStatusFilter === "no_contact_status") {
+          if (referral.contactStatus) return false;
+        } else if (referral.contactStatus !== contactStatusFilter) {
+          return false;
+        }
+      }
       if (userFilter !== "all_users" && referral.userId.toString() !== userFilter) return false;
       if (companyFilter !== "all_companies" && referral.companyId?.toString() !== companyFilter) return false;
       
@@ -610,7 +728,7 @@ export default function AdminReferralsDetailedPage() {
       
       return true;
     });
-  }, [referrals, userLookupMap, searchTerm, statusFilter, userFilter, companyFilter, monthFilter, localFilter]);
+  }, [referrals, userLookupMap, searchTerm, statusFilter, contactStatusFilter, userFilter, companyFilter, monthFilter, localFilter]);
 
   // Memoized filter options to prevent recalculation on every render
   const activeIndicators = useMemo(() => {
@@ -964,7 +1082,7 @@ export default function AdminReferralsDetailedPage() {
             </div>
             
             {/* Filter Selects - Responsive Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full text-sm md:text-base">
                   <SelectValue placeholder="Status" />
@@ -981,6 +1099,20 @@ export default function AdminReferralsDetailedPage() {
                   <SelectItem value="not_validated">Não validado</SelectItem>
                   <SelectItem value="not_converted">Não convertido</SelectItem>
                   <SelectItem value="contact_list">Lista de contato</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={contactStatusFilter} onValueChange={setContactStatusFilter}>
+                <SelectTrigger className="w-full text-sm md:text-base">
+                  <SelectValue placeholder="Status Contato" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_contact_statuses">Todos Contatos</SelectItem>
+                  <SelectItem value="no_contact_status">Sem Status</SelectItem>
+                  <SelectItem value="retornar_contato">Retornar Contato</SelectItem>
+                  <SelectItem value="sem_sucesso">Sem Sucesso</SelectItem>
+                  <SelectItem value="em_negociacao">Em negociação</SelectItem>
+                  <SelectItem value="aguardando_pagamento">Aguardando pagamento</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -1152,9 +1284,14 @@ export default function AdminReferralsDetailedPage() {
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
                     {(user?.role === 'analista' || user?.role === 'admin') && (
                       <ValidationDialog referral={referral} onValidate={() => {
+                        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+                      }} />
+                    )}
+                    {(user?.role === 'analista' || user?.role === 'admin') && (
+                      <ContactStatusDialog referral={referral} onUpdate={() => {
                         queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
                       }} />
                     )}
@@ -1626,6 +1763,7 @@ export default function AdminReferralsDetailedPage() {
                   <TableHead className="min-w-[80px]">Tem Seguro</TableHead>
                   <TableHead className="min-w-[110px]">Indicador</TableHead>
                   <TableHead className="min-w-[90px]">Status</TableHead>
+                  <TableHead className="min-w-[90px]">Contato</TableHead>
                   <TableHead className="min-w-[100px]">Comissões</TableHead>
                   <TableHead className="min-w-[70px]">Data</TableHead>
                   <TableHead className="min-w-[100px]">Ações</TableHead>
@@ -1663,6 +1801,15 @@ export default function AdminReferralsDetailedPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs">
+                      {referral.contactStatus ? (
+                        <Badge className={cn("text-xs", contactStatusColors[referral.contactStatus])}>
+                          {contactStatusLabels[referral.contactStatus]}
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs">
                       <div>
                         <span className="text-green-600 font-semibold">
                           I: {(parseFloat(referral.commissionIndicator) || 0).toFixed(0)}
@@ -1683,6 +1830,13 @@ export default function AdminReferralsDetailedPage() {
                         {(user?.role === 'analista' || user?.role === 'admin') && (
                           <ValidationDialog referral={referral} onValidate={() => {
                             // Recarregar dados após validação
+                            queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+                          }} />
+                        )}
+                        
+                        {/* Botão de Status do Contato - apenas para analistas e admin */}
+                        {(user?.role === 'analista' || user?.role === 'admin') && (
+                          <ContactStatusDialog referral={referral} onUpdate={() => {
                             queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
                           }} />
                         )}

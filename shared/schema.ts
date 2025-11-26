@@ -84,6 +84,9 @@ export const companySettings = pgTable("company_settings", {
 // Referral statuses
 export type ReferralStatus = "pending" | "analyzing" | "validated" | "converted" | "rejected" | "paid" | "false" | "not_validated" | "not_converted" | "contact_list";
 
+// Contact statuses (independent from referral status)
+export type ContactStatus = "retornar_contato" | "sem_sucesso" | "em_negociacao" | "aguardando_pagamento" | null;
+
 // Referrals table
 export const referrals = pgTable("referrals", {
   id: serial("id").primaryKey(),
@@ -117,6 +120,10 @@ export const referrals = pgTable("referrals", {
   // Campos de localização da indicação
   city: text("city"), // Cidade onde foi feita a indicação
   state: text("state"), // Estado onde foi feita a indicação
+  // Contact status (independent from referral status)
+  contactStatus: text("contact_status").$type<ContactStatus>(), // Status do contato
+  contactStatusUpdatedAt: timestamp("contact_status_updated_at"), // Quando o status de contato foi atualizado
+  contactStatusUpdatedBy: integer("contact_status_updated_by").references(() => users.id), // Quem atualizou
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

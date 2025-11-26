@@ -1981,6 +1981,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update contact status (independent from referral status)
+  app.patch("/api/referrals/:id/contact-status", requireAuth, async (req, res) => {
+    try {
+      // Check if user is admin or analyst - all analysts can update contact status
+      if (req.user!.role !== "admin" && req.user!.role !== "analista") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const referralId = parseInt(req.params.id);
+      const { contactStatus } = req.body;
+      
+      // Validate contact status value
+      const validContactStatuses = ["retornar_contato", "sem_sucesso", "em_negociacao", "aguardando_pagamento", null];
+      if (!validContactStatuses.includes(contactStatus)) {
+        return res.status(400).json({ error: "Status de contato inválido" });
+      }
+      
+      // Check if referral exists
+      const existingReferral = await storage.getReferralById(referralId);
+      if (!existingReferral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Import required Drizzle functions
+      const { eq } = await import('drizzle-orm');
+      const { referrals } = await import('@shared/schema.ts');
+      
+      // Update contact status using raw SQL since this is a new field
+      const result = await db
+        .update(referrals)
+        .set({
+          contactStatus: contactStatus,
+          contactStatusUpdatedAt: new Date(),
+          contactStatusUpdatedBy: req.user!.id,
+          updatedAt: new Date()
+        })
+        .where(eq(referrals.id, referralId))
+        .returning();
+      
+      console.log(`[CONTACT STATUS] User ${req.user!.id} updated referral ${referralId} contact status to ${contactStatus}`);
+      
+      // Log the update
+      await storage.logUserAction({
+        userId: req.user!.id,
+        action: "update_contact_status",
+        entityType: "referral",
+        entityId: referralId,
+        oldValues: { contactStatus: existingReferral.contactStatus },
+        newValues: { contactStatus },
+        details: `Status de contato da indicação ${referralId} alterado para ${contactStatus || 'nenhum'}`
+      });
+      
+      return res.json(result[0]);
+    } catch (error) {
+      console.error("Error updating contact status:", error);
+      return res.status(500).json({ error: "Erro ao atualizar status de contato" });
+    }
+  });
+
   // Bulk update referral company (admin only)
   app.patch("/api/referrals/bulk-company-update", requireAdmin, async (req, res) => {
     try {
