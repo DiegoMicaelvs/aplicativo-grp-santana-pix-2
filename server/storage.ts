@@ -1031,6 +1031,9 @@ class DatabaseStorage implements IStorage {
         validationNotes: referrals.validationNotes,
         paymentProof: referrals.paymentProof,
         promoterId: referrals.promoterId,
+        contactStatus: referrals.contactStatus,
+        contactStatusUpdatedAt: referrals.contactStatusUpdatedAt,
+        contactStatusUpdatedBy: referrals.contactStatusUpdatedBy,
         // User relation
         user: {
           id: users.id,
@@ -1105,6 +1108,9 @@ class DatabaseStorage implements IStorage {
         validationNotes: referrals.validationNotes,
         paymentProof: referrals.paymentProof,
         promoterId: referrals.promoterId,
+        contactStatus: referrals.contactStatus,
+        contactStatusUpdatedAt: referrals.contactStatusUpdatedAt,
+        contactStatusUpdatedBy: referrals.contactStatusUpdatedBy,
         // User relation
         user: {
           id: users.id,
