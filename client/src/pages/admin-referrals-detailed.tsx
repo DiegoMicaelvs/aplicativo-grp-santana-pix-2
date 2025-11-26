@@ -338,10 +338,12 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
         <Button 
           variant="outline" 
           size="sm" 
-          className={cn("text-xs px-2 h-7", buttonClass)}
+          className={cn("text-xs px-2 h-7 whitespace-nowrap", buttonClass)}
         >
-          <Clock className="h-3 w-3 mr-1" />
-          {currentStatus ? contactStatusLabels[currentStatus].substring(0, 10) : "Contato"}
+          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+          <span className="truncate max-w-[120px]">
+            {currentStatus ? contactStatusLabels[currentStatus] : "Contato"}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-52 p-1" align="end" sideOffset={4}>
