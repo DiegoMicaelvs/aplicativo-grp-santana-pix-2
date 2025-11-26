@@ -28,8 +28,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield, RefreshCw, Download } from "lucide-react";
+import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield, RefreshCw, Download, Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { BackButton } from "@/components/ui/back-button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -75,6 +81,95 @@ const statusLabels: Record<string, string> = {
   not_converted: "Não Convertido",
   contact_list: "Lista de contato",
 };
+
+type ContactStatus = "retornar_contato" | "sem_sucesso" | "em_negociacao" | "aguardando_pagamento" | null;
+
+const contactStatusLabels: Record<string, string> = {
+  retornar_contato: "Retornar Contato",
+  sem_sucesso: "Sem Sucesso",
+  em_negociacao: "Em negociação",
+  aguardando_pagamento: "Aguardando pagamento",
+};
+
+const contactStatusColors: Record<string, string> = {
+  retornar_contato: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  sem_sucesso: "bg-red-100 text-red-800 border-red-300",
+  em_negociacao: "bg-blue-100 text-blue-800 border-blue-300",
+  aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300",
+};
+
+function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const { toast } = useToast();
+
+  const handleStatusChange = async (status: ContactStatus) => {
+    setIsPending(true);
+    try {
+      const response = await fetch(`/api/referrals/${referral.id}/contact-status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ contactStatus: status }),
+      });
+      if (!response.ok) throw new Error("Erro ao atualizar status de contato");
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      toast({ title: "Status de contato atualizado!" });
+      setIsOpen(false);
+      onUpdate();
+    } catch (error) {
+      toast({ title: "Erro ao atualizar status de contato", variant: "destructive" });
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const currentStatus = referral.contactStatus as ContactStatus;
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="text-xs"
+          disabled={isPending}
+        >
+          <Phone className="h-3 w-3 mr-1" />
+          <span>Contato</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-2" align="end">
+        <p className="text-xs font-medium text-gray-500 px-2 py-1">Status do Contato</p>
+        {Object.entries(contactStatusLabels).map(([value, label]) => (
+          <button
+            key={value}
+            className={cn(
+              "w-full text-left px-2 py-1.5 text-sm rounded hover:bg-gray-100 flex items-center",
+              currentStatus === value && "bg-gray-100 font-medium"
+            )}
+            onClick={() => handleStatusChange(value as ContactStatus)}
+            disabled={isPending}
+          >
+            <div className={cn("w-2 h-2 rounded-full mr-2", contactStatusColors[value]?.split(' ')[0])} />
+            {label}
+          </button>
+        ))}
+        {currentStatus && (
+          <button
+            className="w-full text-left px-2 py-1.5 text-sm text-red-600 rounded hover:bg-gray-100 mt-1 border-t"
+            onClick={() => handleStatusChange(null)}
+            disabled={isPending}
+          >
+            Limpar status
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function AnalystReferrals() {
   const { user } = useAuth();
@@ -628,11 +723,16 @@ export default function AnalystReferrals() {
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center flex-wrap gap-2 mb-1">
                               <span className="text-xs font-mono text-gray-500">#{referral.id}</span>
                               <Badge className={statusColors[referral.status]}>
                                 {statusLabels[referral.status]}
                               </Badge>
+                              {referral.contactStatus && (
+                                <Badge variant="outline" className={contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"}>
+                                  {contactStatusLabels[referral.contactStatus] || "Sem status"}
+                                </Badge>
+                              )}
                             </div>
                             <h3 className="font-medium text-base">{referral.fullName}</h3>
                             <p className="text-sm text-gray-600">{referral.phone}</p>
@@ -683,6 +783,12 @@ export default function AnalystReferrals() {
                         
                         {canEdit && (
                           <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t">
+                            <ContactStatusDialog 
+                              referral={referral} 
+                              onUpdate={() => {
+                                queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+                              }} 
+                            />
                             <Button
                               variant="outline"
                               size="sm"
@@ -723,6 +829,7 @@ export default function AnalystReferrals() {
                       <TableHead>Indicador</TableHead>
                       <TableHead>Empresa</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Contato</TableHead>
                       <TableHead>Data</TableHead>
                       {canEdit && <TableHead>Ações</TableHead>}
                     </TableRow>
@@ -769,11 +876,26 @@ export default function AnalystReferrals() {
                             </Badge>
                           </TableCell>
                           <TableCell>
+                            {referral.contactStatus ? (
+                              <Badge variant="outline" className={contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"}>
+                                {contactStatusLabels[referral.contactStatus] || "Sem status"}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
                             {new Date(referral.createdAt).toLocaleDateString("pt-BR")}
                           </TableCell>
                           {canEdit && (
                             <TableCell>
                               <div className="flex gap-2">
+                                <ContactStatusDialog 
+                                  referral={referral} 
+                                  onUpdate={() => {
+                                    queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
+                                  }} 
+                                />
                                 <Button
                                   variant="outline"
                                   size="sm"
