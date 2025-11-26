@@ -856,9 +856,9 @@ export default function ReferralsPage() {
                                     >
                                       {getStatusLabel(entry.status)}
                                     </Badge>
-                                    {entry.userName && (
+                                    {entry.changedByName && (
                                       <span className="text-xs text-gray-600 font-medium">
-                                        {entry.userName}
+                                        por {entry.changedByName}
                                       </span>
                                     )}
                                   </div>
