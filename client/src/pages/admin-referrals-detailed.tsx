@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown, XCircle, RefreshCw } from "lucide-react";
+import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown, XCircle, RefreshCw, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -2086,44 +2086,58 @@ export default function AdminReferralsDetailedPage() {
                                   </Button>
                                 </div>
                                 
+                                {/* Seção: Contato */}
+                                <div className="space-y-4 border border-purple-200 rounded-lg p-4 bg-purple-50">
+                                  <h3 className="font-semibold text-purple-700 flex items-center gap-2">
+                                    <Phone className="h-4 w-4" />
+                                    Contato
+                                  </h3>
+                                  
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm font-medium">Status atual:</span>
+                                    {selectedReferral.contactStatus ? (
+                                      <Badge className={cn("text-sm", contactStatusColors[selectedReferral.contactStatus])}>
+                                        {contactStatusLabels[selectedReferral.contactStatus]}
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-sm text-gray-400">Sem status de contato</span>
+                                    )}
+                                  </div>
+                                  
+                                  <ContactStatusDialog referral={selectedReferral} onUpdate={() => {
+                                    queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+                                  }} />
+                                </div>
+                                
                                 {/* Seção 2: Alterar Status */}
                                 <div className="space-y-4 border rounded-lg p-4">
                                   <h3 className="font-semibold">Alterar Status</h3>
                                   
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium">Status</label>
-                                    <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReferralStatus)}>
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="pending">Pendente</SelectItem>
-                                        <SelectItem value="analyzing">Em Análise</SelectItem>
-                                        <SelectItem value="converted">Convertida</SelectItem>
-                                        <SelectItem value="rejected">Rejeitada</SelectItem>
-                                        <SelectItem value="validated">Validada</SelectItem>
-                                        <SelectItem value="paid">Paga</SelectItem>
-                                        <SelectItem value="false">Falso</SelectItem>
-                                        <SelectItem value="not_validated">Não validado</SelectItem>
-                                        <SelectItem value="not_converted">Não convertido</SelectItem>
-                                        <SelectItem value="contact_list">Lista de contato</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <label className="text-sm font-medium">Contato</label>
                                     <div className="flex items-center gap-2">
-                                      {selectedReferral.contactStatus ? (
-                                        <Badge className={cn("text-sm", contactStatusColors[selectedReferral.contactStatus])}>
+                                      <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReferralStatus)}>
+                                        <SelectTrigger className="flex-1">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="pending">Pendente</SelectItem>
+                                          <SelectItem value="analyzing">Em Análise</SelectItem>
+                                          <SelectItem value="converted">Convertida</SelectItem>
+                                          <SelectItem value="rejected">Rejeitada</SelectItem>
+                                          <SelectItem value="validated">Validada</SelectItem>
+                                          <SelectItem value="paid">Paga</SelectItem>
+                                          <SelectItem value="false">Falso</SelectItem>
+                                          <SelectItem value="not_validated">Não validado</SelectItem>
+                                          <SelectItem value="not_converted">Não convertido</SelectItem>
+                                          <SelectItem value="contact_list">Lista de contato</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      {selectedReferral.contactStatus && (
+                                        <Badge className={cn("text-xs whitespace-nowrap", contactStatusColors[selectedReferral.contactStatus])}>
                                           {contactStatusLabels[selectedReferral.contactStatus]}
                                         </Badge>
-                                      ) : (
-                                        <span className="text-sm text-gray-400">Sem status de contato</span>
                                       )}
-                                      <ContactStatusDialog referral={selectedReferral} onUpdate={() => {
-                                        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
-                                      }} />
                                     </div>
                                   </div>
                                   
