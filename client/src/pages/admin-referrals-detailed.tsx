@@ -867,7 +867,7 @@ export default function AdminReferralsDetailedPage() {
     }
   };
 
-  const getStatusLabel = (status: ReferralStatus) => {
+  const getStatusLabel = (status: ReferralStatus | string) => {
     switch (status) {
       case "pending": return "Pendente";
       case "analyzing": return "Em Análise";
@@ -879,6 +879,8 @@ export default function AdminReferralsDetailedPage() {
       case "not_validated": return "Não validado";
       case "not_converted": return "Não convertido";
       case "contact_list": return "Lista de contato";
+      case "contact_status": return "Contato";
+      case "system": return "Sistema";
       default: return status;
     }
   };
@@ -2219,10 +2221,10 @@ export default function AdminReferralsDetailedPage() {
                                           const entryDate = new Date(entry.changedAt);
                                           
                                           return (
-                                            <div key={index} className="p-3 bg-gray-50 rounded-lg border-l-4 border-blue-200">
+                                            <div key={index} className={`p-3 bg-gray-50 rounded-lg border-l-4 ${entry.status === 'contact_status' ? 'border-purple-400' : entry.status === 'system' ? 'border-gray-400' : 'border-blue-200'}`}>
                                               <div className="flex justify-between items-start mb-2">
                                                 <div className="flex items-center gap-2">
-                                                  <Badge variant="outline" className="text-xs">
+                                                  <Badge variant="outline" className={`text-xs ${entry.status === 'contact_status' ? 'bg-purple-50 text-purple-700 border-purple-300' : ''}`}>
                                                     {getStatusLabel(entry.status)}
                                                   </Badge>
                                                   <span className="text-xs text-gray-600 font-medium">

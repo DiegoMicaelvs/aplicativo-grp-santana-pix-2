@@ -2009,13 +2009,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { eq } = await import('drizzle-orm');
       const { referrals } = await import('@shared/schema.ts');
       
-      // Update contact status using raw SQL since this is a new field
+      // Contact status labels for history
+      const contactStatusLabels: Record<string, string> = {
+        retornar_contato: "Retornar Contato",
+        sem_sucesso: "Sem Sucesso",
+        em_negociacao: "Em negociação",
+        aguardando_pagamento: "Aguardando pagamento"
+      };
+      
+      // Create status history entry for contact status change
+      const statusHistoryEntry = {
+        status: 'contact_status',
+        changedBy: req.user!.id,
+        changedAt: new Date().toISOString(),
+        notes: contactStatus 
+          ? `Status de contato: ${contactStatusLabels[contactStatus] || contactStatus} (${req.user!.fullName || req.user!.username})`
+          : `Status de contato removido (${req.user!.fullName || req.user!.username})`
+      };
+      
+      const newHistory = [...(existingReferral.statusHistory || []), statusHistoryEntry];
+      
+      // Update contact status and add to history
       const result = await db
         .update(referrals)
         .set({
           contactStatus: contactStatus,
           contactStatusUpdatedAt: new Date(),
           contactStatusUpdatedBy: req.user!.id,
+          statusHistory: newHistory as any,
           updatedAt: new Date()
         })
         .where(eq(referrals.id, referralId))
