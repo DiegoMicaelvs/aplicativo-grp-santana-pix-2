@@ -328,9 +328,6 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
   };
 
   const currentStatus = referral.contactStatus as ContactStatus;
-  const buttonClass = currentStatus 
-    ? contactStatusColors[currentStatus] 
-    : "bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200";
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -338,12 +335,10 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
         <Button 
           variant="outline" 
           size="sm" 
-          className={cn("text-xs px-2 h-7 whitespace-nowrap", buttonClass)}
+          className="text-xs px-2 h-7 whitespace-nowrap bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200"
         >
           <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="truncate max-w-[120px]">
-            {currentStatus ? contactStatusLabels[currentStatus] : "Contato"}
-          </span>
+          <span>Contato</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-52 p-1" align="end" sideOffset={4}>
@@ -2114,6 +2109,22 @@ export default function AdminReferralsDetailedPage() {
                                         <SelectItem value="contact_list">Lista de contato</SelectItem>
                                       </SelectContent>
                                     </Select>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium">Contato</label>
+                                    <div className="flex items-center gap-2">
+                                      {selectedReferral.contactStatus ? (
+                                        <Badge className={cn("text-sm", contactStatusColors[selectedReferral.contactStatus])}>
+                                          {contactStatusLabels[selectedReferral.contactStatus]}
+                                        </Badge>
+                                      ) : (
+                                        <span className="text-sm text-gray-400">Sem status de contato</span>
+                                      )}
+                                      <ContactStatusDialog referral={selectedReferral} onUpdate={() => {
+                                        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+                                      }} />
+                                    </div>
                                   </div>
                                   
                                   <div className="space-y-2">

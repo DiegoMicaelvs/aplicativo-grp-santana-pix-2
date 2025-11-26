@@ -100,9 +100,6 @@ function ContactStatusBadge({ referral, onUpdate }: { referral: any; onUpdate: (
   };
 
   const currentStatus = referral.contactStatus as ContactStatus;
-  const buttonClass = currentStatus 
-    ? contactStatusColors[currentStatus] 
-    : "bg-gray-50 hover:bg-gray-100 text-gray-600 border-gray-200";
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -110,12 +107,10 @@ function ContactStatusBadge({ referral, onUpdate }: { referral: any; onUpdate: (
         <Button 
           variant="outline" 
           size="sm" 
-          className={cn("text-xs px-2 h-7 whitespace-nowrap", buttonClass)}
+          className="text-xs px-2 h-7 whitespace-nowrap bg-gray-50 hover:bg-gray-100 text-gray-600 border-gray-200"
         >
           <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="truncate max-w-[120px]">
-            {currentStatus ? contactStatusLabels[currentStatus] : "Contato"}
-          </span>
+          <span>Contato</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-52 p-1" align="end" sideOffset={4}>
@@ -735,10 +730,23 @@ export default function ReferralsPage() {
               
               {selectedReferral && (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <h4 className="text-sm font-medium text-gray-500">Status</h4>
                       <div className="mt-1">{getStatusBadge(selectedReferral.status)}</div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Contato</h4>
+                      <div className="mt-1">
+                        {(selectedReferral as any).contactStatus ? (
+                          <Badge variant="outline" className={contactStatusColors[(selectedReferral as any).contactStatus] || "bg-gray-100 text-gray-800"}>
+                            {contactStatusLabels[(selectedReferral as any).contactStatus] || "Sem status"}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-gray-400">Sem status de contato</span>
+                        )}
+                      </div>
                     </div>
                     
                     <div>
