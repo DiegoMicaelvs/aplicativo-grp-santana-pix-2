@@ -82,8 +82,8 @@ export interface IStorage {
   getReferralById(id: number): Promise<any>;
   getAllReferralsForMetisViewer(): Promise<any[]>;
   getReferralsByUserId(userId: number): Promise<any[]>;
-  getReferralsByUserIdPaginated(userId: number, page?: number, limit?: number, status?: string): Promise<{ data: any[], total: number, page: number, limit: number, totalPages: number }>;
-  getReferralsByCreatorPaginated(creatorId: number, page?: number, limit?: number, status?: string): Promise<{ data: any[], total: number, page: number, limit: number, totalPages: number }>;
+  getReferralsByUserIdPaginated(userId: number, page?: number, limit?: number, status?: string, search?: string): Promise<{ data: any[], total: number, page: number, limit: number, totalPages: number }>;
+  getReferralsByCreatorPaginated(creatorId: number, page?: number, limit?: number, status?: string, search?: string): Promise<{ data: any[], total: number, page: number, limit: number, totalPages: number }>;
   getReferralsByUsers(userIds: number[]): Promise<any[]>;
   getAllReferrals(): Promise<any[]>;
   getReferralsByStatus(status: ReferralStatus): Promise<any[]>;
@@ -858,17 +858,34 @@ class DatabaseStorage implements IStorage {
     });
   }
 
-  async getReferralsByUserIdPaginated(userId: number, page: number = 1, limit: number = 10, status?: string) {
+  async getReferralsByUserIdPaginated(userId: number, page: number = 1, limit: number = 10, status?: string, search?: string) {
     // Guard against invalid pagination parameters
     const safePage = Math.max(1, page);
     const safeLimit = Math.max(1, Math.min(100, limit)); // Cap at 100 items per page
     const offset = (safePage - 1) * safeLimit;
     
     // Build where conditions
-    let whereCondition = eq(referrals.userId, userId);
+    const conditions: any[] = [eq(referrals.userId, userId)];
+    
     if (status) {
-      whereCondition = and(whereCondition, eq(referrals.status, status as ReferralStatus)) as any;
+      conditions.push(eq(referrals.status, status as ReferralStatus));
     }
+    
+    // Add search condition
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim().toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(${referrals.fullName}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.phone}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.licensePlate}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.city}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.state}) LIKE ${searchTerm}`
+        )
+      );
+    }
+    
+    const whereCondition = and(...conditions);
     
     // Get total count
     const totalResult = await db
@@ -909,17 +926,34 @@ class DatabaseStorage implements IStorage {
     });
   }
   
-  async getReferralsByCreatorPaginated(creatorId: number, page: number = 1, limit: number = 10, status?: string) {
+  async getReferralsByCreatorPaginated(creatorId: number, page: number = 1, limit: number = 10, status?: string, search?: string) {
     // Guard against invalid pagination parameters
     const safePage = Math.max(1, page);
     const safeLimit = Math.max(1, Math.min(100, limit)); // Cap at 100 items per page
     const offset = (safePage - 1) * safeLimit;
     
     // Build where conditions
-    let whereCondition = eq(referrals.createdBy, creatorId);
+    const conditions: any[] = [eq(referrals.createdBy, creatorId)];
+    
     if (status) {
-      whereCondition = and(whereCondition, eq(referrals.status, status as ReferralStatus)) as any;
+      conditions.push(eq(referrals.status, status as ReferralStatus));
     }
+    
+    // Add search condition
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim().toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(${referrals.fullName}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.phone}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.licensePlate}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.city}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.state}) LIKE ${searchTerm}`
+        )
+      );
+    }
+    
+    const whereCondition = and(...conditions);
     
     // Get total count
     const totalResult = await db

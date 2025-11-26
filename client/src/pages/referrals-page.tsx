@@ -39,7 +39,7 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { BackButton } from "@/components/ui/back-button";
 import { ReferralConversationComponent } from "@/components/ui/referral-conversation";
-import { Eye, FilterIcon, Loader2, Edit, CheckCircle, Upload } from "lucide-react";
+import { Eye, FilterIcon, Loader2, Edit, CheckCircle, Upload, Search, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
@@ -96,6 +96,8 @@ export default function ReferralsPage() {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedReferralIds, setSelectedReferralIds] = useState<number[]>([]);
@@ -110,7 +112,16 @@ export default function ReferralsPage() {
   
   const itemsPerPage = 10;
   
-  // Fetch referrals with server-side pagination
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  // Fetch referrals with server-side pagination and search
   const { data: referralsResponse, isLoading } = useQuery<{
     data: Referral[];
     total: number;
@@ -118,7 +129,7 @@ export default function ReferralsPage() {
     limit: number;
     totalPages: number;
   }>({
-    queryKey: ['/api/referrals', { page: currentPage, limit: itemsPerPage, status: statusFilter }],
+    queryKey: ['/api/referrals', { page: currentPage, limit: itemsPerPage, status: statusFilter, search: debouncedSearch }],
   });
 
   // Fetch all companies once
@@ -359,6 +370,33 @@ export default function ReferralsPage() {
                     </div>
                   )}
                 </div>
+              </div>
+              
+              {/* Search Input */}
+              <div className="mt-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Pesquisar por nome, placa, telefone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {debouncedSearch && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Resultados para: <span className="font-medium">"{debouncedSearch}"</span>
+                  </p>
+                )}
               </div>
             </CardHeader>
             <CardContent>

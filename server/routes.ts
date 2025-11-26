@@ -275,12 +275,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === REFERRAL ROUTES ===
   
-  // Get current user's referrals with server-side pagination
+  // Get current user's referrals with server-side pagination and search
   app.get("/api/referrals", requireAuth, async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as string;
+      const search = req.query.search as string;
       
       // For indicador_nivel_1, get referrals by createdBy and FORCE status to "validated"
       let result;
@@ -290,7 +291,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.user!.id,
           page,
           limit,
-          'validated' // Always filter by validated status
+          'validated', // Always filter by validated status
+          search
         );
       } else {
         const finalStatus = status && status !== 'all' ? status : undefined;
@@ -298,7 +300,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.user!.id,
           page,
           limit,
-          finalStatus
+          finalStatus,
+          search
         );
       }
       
