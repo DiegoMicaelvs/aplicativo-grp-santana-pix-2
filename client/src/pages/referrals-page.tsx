@@ -43,9 +43,118 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Referral, ReferralStatus, Company } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
+import { Clock } from "lucide-react";
+
+// Contact Status types and labels
+type ContactStatus = "retornar_contato" | "sem_sucesso" | "em_negociacao" | "aguardando_pagamento" | null;
+
+const contactStatusLabels: Record<string, string> = {
+  retornar_contato: "Retornar Contato",
+  sem_sucesso: "Sem Sucesso",
+  em_negociacao: "Em negociação",
+  aguardando_pagamento: "Aguardando pagamento"
+};
+
+const contactStatusColors: Record<string, string> = {
+  retornar_contato: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  sem_sucesso: "bg-red-100 text-red-800 border-red-300",
+  em_negociacao: "bg-blue-100 text-blue-800 border-blue-300",
+  aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300"
+};
+
+// Contact Status Badge Component - optimized for performance
+function ContactStatusBadge({ referral, onUpdate }: { referral: any; onUpdate: () => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const { toast } = useToast();
+
+  const handleStatusChange = async (status: ContactStatus) => {
+    setIsPending(true);
+    try {
+      const response = await fetch(`/api/referrals/${referral.id}/contact-status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ contactStatus: status }),
+      });
+      if (!response.ok) throw new Error("Erro ao atualizar status de contato");
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
+      toast({ title: "Status de contato atualizado!" });
+      setIsOpen(false);
+      onUpdate();
+    } catch (error) {
+      toast({ title: "Erro ao atualizar status de contato", variant: "destructive" });
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const currentStatus = referral.contactStatus as ContactStatus;
+  const buttonClass = currentStatus 
+    ? contactStatusColors[currentStatus] 
+    : "bg-gray-50 hover:bg-gray-100 text-gray-600 border-gray-200";
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className={cn("text-xs px-2 h-7", buttonClass)}
+        >
+          <Clock className="h-3 w-3 mr-1" />
+          {currentStatus ? contactStatusLabels[currentStatus].substring(0, 10) : "Contato"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-1" align="end" sideOffset={4}>
+        <div className="space-y-0.5">
+          <p className="text-xs font-medium text-gray-500 px-2 py-1">Status do Contato</p>
+          {Object.entries(contactStatusLabels).map(([value, label]) => (
+            <Button
+              key={value}
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "w-full justify-start text-sm h-8",
+                currentStatus === value && "bg-accent"
+              )}
+              onClick={() => handleStatusChange(value as ContactStatus)}
+              disabled={isPending}
+            >
+              <div className={cn("w-2 h-2 rounded-full mr-2", contactStatusColors[value]?.split(' ')[0])} />
+              {label}
+            </Button>
+          ))}
+          {currentStatus && (
+            <>
+              <div className="border-t my-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-sm text-gray-500 h-8"
+                onClick={() => handleStatusChange(null)}
+                disabled={isPending}
+              >
+                <X className="h-3 w-3 mr-2" />
+                Remover
+              </Button>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 // Helper function to get appropriate badge color based on status
 const getStatusBadge = (status: ReferralStatus) => {
@@ -422,6 +531,10 @@ export default function ReferralsPage() {
                               </div>
                               <div className="flex flex-col items-end gap-2">
                                 {getStatusBadge(referral.status)}
+                                <ContactStatusBadge 
+                                  referral={referral} 
+                                  onUpdate={() => {}} 
+                                />
                                 <div className="flex gap-1">
                                   <Button 
                                     variant="ghost" 
@@ -509,6 +622,7 @@ export default function ReferralsPage() {
                           <TableHead>Cidade/Estado</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Contato</TableHead>
                           {user?.role !== "indicador_nivel_1" && <TableHead>Comissão</TableHead>}
                           <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
@@ -558,6 +672,12 @@ export default function ReferralsPage() {
                             </TableCell>
                             <TableCell>{formatDate(referral.createdAt)}</TableCell>
                             <TableCell>{getStatusBadge(referral.status)}</TableCell>
+                            <TableCell>
+                              <ContactStatusBadge 
+                                referral={referral} 
+                                onUpdate={() => {}} 
+                              />
+                            </TableCell>
                             {user?.role !== "indicador_nivel_1" && (
                               <TableCell>{formatCurrency(referral.commissionIndicator)}</TableCell>
                             )}

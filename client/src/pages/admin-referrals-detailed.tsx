@@ -298,38 +298,33 @@ const contactStatusColors: Record<string, string> = {
   aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300"
 };
 
-// Contact Status Dialog Component
+// Contact Status Dialog Component - Optimized for performance
 function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const { toast } = useToast();
 
-  const updateContactStatusMutation = useMutation({
-    mutationFn: async (contactStatus: ContactStatus) => {
+  const handleStatusChange = async (status: ContactStatus) => {
+    setIsPending(true);
+    try {
       const response = await fetch(`/api/referrals/${referral.id}/contact-status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ contactStatus }),
+        body: JSON.stringify({ contactStatus: status }),
       });
       if (!response.ok) throw new Error("Erro ao atualizar status de contato");
-      return response.json();
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
-      ]);
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
       toast({ title: "Status de contato atualizado!" });
       setIsOpen(false);
       onUpdate();
-    },
-    onError: () => {
+    } catch (error) {
       toast({ title: "Erro ao atualizar status de contato", variant: "destructive" });
-    },
-  });
-
-  const handleStatusChange = (status: ContactStatus) => {
-    updateContactStatusMutation.mutate(status);
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const currentStatus = referral.contactStatus as ContactStatus;
@@ -343,27 +338,26 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
         <Button 
           variant="outline" 
           size="sm" 
-          className={cn("text-xs px-2", buttonClass)}
-          title={currentStatus ? contactStatusLabels[currentStatus] : "Definir status de contato"}
+          className={cn("text-xs px-2 h-7", buttonClass)}
         >
           <Clock className="h-3 w-3 mr-1" />
-          {currentStatus ? contactStatusLabels[currentStatus].substring(0, 8) + "..." : "Contato"}
+          {currentStatus ? contactStatusLabels[currentStatus].substring(0, 10) : "Contato"}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-56 p-2" align="end">
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-500 mb-2">Status do Contato</p>
+      <PopoverContent className="w-52 p-1" align="end" sideOffset={4}>
+        <div className="space-y-0.5">
+          <p className="text-xs font-medium text-gray-500 px-2 py-1">Status do Contato</p>
           {Object.entries(contactStatusLabels).map(([value, label]) => (
             <Button
               key={value}
               variant="ghost"
               size="sm"
               className={cn(
-                "w-full justify-start text-sm",
+                "w-full justify-start text-sm h-8",
                 currentStatus === value && "bg-accent"
               )}
               onClick={() => handleStatusChange(value as ContactStatus)}
-              disabled={updateContactStatusMutation.isPending}
+              disabled={isPending}
             >
               <div className={cn("w-2 h-2 rounded-full mr-2", contactStatusColors[value]?.split(' ')[0])} />
               {label}
@@ -371,16 +365,16 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
           ))}
           {currentStatus && (
             <>
-              <div className="border-t my-2" />
+              <div className="border-t my-1" />
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start text-sm text-gray-500"
+                className="w-full justify-start text-sm text-gray-500 h-8"
                 onClick={() => handleStatusChange(null)}
-                disabled={updateContactStatusMutation.isPending}
+                disabled={isPending}
               >
                 <X className="h-3 w-3 mr-2" />
-                Remover status
+                Remover
               </Button>
             </>
           )}
