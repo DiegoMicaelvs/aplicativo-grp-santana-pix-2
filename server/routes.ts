@@ -177,6 +177,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
+    // Allow indicador_nivel_1 to convert their own validated referrals to converted
+    if (req.user.role === "indicador_nivel_1") {
+      try {
+        const referralId = parseInt(req.params.id);
+        const referral = await storage.getReferralById(referralId);
+        
+        if (!referral) {
+          return res.status(404).json({ error: "Indicação não encontrada" });
+        }
+        
+        // Check if the referral was created by this user
+        if (referral.createdBy !== req.user.id) {
+          return res.status(403).json({ error: "Você só pode converter indicações que você criou" });
+        }
+        
+        // Check if current status is validated and target status is converted
+        const targetStatus = req.body?.status;
+        if (referral.status !== 'validated') {
+          return res.status(403).json({ error: "Você só pode converter indicações com status 'Validado'" });
+        }
+        
+        if (targetStatus !== 'converted') {
+          return res.status(403).json({ error: "Você só pode alterar o status para 'Convertido'" });
+        }
+        
+        return next();
+      } catch (error) {
+        console.error("[requireStatusEditPermission] Error checking indicador_nivel_1 permissions:", error);
+        return res.status(500).json({ error: "Erro ao verificar permissões" });
+      }
+    }
+    
     return res.status(403).json({ error: "Você não tem permissão para editar status de indicações" });
   };
 
@@ -250,22 +282,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as string;
       
-      console.log(`[DEBUG] /api/referrals - User: ${req.user!.id}, Role: ${req.user!.role}, Status: ${status}, Page: ${page}, Limit: ${limit}`);
-      
-      // For indicador_nivel_1, get referrals by createdBy instead of userId
+      // For indicador_nivel_1, get referrals by createdBy and FORCE status to "validated"
       let result;
       if (req.user!.role === 'indicador_nivel_1') {
-        const finalStatus = status && status !== 'all' ? status : undefined;
-        console.log(`[DEBUG] Indicador Nivel 1 - Using getReferralsByCreatorPaginated with status: ${finalStatus}`);
+        // indicador_nivel_1 can ONLY see validated referrals - no filter option
         result = await storage.getReferralsByCreatorPaginated(
           req.user!.id,
           page,
           limit,
-          finalStatus
+          'validated' // Always filter by validated status
         );
       } else {
         const finalStatus = status && status !== 'all' ? status : undefined;
-        console.log(`[DEBUG] Regular User - Using getReferralsByUserIdPaginated with status: ${finalStatus}`);
         result = await storage.getReferralsByUserIdPaginated(
           req.user!.id,
           page,
@@ -273,8 +301,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           finalStatus
         );
       }
-      
-      console.log(`[DEBUG] Result: ${result.total} total, ${result.data.length} returned`);
       
       return res.json(result);
     } catch (error) {

@@ -39,7 +39,9 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { BackButton } from "@/components/ui/back-button";
 import { ReferralConversationComponent } from "@/components/ui/referral-conversation";
-import { Eye, FilterIcon, Loader2, Edit } from "lucide-react";
+import { Eye, FilterIcon, Loader2, Edit, CheckCircle, Upload } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { 
   Dialog,
@@ -99,6 +101,12 @@ export default function ReferralsPage() {
   const [selectedReferralIds, setSelectedReferralIds] = useState<number[]>([]);
   const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
   const [bulkEditCompanyId, setBulkEditCompanyId] = useState<string>("");
+  
+  // States for indicador_nivel_1 conversion feature
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [referralToConvert, setReferralToConvert] = useState<Referral | null>(null);
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   
   const itemsPerPage = 10;
   
@@ -209,6 +217,76 @@ export default function ReferralsPage() {
     });
   };
   
+  // Handle file selection for payment proof
+  const handlePaymentProofChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPaymentProofFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPaymentProofPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+  
+  // Reset conversion dialog state
+  const resetConvertDialog = useCallback(() => {
+    setConvertDialogOpen(false);
+    setReferralToConvert(null);
+    setPaymentProofFile(null);
+    setPaymentProofPreview(null);
+  }, []);
+  
+  // Open conversion dialog
+  const handleOpenConvertDialog = useCallback((referral: Referral) => {
+    setReferralToConvert(referral);
+    setConvertDialogOpen(true);
+  }, []);
+  
+  // Convert referral mutation (for indicador_nivel_1)
+  const convertMutation = useMutation({
+    mutationFn: async (data: { referralId: number; paymentProof: string }) => {
+      const response = await apiRequest("PATCH", `/api/referrals/${data.referralId}/status`, {
+        status: "converted",
+        paymentProof: data.paymentProof
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/referrals'] });
+      toast({
+        title: "Sucesso!",
+        description: "Indicação convertida com sucesso!",
+      });
+      resetConvertDialog();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao converter indicação.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle conversion submit
+  const handleConvertSubmit = async () => {
+    if (!referralToConvert || !paymentProofPreview) {
+      toast({
+        title: "Atenção",
+        description: "Anexe o comprovante de pagamento para converter a indicação.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    convertMutation.mutate({
+      referralId: referralToConvert.id,
+      paymentProof: paymentProofPreview
+    });
+  };
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -237,9 +315,12 @@ export default function ReferralsPage() {
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle>Todas as Indicações</CardTitle>
+                  <CardTitle>
+                    {user?.role === 'indicador_nivel_1' ? 'Indicações Validadas' : 'Todas as Indicações'}
+                  </CardTitle>
                   <CardDescription>
                     {isLoading ? 'Carregando...' : `Total: ${referralsResponse?.total || 0} indicação(ões)`}
+                    {user?.role === 'indicador_nivel_1' && ' • Clique em "Converter" para confirmar a venda'}
                     {selectedReferralIds.length > 0 && ` • ${selectedReferralIds.length} selecionada(s)`}
                   </CardDescription>
                 </div>
@@ -257,23 +338,26 @@ export default function ReferralsPage() {
                     </Button>
                   )}
                   
-                  <div className="flex items-center space-x-2">
-                    <FilterIcon className="text-gray-400 h-4 w-4" />
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos os Status</SelectItem>
-                        <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="analyzing">Em análise</SelectItem>
-                        <SelectItem value="converted">Convertido</SelectItem>
-                        <SelectItem value="rejected">Não convertido</SelectItem>
-                        <SelectItem value="validated">Validado</SelectItem>
-                        <SelectItem value="paid">Pago</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Hide filter for indicador_nivel_1 - they only see validated */}
+                  {user?.role !== 'indicador_nivel_1' && (
+                    <div className="flex items-center space-x-2">
+                      <FilterIcon className="text-gray-400 h-4 w-4" />
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os Status</SelectItem>
+                          <SelectItem value="pending">Pendente</SelectItem>
+                          <SelectItem value="analyzing">Em análise</SelectItem>
+                          <SelectItem value="converted">Convertido</SelectItem>
+                          <SelectItem value="rejected">Não convertido</SelectItem>
+                          <SelectItem value="validated">Validado</SelectItem>
+                          <SelectItem value="paid">Pago</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -307,14 +391,26 @@ export default function ReferralsPage() {
                               </div>
                               <div className="flex flex-col items-end gap-2">
                                 {getStatusBadge(referral.status)}
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => handleViewDetails(referral)}
-                                  className="text-xs"
-                                >
-                                  <Eye className="h-3 w-3 mr-1" /> Ver
-                                </Button>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleViewDetails(referral)}
+                                    className="text-xs"
+                                  >
+                                    <Eye className="h-3 w-3 mr-1" /> Ver
+                                  </Button>
+                                  {user?.role === 'indicador_nivel_1' && referral.status === 'validated' && (
+                                    <Button 
+                                      variant="default" 
+                                      size="sm" 
+                                      onClick={() => handleOpenConvertDialog(referral)}
+                                      className="text-xs bg-green-600 hover:bg-green-700"
+                                    >
+                                      <CheckCircle className="h-3 w-3 mr-1" /> Converter
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             
@@ -435,13 +531,25 @@ export default function ReferralsPage() {
                               <TableCell>{formatCurrency(referral.commissionIndicator)}</TableCell>
                             )}
                             <TableCell className="text-right">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleViewDetails(referral)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" /> Detalhes
-                              </Button>
+                              <div className="flex justify-end gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleViewDetails(referral)}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" /> Detalhes
+                                </Button>
+                                {user?.role === 'indicador_nivel_1' && referral.status === 'validated' && (
+                                  <Button 
+                                    variant="default" 
+                                    size="sm" 
+                                    onClick={() => handleOpenConvertDialog(referral)}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" /> Converter
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                           );
@@ -644,6 +752,103 @@ export default function ReferralsPage() {
                     </>
                   ) : (
                     'Atualizar Seguradora'
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Convert Referral Dialog (for indicador_nivel_1) */}
+          <Dialog open={convertDialogOpen} onOpenChange={(open) => !open && resetConvertDialog()}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-heading">Converter Indicação</DialogTitle>
+                <DialogDescription>
+                  Confirme a venda anexando o comprovante de pagamento
+                </DialogDescription>
+              </DialogHeader>
+              
+              {referralToConvert && (
+                <div className="space-y-4 py-4">
+                  <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                    <p className="text-sm"><strong>Cliente:</strong> {referralToConvert.fullName}</p>
+                    <p className="text-sm"><strong>Telefone:</strong> {referralToConvert.phone}</p>
+                    <p className="text-sm"><strong>Placa:</strong> {referralToConvert.licensePlate}</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-proof" className="text-sm font-medium">
+                      Comprovante de Pagamento *
+                    </Label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                      <Input
+                        id="payment-proof"
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={handlePaymentProofChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="payment-proof" className="cursor-pointer">
+                        {paymentProofPreview ? (
+                          <div className="space-y-2">
+                            {paymentProofPreview.startsWith('data:image') ? (
+                              <img 
+                                src={paymentProofPreview} 
+                                alt="Preview" 
+                                className="max-h-40 mx-auto rounded"
+                              />
+                            ) : (
+                              <div className="text-green-600 flex items-center justify-center gap-2">
+                                <CheckCircle className="h-6 w-6" />
+                                <span>Arquivo selecionado</span>
+                              </div>
+                            )}
+                            <p className="text-sm text-gray-500">Clique para trocar o arquivo</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Upload className="h-8 w-8 mx-auto text-gray-400" />
+                            <p className="text-sm text-gray-600">
+                              Clique para selecionar o comprovante
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Formatos aceitos: JPG, PNG, PDF
+                            </p>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+                    Ao converter, você confirma que a venda foi realizada e o cliente efetuou o pagamento.
+                  </p>
+                </div>
+              )}
+              
+              <div className="flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={resetConvertDialog}
+                  disabled={convertMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleConvertSubmit}
+                  disabled={convertMutation.isPending || !paymentProofPreview}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {convertMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Convertendo...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Confirmar Conversão
+                    </>
                   )}
                 </Button>
               </div>
