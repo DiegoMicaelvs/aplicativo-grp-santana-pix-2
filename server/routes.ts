@@ -1659,7 +1659,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.paymentProof
       );
       
-      // TODO: Move SMS notification to updateReferralStatus to avoid extra queries
+      // Add observation as a conversation message if provided
+      if (validatedData.observation && validatedData.observation.trim()) {
+        await storage.createReferralConversation({
+          referralId: parseInt(id),
+          userId: req.user!.id,
+          message: validatedData.observation.trim(),
+          messageType: "comment",
+          isInternal: false
+        });
+      }
       
       return res.json(result);
     } catch (error) {

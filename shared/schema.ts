@@ -496,6 +496,7 @@ export const updateReferralStatusSchema = z.object({
   status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted", "contact_list"]),
   notes: z.string().optional(),
   paymentProof: z.string().optional(), // Base64 encoded image or file path
+  observation: z.string().optional(), // Optional observation to add to conversation history
 });
 
 export const createCompanySchema = createInsertSchema(companies, {

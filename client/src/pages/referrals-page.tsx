@@ -42,6 +42,7 @@ import { ReferralConversationComponent } from "@/components/ui/referral-conversa
 import { Eye, FilterIcon, Loader2, Edit, CheckCircle, Upload, Search, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Link } from "wouter";
 import { 
   Dialog,
@@ -109,6 +110,7 @@ export default function ReferralsPage() {
   const [referralToConvert, setReferralToConvert] = useState<Referral | null>(null);
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
+  const [convertObservation, setConvertObservation] = useState<string>("");
   
   const itemsPerPage = 10;
   
@@ -247,6 +249,7 @@ export default function ReferralsPage() {
     setReferralToConvert(null);
     setPaymentProofFile(null);
     setPaymentProofPreview(null);
+    setConvertObservation("");
   }, []);
   
   // Open conversion dialog
@@ -257,10 +260,11 @@ export default function ReferralsPage() {
   
   // Convert referral mutation (for indicador_nivel_1)
   const convertMutation = useMutation({
-    mutationFn: async (data: { referralId: number; paymentProof: string }) => {
+    mutationFn: async (data: { referralId: number; paymentProof: string; observation?: string }) => {
       const response = await apiRequest("PATCH", `/api/referrals/${data.referralId}/status`, {
         status: "converted",
-        paymentProof: data.paymentProof
+        paymentProof: data.paymentProof,
+        observation: data.observation
       });
       return await response.json();
     },
@@ -294,7 +298,8 @@ export default function ReferralsPage() {
     
     convertMutation.mutate({
       referralId: referralToConvert.id,
-      paymentProof: paymentProofPreview
+      paymentProof: paymentProofPreview,
+      observation: convertObservation.trim() || undefined
     });
   };
   
@@ -856,6 +861,19 @@ export default function ReferralsPage() {
                         )}
                       </label>
                     </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="convert-observation" className="text-sm font-medium">
+                      Observação (opcional)
+                    </Label>
+                    <Textarea
+                      id="convert-observation"
+                      placeholder="Adicione uma observação sobre esta conversão..."
+                      value={convertObservation}
+                      onChange={(e) => setConvertObservation(e.target.value)}
+                      className="min-h-[80px]"
+                    />
                   </div>
                   
                   <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
