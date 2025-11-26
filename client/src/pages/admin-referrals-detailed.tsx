@@ -458,22 +458,21 @@ export default function AdminReferralsDetailedPage() {
     staleTime: 5 * 60 * 1000, // Cache válido por 5 minutos
   });
 
-  const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
-    refetchInterval: 60000, // Atualiza a cada 60 segundos (usuários mudam menos)
-    refetchOnWindowFocus: true,
+    refetchInterval: false, // Desabilitado para melhorar performance
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // Cache válido por 5 minutos
   });
 
   const { data: companies = [] } = useQuery<any[]>({
-    queryKey: ["/api/companies"]
+    queryKey: ["/api/companies"],
+    refetchInterval: false,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch all users instead of just indicadores
-  const { data: allUsers = [] } = useQuery<any[]>({
-    queryKey: ["/api/admin/users"],
-    refetchInterval: 60000,
-    refetchOnWindowFocus: true,
-  });
+  // Alias for backward compatibility
+  const users = allUsers;
   
   // Sort users alphabetically by fullName - memoized to avoid re-sorting on every render
   const sortedUsers = useMemo(() => 
@@ -541,7 +540,7 @@ export default function AdminReferralsDetailedPage() {
       const response = await fetch(`/api/referrals/${referralId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Incluir cookies de autenticação
+        credentials: "include",
         body: JSON.stringify(data),
       });
       
@@ -552,21 +551,15 @@ export default function AdminReferralsDetailedPage() {
       
       return response.json();
     },
-    onSuccess: async (data) => {
-      console.log("[updateReferralMutation] Dados atualizados:", data);
-      // Invalidate and refetch all related queries immediately
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/companies"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/user"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/team/stats"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"], refetchType: 'active' }),
-      ]);
+    onSuccess: (updatedReferral) => {
+      // Surgical cache update - only update the specific referral
+      queryClient.setQueryData(["/api/admin/referrals"], (old: any[] = []) =>
+        old.map(ref => ref.id === updatedReferral.id ? updatedReferral : ref)
+      );
+      // Lazy invalidation for other views (won't refetch immediately)
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals"], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'none' });
+      
       toast({ title: "Indicação atualizada com sucesso!" });
       setIsDialogOpen(false);
       setSelectedReferral(null);
@@ -584,7 +577,7 @@ export default function AdminReferralsDetailedPage() {
     mutationFn: async (referralId: number) => {
       const response = await fetch(`/api/referrals/${referralId}`, {
         method: "DELETE",
-        credentials: "include", // Incluir cookies de autenticação
+        credentials: "include",
       });
       
       if (!response.ok) {
@@ -592,19 +585,16 @@ export default function AdminReferralsDetailedPage() {
         throw new Error(errorData.error || "Erro ao deletar indicação");
       }
       
-      return response.json();
+      return { referralId };
     },
-    onSuccess: async () => {
-      // Invalidate and refetch all related queries immediately
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/user"], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ["/api/team/stats"], refetchType: 'active' }),
-      ]);
+    onSuccess: ({ referralId }) => {
+      // Surgical cache update - remove the deleted referral
+      queryClient.setQueryData(["/api/admin/referrals"], (old: any[] = []) =>
+        old.filter(ref => ref.id !== referralId)
+      );
+      // Lazy invalidation for other views
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals"], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"], refetchType: 'none' });
       
       toast({ title: "Indicação deletada com sucesso!" });
       setIsDialogOpen(false);
