@@ -527,12 +527,19 @@ export default function ReferralsPage() {
                                 </div>
                               </div>
                               <div className="flex flex-col items-end gap-2">
-                                {getStatusBadge(referral.status)}
-                                <ContactStatusBadge 
-                                  referral={referral} 
-                                  onUpdate={() => {}} 
-                                />
-                                <div className="flex gap-1">
+                                <div className="flex flex-wrap gap-1 justify-end">
+                                  {getStatusBadge(referral.status)}
+                                  {referral.contactStatus && (
+                                    <Badge variant="outline" className={contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"}>
+                                      {contactStatusLabels[referral.contactStatus] || "Sem status"}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-1 justify-end">
+                                  <ContactStatusBadge 
+                                    referral={referral} 
+                                    onUpdate={() => {}} 
+                                  />
                                   <Button 
                                     variant="ghost" 
                                     size="sm" 
@@ -670,16 +677,23 @@ export default function ReferralsPage() {
                             <TableCell>{formatDate(referral.createdAt)}</TableCell>
                             <TableCell>{getStatusBadge(referral.status)}</TableCell>
                             <TableCell>
-                              <ContactStatusBadge 
-                                referral={referral} 
-                                onUpdate={() => {}} 
-                              />
+                              {referral.contactStatus ? (
+                                <Badge variant="outline" className={contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"}>
+                                  {contactStatusLabels[referral.contactStatus] || "Sem status"}
+                                </Badge>
+                              ) : (
+                                <span className="text-xs text-gray-400">-</span>
+                              )}
                             </TableCell>
                             {user?.role !== "indicador_nivel_1" && (
                               <TableCell>{formatCurrency(referral.commissionIndicator)}</TableCell>
                             )}
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
+                                <ContactStatusBadge 
+                                  referral={referral} 
+                                  onUpdate={() => {}} 
+                                />
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
