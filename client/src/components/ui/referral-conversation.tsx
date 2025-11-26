@@ -46,7 +46,7 @@ interface ReferralConversationProps {
 
 export function ReferralConversationComponent({ referralId, userRole }: ReferralConversationProps) {
   const { toast } = useToast();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const form = useForm<ConversationFormValues>({
     resolver: zodResolver(conversationSchema),
