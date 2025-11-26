@@ -329,7 +329,7 @@ export default function ReferralsPage() {
                   <CardTitle>
                     {user?.role === 'indicador_nivel_1' ? 'Indicações Validadas' : 'Todas as Indicações'}
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm text-muted-foreground mt-[10px] mb-[10px]">
                     {isLoading ? 'Carregando...' : `Total: ${referralsResponse?.total || 0} indicação(ões)`}
                     {user?.role === 'indicador_nivel_1' && ' • Clique em "Converter" para confirmar a venda'}
                     {selectedReferralIds.length > 0 && ` • ${selectedReferralIds.length} selecionada(s)`}
