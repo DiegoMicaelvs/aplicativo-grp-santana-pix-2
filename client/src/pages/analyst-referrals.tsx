@@ -33,8 +33,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield, RefreshCw, Download, Phone } from "lucide-react";
+import { Search, Edit, CheckCircle, XCircle, Info, Clock, DollarSign, AlertCircle, Shield, RefreshCw, Download, Phone, ChevronDown, FileBarChart } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { BackButton } from "@/components/ui/back-button";
 import { useToast } from "@/hooks/use-toast";
@@ -604,6 +612,331 @@ export default function AnalystReferrals() {
     }
   };
 
+  // Generate and export report based on type (weekly, monthly, daily_general)
+  const handleExportReport = (type: 'weekly' | 'monthly' | 'daily_general') => {
+    try {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+      let periodLabel: string;
+      
+      switch (type) {
+        case 'weekly':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          periodLabel = 'Semanal';
+          break;
+        case 'monthly':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          periodLabel = 'Mensal';
+          break;
+        case 'daily_general':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = now;
+          periodLabel = 'Geral Diário';
+          break;
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          periodLabel = 'Mensal';
+      }
+      
+      // Helper function to get date from status
+      const getStatusDate = (referral: any, status: string): Date | null => {
+        if (status === 'validated' && referral.validatedAt) {
+          return new Date(referral.validatedAt);
+        }
+        if (status === 'converted' && referral.convertedAt) {
+          return new Date(referral.convertedAt);
+        }
+        if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+          const entries = referral.statusHistory.filter((e: any) => e.status === status);
+          if (entries.length > 0) {
+            const lastEntry = entries[entries.length - 1];
+            if (lastEntry.changedAt) {
+              return new Date(lastEntry.changedAt);
+            }
+          }
+        }
+        return null;
+      };
+      
+      // Group data by day
+      const dailyData: Record<string, {
+        cadastros: number;
+        validados: number;
+        convertidos: number;
+        empresas: Set<string>;
+        vendedores: Set<string>;
+      }> = {};
+      
+      // Initialize all days in the range
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateKey = format(currentDate, 'dd/MM', { locale: ptBR });
+        dailyData[dateKey] = {
+          cadastros: 0,
+          validados: 0,
+          convertidos: 0,
+          empresas: new Set(),
+          vendedores: new Set()
+        };
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Process all referrals
+      filteredReferrals.forEach((referral: any) => {
+        const createdDate = new Date(referral.createdAt);
+        if (createdDate >= startDate && createdDate <= endDate) {
+          const createdKey = format(createdDate, 'dd/MM', { locale: ptBR });
+          if (dailyData[createdKey]) {
+            dailyData[createdKey].cadastros++;
+          }
+        }
+        
+        if (referral.status === 'validated') {
+          const validationDate = getStatusDate(referral, 'validated');
+          if (validationDate && validationDate >= startDate && validationDate <= endDate) {
+            const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
+            if (dailyData[validatedKey]) {
+              dailyData[validatedKey].validados++;
+              const company = companies.find((c: any) => c.id === referral.companyId);
+              if (company?.name) {
+                dailyData[validatedKey].empresas.add(company.name);
+              }
+            }
+          }
+        }
+        
+        if (referral.status === 'converted' || referral.status === 'paid') {
+          const conversionDate = referral.updatedAt ? new Date(referral.updatedAt) : null;
+          if (conversionDate && conversionDate >= startDate && conversionDate <= endDate) {
+            const convertedKey = format(conversionDate, 'dd/MM', { locale: ptBR });
+            if (dailyData[convertedKey]) {
+              dailyData[convertedKey].convertidos++;
+              const company = companies.find((c: any) => c.id === referral.companyId);
+              if (company?.name) {
+                dailyData[convertedKey].empresas.add(company.name);
+              }
+              if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+                const convertedEntries = referral.statusHistory.filter((entry: any) => 
+                  entry.status === 'converted'
+                );
+                if (convertedEntries.length > 0) {
+                  const lastConvertedEntry = convertedEntries[convertedEntries.length - 1];
+                  const vendedor = users.find(u => u.id === lastConvertedEntry.changedBy);
+                  const vendedorName = lastConvertedEntry.changedByName || vendedor?.fullName;
+                  if (vendedorName) {
+                    dailyData[convertedKey].vendedores.add(vendedorName);
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      const hasData = Object.values(dailyData).some(day => 
+        day.cadastros > 0 || day.validados > 0 || day.convertidos > 0
+      );
+      
+      if (!hasData) {
+        toast({
+          title: "Nenhuma indicação encontrada",
+          description: "Não há indicações no período selecionado com os filtros aplicados.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const sortedDates = Object.keys(dailyData).sort((a, b) => {
+        const [dayA, monthA] = a.split('/').map(Number);
+        const [dayB, monthB] = b.split('/').map(Number);
+        if (monthA !== monthB) return monthA - monthB;
+        return dayA - dayB;
+      });
+      
+      const totals = Object.values(dailyData).reduce((acc, day) => ({
+        cadastros: acc.cadastros + day.cadastros,
+        validados: acc.validados + day.validados,
+        convertidos: acc.convertidos + day.convertidos
+      }), { cadastros: 0, validados: 0, convertidos: 0 });
+      
+      // Define styles
+      const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
+        fill: { fgColor: { rgb: "2563EB" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "1E40AF" } },
+          bottom: { style: "thin", color: { rgb: "1E40AF" } },
+          left: { style: "thin", color: { rgb: "1E40AF" } },
+          right: { style: "thin", color: { rgb: "1E40AF" } }
+        }
+      };
+      
+      const labelStyle = {
+        font: { bold: true, sz: 11 },
+        fill: { fgColor: { rgb: "F3F4F6" } },
+        alignment: { horizontal: "left", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "D1D5DB" } },
+          bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+          left: { style: "thin", color: { rgb: "D1D5DB" } },
+          right: { style: "thin", color: { rgb: "D1D5DB" } }
+        }
+      };
+      
+      const dataStyle = {
+        font: { sz: 11 },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "E5E7EB" } },
+          bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+          left: { style: "thin", color: { rgb: "E5E7EB" } },
+          right: { style: "thin", color: { rgb: "E5E7EB" } }
+        }
+      };
+      
+      const totalStyle = {
+        font: { bold: true, sz: 11 },
+        fill: { fgColor: { rgb: "DBEAFE" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "93C5FD" } },
+          bottom: { style: "thin", color: { rgb: "93C5FD" } },
+          left: { style: "thin", color: { rgb: "93C5FD" } },
+          right: { style: "thin", color: { rgb: "93C5FD" } }
+        }
+      };
+      
+      const successStyle = {
+        font: { bold: true, sz: 11, color: { rgb: "166534" } },
+        fill: { fgColor: { rgb: "DCFCE7" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "86EFAC" } },
+          bottom: { style: "thin", color: { rgb: "86EFAC" } },
+          left: { style: "thin", color: { rgb: "86EFAC" } },
+          right: { style: "thin", color: { rgb: "86EFAC" } }
+        }
+      };
+      
+      // Create worksheet data
+      const wsData: any[][] = [];
+      
+      // Row 1: Header
+      const headerRow = [
+        { v: `Relatório ${periodLabel}`, s: headerStyle },
+        ...sortedDates.map(date => ({ v: date, s: headerStyle })),
+        { v: 'TOTAL', s: headerStyle }
+      ];
+      wsData.push(headerRow);
+      
+      // Row 2: Cadastros
+      const cadastrosRow = [
+        { v: 'Cadastros', s: labelStyle },
+        ...sortedDates.map(date => ({ 
+          v: dailyData[date].cadastros || 0, 
+          s: dailyData[date].cadastros > 0 ? dataStyle : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+        })),
+        { v: totals.cadastros, s: totalStyle }
+      ];
+      wsData.push(cadastrosRow);
+      
+      // Row 3: Validados
+      const validadosRow = [
+        { v: 'Validados', s: labelStyle },
+        ...sortedDates.map(date => ({ 
+          v: dailyData[date].validados || 0, 
+          s: dailyData[date].validados > 0 ? successStyle : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+        })),
+        { v: totals.validados, s: { ...totalStyle, font: { ...totalStyle.font, color: { rgb: "166534" } } } }
+      ];
+      wsData.push(validadosRow);
+      
+      // Row 4: Convertidos
+      const convertidosRow = [
+        { v: 'Convertidos', s: labelStyle },
+        ...sortedDates.map(date => ({ 
+          v: dailyData[date].convertidos || 0, 
+          s: dailyData[date].convertidos > 0 ? { ...successStyle, fill: { fgColor: { rgb: "F3E8FF" } }, font: { ...successStyle.font, color: { rgb: "7C3AED" } } } : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+        })),
+        { v: totals.convertidos, s: { ...totalStyle, font: { ...totalStyle.font, color: { rgb: "7C3AED" } } } }
+      ];
+      wsData.push(convertidosRow);
+      
+      // Row 5: Associação
+      const associacaoRow = [
+        { v: 'Associação', s: labelStyle },
+        ...sortedDates.map(date => {
+          const empresas = Array.from(dailyData[date].empresas);
+          return { 
+            v: empresas.length > 0 ? empresas.join(', ') : '-', 
+            s: empresas.length > 0 ? dataStyle : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+          };
+        }),
+        { v: '-', s: totalStyle }
+      ];
+      wsData.push(associacaoRow);
+      
+      // Row 6: Vendedor
+      const vendedorRow = [
+        { v: 'Vendedor', s: labelStyle },
+        ...sortedDates.map(date => {
+          const vendedores = Array.from(dailyData[date].vendedores);
+          return { 
+            v: vendedores.length > 0 ? vendedores.join(', ') : '-', 
+            s: vendedores.length > 0 ? { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "2563EB" } } } : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+          };
+        }),
+        { v: '-', s: totalStyle }
+      ];
+      wsData.push(vendedorRow);
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet(wsData);
+      
+      // Set column widths
+      const colWidths = [{ wch: 20 }];
+      sortedDates.forEach(() => colWidths.push({ wch: 22 }));
+      colWidths.push({ wch: 10 });
+      sheet['!cols'] = colWidths;
+      
+      // Set row heights
+      sheet['!rows'] = [
+        { hpt: 35 },
+        { hpt: 24 },
+        { hpt: 24 },
+        { hpt: 24 },
+        { hpt: 40 },
+        { hpt: 40 }
+      ];
+      
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Relatório');
+      
+      // Generate filename
+      const startFormatted = format(startDate, 'dd-MM-yyyy', { locale: ptBR });
+      const endFormatted = format(endDate, 'dd-MM-yyyy', { locale: ptBR });
+      const filename = `relatorio_${periodLabel.toLowerCase().replace(' ', '_')}_${startFormatted}_a_${endFormatted}.xlsx`;
+      
+      XLSX.writeFile(workbook, filename);
+      
+      toast({
+        title: "Relatório gerado com sucesso!",
+        description: `Relatório ${periodLabel} exportado.`
+      });
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      toast({
+        title: "Erro ao gerar relatório",
+        description: "Não foi possível gerar o relatório. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!user || (user.role !== "analista" && user.role !== "admin")) {
     return (
       <div className="container mx-auto py-6">
@@ -754,15 +1087,38 @@ export default function AnalystReferrals() {
                   : "Você tem permissão apenas para visualizar"}
               </CardDescription>
             </div>
-            <Button 
-              onClick={exportToExcel} 
-              variant="outline"
-              disabled={filteredReferrals.length === 0}
-              className="shrink-0"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar Excel
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={exportToExcel} 
+                variant="outline"
+                size="sm"
+                disabled={filteredReferrals.length === 0}
+                className="shrink-0"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Excel
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={filteredReferrals.length === 0}>
+                    <FileBarChart className="h-4 w-4 mr-2" />
+                    Exportar Relatório
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExportReport('weekly')}>
+                    Relatório Semanal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportReport('monthly')}>
+                    Relatório Mensal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportReport('daily_general')}>
+                    Relatório Geral Diário
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
