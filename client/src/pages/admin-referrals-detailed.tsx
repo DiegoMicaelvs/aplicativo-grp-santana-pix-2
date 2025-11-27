@@ -871,98 +871,92 @@ export default function AdminReferralsDetailedPage() {
             return new Date(entry.changedAt);
           }
         }
-        // Fallback to validatedAt for validated status
         if (status === 'validated' && referral.validatedAt) {
           return new Date(referral.validatedAt);
         }
         return null;
       };
       
-      // Group data by day - tracking validated by validation date, converted by conversion date
+      // Group data by day
       const dailyData: Record<string, {
-        totalCreated: number;
-        validations: Array<{
-          cliente: string;
-          empresa: string;
-        }>;
-        conversions: Array<{
-          cliente: string;
-          vendedor: string;
-          empresa: string;
-        }>;
+        cadastros: number;
+        validados: number;
+        convertidos: number;
+        empresas: Set<string>;
+        vendedores: Set<string>;
       }> = {};
       
       // Initialize all days in the range
       const currentDate = new Date(startDate);
       while (currentDate <= endDate) {
-        const dateKey = format(currentDate, 'dd/MM/yyyy', { locale: ptBR });
+        const dateKey = format(currentDate, 'dd/MM', { locale: ptBR });
         dailyData[dateKey] = {
-          totalCreated: 0,
-          validations: [],
-          conversions: []
+          cadastros: 0,
+          validados: 0,
+          convertidos: 0,
+          empresas: new Set(),
+          vendedores: new Set()
         };
         currentDate.setDate(currentDate.getDate() + 1);
       }
       
-      // Process all referrals (not just filtered by creation date)
+      // Process all referrals
       filteredReferrals.forEach((referral: any) => {
-        // Count created referrals by creation date
+        // Count cadastros by creation date
         const createdDate = new Date(referral.createdAt);
         if (createdDate >= startDate && createdDate <= endDate) {
-          const createdKey = format(createdDate, 'dd/MM/yyyy', { locale: ptBR });
+          const createdKey = format(createdDate, 'dd/MM', { locale: ptBR });
           if (dailyData[createdKey]) {
-            dailyData[createdKey].totalCreated++;
+            dailyData[createdKey].cadastros++;
           }
         }
         
-        // Track validated referrals by VALIDATION date
+        // Track validados by VALIDATION date
         if (referral.status === 'validated' || referral.status === 'converted' || referral.status === 'paid') {
           const validationDate = getStatusDate(referral, 'validated');
           if (validationDate && validationDate >= startDate && validationDate <= endDate) {
-            const validatedKey = format(validationDate, 'dd/MM/yyyy', { locale: ptBR });
+            const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
             if (dailyData[validatedKey]) {
-              const company = companies.find((c: any) => c.id === referral.companyId);
-              dailyData[validatedKey].validations.push({
-                cliente: referral.fullName,
-                empresa: company?.name || 'N/A'
-              });
+              dailyData[validatedKey].validados++;
             }
           }
         }
         
-        // Track converted referrals by CONVERSION date
+        // Track convertidos by CONVERSION date
         if (referral.status === 'converted' || referral.status === 'paid') {
           const conversionDate = getStatusDate(referral, 'converted');
           if (conversionDate && conversionDate >= startDate && conversionDate <= endDate) {
-            const convertedKey = format(conversionDate, 'dd/MM/yyyy', { locale: ptBR });
+            const convertedKey = format(conversionDate, 'dd/MM', { locale: ptBR });
             if (dailyData[convertedKey]) {
-              // Find who converted this referral
-              let vendedorName = 'N/A';
+              dailyData[convertedKey].convertidos++;
+              
+              // Track empresa (associação)
+              const company = companies.find((c: any) => c.id === referral.companyId);
+              if (company?.name) {
+                dailyData[convertedKey].empresas.add(company.name);
+              }
+              
+              // Track vendedor
               if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
                 const convertedEntry = referral.statusHistory.find((entry: any) => 
                   entry.status === 'converted'
                 );
                 if (convertedEntry) {
                   const vendedor = users.find(u => u.id === convertedEntry.changedBy);
-                  vendedorName = convertedEntry.changedByName || vendedor?.fullName || 'N/A';
+                  const vendedorName = convertedEntry.changedByName || vendedor?.fullName;
+                  if (vendedorName) {
+                    dailyData[convertedKey].vendedores.add(vendedorName);
+                  }
                 }
               }
-              
-              const company = companies.find((c: any) => c.id === referral.companyId);
-              
-              dailyData[convertedKey].conversions.push({
-                cliente: referral.fullName,
-                vendedor: vendedorName,
-                empresa: company?.name || 'N/A'
-              });
             }
           }
         }
       });
       
-      // Check if there's any data in the report
+      // Check if there's any data
       const hasData = Object.values(dailyData).some(day => 
-        day.totalCreated > 0 || day.validations.length > 0 || day.conversions.length > 0
+        day.cadastros > 0 || day.validados > 0 || day.convertidos > 0
       );
       
       if (!hasData) {
@@ -974,140 +968,82 @@ export default function AdminReferralsDetailedPage() {
         return;
       }
       
-      // Create HORIZONTAL summary sheet - dates as columns
+      // Sort dates
       const sortedDates = Object.keys(dailyData).sort((a, b) => {
-        const dateA = new Date(a.split('/').reverse().join('-'));
-        const dateB = new Date(b.split('/').reverse().join('-'));
-        return dateA.getTime() - dateB.getTime();
+        const [dayA, monthA] = a.split('/').map(Number);
+        const [dayB, monthB] = b.split('/').map(Number);
+        if (monthA !== monthB) return monthA - monthB;
+        return dayA - dayB;
       });
       
       // Calculate totals
       const totals = Object.values(dailyData).reduce((acc, day) => ({
-        created: acc.created + day.totalCreated,
-        validated: acc.validated + day.validations.length,
-        converted: acc.converted + day.conversions.length
-      }), { created: 0, validated: 0, converted: 0 });
+        cadastros: acc.cadastros + day.cadastros,
+        validados: acc.validados + day.validados,
+        convertidos: acc.convertidos + day.convertidos
+      }), { cadastros: 0, validados: 0, convertidos: 0 });
       
-      // Build horizontal data - each row is a metric, each column is a date
+      // Build horizontal data
       const horizontalData: any[][] = [];
       
-      // Header row with dates
-      const headerRow = ['Métrica', ...sortedDates, 'TOTAL'];
+      // Header row: Nome do indicador + dates + TOTAL
+      const headerRow = [selectedUserName, ...sortedDates, 'TOTAL'];
       horizontalData.push(headerRow);
       
-      // Indicações Criadas row
-      const createdRow = ['Indicações Criadas', 
-        ...sortedDates.map(date => dailyData[date].totalCreated),
-        totals.created
+      // Cadastros row
+      const cadastrosRow = ['Cadastros', 
+        ...sortedDates.map(date => dailyData[date].cadastros || '-'),
+        totals.cadastros
       ];
-      horizontalData.push(createdRow);
+      horizontalData.push(cadastrosRow);
       
-      // Validadas row
-      const validatedRow = ['Validadas',
-        ...sortedDates.map(date => dailyData[date].validations.length),
-        totals.validated
+      // Validados row
+      const validadosRow = ['Validados',
+        ...sortedDates.map(date => dailyData[date].validados || '-'),
+        totals.validados
       ];
-      horizontalData.push(validatedRow);
+      horizontalData.push(validadosRow);
       
-      // Convertidas row
-      const convertedRow = ['Convertidas',
-        ...sortedDates.map(date => dailyData[date].conversions.length),
-        totals.converted
+      // Convertidos row
+      const convertidosRow = ['Convertidos',
+        ...sortedDates.map(date => dailyData[date].convertidos || '-'),
+        totals.convertidos
       ];
-      horizontalData.push(convertedRow);
+      horizontalData.push(convertidosRow);
       
-      // Empty row
-      horizontalData.push([]);
+      // Associação row (empresas where conversions happened)
+      const associacaoRow = ['Associação',
+        ...sortedDates.map(date => {
+          const empresas = Array.from(dailyData[date].empresas);
+          return empresas.length > 0 ? empresas.join(', ') : '-';
+        }),
+        '-'
+      ];
+      horizontalData.push(associacaoRow);
       
-      // Detailed conversions by date (vendedor + empresa)
-      horizontalData.push(['--- DETALHES DAS CONVERSÕES ---']);
-      horizontalData.push([]);
-      
-      sortedDates.forEach(date => {
-        const dayData = dailyData[date];
-        if (dayData.conversions.length > 0) {
-          horizontalData.push([`Data: ${date}`]);
-          dayData.conversions.forEach(conv => {
-            horizontalData.push(['', `Cliente: ${conv.cliente}`, `Vendedor: ${conv.vendedor}`, `Empresa: ${conv.empresa}`]);
-          });
-          horizontalData.push([]);
-        }
-      });
-      
-      // Detailed validations by date
-      horizontalData.push(['--- DETALHES DAS VALIDAÇÕES ---']);
-      horizontalData.push([]);
-      
-      sortedDates.forEach(date => {
-        const dayData = dailyData[date];
-        if (dayData.validations.length > 0) {
-          horizontalData.push([`Data: ${date}`]);
-          dayData.validations.forEach(val => {
-            horizontalData.push(['', `Cliente: ${val.cliente}`, `Empresa: ${val.empresa}`]);
-          });
-          horizontalData.push([]);
-        }
-      });
+      // Vendedor row (only show when there are sales)
+      const vendedorRow = ['Vendedor',
+        ...sortedDates.map(date => {
+          const vendedores = Array.from(dailyData[date].vendedores);
+          return vendedores.length > 0 ? vendedores.join(', ') : '-';
+        }),
+        '-'
+      ];
+      horizontalData.push(vendedorRow);
       
       // Create workbook
       const workbook = XLSX.utils.book_new();
       
-      // Summary sheet with horizontal layout
-      const summarySheet = XLSX.utils.aoa_to_sheet(horizontalData);
+      // Create sheet with horizontal layout
+      const sheet = XLSX.utils.aoa_to_sheet(horizontalData);
       
-      // Set column widths for better readability
+      // Set column widths
       const colWidths = [{ wch: 20 }]; // First column for metric names
-      sortedDates.forEach(() => colWidths.push({ wch: 12 }));
+      sortedDates.forEach(() => colWidths.push({ wch: 15 }));
       colWidths.push({ wch: 10 }); // Total column
-      summarySheet['!cols'] = colWidths;
+      sheet['!cols'] = colWidths;
       
-      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Resumo Diário');
-      
-      // Create conversions sheet with details
-      const allConversions: Array<{
-        'Data Conversão': string;
-        'Cliente': string;
-        'Vendedor': string;
-        'Empresa': string;
-      }> = [];
-      
-      sortedDates.forEach(date => {
-        dailyData[date].conversions.forEach(conv => {
-          allConversions.push({
-            'Data Conversão': date,
-            'Cliente': conv.cliente,
-            'Vendedor': conv.vendedor,
-            'Empresa': conv.empresa
-          });
-        });
-      });
-      
-      if (allConversions.length > 0) {
-        const conversionsSheet = XLSX.utils.json_to_sheet(allConversions);
-        XLSX.utils.book_append_sheet(workbook, conversionsSheet, 'Conversões Detalhadas');
-      }
-      
-      // Create validations sheet with details
-      const allValidations: Array<{
-        'Data Validação': string;
-        'Cliente': string;
-        'Empresa': string;
-      }> = [];
-      
-      sortedDates.forEach(date => {
-        dailyData[date].validations.forEach(val => {
-          allValidations.push({
-            'Data Validação': date,
-            'Cliente': val.cliente,
-            'Empresa': val.empresa
-          });
-        });
-      });
-      
-      if (allValidations.length > 0) {
-        const validationsSheet = XLSX.utils.json_to_sheet(allValidations);
-        XLSX.utils.book_append_sheet(workbook, validationsSheet, 'Validações Detalhadas');
-      }
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Relatório');
       
       // Generate filename
       const startFormatted = format(startDate, 'dd-MM-yyyy', { locale: ptBR });
