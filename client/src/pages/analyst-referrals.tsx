@@ -176,6 +176,7 @@ export default function AnalystReferrals() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [contactStatusFilter, setContactStatusFilter] = useState("all_contact_statuses");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [isValidateDialogOpen, setIsValidateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -382,7 +383,18 @@ export default function AnalystReferrals() {
       referral.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || referral.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    // Contact status filter
+    let matchesContactStatus = true;
+    if (contactStatusFilter !== "all_contact_statuses") {
+      if (contactStatusFilter === "no_contact_status") {
+        matchesContactStatus = !referral.contactStatus;
+      } else {
+        matchesContactStatus = referral.contactStatus === contactStatusFilter;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesContactStatus;
   });
 
   // Function to convert file to base64
@@ -641,7 +653,7 @@ export default function AnalystReferrals() {
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
+          <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="search">Buscar</Label>
               <div className="relative">
@@ -673,6 +685,22 @@ export default function AnalystReferrals() {
                   <SelectItem value="not_validated">Não Validado</SelectItem>
                   <SelectItem value="not_converted">Não Convertido</SelectItem>
                   <SelectItem value="contact_list">Lista de contato</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="contact-status">Status Contato</Label>
+              <Select value={contactStatusFilter} onValueChange={setContactStatusFilter}>
+                <SelectTrigger id="contact-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_contact_statuses">Todos os Contatos</SelectItem>
+                  <SelectItem value="no_contact_status">Sem Status</SelectItem>
+                  <SelectItem value="retornar_contato">Retornar Contato</SelectItem>
+                  <SelectItem value="sem_sucesso">Sem Sucesso</SelectItem>
+                  <SelectItem value="em_negociacao">Em negociação</SelectItem>
+                  <SelectItem value="aguardando_pagamento">Aguardando pagamento</SelectItem>
                 </SelectContent>
               </Select>
             </div>

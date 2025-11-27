@@ -212,6 +212,7 @@ export default function ReferralsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [contactStatusFilter, setContactStatusFilter] = useState<string>("all_contact_statuses");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState<string>("");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
@@ -257,7 +258,17 @@ export default function ReferralsPage() {
     return new Map(companies.map(c => [c.id, c]));
   }, [companies]);
   
-  const allReferrals = referralsResponse?.data || [];
+  // Apply contact status filter client-side
+  const allReferrals = useMemo(() => {
+    const data = referralsResponse?.data || [];
+    if (contactStatusFilter === "all_contact_statuses") {
+      return data;
+    }
+    if (contactStatusFilter === "no_contact_status") {
+      return data.filter(r => !r.contactStatus);
+    }
+    return data.filter(r => r.contactStatus === contactStatusFilter);
+  }, [referralsResponse?.data, contactStatusFilter]);
   
   // Handle referral details view - memoized to avoid re-creating on every render
   const handleViewDetails = useCallback((referral: Referral) => {
@@ -460,12 +471,12 @@ export default function ReferralsPage() {
                     </Button>
                   )}
                   
-                  {/* Hide filter for indicador_nivel_1 - they only see validated */}
+                  {/* Hide status filter for indicador_nivel_1 - they only see validated */}
                   {user?.role !== 'indicador_nivel_1' && (
                     <div className="flex items-center space-x-2">
                       <FilterIcon className="text-gray-400 h-4 w-4" />
                       <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-[160px]">
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -480,6 +491,23 @@ export default function ReferralsPage() {
                       </Select>
                     </div>
                   )}
+                  
+                  {/* Contact status filter - available for all roles */}
+                  <div className="flex items-center space-x-2">
+                    <Select value={contactStatusFilter} onValueChange={setContactStatusFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Status Contato" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all_contact_statuses">Todos Contatos</SelectItem>
+                        <SelectItem value="no_contact_status">Sem Status</SelectItem>
+                        <SelectItem value="retornar_contato">Retornar Contato</SelectItem>
+                        <SelectItem value="sem_sucesso">Sem Sucesso</SelectItem>
+                        <SelectItem value="em_negociacao">Em negociação</SelectItem>
+                        <SelectItem value="aguardando_pagamento">Aguardando pagamento</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
               
