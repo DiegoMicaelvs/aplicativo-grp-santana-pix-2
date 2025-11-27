@@ -50,7 +50,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Referral, User, Company, AnalystPermission } from "@shared/schema";
 import { validateReferralSchema } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 
 type ValidateFormValues = z.infer<typeof validateReferralSchema>;
 
