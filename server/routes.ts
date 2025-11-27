@@ -1908,16 +1908,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Edit referral (for analysts and admins)
+  // Edit referral (for analysts, admins, and indicador_nivel_1 for company only)
   app.patch("/api/referrals/:id", requireAuth, async (req, res) => {
     try {
-      // Check if user is admin or analyst - all analysts can edit referrals
-      if (req.user!.role !== "admin" && req.user!.role !== "analista") {
+      const isAdminOrAnalyst = req.user!.role === "admin" || req.user!.role === "analista";
+      const isIndicadorNivel1 = req.user!.role === "indicador_nivel_1";
+      
+      // Check if user has permission to edit
+      if (!isAdminOrAnalyst && !isIndicadorNivel1) {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
       const referralId = parseInt(req.params.id);
       const { fullName, phone, licensePlate, companyId, userId, commissionIndicator, commissionPromoter, status, notes, hasInsurance, createdAt, paymentProof, city, state } = req.body;
+      
+      // For indicador_nivel_1, only allow editing companyId
+      if (isIndicadorNivel1) {
+        // Verify this is only a company update
+        const allowedFields = ['companyId'];
+        const requestedFields = Object.keys(req.body).filter(key => req.body[key] !== undefined);
+        const hasOnlyAllowedFields = requestedFields.every(field => allowedFields.includes(field));
+        
+        if (!hasOnlyAllowedFields || companyId === undefined) {
+          return res.status(403).json({ error: "Indicador nível 1 só pode alterar a seguradora" });
+        }
+      }
       
       console.log("[PATCH /api/referrals/:id] Dados recebidos:", req.body);
       
@@ -1925,6 +1940,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingReferral = await storage.getReferralById(referralId);
       if (!existingReferral) {
         return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // For indicador_nivel_1, verify they own this referral
+      if (isIndicadorNivel1 && existingReferral.createdBy !== req.user!.id) {
+        return res.status(403).json({ error: "Você só pode editar suas próprias indicações" });
       }
       
       // Validate payment proof requirement for converted status
