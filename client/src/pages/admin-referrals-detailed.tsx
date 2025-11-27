@@ -19,7 +19,7 @@ import { queryClient } from "@/lib/queryClient";
 import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 
 type ReferralStatus = "pending" | "analyzing" | "converted" | "rejected" | "validated" | "paid" | "false" | "not_validated" | "not_converted" | "contact_list";
 
@@ -983,65 +983,162 @@ export default function AdminReferralsDetailedPage() {
         convertidos: acc.convertidos + day.convertidos
       }), { cadastros: 0, validados: 0, convertidos: 0 });
       
-      // Build horizontal data
-      const horizontalData: any[][] = [];
+      // Define styles
+      const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
+        fill: { fgColor: { rgb: "2563EB" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "1E40AF" } },
+          bottom: { style: "thin", color: { rgb: "1E40AF" } },
+          left: { style: "thin", color: { rgb: "1E40AF" } },
+          right: { style: "thin", color: { rgb: "1E40AF" } }
+        }
+      };
       
-      // Header row: Nome do indicador + dates + TOTAL
-      const headerRow = [selectedUserName, ...sortedDates, 'TOTAL'];
-      horizontalData.push(headerRow);
+      const labelStyle = {
+        font: { bold: true, sz: 11 },
+        fill: { fgColor: { rgb: "F3F4F6" } },
+        alignment: { horizontal: "left", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "D1D5DB" } },
+          bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+          left: { style: "thin", color: { rgb: "D1D5DB" } },
+          right: { style: "thin", color: { rgb: "D1D5DB" } }
+        }
+      };
       
-      // Cadastros row
-      const cadastrosRow = ['Cadastros', 
-        ...sortedDates.map(date => dailyData[date].cadastros || '-'),
-        totals.cadastros
+      const dataStyle = {
+        font: { sz: 11 },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "E5E7EB" } },
+          bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+          left: { style: "thin", color: { rgb: "E5E7EB" } },
+          right: { style: "thin", color: { rgb: "E5E7EB" } }
+        }
+      };
+      
+      const totalStyle = {
+        font: { bold: true, sz: 11 },
+        fill: { fgColor: { rgb: "DBEAFE" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "93C5FD" } },
+          bottom: { style: "thin", color: { rgb: "93C5FD" } },
+          left: { style: "thin", color: { rgb: "93C5FD" } },
+          right: { style: "thin", color: { rgb: "93C5FD" } }
+        }
+      };
+      
+      const successStyle = {
+        font: { bold: true, sz: 11, color: { rgb: "166534" } },
+        fill: { fgColor: { rgb: "DCFCE7" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "86EFAC" } },
+          bottom: { style: "thin", color: { rgb: "86EFAC" } },
+          left: { style: "thin", color: { rgb: "86EFAC" } },
+          right: { style: "thin", color: { rgb: "86EFAC" } }
+        }
+      };
+      
+      // Build data with styles
+      const numCols = sortedDates.length + 2; // label + dates + total
+      
+      // Create worksheet data
+      const wsData: any[][] = [];
+      
+      // Row 1: Header with indicator name + dates + TOTAL
+      const headerRow = [
+        { v: selectedUserName, s: headerStyle },
+        ...sortedDates.map(date => ({ v: date, s: headerStyle })),
+        { v: 'TOTAL', s: headerStyle }
       ];
-      horizontalData.push(cadastrosRow);
+      wsData.push(headerRow);
       
-      // Validados row
-      const validadosRow = ['Validados',
-        ...sortedDates.map(date => dailyData[date].validados || '-'),
-        totals.validados
+      // Row 2: Cadastros
+      const cadastrosRow = [
+        { v: 'Cadastros', s: labelStyle },
+        ...sortedDates.map(date => ({ 
+          v: dailyData[date].cadastros || 0, 
+          s: dailyData[date].cadastros > 0 ? dataStyle : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+        })),
+        { v: totals.cadastros, s: totalStyle }
       ];
-      horizontalData.push(validadosRow);
+      wsData.push(cadastrosRow);
       
-      // Convertidos row
-      const convertidosRow = ['Convertidos',
-        ...sortedDates.map(date => dailyData[date].convertidos || '-'),
-        totals.convertidos
+      // Row 3: Validados
+      const validadosRow = [
+        { v: 'Validados', s: labelStyle },
+        ...sortedDates.map(date => ({ 
+          v: dailyData[date].validados || 0, 
+          s: dailyData[date].validados > 0 ? successStyle : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+        })),
+        { v: totals.validados, s: { ...totalStyle, font: { ...totalStyle.font, color: { rgb: "166534" } } } }
       ];
-      horizontalData.push(convertidosRow);
+      wsData.push(validadosRow);
       
-      // Associação row (empresas where conversions happened)
-      const associacaoRow = ['Associação',
+      // Row 4: Convertidos
+      const convertidosRow = [
+        { v: 'Convertidos', s: labelStyle },
+        ...sortedDates.map(date => ({ 
+          v: dailyData[date].convertidos || 0, 
+          s: dailyData[date].convertidos > 0 ? { ...successStyle, fill: { fgColor: { rgb: "F3E8FF" } }, font: { ...successStyle.font, color: { rgb: "7C3AED" } } } : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+        })),
+        { v: totals.convertidos, s: { ...totalStyle, font: { ...totalStyle.font, color: { rgb: "7C3AED" } } } }
+      ];
+      wsData.push(convertidosRow);
+      
+      // Row 5: Associação
+      const associacaoRow = [
+        { v: 'Associação', s: labelStyle },
         ...sortedDates.map(date => {
           const empresas = Array.from(dailyData[date].empresas);
-          return empresas.length > 0 ? empresas.join(', ') : '-';
+          return { 
+            v: empresas.length > 0 ? empresas.join(', ') : '-', 
+            s: empresas.length > 0 ? dataStyle : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+          };
         }),
-        '-'
+        { v: '-', s: totalStyle }
       ];
-      horizontalData.push(associacaoRow);
+      wsData.push(associacaoRow);
       
-      // Vendedor row (only show when there are sales)
-      const vendedorRow = ['Vendedor',
+      // Row 6: Vendedor
+      const vendedorRow = [
+        { v: 'Vendedor', s: labelStyle },
         ...sortedDates.map(date => {
           const vendedores = Array.from(dailyData[date].vendedores);
-          return vendedores.length > 0 ? vendedores.join(', ') : '-';
+          return { 
+            v: vendedores.length > 0 ? vendedores.join(', ') : '-', 
+            s: vendedores.length > 0 ? { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "2563EB" } } } : { ...dataStyle, font: { ...dataStyle.font, color: { rgb: "9CA3AF" } } }
+          };
         }),
-        '-'
+        { v: '-', s: totalStyle }
       ];
-      horizontalData.push(vendedorRow);
+      wsData.push(vendedorRow);
       
       // Create workbook
       const workbook = XLSX.utils.book_new();
       
-      // Create sheet with horizontal layout
-      const sheet = XLSX.utils.aoa_to_sheet(horizontalData);
+      // Create sheet from array of arrays
+      const sheet = XLSX.utils.aoa_to_sheet(wsData);
       
       // Set column widths
-      const colWidths = [{ wch: 20 }]; // First column for metric names
-      sortedDates.forEach(() => colWidths.push({ wch: 15 }));
+      const colWidths = [{ wch: 18 }]; // First column for labels
+      sortedDates.forEach(() => colWidths.push({ wch: 12 }));
       colWidths.push({ wch: 10 }); // Total column
       sheet['!cols'] = colWidths;
+      
+      // Set row heights
+      sheet['!rows'] = [
+        { hpt: 28 }, // Header row
+        { hpt: 24 }, // Cadastros
+        { hpt: 24 }, // Validados
+        { hpt: 24 }, // Convertidos
+        { hpt: 24 }, // Associação
+        { hpt: 24 }  // Vendedor
+      ];
       
       XLSX.utils.book_append_sheet(workbook, sheet, 'Relatório');
       
