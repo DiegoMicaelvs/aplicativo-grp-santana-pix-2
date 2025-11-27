@@ -1393,17 +1393,7 @@ export default function AdminReferralsDetailedPage() {
         return dayA - dayB;
       });
 
-      // Color palette for different indicators
-      const indicatorColors = [
-        { bg: "7C3AED", border: "5B21B6", light: "EDE9FE" }, // Purple
-        { bg: "0891B2", border: "0E7490", light: "CFFAFE" }, // Cyan
-        { bg: "EA580C", border: "C2410C", light: "FED7AA" }, // Orange
-        { bg: "16A34A", border: "15803D", light: "DCFCE7" }, // Green
-        { bg: "DC2626", border: "B91C1C", light: "FEE2E2" }, // Red
-        { bg: "2563EB", border: "1D4ED8", light: "DBEAFE" }, // Blue
-      ];
-
-      // Base border style
+      // Professional color scheme - minimal colors
       const baseBorder = {
         top: { style: "thin", color: { rgb: "D1D5DB" } },
         bottom: { style: "thin", color: { rgb: "D1D5DB" } },
@@ -1411,18 +1401,26 @@ export default function AdminReferralsDetailedPage() {
         right: { style: "thin", color: { rgb: "D1D5DB" } }
       };
 
-      // Title style
+      // Title style - clean gray
       const titleStyle = {
-        font: { bold: true, color: { rgb: "1F2937" }, sz: 14 },
-        fill: { fgColor: { rgb: "F3F4F6" } },
+        font: { bold: true, color: { rgb: "1F2937" }, sz: 13 },
+        fill: { fgColor: { rgb: "F9FAFB" } },
         alignment: { horizontal: "center", vertical: "center" },
         border: baseBorder
       };
 
-      // Date column header style
-      const dateHeaderStyle = {
+      // Indicator header style - dark blue professional
+      const indicatorHeaderStyle = {
         font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
-        fill: { fgColor: { rgb: "374151" } },
+        fill: { fgColor: { rgb: "1E3A5F" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: baseBorder
+      };
+
+      // Column header style - light gray
+      const columnHeaderStyle = {
+        font: { bold: true, sz: 9, color: { rgb: "374151" } },
+        fill: { fgColor: { rgb: "E5E7EB" } },
         alignment: { horizontal: "center", vertical: "center" },
         border: baseBorder
       };
@@ -1435,39 +1433,46 @@ export default function AdminReferralsDetailedPage() {
         border: baseBorder
       };
 
-      // Metric label styles with colors
-      const metricStyles = {
-        cadastros: {
-          header: { font: { bold: true, sz: 9, color: { rgb: "1F2937" } }, fill: { fgColor: { rgb: "E5E7EB" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
-          data: { font: { sz: 10 }, fill: { fgColor: { rgb: "FFFFFF" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
-          total: { font: { bold: true, sz: 10 }, fill: { fgColor: { rgb: "E5E7EB" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
-        },
-        validados: {
-          header: { font: { bold: true, sz: 9, color: { rgb: "166534" } }, fill: { fgColor: { rgb: "DCFCE7" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
-          data: { font: { sz: 10, color: { rgb: "166534" } }, fill: { fgColor: { rgb: "F0FDF4" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
-          total: { font: { bold: true, sz: 10, color: { rgb: "166534" } }, fill: { fgColor: { rgb: "BBF7D0" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
-        },
-        convertidos: {
-          header: { font: { bold: true, sz: 9, color: { rgb: "6B21A8" } }, fill: { fgColor: { rgb: "F3E8FF" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
-          data: { font: { sz: 10, color: { rgb: "7C3AED" } }, fill: { fgColor: { rgb: "FAF5FF" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
-          total: { font: { bold: true, sz: 10, color: { rgb: "6B21A8" } }, fill: { fgColor: { rgb: "E9D5FF" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
-        },
-        associacao: {
-          header: { font: { bold: true, sz: 9, color: { rgb: "1F2937" } }, fill: { fgColor: { rgb: "FEF3C7" } }, alignment: { horizontal: "center", vertical: "center", wrapText: true }, border: baseBorder },
-          data: { font: { sz: 9 }, fill: { fgColor: { rgb: "FFFBEB" } }, alignment: { horizontal: "left", vertical: "center", wrapText: true }, border: baseBorder },
-          total: { font: { bold: true, sz: 9 }, fill: { fgColor: { rgb: "FDE68A" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
-        },
-        vendedor: {
-          header: { font: { bold: true, sz: 9, color: { rgb: "1F2937" } }, fill: { fgColor: { rgb: "DBEAFE" } }, alignment: { horizontal: "center", vertical: "center", wrapText: true }, border: baseBorder },
-          data: { font: { sz: 9, color: { rgb: "1D4ED8" } }, fill: { fgColor: { rgb: "EFF6FF" } }, alignment: { horizontal: "left", vertical: "center", wrapText: true }, border: baseBorder },
-          total: { font: { bold: true, sz: 9 }, fill: { fgColor: { rgb: "BFDBFE" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
-        }
+      // Data cell styles - clean white/light gray alternating
+      const dataStyle = {
+        font: { sz: 10, color: { rgb: "374151" } },
+        fill: { fgColor: { rgb: "FFFFFF" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: baseBorder
       };
 
-      // Total row styles
+      const dataStyleAlt = {
+        font: { sz: 10, color: { rgb: "374151" } },
+        fill: { fgColor: { rgb: "F9FAFB" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: baseBorder
+      };
+
+      const textDataStyle = {
+        font: { sz: 9, color: { rgb: "374151" } },
+        fill: { fgColor: { rgb: "FFFFFF" } },
+        alignment: { horizontal: "left", vertical: "center", wrapText: true },
+        border: baseBorder
+      };
+
+      const textDataStyleAlt = {
+        font: { sz: 9, color: { rgb: "374151" } },
+        fill: { fgColor: { rgb: "F9FAFB" } },
+        alignment: { horizontal: "left", vertical: "center", wrapText: true },
+        border: baseBorder
+      };
+
+      // Total row style - dark
       const totalLabelStyle = {
-        font: { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
-        fill: { fgColor: { rgb: "1F2937" } },
+        font: { bold: true, sz: 10, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "374151" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: baseBorder
+      };
+
+      const totalDataStyle = {
+        font: { bold: true, sz: 10, color: { rgb: "1F2937" } },
+        fill: { fgColor: { rgb: "E5E7EB" } },
         alignment: { horizontal: "center", vertical: "center" },
         border: baseBorder
       };
@@ -1485,57 +1490,44 @@ export default function AdminReferralsDetailedPage() {
       wsData.push(titleRow);
 
       // Row 2: Indicator names header
-      const headerRow: any[] = [{ v: '', s: dateHeaderStyle }];
-      indicatorsList.forEach((ind, idx) => {
-        const colorIdx = idx % indicatorColors.length;
-        const color = indicatorColors[colorIdx];
-        const indHeaderStyle = {
-          font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
-          fill: { fgColor: { rgb: color.bg } },
-          alignment: { horizontal: "center", vertical: "center", wrapText: true },
-          border: { ...baseBorder, top: { style: "medium", color: { rgb: color.border } }, bottom: { style: "medium", color: { rgb: color.border } } }
-        };
-        headerRow.push({ v: ind.name, s: indHeaderStyle });
+      const headerRow: any[] = [{ v: '', s: indicatorHeaderStyle }];
+      indicatorsList.forEach((ind) => {
+        headerRow.push({ v: ind.name, s: indicatorHeaderStyle });
         for (let i = 1; i < metricsPerIndicator; i++) {
-          headerRow.push({ v: '', s: indHeaderStyle });
+          headerRow.push({ v: '', s: indicatorHeaderStyle });
         }
       });
       wsData.push(headerRow);
 
       // Row 3: Metrics labels
-      const metricsRow: any[] = [{ v: 'Data', s: dateHeaderStyle }];
+      const metricsRow: any[] = [{ v: 'Data', s: columnHeaderStyle }];
       indicatorsList.forEach(() => {
-        metricsRow.push({ v: 'Cad.', s: metricStyles.cadastros.header });
-        metricsRow.push({ v: 'Valid.', s: metricStyles.validados.header });
-        metricsRow.push({ v: 'Conv.', s: metricStyles.convertidos.header });
-        metricsRow.push({ v: 'Associação', s: metricStyles.associacao.header });
-        metricsRow.push({ v: 'Vendedor', s: metricStyles.vendedor.header });
+        metricsRow.push({ v: 'Cad.', s: columnHeaderStyle });
+        metricsRow.push({ v: 'Valid.', s: columnHeaderStyle });
+        metricsRow.push({ v: 'Conv.', s: columnHeaderStyle });
+        metricsRow.push({ v: 'Associação', s: columnHeaderStyle });
+        metricsRow.push({ v: 'Vendedor', s: columnHeaderStyle });
       });
       wsData.push(metricsRow);
 
       // Data rows for each date with alternating colors
       sortedDates.forEach((date, rowIdx) => {
         const isEvenRow = rowIdx % 2 === 0;
-        const altDateStyle = isEvenRow ? dateCellStyle : { ...dateCellStyle, fill: { fgColor: { rgb: "FFFFFF" } } };
+        const currentDateStyle = isEvenRow ? dateCellStyle : { ...dateCellStyle, fill: { fgColor: { rgb: "FFFFFF" } } };
+        const currentDataStyle = isEvenRow ? dataStyleAlt : dataStyle;
+        const currentTextStyle = isEvenRow ? textDataStyleAlt : textDataStyle;
         
-        const row: any[] = [{ v: date, s: altDateStyle }];
+        const row: any[] = [{ v: date, s: currentDateStyle }];
         indicatorsList.forEach(ind => {
           const dayData = ind.dailyData[date];
           const empresasText = Array.from(dayData.empresas).join('\n');
           const vendedoresText = Array.from(dayData.vendedores).join('\n');
           
-          // Apply alternating row tint
-          const cadStyle = isEvenRow ? metricStyles.cadastros.data : { ...metricStyles.cadastros.data, fill: { fgColor: { rgb: "F9FAFB" } } };
-          const valStyle = isEvenRow ? metricStyles.validados.data : { ...metricStyles.validados.data, fill: { fgColor: { rgb: "ECFDF5" } } };
-          const convStyle = isEvenRow ? metricStyles.convertidos.data : { ...metricStyles.convertidos.data, fill: { fgColor: { rgb: "FDF4FF" } } };
-          const assocStyle = isEvenRow ? metricStyles.associacao.data : { ...metricStyles.associacao.data, fill: { fgColor: { rgb: "FEF9C3" } } };
-          const vendStyle = isEvenRow ? metricStyles.vendedor.data : { ...metricStyles.vendedor.data, fill: { fgColor: { rgb: "F0F9FF" } } };
-          
-          row.push({ v: dayData.cadastros || 0, s: cadStyle });
-          row.push({ v: dayData.validados || 0, s: valStyle });
-          row.push({ v: dayData.convertidos || 0, s: convStyle });
-          row.push({ v: empresasText.length > 0 ? empresasText : '-', s: assocStyle });
-          row.push({ v: vendedoresText.length > 0 ? vendedoresText : '-', s: vendStyle });
+          row.push({ v: dayData.cadastros || 0, s: currentDataStyle });
+          row.push({ v: dayData.validados || 0, s: currentDataStyle });
+          row.push({ v: dayData.convertidos || 0, s: currentDataStyle });
+          row.push({ v: empresasText.length > 0 ? empresasText : '-', s: currentTextStyle });
+          row.push({ v: vendedoresText.length > 0 ? vendedoresText : '-', s: currentTextStyle });
         });
         wsData.push(row);
       });
@@ -1543,11 +1535,11 @@ export default function AdminReferralsDetailedPage() {
       // Totals row
       const totalsRow: any[] = [{ v: 'TOTAL', s: totalLabelStyle }];
       indicatorsList.forEach(ind => {
-        totalsRow.push({ v: ind.totals.cadastros, s: metricStyles.cadastros.total });
-        totalsRow.push({ v: ind.totals.validados, s: metricStyles.validados.total });
-        totalsRow.push({ v: ind.totals.convertidos, s: metricStyles.convertidos.total });
-        totalsRow.push({ v: '-', s: metricStyles.associacao.total });
-        totalsRow.push({ v: '-', s: metricStyles.vendedor.total });
+        totalsRow.push({ v: ind.totals.cadastros, s: totalDataStyle });
+        totalsRow.push({ v: ind.totals.validados, s: totalDataStyle });
+        totalsRow.push({ v: ind.totals.convertidos, s: totalDataStyle });
+        totalsRow.push({ v: '-', s: totalDataStyle });
+        totalsRow.push({ v: '-', s: totalDataStyle });
       });
       wsData.push(totalsRow);
 
