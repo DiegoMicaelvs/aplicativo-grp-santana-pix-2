@@ -924,8 +924,9 @@ export default function AdminReferralsDetailedPage() {
           }
         }
         
-        // Track validados by VALIDATION date
-        if (referral.status === 'validated' || referral.status === 'converted' || referral.status === 'paid') {
+        // Track validados by VALIDATION date - ONLY count referrals with CURRENT status = 'validated'
+        // This matches what the referrals page shows when filtered by status = 'validated'
+        if (referral.status === 'validated') {
           const validationDate = getStatusDate(referral, 'validated');
           if (validationDate && validationDate >= startDate && validationDate <= endDate) {
             const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
