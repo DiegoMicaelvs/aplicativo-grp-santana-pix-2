@@ -1484,11 +1484,13 @@ export default function AdminReferralsDetailedPage() {
         const row: any[] = [{ v: date, s: headerStyle }];
         indicatorsList.forEach(ind => {
           const dayData = ind.dailyData[date];
+          const empresasText = Array.from(dayData.empresas).join('\n');
+          const vendedoresText = Array.from(dayData.vendedores).join('\n');
           row.push({ v: dayData.cadastros || 0, s: dataStyle });
           row.push({ v: dayData.validados || 0, s: dataStyle });
           row.push({ v: dayData.convertidos || 0, s: dataStyle });
-          row.push({ v: Array.from(dayData.empresas).join(', ') || '-', s: dataStyle });
-          row.push({ v: Array.from(dayData.vendedores).join(', ') || '-', s: dataStyle });
+          row.push({ v: empresasText.length > 0 ? empresasText : '-', s: dataStyle });
+          row.push({ v: vendedoresText.length > 0 ? vendedoresText : '-', s: dataStyle });
         });
         wsData.push(row);
       });
