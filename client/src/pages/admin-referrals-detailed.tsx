@@ -1000,11 +1000,11 @@ export default function AdminReferralsDetailedPage() {
         convertidos: acc.convertidos + day.convertidos
       }), { cadastros: 0, validados: 0, convertidos: 0 });
       
-      // Define styles
+      // Define styles with wrapText for automatic text wrapping
       const headerStyle = {
         font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
         fill: { fgColor: { rgb: "2563EB" } },
-        alignment: { horizontal: "center", vertical: "center" },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
         border: {
           top: { style: "thin", color: { rgb: "1E40AF" } },
           bottom: { style: "thin", color: { rgb: "1E40AF" } },
@@ -1016,7 +1016,7 @@ export default function AdminReferralsDetailedPage() {
       const labelStyle = {
         font: { bold: true, sz: 11 },
         fill: { fgColor: { rgb: "F3F4F6" } },
-        alignment: { horizontal: "left", vertical: "center" },
+        alignment: { horizontal: "left", vertical: "center", wrapText: true },
         border: {
           top: { style: "thin", color: { rgb: "D1D5DB" } },
           bottom: { style: "thin", color: { rgb: "D1D5DB" } },
@@ -1027,7 +1027,7 @@ export default function AdminReferralsDetailedPage() {
       
       const dataStyle = {
         font: { sz: 11 },
-        alignment: { horizontal: "center", vertical: "center" },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
         border: {
           top: { style: "thin", color: { rgb: "E5E7EB" } },
           bottom: { style: "thin", color: { rgb: "E5E7EB" } },
@@ -1039,7 +1039,7 @@ export default function AdminReferralsDetailedPage() {
       const totalStyle = {
         font: { bold: true, sz: 11 },
         fill: { fgColor: { rgb: "DBEAFE" } },
-        alignment: { horizontal: "center", vertical: "center" },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
         border: {
           top: { style: "thin", color: { rgb: "93C5FD" } },
           bottom: { style: "thin", color: { rgb: "93C5FD" } },
@@ -1051,7 +1051,7 @@ export default function AdminReferralsDetailedPage() {
       const successStyle = {
         font: { bold: true, sz: 11, color: { rgb: "166534" } },
         fill: { fgColor: { rgb: "DCFCE7" } },
-        alignment: { horizontal: "center", vertical: "center" },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
         border: {
           top: { style: "thin", color: { rgb: "86EFAC" } },
           bottom: { style: "thin", color: { rgb: "86EFAC" } },
@@ -1141,20 +1141,20 @@ export default function AdminReferralsDetailedPage() {
       // Create sheet from array of arrays
       const sheet = XLSX.utils.aoa_to_sheet(wsData);
       
-      // Set column widths
-      const colWidths = [{ wch: 18 }]; // First column for labels
-      sortedDates.forEach(() => colWidths.push({ wch: 12 }));
+      // Set column widths - wider columns for text content
+      const colWidths = [{ wch: 20 }]; // First column for labels
+      sortedDates.forEach(() => colWidths.push({ wch: 22 })); // Wider date columns for names
       colWidths.push({ wch: 10 }); // Total column
       sheet['!cols'] = colWidths;
       
-      // Set row heights
+      // Set row heights - taller rows for wrapped text
       sheet['!rows'] = [
-        { hpt: 28 }, // Header row
+        { hpt: 35 }, // Header row (indicator name)
         { hpt: 24 }, // Cadastros
         { hpt: 24 }, // Validados
         { hpt: 24 }, // Convertidos
-        { hpt: 24 }, // Associação
-        { hpt: 24 }  // Vendedor
+        { hpt: 40 }, // Associação (company names can be long)
+        { hpt: 40 }  // Vendedor (seller names can be long)
       ];
       
       XLSX.utils.book_append_sheet(workbook, sheet, 'Relatório');
