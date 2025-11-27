@@ -936,9 +936,11 @@ export default function AdminReferralsDetailedPage() {
           }
         }
         
-        // Track convertidos by CONVERSION date
+        // Track convertidos by updatedAt - this matches what the referrals page shows
+        // The referrals page displays updatedAt for converted/paid status
         if (referral.status === 'converted' || referral.status === 'paid') {
-          const conversionDate = getStatusDate(referral, 'converted');
+          // Use updatedAt to match the referrals page display
+          const conversionDate = referral.updatedAt ? new Date(referral.updatedAt) : null;
           if (conversionDate && conversionDate >= startDate && conversionDate <= endDate) {
             const convertedKey = format(conversionDate, 'dd/MM', { locale: ptBR });
             if (dailyData[convertedKey]) {
