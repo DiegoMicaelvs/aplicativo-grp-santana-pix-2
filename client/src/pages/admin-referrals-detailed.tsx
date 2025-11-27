@@ -863,17 +863,30 @@ export default function AdminReferralsDetailedPage() {
         ? users.find(u => u.id.toString() === userFilter)?.fullName || 'Indicador'
         : 'Todos os Indicadores';
       
-      // Helper function to get date from status history
+      // Helper function to get date from status - prioritize the stored date fields
       const getStatusDate = (referral: any, status: string): Date | null => {
-        if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
-          const entry = referral.statusHistory.find((e: any) => e.status === status);
-          if (entry && entry.changedAt) {
-            return new Date(entry.changedAt);
-          }
-        }
+        // For validated: use validatedAt first (most recent validation date)
         if (status === 'validated' && referral.validatedAt) {
           return new Date(referral.validatedAt);
         }
+        
+        // For converted: use convertedAt first (most recent conversion date)
+        if (status === 'converted' && referral.convertedAt) {
+          return new Date(referral.convertedAt);
+        }
+        
+        // Fallback to statusHistory - use findLast to get the MOST RECENT entry
+        if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+          // Find the last (most recent) entry with this status
+          const entries = referral.statusHistory.filter((e: any) => e.status === status);
+          if (entries.length > 0) {
+            const lastEntry = entries[entries.length - 1];
+            if (lastEntry.changedAt) {
+              return new Date(lastEntry.changedAt);
+            }
+          }
+        }
+        
         return null;
       };
       
@@ -936,14 +949,15 @@ export default function AdminReferralsDetailedPage() {
                 dailyData[convertedKey].empresas.add(company.name);
               }
               
-              // Track vendedor
+              // Track vendedor - use the LAST (most recent) converted entry
               if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
-                const convertedEntry = referral.statusHistory.find((entry: any) => 
+                const convertedEntries = referral.statusHistory.filter((entry: any) => 
                   entry.status === 'converted'
                 );
-                if (convertedEntry) {
-                  const vendedor = users.find(u => u.id === convertedEntry.changedBy);
-                  const vendedorName = convertedEntry.changedByName || vendedor?.fullName;
+                if (convertedEntries.length > 0) {
+                  const lastConvertedEntry = convertedEntries[convertedEntries.length - 1];
+                  const vendedor = users.find(u => u.id === lastConvertedEntry.changedBy);
+                  const vendedorName = lastConvertedEntry.changedByName || vendedor?.fullName;
                   if (vendedorName) {
                     dailyData[convertedKey].vendedores.add(vendedorName);
                   }
