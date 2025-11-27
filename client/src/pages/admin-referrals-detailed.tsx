@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown, XCircle, RefreshCw, Phone } from "lucide-react";
+import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown, XCircle, RefreshCw, Phone, FileBarChart, ChevronDown, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -442,6 +443,10 @@ export default function AdminReferralsDetailedPage() {
   });
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userDropdownOpenMobile, setUserDropdownOpenMobile] = useState(false);
+  
+  // Report dialog state
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportType, setReportType] = useState<'weekly' | 'monthly' | 'daily_general'>('monthly');
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -823,6 +828,245 @@ export default function AdminReferralsDetailedPage() {
     }
   };
 
+  // Generate and export report based on type (weekly, monthly, daily_general)
+  const handleExportReport = (type: 'weekly' | 'monthly' | 'daily_general') => {
+    try {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+      let periodLabel: string;
+      
+      // Determine date range based on report type
+      switch (type) {
+        case 'weekly':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          periodLabel = 'Semanal';
+          break;
+        case 'monthly':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          periodLabel = 'Mensal';
+          break;
+        case 'daily_general':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = now;
+          periodLabel = 'Geral Diário';
+          break;
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          periodLabel = 'Mensal';
+      }
+      
+      // Filter referrals by date range and apply existing filters
+      const reportReferrals = filteredReferrals.filter((referral: any) => {
+        const refDate = new Date(referral.createdAt);
+        return refDate >= startDate && refDate <= endDate;
+      });
+      
+      if (reportReferrals.length === 0) {
+        toast({
+          title: "Nenhuma indicação encontrada",
+          description: "Não há indicações no período selecionado com os filtros aplicados.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Get selected user name for report title
+      const selectedUserName = userFilter !== "all_users" 
+        ? users.find(u => u.id.toString() === userFilter)?.fullName || 'Indicador'
+        : 'Todos os Indicadores';
+      
+      // Group referrals by day
+      const dailyData: Record<string, {
+        total: number;
+        validated: number;
+        converted: number;
+        pending: number;
+        rejected: number;
+        conversions: Array<{
+          cliente: string;
+          vendedor: string;
+          empresa: string;
+          data: string;
+        }>;
+      }> = {};
+      
+      // Initialize all days in the range
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateKey = format(currentDate, 'dd/MM/yyyy', { locale: ptBR });
+        dailyData[dateKey] = {
+          total: 0,
+          validated: 0,
+          converted: 0,
+          pending: 0,
+          rejected: 0,
+          conversions: []
+        };
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Populate daily data
+      reportReferrals.forEach((referral: any) => {
+        const dateKey = format(new Date(referral.createdAt), 'dd/MM/yyyy', { locale: ptBR });
+        
+        if (dailyData[dateKey]) {
+          dailyData[dateKey].total++;
+          
+          if (referral.status === 'validated') {
+            dailyData[dateKey].validated++;
+          } else if (referral.status === 'converted' || referral.status === 'paid') {
+            dailyData[dateKey].converted++;
+            
+            // Find who converted this referral from statusHistory
+            let vendedorName = 'N/A';
+            if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+              const convertedEntry = referral.statusHistory.find((entry: any) => 
+                entry.status === 'converted'
+              );
+              if (convertedEntry) {
+                const vendedor = users.find(u => u.id === convertedEntry.changedBy);
+                vendedorName = convertedEntry.changedByName || vendedor?.fullName || 'N/A';
+              }
+            }
+            
+            const company = companies.find((c: any) => c.id === referral.companyId);
+            
+            dailyData[dateKey].conversions.push({
+              cliente: referral.fullName,
+              vendedor: vendedorName,
+              empresa: company?.name || 'N/A',
+              data: format(new Date(referral.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+            });
+          } else if (referral.status === 'pending' || referral.status === 'analyzing') {
+            dailyData[dateKey].pending++;
+          } else if (referral.status === 'rejected' || referral.status === 'not_converted' || referral.status === 'false') {
+            dailyData[dateKey].rejected++;
+          }
+        }
+      });
+      
+      // Create summary sheet data
+      const summaryData = Object.entries(dailyData).map(([date, data]) => ({
+        'Data': date,
+        'Total Indicações': data.total,
+        'Validadas': data.validated,
+        'Convertidas': data.converted,
+        'Pendentes': data.pending,
+        'Rejeitadas': data.rejected
+      }));
+      
+      // Add totals row
+      const totals = Object.values(dailyData).reduce((acc, day) => ({
+        total: acc.total + day.total,
+        validated: acc.validated + day.validated,
+        converted: acc.converted + day.converted,
+        pending: acc.pending + day.pending,
+        rejected: acc.rejected + day.rejected
+      }), { total: 0, validated: 0, converted: 0, pending: 0, rejected: 0 });
+      
+      summaryData.push({
+        'Data': 'TOTAL',
+        'Total Indicações': totals.total,
+        'Validadas': totals.validated,
+        'Convertidas': totals.converted,
+        'Pendentes': totals.pending,
+        'Rejeitadas': totals.rejected
+      });
+      
+      // Create conversions sheet data
+      const allConversions: Array<{
+        'Data': string;
+        'Cliente': string;
+        'Vendedor': string;
+        'Empresa': string;
+      }> = [];
+      
+      Object.entries(dailyData).forEach(([date, data]) => {
+        data.conversions.forEach(conv => {
+          allConversions.push({
+            'Data': date,
+            'Cliente': conv.cliente,
+            'Vendedor': conv.vendedor,
+            'Empresa': conv.empresa
+          });
+        });
+      });
+      
+      // Create workbook with multiple sheets
+      const workbook = XLSX.utils.book_new();
+      
+      // Summary sheet
+      const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Resumo Diário');
+      
+      // Conversions sheet
+      if (allConversions.length > 0) {
+        const conversionsSheet = XLSX.utils.json_to_sheet(allConversions);
+        XLSX.utils.book_append_sheet(workbook, conversionsSheet, 'Conversões Detalhadas');
+      }
+      
+      // All referrals detail sheet
+      const detailData = reportReferrals.map((referral: any) => {
+        const refUser = users.find((u: any) => u.id === referral.userId);
+        const company = companies.find((c: any) => c.id === referral.companyId);
+        
+        // Find vendedor from statusHistory for converted referrals
+        let vendedorName = '-';
+        if ((referral.status === 'converted' || referral.status === 'paid') && referral.statusHistory) {
+          const convertedEntry = referral.statusHistory.find((entry: any) => 
+            entry.status === 'converted'
+          );
+          if (convertedEntry) {
+            const vendedor = users.find(u => u.id === convertedEntry.changedBy);
+            vendedorName = convertedEntry.changedByName || vendedor?.fullName || '-';
+          }
+        }
+        
+        return {
+          'Data Criação': format(new Date(referral.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+          'Cliente': referral.fullName,
+          'Telefone': referral.phone,
+          'Placa': referral.licensePlate,
+          'Indicador': refUser?.fullName || 'N/A',
+          'Empresa': company?.name || 'N/A',
+          'Status': getStatusLabel(referral.status as ReferralStatus),
+          'Vendedor Conversão': vendedorName,
+          'Cidade': referral.city || '-',
+          'Estado': referral.state || '-'
+        };
+      });
+      
+      const detailSheet = XLSX.utils.json_to_sheet(detailData);
+      XLSX.utils.book_append_sheet(workbook, detailSheet, 'Indicações Detalhadas');
+      
+      // Generate filename
+      const startFormatted = format(startDate, 'dd-MM-yyyy', { locale: ptBR });
+      const endFormatted = format(endDate, 'dd-MM-yyyy', { locale: ptBR });
+      const userPart = userFilter !== "all_users" ? `_${selectedUserName.replace(/\s+/g, '_')}` : '';
+      const filename = `relatorio_${periodLabel.toLowerCase().replace(' ', '_')}${userPart}_${startFormatted}_a_${endFormatted}.xlsx`;
+      
+      // Download file
+      XLSX.writeFile(workbook, filename);
+      
+      toast({
+        title: "Relatório gerado com sucesso!",
+        description: `Relatório ${periodLabel} exportado com ${reportReferrals.length} indicações.`
+      });
+      
+      setIsReportDialogOpen(false);
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      toast({
+        title: "Erro ao gerar relatório",
+        description: "Não foi possível gerar o relatório. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Calculate statistics - memoized to avoid recalculating on every render
   const stats = useMemo(() => ({
     totalReferrals: referrals.length,
@@ -1170,7 +1414,7 @@ export default function AdminReferralsDetailedPage() {
                 {filteredReferrals.length} de {referrals.length} indicações encontradas
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button 
                 onClick={async () => {
                   await refetchReferrals();
@@ -1196,6 +1440,35 @@ export default function AdminReferralsDetailedPage() {
                 <Download className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Exportar</span> Excel
               </Button>
+              
+              {/* Report Export Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    className="flex items-center justify-center gap-2 text-sm md:text-base"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <FileBarChart className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden sm:inline">Exportar</span> Relatório
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExportReport('weekly')}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Semanal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportReport('monthly')}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Mensal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportReport('daily_general')}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Geral Diário
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
