@@ -1264,10 +1264,8 @@ export default function AdminReferralsDetailedPage() {
           cadastros: number;
           validados: number;
           convertidos: number;
-          empresa: string;
-          empresaTimestamp: number;
-          vendedor: string;
-          vendedorTimestamp: number;
+          empresas: Set<string>;
+          vendedores: Set<string>;
         }>;
         totals: { cadastros: number; validados: number; convertidos: number };
       }> = {};
@@ -1289,10 +1287,8 @@ export default function AdminReferralsDetailedPage() {
           cadastros: number;
           validados: number;
           convertidos: number;
-          empresa: string;
-          empresaTimestamp: number;
-          vendedor: string;
-          vendedorTimestamp: number;
+          empresas: Set<string>;
+          vendedores: Set<string>;
         }> = {};
 
         allDates.forEach(dateKey => {
@@ -1300,10 +1296,8 @@ export default function AdminReferralsDetailedPage() {
             cadastros: 0,
             validados: 0,
             convertidos: 0,
-            empresa: '',
-            empresaTimestamp: 0,
-            vendedor: '',
-            vendedorTimestamp: 0
+            empresas: new Set(),
+            vendedores: new Set()
           };
         });
 
@@ -1328,10 +1322,8 @@ export default function AdminReferralsDetailedPage() {
               if (dailyData[validatedKey]) {
                 dailyData[validatedKey].validados++;
                 const company = companies.find((c: any) => c.id === referral.companyId);
-                const timestamp = validationDate.getTime();
-                if (company?.name && timestamp > dailyData[validatedKey].empresaTimestamp) {
-                  dailyData[validatedKey].empresa = company.name;
-                  dailyData[validatedKey].empresaTimestamp = timestamp;
+                if (company?.name) {
+                  dailyData[validatedKey].empresas.add(company.name);
                 }
               }
             }
@@ -1345,10 +1337,8 @@ export default function AdminReferralsDetailedPage() {
               if (dailyData[convertedKey]) {
                 dailyData[convertedKey].convertidos++;
                 const company = companies.find((c: any) => c.id === referral.companyId);
-                const timestamp = conversionDate.getTime();
-                if (company?.name && timestamp > dailyData[convertedKey].empresaTimestamp) {
-                  dailyData[convertedKey].empresa = company.name;
-                  dailyData[convertedKey].empresaTimestamp = timestamp;
+                if (company?.name) {
+                  dailyData[convertedKey].empresas.add(company.name);
                 }
                 if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
                   const convertedEntries = referral.statusHistory.filter((entry: any) => 
@@ -1358,9 +1348,8 @@ export default function AdminReferralsDetailedPage() {
                     const lastConvertedEntry = convertedEntries[convertedEntries.length - 1];
                     const vendedor = users.find(u => u.id === lastConvertedEntry.changedBy);
                     const vendedorName = lastConvertedEntry.changedByName || vendedor?.fullName;
-                    if (vendedorName && timestamp > dailyData[convertedKey].vendedorTimestamp) {
-                      dailyData[convertedKey].vendedor = vendedorName;
-                      dailyData[convertedKey].vendedorTimestamp = timestamp;
+                    if (vendedorName) {
+                      dailyData[convertedKey].vendedores.add(vendedorName);
                     }
                   }
                 }
@@ -1531,12 +1520,14 @@ export default function AdminReferralsDetailedPage() {
         const row: any[] = [{ v: date, s: currentDateStyle }];
         indicatorsList.forEach(ind => {
           const dayData = ind.dailyData[date];
+          const empresasText = Array.from(dayData.empresas).join('\n');
+          const vendedoresText = Array.from(dayData.vendedores).join('\n');
           
           row.push({ v: dayData.cadastros || 0, s: currentDataStyle });
           row.push({ v: dayData.validados || 0, s: currentDataStyle });
           row.push({ v: dayData.convertidos || 0, s: currentDataStyle });
-          row.push({ v: dayData.empresa || '-', s: currentTextStyle });
-          row.push({ v: dayData.vendedor || '-', s: currentTextStyle });
+          row.push({ v: empresasText.length > 0 ? empresasText : '-', s: currentTextStyle });
+          row.push({ v: vendedoresText.length > 0 ? vendedoresText : '-', s: currentTextStyle });
         });
         wsData.push(row);
       });
