@@ -1314,17 +1314,19 @@ export default function AdminReferralsDetailedPage() {
             }
           }
 
-          // Track validados
-          if (referral.status === 'validated') {
-            const validationDate = getStatusDate(referral, 'validated');
-            if (validationDate && validationDate >= startDate && validationDate <= endDate) {
-              const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
-              if (dailyData[validatedKey]) {
-                dailyData[validatedKey].validados++;
-                const company = companies.find((c: any) => c.id === referral.companyId);
-                if (company?.name) {
-                  dailyData[validatedKey].empresas.add(company.name);
-                }
+          // Track validados - count referrals that were validated in period (regardless of current status)
+          // Always use current companyId which reflects the most recent company update
+          const validationDate = referral.validatedAt ? new Date(referral.validatedAt) : getStatusDate(referral, 'validated');
+          if (validationDate && validationDate >= startDate && validationDate <= endDate) {
+            // Only count as validated if not yet converted/paid (avoid double counting)
+            const isStillValidated = referral.status === 'validated';
+            const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
+            if (dailyData[validatedKey] && isStillValidated) {
+              dailyData[validatedKey].validados++;
+              // Use current companyId - this reflects the MOST RECENT company update
+              const company = companies.find((c: any) => c.id === referral.companyId);
+              if (company?.name) {
+                dailyData[validatedKey].empresas.add(company.name);
               }
             }
           }
