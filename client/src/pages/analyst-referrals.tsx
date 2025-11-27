@@ -641,15 +641,21 @@ export default function AnalystReferrals() {
           periodLabel = 'Mensal';
       }
       
-      // Helper function to get date from status
+      // Helper function to get date from status - prioritize the stored date fields
       const getStatusDate = (referral: any, status: string): Date | null => {
+        // For validated: use validatedAt first (most recent validation date)
         if (status === 'validated' && referral.validatedAt) {
           return new Date(referral.validatedAt);
         }
+        
+        // For converted: use convertedAt first (most recent conversion date)
         if (status === 'converted' && referral.convertedAt) {
           return new Date(referral.convertedAt);
         }
+        
+        // Fallback to statusHistory - use findLast to get the MOST RECENT entry
         if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+          // Find the last (most recent) entry with this status
           const entries = referral.statusHistory.filter((e: any) => e.status === status);
           if (entries.length > 0) {
             const lastEntry = entries[entries.length - 1];
@@ -658,6 +664,7 @@ export default function AnalystReferrals() {
             }
           }
         }
+        
         return null;
       };
       
@@ -686,6 +693,7 @@ export default function AnalystReferrals() {
       
       // Process all referrals
       filteredReferrals.forEach((referral: any) => {
+        // Count cadastros by creation date
         const createdDate = new Date(referral.createdAt);
         if (createdDate >= startDate && createdDate <= endDate) {
           const createdKey = format(createdDate, 'dd/MM', { locale: ptBR });
@@ -694,12 +702,16 @@ export default function AnalystReferrals() {
           }
         }
         
+        // Track validados by VALIDATION date - ONLY count referrals with CURRENT status = 'validated'
+        // This matches what the referrals page shows when filtered by status = 'validated'
         if (referral.status === 'validated') {
           const validationDate = getStatusDate(referral, 'validated');
           if (validationDate && validationDate >= startDate && validationDate <= endDate) {
             const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
             if (dailyData[validatedKey]) {
               dailyData[validatedKey].validados++;
+              
+              // Track empresa (associação) for validated referrals too
               const company = companies.find((c: any) => c.id === referral.companyId);
               if (company?.name) {
                 dailyData[validatedKey].empresas.add(company.name);
@@ -708,16 +720,23 @@ export default function AnalystReferrals() {
           }
         }
         
+        // Track convertidos by updatedAt - this matches what the referrals page shows
+        // The referrals page displays updatedAt for converted/paid status
         if (referral.status === 'converted' || referral.status === 'paid') {
+          // Use updatedAt to match the referrals page display
           const conversionDate = referral.updatedAt ? new Date(referral.updatedAt) : null;
           if (conversionDate && conversionDate >= startDate && conversionDate <= endDate) {
             const convertedKey = format(conversionDate, 'dd/MM', { locale: ptBR });
             if (dailyData[convertedKey]) {
               dailyData[convertedKey].convertidos++;
+              
+              // Track empresa (associação)
               const company = companies.find((c: any) => c.id === referral.companyId);
               if (company?.name) {
                 dailyData[convertedKey].empresas.add(company.name);
               }
+              
+              // Track vendedor - use the LAST (most recent) converted entry
               if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
                 const convertedEntries = referral.statusHistory.filter((entry: any) => 
                   entry.status === 'converted'
@@ -736,6 +755,7 @@ export default function AnalystReferrals() {
         }
       });
       
+      // Check if there's any data
       const hasData = Object.values(dailyData).some(day => 
         day.cadastros > 0 || day.validados > 0 || day.convertidos > 0
       );
@@ -749,6 +769,7 @@ export default function AnalystReferrals() {
         return;
       }
       
+      // Sort dates
       const sortedDates = Object.keys(dailyData).sort((a, b) => {
         const [dayA, monthA] = a.split('/').map(Number);
         const [dayB, monthB] = b.split('/').map(Number);
@@ -756,13 +777,14 @@ export default function AnalystReferrals() {
         return dayA - dayB;
       });
       
+      // Calculate totals
       const totals = Object.values(dailyData).reduce((acc, day) => ({
         cadastros: acc.cadastros + day.cadastros,
         validados: acc.validados + day.validados,
         convertidos: acc.convertidos + day.convertidos
       }), { cadastros: 0, validados: 0, convertidos: 0 });
       
-      // Define styles
+      // Define styles with wrapText for automatic text wrapping
       const headerStyle = {
         font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
         fill: { fgColor: { rgb: "2563EB" } },
@@ -822,12 +844,15 @@ export default function AnalystReferrals() {
         }
       };
       
+      // Build data with styles
+      const numCols = sortedDates.length + 2; // label + dates + total
+      
       // Create worksheet data
       const wsData: any[][] = [];
       
-      // Row 1: Header
+      // Row 1: Header with indicator name + dates + TOTAL (matching admin layout)
       const headerRow = [
-        { v: `Relatório ${periodLabel}`, s: headerStyle },
+        { v: 'Todas as Indicações', s: headerStyle },
         ...sortedDates.map(date => ({ v: date, s: headerStyle })),
         { v: 'TOTAL', s: headerStyle }
       ];
@@ -898,20 +923,20 @@ export default function AnalystReferrals() {
       const workbook = XLSX.utils.book_new();
       const sheet = XLSX.utils.aoa_to_sheet(wsData);
       
-      // Set column widths
-      const colWidths = [{ wch: 20 }];
-      sortedDates.forEach(() => colWidths.push({ wch: 22 }));
-      colWidths.push({ wch: 10 });
+      // Set column widths - wider columns for text content
+      const colWidths = [{ wch: 20 }]; // First column for labels
+      sortedDates.forEach(() => colWidths.push({ wch: 22 })); // Wider date columns for names
+      colWidths.push({ wch: 10 }); // Total column
       sheet['!cols'] = colWidths;
       
-      // Set row heights
+      // Set row heights - taller rows for wrapped text
       sheet['!rows'] = [
-        { hpt: 35 },
-        { hpt: 24 },
-        { hpt: 24 },
-        { hpt: 24 },
-        { hpt: 40 },
-        { hpt: 40 }
+        { hpt: 35 }, // Header row (indicator name)
+        { hpt: 24 }, // Cadastros
+        { hpt: 24 }, // Validados
+        { hpt: 24 }, // Convertidos
+        { hpt: 40 }, // Associação (company names can be long)
+        { hpt: 40 }  // Vendedor (seller names can be long)
       ];
       
       XLSX.utils.book_append_sheet(workbook, sheet, 'Relatório');
