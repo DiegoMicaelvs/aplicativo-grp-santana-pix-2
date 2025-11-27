@@ -2012,13 +2012,13 @@ export default function AdminReferralsDetailedPage() {
                       />
                     </div>
                     
-                    {/* Indicator List with Checkboxes */}
+                    {/* Indicator List with Checkboxes - Only Active Indicators */}
                     <div className="space-y-2">
-                      <Label>Indicadores ({selectedIndicators.length} selecionados)</Label>
+                      <Label>Indicadores Ativos ({selectedIndicators.length} selecionados)</Label>
                       <ScrollArea className="h-[200px] border rounded-md p-2">
                         <div className="space-y-2">
                           {sortedUsers
-                            .filter(u => u.role === 'indicador' || u.role === 'promotor')
+                            .filter(u => (u.role === 'indicador' || u.role === 'indicador_nivel_1' || u.role === 'promotor') && u.isActive === true)
                             .filter(u => 
                               indicatorSearchTerm === '' || 
                               u.fullName?.toLowerCase().includes(indicatorSearchTerm.toLowerCase())
