@@ -294,6 +294,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'validated', // Always filter by validated status
           search
         );
+      } else if (req.user!.role === 'analista') {
+        // Analysts see all referrals or filtered by supervisor for level 3
+        const user = await storage.getUserById(req.user!.id);
+        let allReferrals;
+        
+        if (user?.analystLevel === 3) {
+          // Level 3 analysts see only referrals from supervised users
+          allReferrals = await storage.getReferralsBySupervisor(req.user!.id);
+        } else {
+          // Other analyst levels see all referrals
+          allReferrals = await storage.getAllReferrals();
+        }
+        
+        // Apply status filter if provided
+        const finalStatus = status && status !== 'all' ? status : undefined;
+        let filteredReferrals = allReferrals;
+        if (finalStatus) {
+          filteredReferrals = allReferrals.filter((r: any) => r.status === finalStatus);
+        }
+        
+        // Apply search filter if provided
+        if (search && search.trim()) {
+          const searchTerm = search.trim().toLowerCase();
+          filteredReferrals = filteredReferrals.filter((r: any) => 
+            r.fullName?.toLowerCase().includes(searchTerm) ||
+            r.phone?.includes(searchTerm) ||
+            r.licensePlate?.toLowerCase().includes(searchTerm) ||
+            r.city?.toLowerCase().includes(searchTerm) ||
+            r.state?.toLowerCase().includes(searchTerm)
+          );
+        }
+        
+        // Apply pagination
+        const total = filteredReferrals.length;
+        const offset = (page - 1) * limit;
+        const paginatedData = filteredReferrals.slice(offset, offset + limit);
+        
+        result = {
+          data: paginatedData,
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        };
       } else {
         const finalStatus = status && status !== 'all' ? status : undefined;
         result = await storage.getReferralsByUserIdPaginated(
