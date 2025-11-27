@@ -1393,116 +1393,161 @@ export default function AdminReferralsDetailedPage() {
         return dayA - dayB;
       });
 
-      // Define styles
-      const headerStyle = {
-        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
-        fill: { fgColor: { rgb: "2563EB" } },
-        alignment: { horizontal: "center", vertical: "center", wrapText: true },
-        border: {
-          top: { style: "thin", color: { rgb: "1E40AF" } },
-          bottom: { style: "thin", color: { rgb: "1E40AF" } },
-          left: { style: "thin", color: { rgb: "1E40AF" } },
-          right: { style: "thin", color: { rgb: "1E40AF" } }
-        }
+      // Color palette for different indicators
+      const indicatorColors = [
+        { bg: "7C3AED", border: "5B21B6", light: "EDE9FE" }, // Purple
+        { bg: "0891B2", border: "0E7490", light: "CFFAFE" }, // Cyan
+        { bg: "EA580C", border: "C2410C", light: "FED7AA" }, // Orange
+        { bg: "16A34A", border: "15803D", light: "DCFCE7" }, // Green
+        { bg: "DC2626", border: "B91C1C", light: "FEE2E2" }, // Red
+        { bg: "2563EB", border: "1D4ED8", light: "DBEAFE" }, // Blue
+      ];
+
+      // Base border style
+      const baseBorder = {
+        top: { style: "thin", color: { rgb: "D1D5DB" } },
+        bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+        left: { style: "thin", color: { rgb: "D1D5DB" } },
+        right: { style: "thin", color: { rgb: "D1D5DB" } }
       };
 
-      const indicatorHeaderStyle = {
-        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
-        fill: { fgColor: { rgb: "7C3AED" } },
-        alignment: { horizontal: "center", vertical: "center", wrapText: true },
-        border: {
-          top: { style: "thin", color: { rgb: "5B21B6" } },
-          bottom: { style: "thin", color: { rgb: "5B21B6" } },
-          left: { style: "thin", color: { rgb: "5B21B6" } },
-          right: { style: "thin", color: { rgb: "5B21B6" } }
-        }
-      };
-
-      const labelStyle = {
-        font: { bold: true, sz: 10 },
+      // Title style
+      const titleStyle = {
+        font: { bold: true, color: { rgb: "1F2937" }, sz: 14 },
         fill: { fgColor: { rgb: "F3F4F6" } },
-        alignment: { horizontal: "left", vertical: "center", wrapText: true },
-        border: {
-          top: { style: "thin", color: { rgb: "D1D5DB" } },
-          bottom: { style: "thin", color: { rgb: "D1D5DB" } },
-          left: { style: "thin", color: { rgb: "D1D5DB" } },
-          right: { style: "thin", color: { rgb: "D1D5DB" } }
+        alignment: { horizontal: "center", vertical: "center" },
+        border: baseBorder
+      };
+
+      // Date column header style
+      const dateHeaderStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+        fill: { fgColor: { rgb: "374151" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: baseBorder
+      };
+
+      // Date cell style
+      const dateCellStyle = {
+        font: { bold: true, sz: 10, color: { rgb: "374151" } },
+        fill: { fgColor: { rgb: "F9FAFB" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: baseBorder
+      };
+
+      // Metric label styles with colors
+      const metricStyles = {
+        cadastros: {
+          header: { font: { bold: true, sz: 9, color: { rgb: "1F2937" } }, fill: { fgColor: { rgb: "E5E7EB" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
+          data: { font: { sz: 10 }, fill: { fgColor: { rgb: "FFFFFF" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
+          total: { font: { bold: true, sz: 10 }, fill: { fgColor: { rgb: "E5E7EB" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
+        },
+        validados: {
+          header: { font: { bold: true, sz: 9, color: { rgb: "166534" } }, fill: { fgColor: { rgb: "DCFCE7" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
+          data: { font: { sz: 10, color: { rgb: "166534" } }, fill: { fgColor: { rgb: "F0FDF4" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
+          total: { font: { bold: true, sz: 10, color: { rgb: "166534" } }, fill: { fgColor: { rgb: "BBF7D0" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
+        },
+        convertidos: {
+          header: { font: { bold: true, sz: 9, color: { rgb: "6B21A8" } }, fill: { fgColor: { rgb: "F3E8FF" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
+          data: { font: { sz: 10, color: { rgb: "7C3AED" } }, fill: { fgColor: { rgb: "FAF5FF" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder },
+          total: { font: { bold: true, sz: 10, color: { rgb: "6B21A8" } }, fill: { fgColor: { rgb: "E9D5FF" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
+        },
+        associacao: {
+          header: { font: { bold: true, sz: 9, color: { rgb: "1F2937" } }, fill: { fgColor: { rgb: "FEF3C7" } }, alignment: { horizontal: "center", vertical: "center", wrapText: true }, border: baseBorder },
+          data: { font: { sz: 9 }, fill: { fgColor: { rgb: "FFFBEB" } }, alignment: { horizontal: "left", vertical: "center", wrapText: true }, border: baseBorder },
+          total: { font: { bold: true, sz: 9 }, fill: { fgColor: { rgb: "FDE68A" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
+        },
+        vendedor: {
+          header: { font: { bold: true, sz: 9, color: { rgb: "1F2937" } }, fill: { fgColor: { rgb: "DBEAFE" } }, alignment: { horizontal: "center", vertical: "center", wrapText: true }, border: baseBorder },
+          data: { font: { sz: 9, color: { rgb: "1D4ED8" } }, fill: { fgColor: { rgb: "EFF6FF" } }, alignment: { horizontal: "left", vertical: "center", wrapText: true }, border: baseBorder },
+          total: { font: { bold: true, sz: 9 }, fill: { fgColor: { rgb: "BFDBFE" } }, alignment: { horizontal: "center", vertical: "center" }, border: baseBorder }
         }
       };
 
-      const dataStyle = {
-        font: { sz: 10 },
-        alignment: { horizontal: "center", vertical: "center", wrapText: true },
-        border: {
-          top: { style: "thin", color: { rgb: "E5E7EB" } },
-          bottom: { style: "thin", color: { rgb: "E5E7EB" } },
-          left: { style: "thin", color: { rgb: "E5E7EB" } },
-          right: { style: "thin", color: { rgb: "E5E7EB" } }
-        }
-      };
-
-      const totalStyle = {
-        font: { bold: true, sz: 10 },
-        fill: { fgColor: { rgb: "DBEAFE" } },
-        alignment: { horizontal: "center", vertical: "center", wrapText: true },
-        border: {
-          top: { style: "thin", color: { rgb: "93C5FD" } },
-          bottom: { style: "thin", color: { rgb: "93C5FD" } },
-          left: { style: "thin", color: { rgb: "93C5FD" } },
-          right: { style: "thin", color: { rgb: "93C5FD" } }
-        }
+      // Total row styles
+      const totalLabelStyle = {
+        font: { bold: true, sz: 11, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "1F2937" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: baseBorder
       };
 
       // Build worksheet data
       const wsData: any[][] = [];
       const indicatorsList = Object.values(indicatorsData);
-      const metricsPerIndicator = 5; // Cadastros, Validados, Convertidos, Associação, Vendedor
+      const metricsPerIndicator = 5;
 
-      // Row 1: Date header + indicator names (spanning multiple columns)
-      const headerRow: any[] = [{ v: 'Data', s: headerStyle }];
-      indicatorsList.forEach(ind => {
-        headerRow.push({ v: ind.name, s: indicatorHeaderStyle });
+      // Row 1: Title row
+      const titleRow: any[] = [{ v: `RELATÓRIO COMPARATIVO - ${periodLabel.toUpperCase()}`, s: titleStyle }];
+      for (let i = 1; i < 1 + indicatorsList.length * metricsPerIndicator; i++) {
+        titleRow.push({ v: '', s: titleStyle });
+      }
+      wsData.push(titleRow);
+
+      // Row 2: Indicator names header
+      const headerRow: any[] = [{ v: '', s: dateHeaderStyle }];
+      indicatorsList.forEach((ind, idx) => {
+        const colorIdx = idx % indicatorColors.length;
+        const color = indicatorColors[colorIdx];
+        const indHeaderStyle = {
+          font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+          fill: { fgColor: { rgb: color.bg } },
+          alignment: { horizontal: "center", vertical: "center", wrapText: true },
+          border: { ...baseBorder, top: { style: "medium", color: { rgb: color.border } }, bottom: { style: "medium", color: { rgb: color.border } } }
+        };
+        headerRow.push({ v: ind.name, s: indHeaderStyle });
         for (let i = 1; i < metricsPerIndicator; i++) {
-          headerRow.push({ v: '', s: indicatorHeaderStyle });
+          headerRow.push({ v: '', s: indHeaderStyle });
         }
       });
       wsData.push(headerRow);
 
-      // Row 2: Metrics labels for each indicator
-      const metricsRow: any[] = [{ v: '', s: labelStyle }];
+      // Row 3: Metrics labels
+      const metricsRow: any[] = [{ v: 'Data', s: dateHeaderStyle }];
       indicatorsList.forEach(() => {
-        metricsRow.push({ v: 'Cadastros', s: labelStyle });
-        metricsRow.push({ v: 'Validados', s: labelStyle });
-        metricsRow.push({ v: 'Convertidos', s: labelStyle });
-        metricsRow.push({ v: 'Associação', s: labelStyle });
-        metricsRow.push({ v: 'Vendedor', s: labelStyle });
+        metricsRow.push({ v: 'Cad.', s: metricStyles.cadastros.header });
+        metricsRow.push({ v: 'Valid.', s: metricStyles.validados.header });
+        metricsRow.push({ v: 'Conv.', s: metricStyles.convertidos.header });
+        metricsRow.push({ v: 'Associação', s: metricStyles.associacao.header });
+        metricsRow.push({ v: 'Vendedor', s: metricStyles.vendedor.header });
       });
       wsData.push(metricsRow);
 
-      // Data rows for each date
-      sortedDates.forEach(date => {
-        const row: any[] = [{ v: date, s: headerStyle }];
+      // Data rows for each date with alternating colors
+      sortedDates.forEach((date, rowIdx) => {
+        const isEvenRow = rowIdx % 2 === 0;
+        const altDateStyle = isEvenRow ? dateCellStyle : { ...dateCellStyle, fill: { fgColor: { rgb: "FFFFFF" } } };
+        
+        const row: any[] = [{ v: date, s: altDateStyle }];
         indicatorsList.forEach(ind => {
           const dayData = ind.dailyData[date];
           const empresasText = Array.from(dayData.empresas).join('\n');
           const vendedoresText = Array.from(dayData.vendedores).join('\n');
-          row.push({ v: dayData.cadastros || 0, s: dataStyle });
-          row.push({ v: dayData.validados || 0, s: dataStyle });
-          row.push({ v: dayData.convertidos || 0, s: dataStyle });
-          row.push({ v: empresasText.length > 0 ? empresasText : '-', s: dataStyle });
-          row.push({ v: vendedoresText.length > 0 ? vendedoresText : '-', s: dataStyle });
+          
+          // Apply alternating row tint
+          const cadStyle = isEvenRow ? metricStyles.cadastros.data : { ...metricStyles.cadastros.data, fill: { fgColor: { rgb: "F9FAFB" } } };
+          const valStyle = isEvenRow ? metricStyles.validados.data : { ...metricStyles.validados.data, fill: { fgColor: { rgb: "ECFDF5" } } };
+          const convStyle = isEvenRow ? metricStyles.convertidos.data : { ...metricStyles.convertidos.data, fill: { fgColor: { rgb: "FDF4FF" } } };
+          const assocStyle = isEvenRow ? metricStyles.associacao.data : { ...metricStyles.associacao.data, fill: { fgColor: { rgb: "FEF9C3" } } };
+          const vendStyle = isEvenRow ? metricStyles.vendedor.data : { ...metricStyles.vendedor.data, fill: { fgColor: { rgb: "F0F9FF" } } };
+          
+          row.push({ v: dayData.cadastros || 0, s: cadStyle });
+          row.push({ v: dayData.validados || 0, s: valStyle });
+          row.push({ v: dayData.convertidos || 0, s: convStyle });
+          row.push({ v: empresasText.length > 0 ? empresasText : '-', s: assocStyle });
+          row.push({ v: vendedoresText.length > 0 ? vendedoresText : '-', s: vendStyle });
         });
         wsData.push(row);
       });
 
       // Totals row
-      const totalsRow: any[] = [{ v: 'TOTAL', s: totalStyle }];
+      const totalsRow: any[] = [{ v: 'TOTAL', s: totalLabelStyle }];
       indicatorsList.forEach(ind => {
-        totalsRow.push({ v: ind.totals.cadastros, s: totalStyle });
-        totalsRow.push({ v: ind.totals.validados, s: totalStyle });
-        totalsRow.push({ v: ind.totals.convertidos, s: totalStyle });
-        totalsRow.push({ v: '-', s: totalStyle });
-        totalsRow.push({ v: '-', s: totalStyle });
+        totalsRow.push({ v: ind.totals.cadastros, s: metricStyles.cadastros.total });
+        totalsRow.push({ v: ind.totals.validados, s: metricStyles.validados.total });
+        totalsRow.push({ v: ind.totals.convertidos, s: metricStyles.convertidos.total });
+        totalsRow.push({ v: '-', s: metricStyles.associacao.total });
+        totalsRow.push({ v: '-', s: metricStyles.vendedor.total });
       });
       wsData.push(totalsRow);
 
@@ -1511,32 +1556,42 @@ export default function AdminReferralsDetailedPage() {
       const sheet = XLSX.utils.aoa_to_sheet(wsData);
 
       // Set column widths
-      const colWidths = [{ wch: 10 }]; // Date column
+      const colWidths = [{ wch: 12 }]; // Date column
       indicatorsList.forEach(() => {
-        colWidths.push({ wch: 10 }); // Cadastros
-        colWidths.push({ wch: 10 }); // Validados
-        colWidths.push({ wch: 12 }); // Convertidos
-        colWidths.push({ wch: 20 }); // Associação
-        colWidths.push({ wch: 20 }); // Vendedor
+        colWidths.push({ wch: 8 }); // Cadastros
+        colWidths.push({ wch: 8 }); // Validados
+        colWidths.push({ wch: 8 }); // Convertidos
+        colWidths.push({ wch: 18 }); // Associação
+        colWidths.push({ wch: 18 }); // Vendedor
       });
       sheet['!cols'] = colWidths;
 
       // Set row heights
       const rowHeights = [
+        { hpt: 30 }, // Title row
         { hpt: 35 }, // Header row with indicator names
-        { hpt: 28 }, // Metrics labels
+        { hpt: 25 }, // Metrics labels
       ];
-      sortedDates.forEach(() => rowHeights.push({ hpt: 35 }));
-      rowHeights.push({ hpt: 30 }); // Totals row
+      sortedDates.forEach(() => rowHeights.push({ hpt: 32 }));
+      rowHeights.push({ hpt: 32 }); // Totals row
       sheet['!rows'] = rowHeights;
 
-      // Merge cells for indicator headers
+      // Merge cells
       const merges: any[] = [];
+      const totalCols = 1 + indicatorsList.length * metricsPerIndicator;
+      
+      // Merge title row (row 0)
+      merges.push({
+        s: { r: 0, c: 0 },
+        e: { r: 0, c: totalCols - 1 }
+      });
+      
+      // Merge indicator headers (row 1)
       let colStart = 1;
-      indicatorsList.forEach((_, idx) => {
+      indicatorsList.forEach(() => {
         merges.push({
-          s: { r: 0, c: colStart },
-          e: { r: 0, c: colStart + metricsPerIndicator - 1 }
+          s: { r: 1, c: colStart },
+          e: { r: 1, c: colStart + metricsPerIndicator - 1 }
         });
         colStart += metricsPerIndicator;
       });
