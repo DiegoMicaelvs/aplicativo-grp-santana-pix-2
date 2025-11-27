@@ -652,10 +652,11 @@ export default function AnalystReferrals() {
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4">
+        <CardContent className="pb-4">
+          <div className="space-y-3">
+            {/* Search - full width */}
             <div>
-              <Label htmlFor="search">Buscar</Label>
+              <Label htmlFor="search" className="text-xs text-gray-500">Buscar</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -667,42 +668,45 @@ export default function AnalystReferrals() {
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger id="status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="analyzing">Em Análise</SelectItem>
-                  <SelectItem value="validated">Validado</SelectItem>
-                  <SelectItem value="converted">Convertido</SelectItem>
-                  <SelectItem value="rejected">Rejeitado</SelectItem>
-                  <SelectItem value="paid">Pago</SelectItem>
-                  <SelectItem value="false">Falso</SelectItem>
-                  <SelectItem value="not_validated">Não Validado</SelectItem>
-                  <SelectItem value="not_converted">Não Convertido</SelectItem>
-                  <SelectItem value="contact_list">Lista de contato</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="contact-status">Status Contato</Label>
-              <Select value={contactStatusFilter} onValueChange={setContactStatusFilter}>
-                <SelectTrigger id="contact-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all_contact_statuses">Todos os Contatos</SelectItem>
-                  <SelectItem value="no_contact_status">Sem Status</SelectItem>
-                  <SelectItem value="retornar_contato">Retornar Contato</SelectItem>
-                  <SelectItem value="sem_sucesso">Sem Sucesso</SelectItem>
-                  <SelectItem value="em_negociacao">Em negociação</SelectItem>
-                  <SelectItem value="aguardando_pagamento">Aguardando pagamento</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Filters - side by side on mobile */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="status" className="text-xs text-gray-500">Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger id="status" className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="analyzing">Em Análise</SelectItem>
+                    <SelectItem value="validated">Validado</SelectItem>
+                    <SelectItem value="converted">Convertido</SelectItem>
+                    <SelectItem value="rejected">Rejeitado</SelectItem>
+                    <SelectItem value="paid">Pago</SelectItem>
+                    <SelectItem value="false">Falso</SelectItem>
+                    <SelectItem value="not_validated">Não Validado</SelectItem>
+                    <SelectItem value="not_converted">Não Convertido</SelectItem>
+                    <SelectItem value="contact_list">Lista contato</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="contact-status" className="text-xs text-gray-500">Contato</Label>
+                <Select value={contactStatusFilter} onValueChange={setContactStatusFilter}>
+                  <SelectTrigger id="contact-status" className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all_contact_statuses">Todos</SelectItem>
+                    <SelectItem value="no_contact_status">Sem Status</SelectItem>
+                    <SelectItem value="retornar_contato">Retornar</SelectItem>
+                    <SelectItem value="sem_sucesso">Sem Sucesso</SelectItem>
+                    <SelectItem value="em_negociacao">Negociação</SelectItem>
+                    <SelectItem value="aguardando_pagamento">Aguardando</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -741,76 +745,69 @@ export default function AnalystReferrals() {
           ) : (
             <>
               {/* Mobile Card View */}
-              <div className="block lg:hidden space-y-4">
+              <div className="block md:hidden space-y-3">
                 {filteredReferrals.map((referral) => {
                   const indicador = users.find((u) => u.id === referral.userId);
                   const criador = users.find((u) => u.id === referral.createdBy);
                   const company = companies.find((c) => c.id === referral.companyId);
                   return (
                     <Card key={referral.id} className="shadow-sm border-l-4 border-l-blue-500">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center flex-wrap gap-2 mb-1">
-                              <span className="text-xs font-mono text-gray-500">#{referral.id}</span>
-                              <Badge className={statusColors[referral.status]}>
-                                {statusLabels[referral.status]}
-                              </Badge>
-                              {referral.contactStatus && (
-                                <Badge variant="outline" className={contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"}>
-                                  {contactStatusLabels[referral.contactStatus] || "Sem status"}
-                                </Badge>
-                              )}
+                      <CardContent className="p-3">
+                        {/* Header with name, status badges */}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1 text-xs text-gray-500 mb-0.5">
+                              <span className="font-mono">#{referral.id}</span>
+                              <span>•</span>
+                              <span>{new Date(referral.createdAt).toLocaleDateString("pt-BR")}</span>
                             </div>
-                            <h3 className="font-medium text-base">{referral.fullName}</h3>
-                            <p className="text-sm text-gray-600">{referral.phone}</p>
+                            <h3 className="font-semibold text-sm truncate">{referral.fullName}</h3>
+                            <p className="text-xs text-gray-600">{referral.phone}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <Badge className={`${statusColors[referral.status]} text-xs px-2 py-0.5`}>
+                              {statusLabels[referral.status]}
+                            </Badge>
+                            {referral.contactStatus && (
+                              <Badge variant="outline" className={`${contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"} text-xs px-2 py-0.5`}>
+                                {contactStatusLabels[referral.contactStatus] || "Sem status"}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
+                        {/* Key info grid */}
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs bg-gray-50 rounded p-2 mb-2">
+                          <div>
                             <span className="text-gray-500">Placa:</span>
-                            <span className="font-medium">{referral.licensePlate}</span>
+                            <span className="font-medium ml-1">{referral.licensePlate}</span>
                           </div>
-                          
-                          {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) && (
-                            <div className="flex justify-between">
+                          <div className="truncate">
+                            <span className="text-gray-500">Empresa:</span>
+                            <span className="ml-1">{company?.name || "N/A"}</span>
+                          </div>
+                          <div className="col-span-2 truncate">
+                            <span className="text-gray-500">Indicador:</span>
+                            <span className="font-medium ml-1">{indicador?.fullName || "N/A"}</span>
+                            {criador && criador.id !== indicador?.id && (
+                              <span className="text-gray-400 ml-1">(por {criador.fullName})</span>
+                            )}
+                          </div>
+                          {(referral.vehicleBrand || referral.vehicleModel) && (
+                            <div className="col-span-2 truncate">
                               <span className="text-gray-500">Veículo:</span>
-                              <span className="font-medium text-right">
+                              <span className="ml-1">
                                 {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
                                   .filter(Boolean)
                                   .join(' ')}
                               </span>
                             </div>
                           )}
-                          
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Indicador:</span>
-                            <div className="text-right">
-                              <div className="font-medium">
-                                {indicador?.fullName || "N/A"}
-                              </div>
-                              {criador && criador.id !== indicador?.id && (
-                                <div className="text-xs text-gray-500">
-                                  Criado por: {criador.fullName}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Empresa:</span>
-                            <span>{company?.name || "N/A"}</span>
-                          </div>
-                          
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Data:</span>
-                            <span>{new Date(referral.createdAt).toLocaleDateString("pt-BR")}</span>
-                          </div>
                         </div>
                         
+                        {/* Action buttons */}
                         {canEdit && (
-                          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t">
+                          <div className="grid grid-cols-3 gap-2">
                             <ContactStatusDialog 
                               referral={referral} 
                               onUpdate={() => {
@@ -821,7 +818,7 @@ export default function AnalystReferrals() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditClick(referral)}
-                              className="flex-1 text-xs"
+                              className="text-xs h-8"
                             >
                               <Edit className="h-3 w-3 mr-1" />
                               Editar
@@ -831,7 +828,7 @@ export default function AnalystReferrals() {
                               size="sm"
                               onClick={() => handleValidateClick(referral)}
                               disabled={referral.status === "paid"}
-                              className="flex-1 text-xs"
+                              className="text-xs h-8"
                             >
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Validar
@@ -845,7 +842,7 @@ export default function AnalystReferrals() {
               </div>
 
               {/* Desktop Table View */}
-              <div className="hidden lg:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
