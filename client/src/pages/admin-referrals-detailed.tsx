@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
@@ -447,6 +450,12 @@ export default function AdminReferralsDetailedPage() {
   // Report dialog state
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportType, setReportType] = useState<'weekly' | 'monthly' | 'daily_general'>('monthly');
+  
+  // Comparative report state
+  const [isComparativeDialogOpen, setIsComparativeDialogOpen] = useState(false);
+  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
+  const [comparativeReportType, setComparativeReportType] = useState<'weekly' | 'monthly' | 'daily_general'>('monthly');
+  const [indicatorSearchTerm, setIndicatorSearchTerm] = useState("");
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -932,6 +941,12 @@ export default function AdminReferralsDetailedPage() {
             const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
             if (dailyData[validatedKey]) {
               dailyData[validatedKey].validados++;
+              
+              // Track empresa (associação) for validated referrals too
+              const company = companies.find((c: any) => c.id === referral.companyId);
+              if (company?.name) {
+                dailyData[validatedKey].empresas.add(company.name);
+              }
             }
           }
         }
@@ -1179,6 +1194,373 @@ export default function AdminReferralsDetailedPage() {
       toast({
         title: "Erro ao gerar relatório",
         description: "Não foi possível gerar o relatório. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Generate comparative report for multiple indicators
+  const handleComparativeReport = () => {
+    try {
+      if (selectedIndicators.length < 2) {
+        toast({
+          title: "Selecione pelo menos 2 indicadores",
+          description: "O relatório comparativo precisa de pelo menos 2 indicadores para comparação.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+      let periodLabel: string;
+      
+      switch (comparativeReportType) {
+        case 'weekly':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          periodLabel = 'Semanal';
+          break;
+        case 'monthly':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          periodLabel = 'Mensal';
+          break;
+        case 'daily_general':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = now;
+          periodLabel = 'Geral Diário';
+          break;
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          periodLabel = 'Mensal';
+      }
+
+      // Helper function to get date from status
+      const getStatusDate = (referral: any, status: string): Date | null => {
+        if (status === 'validated' && referral.validatedAt) {
+          return new Date(referral.validatedAt);
+        }
+        if (status === 'converted' && referral.convertedAt) {
+          return new Date(referral.convertedAt);
+        }
+        if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+          const entries = referral.statusHistory.filter((e: any) => e.status === status);
+          if (entries.length > 0) {
+            const lastEntry = entries[entries.length - 1];
+            if (lastEntry.changedAt) {
+              return new Date(lastEntry.changedAt);
+            }
+          }
+        }
+        return null;
+      };
+
+      // Process data for each indicator
+      const indicatorsData: Record<string, {
+        name: string;
+        dailyData: Record<string, {
+          cadastros: number;
+          validados: number;
+          convertidos: number;
+          empresas: Set<string>;
+          vendedores: Set<string>;
+        }>;
+        totals: { cadastros: number; validados: number; convertidos: number };
+      }> = {};
+
+      // Initialize dates
+      const allDates: Set<string> = new Set();
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateKey = format(currentDate, 'dd/MM', { locale: ptBR });
+        allDates.add(dateKey);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      selectedIndicators.forEach(indicatorId => {
+        const indicator = users.find(u => u.id.toString() === indicatorId);
+        if (!indicator) return;
+
+        const dailyData: Record<string, {
+          cadastros: number;
+          validados: number;
+          convertidos: number;
+          empresas: Set<string>;
+          vendedores: Set<string>;
+        }> = {};
+
+        allDates.forEach(dateKey => {
+          dailyData[dateKey] = {
+            cadastros: 0,
+            validados: 0,
+            convertidos: 0,
+            empresas: new Set(),
+            vendedores: new Set()
+          };
+        });
+
+        // Filter referrals for this indicator
+        const indicatorReferrals = referrals.filter((r: any) => r.userId?.toString() === indicatorId);
+
+        indicatorReferrals.forEach((referral: any) => {
+          // Count cadastros
+          const createdDate = new Date(referral.createdAt);
+          if (createdDate >= startDate && createdDate <= endDate) {
+            const createdKey = format(createdDate, 'dd/MM', { locale: ptBR });
+            if (dailyData[createdKey]) {
+              dailyData[createdKey].cadastros++;
+            }
+          }
+
+          // Track validados
+          if (referral.status === 'validated') {
+            const validationDate = getStatusDate(referral, 'validated');
+            if (validationDate && validationDate >= startDate && validationDate <= endDate) {
+              const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
+              if (dailyData[validatedKey]) {
+                dailyData[validatedKey].validados++;
+                const company = companies.find((c: any) => c.id === referral.companyId);
+                if (company?.name) {
+                  dailyData[validatedKey].empresas.add(company.name);
+                }
+              }
+            }
+          }
+
+          // Track convertidos
+          if (referral.status === 'converted' || referral.status === 'paid') {
+            const conversionDate = referral.updatedAt ? new Date(referral.updatedAt) : null;
+            if (conversionDate && conversionDate >= startDate && conversionDate <= endDate) {
+              const convertedKey = format(conversionDate, 'dd/MM', { locale: ptBR });
+              if (dailyData[convertedKey]) {
+                dailyData[convertedKey].convertidos++;
+                const company = companies.find((c: any) => c.id === referral.companyId);
+                if (company?.name) {
+                  dailyData[convertedKey].empresas.add(company.name);
+                }
+                if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+                  const convertedEntries = referral.statusHistory.filter((entry: any) => 
+                    entry.status === 'converted'
+                  );
+                  if (convertedEntries.length > 0) {
+                    const lastConvertedEntry = convertedEntries[convertedEntries.length - 1];
+                    const vendedor = users.find(u => u.id === lastConvertedEntry.changedBy);
+                    const vendedorName = lastConvertedEntry.changedByName || vendedor?.fullName;
+                    if (vendedorName) {
+                      dailyData[convertedKey].vendedores.add(vendedorName);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        const totals = Object.values(dailyData).reduce((acc, day) => ({
+          cadastros: acc.cadastros + day.cadastros,
+          validados: acc.validados + day.validados,
+          convertidos: acc.convertidos + day.convertidos
+        }), { cadastros: 0, validados: 0, convertidos: 0 });
+
+        indicatorsData[indicatorId] = {
+          name: indicator.fullName || 'Indicador',
+          dailyData,
+          totals
+        };
+      });
+
+      // Check if there's any data
+      const hasData = Object.values(indicatorsData).some(ind => 
+        ind.totals.cadastros > 0 || ind.totals.validados > 0 || ind.totals.convertidos > 0
+      );
+
+      if (!hasData) {
+        toast({
+          title: "Nenhuma indicação encontrada",
+          description: "Não há indicações no período selecionado para os indicadores escolhidos.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Sort dates
+      const sortedDates = Array.from(allDates).sort((a, b) => {
+        const [dayA, monthA] = a.split('/').map(Number);
+        const [dayB, monthB] = b.split('/').map(Number);
+        if (monthA !== monthB) return monthA - monthB;
+        return dayA - dayB;
+      });
+
+      // Define styles
+      const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 12 },
+        fill: { fgColor: { rgb: "2563EB" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "1E40AF" } },
+          bottom: { style: "thin", color: { rgb: "1E40AF" } },
+          left: { style: "thin", color: { rgb: "1E40AF" } },
+          right: { style: "thin", color: { rgb: "1E40AF" } }
+        }
+      };
+
+      const indicatorHeaderStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+        fill: { fgColor: { rgb: "7C3AED" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "5B21B6" } },
+          bottom: { style: "thin", color: { rgb: "5B21B6" } },
+          left: { style: "thin", color: { rgb: "5B21B6" } },
+          right: { style: "thin", color: { rgb: "5B21B6" } }
+        }
+      };
+
+      const labelStyle = {
+        font: { bold: true, sz: 10 },
+        fill: { fgColor: { rgb: "F3F4F6" } },
+        alignment: { horizontal: "left", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "D1D5DB" } },
+          bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+          left: { style: "thin", color: { rgb: "D1D5DB" } },
+          right: { style: "thin", color: { rgb: "D1D5DB" } }
+        }
+      };
+
+      const dataStyle = {
+        font: { sz: 10 },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "E5E7EB" } },
+          bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+          left: { style: "thin", color: { rgb: "E5E7EB" } },
+          right: { style: "thin", color: { rgb: "E5E7EB" } }
+        }
+      };
+
+      const totalStyle = {
+        font: { bold: true, sz: 10 },
+        fill: { fgColor: { rgb: "DBEAFE" } },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "93C5FD" } },
+          bottom: { style: "thin", color: { rgb: "93C5FD" } },
+          left: { style: "thin", color: { rgb: "93C5FD" } },
+          right: { style: "thin", color: { rgb: "93C5FD" } }
+        }
+      };
+
+      // Build worksheet data
+      const wsData: any[][] = [];
+      const indicatorsList = Object.values(indicatorsData);
+      const metricsPerIndicator = 5; // Cadastros, Validados, Convertidos, Associação, Vendedor
+
+      // Row 1: Date header + indicator names (spanning multiple columns)
+      const headerRow: any[] = [{ v: 'Data', s: headerStyle }];
+      indicatorsList.forEach(ind => {
+        headerRow.push({ v: ind.name, s: indicatorHeaderStyle });
+        for (let i = 1; i < metricsPerIndicator; i++) {
+          headerRow.push({ v: '', s: indicatorHeaderStyle });
+        }
+      });
+      wsData.push(headerRow);
+
+      // Row 2: Metrics labels for each indicator
+      const metricsRow: any[] = [{ v: '', s: labelStyle }];
+      indicatorsList.forEach(() => {
+        metricsRow.push({ v: 'Cadastros', s: labelStyle });
+        metricsRow.push({ v: 'Validados', s: labelStyle });
+        metricsRow.push({ v: 'Convertidos', s: labelStyle });
+        metricsRow.push({ v: 'Associação', s: labelStyle });
+        metricsRow.push({ v: 'Vendedor', s: labelStyle });
+      });
+      wsData.push(metricsRow);
+
+      // Data rows for each date
+      sortedDates.forEach(date => {
+        const row: any[] = [{ v: date, s: headerStyle }];
+        indicatorsList.forEach(ind => {
+          const dayData = ind.dailyData[date];
+          row.push({ v: dayData.cadastros || 0, s: dataStyle });
+          row.push({ v: dayData.validados || 0, s: dataStyle });
+          row.push({ v: dayData.convertidos || 0, s: dataStyle });
+          row.push({ v: Array.from(dayData.empresas).join(', ') || '-', s: dataStyle });
+          row.push({ v: Array.from(dayData.vendedores).join(', ') || '-', s: dataStyle });
+        });
+        wsData.push(row);
+      });
+
+      // Totals row
+      const totalsRow: any[] = [{ v: 'TOTAL', s: totalStyle }];
+      indicatorsList.forEach(ind => {
+        totalsRow.push({ v: ind.totals.cadastros, s: totalStyle });
+        totalsRow.push({ v: ind.totals.validados, s: totalStyle });
+        totalsRow.push({ v: ind.totals.convertidos, s: totalStyle });
+        totalsRow.push({ v: '-', s: totalStyle });
+        totalsRow.push({ v: '-', s: totalStyle });
+      });
+      wsData.push(totalsRow);
+
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Set column widths
+      const colWidths = [{ wch: 10 }]; // Date column
+      indicatorsList.forEach(() => {
+        colWidths.push({ wch: 10 }); // Cadastros
+        colWidths.push({ wch: 10 }); // Validados
+        colWidths.push({ wch: 12 }); // Convertidos
+        colWidths.push({ wch: 20 }); // Associação
+        colWidths.push({ wch: 20 }); // Vendedor
+      });
+      sheet['!cols'] = colWidths;
+
+      // Set row heights
+      const rowHeights = [
+        { hpt: 35 }, // Header row with indicator names
+        { hpt: 28 }, // Metrics labels
+      ];
+      sortedDates.forEach(() => rowHeights.push({ hpt: 35 }));
+      rowHeights.push({ hpt: 30 }); // Totals row
+      sheet['!rows'] = rowHeights;
+
+      // Merge cells for indicator headers
+      const merges: any[] = [];
+      let colStart = 1;
+      indicatorsList.forEach((_, idx) => {
+        merges.push({
+          s: { r: 0, c: colStart },
+          e: { r: 0, c: colStart + metricsPerIndicator - 1 }
+        });
+        colStart += metricsPerIndicator;
+      });
+      sheet['!merges'] = merges;
+
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Comparativo');
+
+      // Generate filename
+      const startFormatted = format(startDate, 'dd-MM-yyyy', { locale: ptBR });
+      const endFormatted = format(endDate, 'dd-MM-yyyy', { locale: ptBR });
+      const filename = `relatorio_comparativo_${periodLabel.toLowerCase().replace(' ', '_')}_${startFormatted}_a_${endFormatted}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+
+      toast({
+        title: "Relatório comparativo gerado!",
+        description: `Comparando ${indicatorsList.length} indicadores - ${periodLabel}`
+      });
+
+      setIsComparativeDialogOpen(false);
+      setSelectedIndicators([]);
+    } catch (error) {
+      console.error('Erro ao gerar relatório comparativo:', error);
+      toast({
+        title: "Erro ao gerar relatório",
+        description: "Não foi possível gerar o relatório comparativo. Tente novamente.",
         variant: "destructive"
       });
     }
@@ -1584,8 +1966,127 @@ export default function AdminReferralsDetailedPage() {
                     <Calendar className="h-4 w-4 mr-2" />
                     Geral Diário
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsComparativeDialogOpen(true)}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Comparativo (2+ Indicadores)
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              {/* Comparative Report Dialog */}
+              <Dialog open={isComparativeDialogOpen} onOpenChange={setIsComparativeDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Relatório Comparativo</DialogTitle>
+                    <DialogDescription>
+                      Selecione pelo menos 2 indicadores para gerar um relatório comparativo.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4">
+                    {/* Period Selection */}
+                    <div className="space-y-2">
+                      <Label>Período</Label>
+                      <Select value={comparativeReportType} onValueChange={(v: 'weekly' | 'monthly' | 'daily_general') => setComparativeReportType(v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o período" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Semanal (últimos 7 dias)</SelectItem>
+                          <SelectItem value="monthly">Mensal (mês atual)</SelectItem>
+                          <SelectItem value="daily_general">Geral Diário (mês até hoje)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Indicator Search */}
+                    <div className="space-y-2">
+                      <Label>Buscar Indicador</Label>
+                      <Input
+                        placeholder="Digite o nome do indicador..."
+                        value={indicatorSearchTerm}
+                        onChange={(e) => setIndicatorSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    
+                    {/* Indicator List with Checkboxes */}
+                    <div className="space-y-2">
+                      <Label>Indicadores ({selectedIndicators.length} selecionados)</Label>
+                      <ScrollArea className="h-[200px] border rounded-md p-2">
+                        <div className="space-y-2">
+                          {sortedUsers
+                            .filter(u => u.role === 'indicador' || u.role === 'promotor')
+                            .filter(u => 
+                              indicatorSearchTerm === '' || 
+                              u.fullName?.toLowerCase().includes(indicatorSearchTerm.toLowerCase())
+                            )
+                            .map(user => (
+                              <div key={user.id} className="flex items-center space-x-2 py-1">
+                                <Checkbox
+                                  id={`indicator-${user.id}`}
+                                  checked={selectedIndicators.includes(user.id.toString())}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedIndicators([...selectedIndicators, user.id.toString()]);
+                                    } else {
+                                      setSelectedIndicators(selectedIndicators.filter(id => id !== user.id.toString()));
+                                    }
+                                  }}
+                                />
+                                <Label 
+                                  htmlFor={`indicator-${user.id}`} 
+                                  className="text-sm cursor-pointer flex-1"
+                                >
+                                  {user.fullName}
+                                </Label>
+                              </div>
+                            ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                    
+                    {/* Selected Indicators Preview */}
+                    {selectedIndicators.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {selectedIndicators.map(id => {
+                          const user = users.find(u => u.id.toString() === id);
+                          return (
+                            <Badge 
+                              key={id} 
+                              variant="secondary" 
+                              className="text-xs cursor-pointer"
+                              onClick={() => setSelectedIndicators(selectedIndicators.filter(i => i !== id))}
+                            >
+                              {user?.fullName} ✕
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <DialogFooter className="gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setIsComparativeDialogOpen(false);
+                        setSelectedIndicators([]);
+                        setIndicatorSearchTerm("");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleComparativeReport}
+                      disabled={selectedIndicators.length < 2}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Gerar Relatório
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </CardHeader>
