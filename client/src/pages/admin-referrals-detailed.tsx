@@ -1589,6 +1589,9 @@ export default function AdminReferralsDetailedPage() {
       });
       sheet['!merges'] = merges;
 
+      // Freeze header rows (title + indicator names + metric labels = 3 rows)
+      sheet['!freeze'] = { xSplit: 1, ySplit: 3, topLeftCell: "B4", state: "frozen" };
+
       XLSX.utils.book_append_sheet(workbook, sheet, 'Comparativo');
 
       // Generate filename
