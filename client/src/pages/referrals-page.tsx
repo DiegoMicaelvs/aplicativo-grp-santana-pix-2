@@ -228,6 +228,11 @@ export default function ReferralsPage() {
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [convertObservation, setConvertObservation] = useState<string>("");
   
+  // States for indicador_nivel_1 company editing
+  const [editCompanyDialogOpen, setEditCompanyDialogOpen] = useState(false);
+  const [referralToEditCompany, setReferralToEditCompany] = useState<Referral | null>(null);
+  const [selectedNewCompanyId, setSelectedNewCompanyId] = useState<string>("");
+  
   // Debounce search query - increased to 500ms for better performance
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -417,6 +422,66 @@ export default function ReferralsPage() {
       referralId: referralToConvert.id,
       paymentProof: paymentProofPreview,
       observation: convertObservation.trim() || undefined
+    });
+  };
+  
+  // Open company edit dialog (for indicador_nivel_1)
+  const handleOpenEditCompanyDialog = useCallback((referral: Referral) => {
+    setReferralToEditCompany(referral);
+    setSelectedNewCompanyId(referral.companyId.toString());
+    setEditCompanyDialogOpen(true);
+  }, []);
+  
+  // Edit company mutation (for indicador_nivel_1)
+  const editCompanyMutation = useMutation({
+    mutationFn: async (data: { referralId: number; companyId: number }) => {
+      const response = await fetch(`/api/referrals/${data.referralId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ companyId: data.companyId }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao atualizar seguradora");
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/referrals'] });
+      toast({
+        title: "Sucesso!",
+        description: "Seguradora atualizada com sucesso!",
+      });
+      setEditCompanyDialogOpen(false);
+      setReferralToEditCompany(null);
+      setSelectedNewCompanyId("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar seguradora.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle company edit submit
+  const handleEditCompanySubmit = () => {
+    if (!referralToEditCompany || !selectedNewCompanyId) {
+      toast({
+        title: "Atenção",
+        description: "Selecione uma seguradora.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    editCompanyMutation.mutate({
+      referralId: referralToEditCompany.id,
+      companyId: parseInt(selectedNewCompanyId)
     });
   };
   
@@ -627,12 +692,24 @@ export default function ReferralsPage() {
                                 <span>{formatDate(referral.createdAt)}</span>
                               </div>
                               
-                              {user?.role !== "indicador_nivel_1" && user?.role !== "indicador" && user?.role !== "promotor" && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-500">Empresa:</span>
-                                  <span className="text-blue-600 font-medium">
-                                    {company?.name || `ID: ${referral.companyId}`}
-                                  </span>
+                              {user?.role !== "indicador" && user?.role !== "promotor" && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-500">Seguradora:</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-blue-600 font-medium">
+                                      {company?.name || `ID: ${referral.companyId}`}
+                                    </span>
+                                    {user?.role === "indicador_nivel_1" && (
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        className="h-6 px-1"
+                                        onClick={() => handleOpenEditCompanyDialog(referral)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                               
@@ -669,7 +746,7 @@ export default function ReferralsPage() {
                           )}
                           <TableHead>Nome</TableHead>
                           <TableHead>Veículo</TableHead>
-                          {user?.role !== "indicador_nivel_1" && user?.role !== "indicador" && user?.role !== "promotor" && <TableHead>Empresa</TableHead>}
+                          {user?.role !== "indicador" && user?.role !== "promotor" && <TableHead>Seguradora</TableHead>}
                           <TableHead>Cidade/Estado</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Status</TableHead>
@@ -705,11 +782,23 @@ export default function ReferralsPage() {
                             <TableCell>
                               <div>Placa: {referral.licensePlate}</div>
                             </TableCell>
-                            {user?.role !== "indicador_nivel_1" && user?.role !== "indicador" && user?.role !== "promotor" && (
+                            {user?.role !== "indicador" && user?.role !== "promotor" && (
                               <TableCell>
-                                <span className="text-sm font-medium text-blue-600">
-                                  {company?.name || `ID: ${referral.companyId}`}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-sm font-medium text-blue-600">
+                                    {company?.name || `ID: ${referral.companyId}`}
+                                  </span>
+                                  {user?.role === "indicador_nivel_1" && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      className="h-6 px-1"
+                                      onClick={() => handleOpenEditCompanyDialog(referral)}
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             )}
                             <TableCell>
@@ -1084,6 +1173,79 @@ export default function ReferralsPage() {
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Confirmar Conversão
                     </>
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Edit Company Dialog (for indicador_nivel_1) */}
+          <Dialog open={editCompanyDialogOpen} onOpenChange={(open) => {
+            if (!open) {
+              setEditCompanyDialogOpen(false);
+              setReferralToEditCompany(null);
+              setSelectedNewCompanyId("");
+            }
+          }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-heading">Alterar Seguradora</DialogTitle>
+                <DialogDescription>
+                  Altere a seguradora desta indicação
+                </DialogDescription>
+              </DialogHeader>
+              
+              {referralToEditCompany && (
+                <div className="space-y-4 py-4">
+                  <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                    <p className="text-sm"><strong>Cliente:</strong> {referralToEditCompany.fullName}</p>
+                    <p className="text-sm"><strong>Telefone:</strong> {referralToEditCompany.phone}</p>
+                    <p className="text-sm"><strong>Placa:</strong> {referralToEditCompany.licensePlate}</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-company-select" className="text-sm font-medium">
+                      Selecione a nova seguradora:
+                    </Label>
+                    <Select value={selectedNewCompanyId} onValueChange={setSelectedNewCompanyId}>
+                      <SelectTrigger id="edit-company-select">
+                        <SelectValue placeholder="Escolha uma seguradora" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies?.filter((company) => company.isActive).map((company) => (
+                          <SelectItem key={company.id} value={company.id.toString()}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditCompanyDialogOpen(false);
+                    setReferralToEditCompany(null);
+                    setSelectedNewCompanyId("");
+                  }}
+                  disabled={editCompanyMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleEditCompanySubmit}
+                  disabled={editCompanyMutation.isPending || !selectedNewCompanyId}
+                >
+                  {editCompanyMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Atualizando...
+                    </>
+                  ) : (
+                    'Salvar Seguradora'
                   )}
                 </Button>
               </div>
