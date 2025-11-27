@@ -50,6 +50,10 @@ const editSchema = z.object({
   notes: z.string().optional(),
   status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted", "contact_list"]),
   paymentProof: z.string().optional(),
+  fullName: z.string().optional(),
+  phone: z.string().optional(),
+  licensePlate: z.string().optional(),
+  companyId: z.number().optional(),
 });
 
 type EditFormValues = z.infer<typeof editSchema>;
@@ -326,10 +330,32 @@ export default function AnalystReferrals() {
     },
   });
 
-  // Edit referral mutation
+  // Edit referral mutation - uses main referral endpoint for field edits
   const editMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: EditFormValues }) => {
-      // Use status endpoint to preserve note history and update statusHistory
+      // Prepare update data - separate status update from field edits
+      const updatePayload: any = {};
+      
+      // Field edits go to main referral endpoint
+      if (data.fullName) updatePayload.fullName = data.fullName;
+      if (data.phone) updatePayload.phone = data.phone;
+      if (data.licensePlate) updatePayload.licensePlate = data.licensePlate?.toUpperCase();
+      if (data.companyId) updatePayload.companyId = data.companyId;
+      
+      // If we have field edits, update them first
+      if (Object.keys(updatePayload).length > 0) {
+        const fieldResponse = await fetch(`/api/referrals/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatePayload),
+        });
+        if (!fieldResponse.ok) {
+          const error = await fieldResponse.json();
+          throw new Error(error.message || error.error || "Erro ao editar campos da indicação");
+        }
+      }
+      
+      // Then update status via status endpoint (preserves statusHistory)
       const response = await fetch(`/api/referrals/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -476,6 +502,10 @@ export default function AnalystReferrals() {
     editForm.reset({
       notes: "", // Start with empty notes field to encourage new observations
       status: referral.status,
+      fullName: referral.fullName,
+      phone: referral.phone,
+      licensePlate: referral.licensePlate,
+      companyId: referral.companyId,
     });
     setIsEditDialogOpen(true);
   };
@@ -1139,13 +1169,60 @@ export default function AnalystReferrals() {
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Alterar Status e Observações</DialogTitle>
+            <DialogTitle>Editar Indicação</DialogTitle>
             <p className="text-sm text-gray-500 mt-2">
-              Cliente: <strong>{selectedReferral?.fullName}</strong> | Placa: <strong>{selectedReferral?.licensePlate}</strong>
+              ID: <strong>#{selectedReferral?.id}</strong>
             </p>
           </DialogHeader>
           <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
             <div className="space-y-4">
+              {/* Campos editáveis de dados da indicação */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border">
+                <div>
+                  <Label htmlFor="edit-fullName">Nome do Cliente</Label>
+                  <Input
+                    id="edit-fullName"
+                    {...editForm.register("fullName")}
+                    placeholder="Nome completo"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-phone">Telefone</Label>
+                  <Input
+                    id="edit-phone"
+                    {...editForm.register("phone")}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-licensePlate">Placa</Label>
+                  <Input
+                    id="edit-licensePlate"
+                    {...editForm.register("licensePlate")}
+                    placeholder="ABC1D23"
+                    className="uppercase"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-company">Seguradora</Label>
+                  <Select
+                    value={editForm.watch("companyId")?.toString() || ""}
+                    onValueChange={(value) => editForm.setValue("companyId", parseInt(value))}
+                  >
+                    <SelectTrigger id="edit-company">
+                      <SelectValue placeholder="Selecione a seguradora" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id.toString()}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="edit-status">Status da Indicação</Label>
                 <Select
