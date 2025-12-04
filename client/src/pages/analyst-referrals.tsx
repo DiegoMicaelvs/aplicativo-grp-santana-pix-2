@@ -1328,34 +1328,28 @@ export default function AnalystReferrals() {
                             {new Date(referral.createdAt).toLocaleDateString("pt-BR")}
                           </TableCell>
                           {canEdit && (
-                            <TableCell>
-                              <div className="flex gap-1 flex-nowrap">
-                                <ContactStatusDialog 
-                                  referral={referral} 
-                                  onUpdate={() => {
-                                    queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
-                                  }} 
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEditClick(referral)}
-                                  className="px-2"
-                                >
-                                  <Edit className="h-3.5 w-3.5" />
-                                  <span className="hidden xl:inline ml-1">Editar</span>
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleValidateClick(referral)}
-                                  disabled={referral.status === "paid"}
-                                  className="px-2"
-                                >
-                                  <CheckCircle className="h-3.5 w-3.5" />
-                                  <span className="hidden xl:inline ml-1">Validar</span>
-                                </Button>
-                              </div>
+                            <TableCell className="p-2">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Ações</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44">
+                                  <DropdownMenuItem onClick={() => handleEditClick(referral)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleValidateClick(referral)}
+                                    disabled={referral.status === "paid"}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Validar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           )}
                         </TableRow>
