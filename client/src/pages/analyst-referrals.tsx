@@ -1112,23 +1112,23 @@ export default function AnalystReferrals() {
                   : "Você tem permissão apenas para visualizar"}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button 
                 onClick={exportToExcel} 
                 variant="outline"
                 size="sm"
                 disabled={filteredReferrals.length === 0}
-                className="shrink-0"
+                className="flex-1 sm:flex-none"
               >
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Excel
+                <span className="hidden sm:inline">Exportar</span> Excel
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={filteredReferrals.length === 0}>
+                  <Button variant="outline" size="sm" disabled={filteredReferrals.length === 0} className="flex-1 sm:flex-none">
                     <FileBarChart className="h-4 w-4 mr-2" />
-                    Exportar Relatório
-                    <ChevronDown className="h-4 w-4 ml-2" />
+                    <span className="hidden sm:inline">Exportar</span> Relatório
+                    <ChevronDown className="h-4 w-4 ml-1 sm:ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -1253,79 +1253,83 @@ export default function AnalystReferrals() {
               </div>
 
               {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <Table>
+              <div className="hidden md:block overflow-x-auto -mx-4 md:mx-0">
+                <Table className="min-w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Telefone</TableHead>
+                      <TableHead className="w-16">ID</TableHead>
+                      <TableHead className="min-w-[120px]">Nome</TableHead>
+                      <TableHead className="hidden lg:table-cell">Telefone</TableHead>
                       <TableHead>Placa</TableHead>
-                      <TableHead>Veículo</TableHead>
-                      <TableHead>Indicador</TableHead>
-                      <TableHead>Empresa</TableHead>
+                      <TableHead className="hidden xl:table-cell">Veículo</TableHead>
+                      <TableHead className="hidden lg:table-cell">Indicador</TableHead>
+                      <TableHead className="hidden xl:table-cell">Empresa</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Contato</TableHead>
-                      <TableHead>Data</TableHead>
+                      <TableHead className="hidden lg:table-cell">Contato</TableHead>
+                      <TableHead className="hidden lg:table-cell">Data</TableHead>
                       {canEdit && <TableHead>Ações</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredReferrals.map((referral) => {
-                      // Usar userId para mostrar o usuário ATUAL da indicação, não quem criou
                       const indicador = users.find((u) => u.id === referral.userId);
                       const criador = users.find((u) => u.id === referral.createdBy);
                       const company = companies.find((c) => c.id === referral.companyId);
                       return (
                         <TableRow key={referral.id}>
-                          <TableCell>#{referral.id}</TableCell>
-                          <TableCell className="font-medium">{referral.fullName}</TableCell>
-                          <TableCell>{referral.phone}</TableCell>
-                          <TableCell>{referral.licensePlate}</TableCell>
+                          <TableCell className="text-xs font-mono">#{referral.id}</TableCell>
                           <TableCell>
+                            <div className="min-w-0">
+                              <div className="font-medium text-sm truncate max-w-[150px]">{referral.fullName}</div>
+                              <div className="text-xs text-gray-500 lg:hidden">{referral.phone}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-sm">{referral.phone}</TableCell>
+                          <TableCell className="text-sm font-mono">{referral.licensePlate}</TableCell>
+                          <TableCell className="hidden xl:table-cell">
                             {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) ? (
-                              <div className="text-sm">
+                              <div className="text-xs text-gray-600 max-w-[100px] truncate">
                                 {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
                                   .filter(Boolean)
                                   .join(' ')}
                               </div>
                             ) : (
-                              <span className="text-gray-400">-</span>
+                              <span className="text-gray-400 text-xs">-</span>
                             )}
                           </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="font-medium">
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="max-w-[120px]">
+                              <div className="font-medium text-sm truncate">
                                 {indicador?.fullName || "N/A"}
                               </div>
                               {criador && criador.id !== indicador?.id && (
-                                <div className="text-xs text-gray-500">
-                                  Criado por: {criador.fullName}
+                                <div className="text-xs text-gray-500 truncate">
+                                  por {criador.fullName}
                                 </div>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell>{company?.name || "N/A"}</TableCell>
+                          <TableCell className="hidden xl:table-cell text-sm">{company?.name || "N/A"}</TableCell>
                           <TableCell>
-                            <Badge className={statusColors[referral.status]}>
+                            <Badge className={`${statusColors[referral.status]} text-xs whitespace-nowrap`}>
                               {statusLabels[referral.status]}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden lg:table-cell">
                             {referral.contactStatus ? (
-                              <Badge variant="outline" className={contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"}>
+                              <Badge variant="outline" className={`${contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"} text-xs whitespace-nowrap`}>
                                 {contactStatusLabels[referral.contactStatus] || "Sem status"}
                               </Badge>
                             ) : (
                               <span className="text-xs text-gray-400">-</span>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden lg:table-cell text-xs text-gray-600">
                             {new Date(referral.createdAt).toLocaleDateString("pt-BR")}
                           </TableCell>
                           {canEdit && (
                             <TableCell>
-                              <div className="flex gap-2">
+                              <div className="flex gap-1 flex-nowrap">
                                 <ContactStatusDialog 
                                   referral={referral} 
                                   onUpdate={() => {
@@ -1336,18 +1340,20 @@ export default function AnalystReferrals() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleEditClick(referral)}
+                                  className="px-2"
                                 >
-                                  <Edit className="h-4 w-4 mr-1" />
-                                  Editar
+                                  <Edit className="h-3.5 w-3.5" />
+                                  <span className="hidden xl:inline ml-1">Editar</span>
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleValidateClick(referral)}
                                   disabled={referral.status === "paid"}
+                                  className="px-2"
                                 >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Validar
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                  <span className="hidden xl:inline ml-1">Validar</span>
                                 </Button>
                               </div>
                             </TableCell>
