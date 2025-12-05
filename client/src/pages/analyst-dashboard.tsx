@@ -92,44 +92,6 @@ export default function AnalystDashboard() {
         </div>
       </div>
 
-      {/* Permissions Overview */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Suas Permissões
-          </CardTitle>
-          <CardDescription>
-            Funcionalidades disponíveis para seu nível de acesso
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {user?.permissions?.map((permission) => (
-              <Badge key={permission} variant="secondary" className="justify-center p-2">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                {PERMISSION_LABELS[permission as AnalystPermission]}
-              </Badge>
-            ))}
-          </div>
-          {(!user?.permissions || user.permissions.length === 0) && (
-            <p className="text-gray-500 text-center py-4">
-              Nenhuma permissão específica configurada. Entre em contato com o administrador.
-            </p>
-          )}
-          <div className="mt-4">
-            <Button 
-              onClick={() => setLocation("/analyst/permissions")}
-              variant="outline"
-              className="w-full"
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              Ver Detalhes das Permissões
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {/* Create Indicador */}
