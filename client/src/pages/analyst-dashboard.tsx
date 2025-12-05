@@ -76,19 +76,6 @@ export default function AnalystDashboard() {
               Bem-vindo, {user?.fullName}
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            {getAnalystLevelBadge(user?.analystLevel || undefined)}
-            <Badge variant="outline" className="text-sm">
-              <Shield className="h-3 w-3 mr-1" />
-              {user?.permissions?.length || 0} permissões
-            </Badge>
-            {user?.analystLevel === 3 && (
-              <Badge className="text-sm bg-purple-100 text-purple-800">
-                <Users className="h-3 w-3 mr-1" />
-                Visualizando apenas usuários supervisionados
-              </Badge>
-            )}
-          </div>
         </div>
       </div>
 
