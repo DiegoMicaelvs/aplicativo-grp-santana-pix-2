@@ -1323,20 +1323,22 @@ export default function AnalystReferrals() {
 
               {/* Desktop Table View */}
               <div className="hidden md:block overflow-x-auto -mx-4 md:mx-0">
-                <Table className="min-w-full">
+                <Table className="w-full table-fixed">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16">ID</TableHead>
-                      <TableHead className="min-w-[120px]">Nome</TableHead>
-                      <TableHead className="hidden lg:table-cell">Telefone</TableHead>
-                      <TableHead>Placa</TableHead>
-                      <TableHead className="hidden xl:table-cell">Veículo</TableHead>
-                      <TableHead className="hidden lg:table-cell">Indicador</TableHead>
-                      <TableHead className="hidden xl:table-cell">Empresa</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="hidden lg:table-cell">Contato</TableHead>
-                      <TableHead className="hidden lg:table-cell">Data</TableHead>
-                      {canEdit && <TableHead>Ações</TableHead>}
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="w-[50px] text-xs font-semibold">ID</TableHead>
+                      <TableHead className="w-[140px] text-xs font-semibold">Cliente</TableHead>
+                      <TableHead className="w-[100px] text-xs font-semibold">Telefone</TableHead>
+                      <TableHead className="w-[70px] text-xs font-semibold">Placa</TableHead>
+                      <TableHead className="w-[50px] text-xs font-semibold">Seguro</TableHead>
+                      <TableHead className="w-[100px] text-xs font-semibold">Seguradora</TableHead>
+                      <TableHead className="w-[120px] text-xs font-semibold">Indicador</TableHead>
+                      <TableHead className="w-[90px] text-xs font-semibold">Local</TableHead>
+                      <TableHead className="w-[120px] text-xs font-semibold">Veículo</TableHead>
+                      <TableHead className="w-[80px] text-xs font-semibold">Status</TableHead>
+                      <TableHead className="w-[80px] text-xs font-semibold">Contato</TableHead>
+                      <TableHead className="w-[70px] text-xs font-semibold">Data</TableHead>
+                      {canEdit && <TableHead className="w-[180px] text-xs font-semibold">Ações</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1345,46 +1347,51 @@ export default function AnalystReferrals() {
                       const criador = usersMap.get(referral.createdBy || 0);
                       const company = companiesMap.get(referral.companyId || 0);
                       return (
-                        <TableRow key={referral.id}>
-                          <TableCell className="text-xs font-mono">#{referral.id}</TableCell>
+                        <TableRow key={referral.id} className="hover:bg-gray-50">
+                          <TableCell className="text-xs font-mono font-semibold text-blue-600">#{referral.id}</TableCell>
+                          <TableCell className="text-sm">
+                            <div className="font-medium break-words">{referral.fullName}</div>
+                          </TableCell>
+                          <TableCell className="text-xs">{referral.phone}</TableCell>
+                          <TableCell className="text-xs font-mono font-medium">{referral.licensePlate}</TableCell>
                           <TableCell>
-                            <div className="min-w-0">
-                              <div className="font-medium text-sm truncate max-w-[150px]">{referral.fullName}</div>
-                              <div className="text-xs text-gray-500 lg:hidden">{referral.phone}</div>
-                            </div>
+                            <span className={`text-xs font-medium ${referral.hasInsurance ? 'text-green-600' : 'text-red-600'}`}>
+                              {referral.hasInsurance ? 'Sim' : 'Não'}
+                            </span>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell text-sm">{referral.phone}</TableCell>
-                          <TableCell className="text-sm font-mono">{referral.licensePlate}</TableCell>
-                          <TableCell className="hidden xl:table-cell">
-                            {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) ? (
-                              <div className="text-xs text-gray-600 max-w-[100px] truncate">
-                                {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <div className="max-w-[120px]">
-                              <div className="font-medium text-sm truncate">
-                                {indicador?.fullName || "N/A"}
-                              </div>
+                          <TableCell className="text-xs break-words">{company?.name || "N/A"}</TableCell>
+                          <TableCell className="text-xs">
+                            <div className="break-words">
+                              <div className="font-medium">{indicador?.fullName || "N/A"}</div>
                               {criador && criador.id !== indicador?.id && (
-                                <div className="text-xs text-gray-500 truncate">
-                                  por {criador.fullName}
-                                </div>
+                                <div className="text-gray-500">por {criador.fullName}</div>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="hidden xl:table-cell text-sm">{company?.name || "N/A"}</TableCell>
+                          <TableCell className="text-xs break-words">
+                            {(referral.city || referral.state) ? (
+                              <span>{[referral.city, referral.state].filter(Boolean).join('/')}</span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs break-words">
+                            {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) ? (
+                              <span className="text-gray-700">
+                                {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Badge className={`${statusColors[referral.status]} text-xs whitespace-nowrap`}>
                               {statusLabels[referral.status]}
                             </Badge>
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell">
+                          <TableCell>
                             {referral.contactStatus ? (
                               <Badge variant="outline" className={`${contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"} text-xs whitespace-nowrap`}>
                                 {contactStatusLabels[referral.contactStatus] || "Sem status"}
@@ -1393,7 +1400,7 @@ export default function AnalystReferrals() {
                               <span className="text-xs text-gray-400">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="hidden lg:table-cell text-xs text-gray-600">
+                          <TableCell className="text-xs text-gray-600">
                             {new Date(referral.createdAt).toLocaleDateString("pt-BR")}
                           </TableCell>
                           {canEdit && (
@@ -1409,20 +1416,20 @@ export default function AnalystReferrals() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleEditClick(referral)}
-                                  className="px-2"
+                                  className="px-2 h-7 text-xs"
                                 >
-                                  <Edit className="h-3.5 w-3.5" />
-                                  <span className="hidden xl:inline ml-1">Editar</span>
+                                  <Edit className="h-3 w-3 mr-1" />
+                                  Editar
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleValidateClick(referral)}
                                   disabled={referral.status === "paid"}
-                                  className="px-2"
+                                  className="px-2 h-7 text-xs"
                                 >
-                                  <CheckCircle className="h-3.5 w-3.5" />
-                                  <span className="hidden xl:inline ml-1">Validar</span>
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Validar
                                 </Button>
                               </div>
                             </TableCell>
