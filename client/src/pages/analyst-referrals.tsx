@@ -116,7 +116,8 @@ const contactStatusColors: Record<string, string> = {
   aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300",
 };
 
-// Component to show status badge with tooltip showing who last updated it
+// Component to show status badge with popover showing who last updated it
+// Uses Popover for click support on mobile devices
 function StatusBadgeWithTooltip({ 
   referral, 
   usersMap 
@@ -124,6 +125,8 @@ function StatusBadgeWithTooltip({
   referral: Referral; 
   usersMap: Map<number, User>;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
   // Get the latest status change from history
   const lastStatusChange = useMemo(() => {
     if (!referral.statusHistory || referral.statusHistory.length === 0) {
@@ -150,30 +153,32 @@ function StatusBadgeWithTooltip({
   // Also check for changedByName in the history entry as a fallback
   const lastUpdaterName = lastUpdatedBy?.fullName || (lastStatusChange as any).changedByName || 'Usuário não encontrado';
 
+  const statusInfoContent = (
+    <div className="text-xs space-y-1">
+      <p className="font-semibold text-yellow-400">Última atualização:</p>
+      <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
+      {lastUpdatedAt && (
+        <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
+      )}
+      {lastStatusChange.notes && lastStatusChange.notes.trim() && (
+        <p className="text-gray-300 italic mt-1 border-t border-gray-700 pt-1">"{lastStatusChange.notes}"</p>
+      )}
+    </div>
+  );
+
   return (
-    <TooltipProvider delayDuration={100}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-block cursor-pointer">
-            <Badge className={`${statusColors[referral.status]} text-xs`}>
-              {statusLabels[referral.status]}
-            </Badge>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs bg-gray-900 text-white p-3 shadow-lg z-50">
-          <div className="text-xs space-y-1">
-            <p className="font-semibold text-yellow-400">Última atualização:</p>
-            <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
-            {lastUpdatedAt && (
-              <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
-            )}
-            {lastStatusChange.notes && lastStatusChange.notes.trim() && (
-              <p className="text-gray-300 italic mt-1 border-t border-gray-700 pt-1">"{lastStatusChange.notes}"</p>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <span className="inline-block cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+          <Badge className={`${statusColors[referral.status]} text-xs`}>
+            {statusLabels[referral.status]}
+          </Badge>
+        </span>
+      </PopoverTrigger>
+      <PopoverContent className="max-w-xs bg-gray-900 text-white p-3 shadow-lg z-50 border-gray-700" side="top" sideOffset={4}>
+        {statusInfoContent}
+      </PopoverContent>
+    </Popover>
   );
 }
 
