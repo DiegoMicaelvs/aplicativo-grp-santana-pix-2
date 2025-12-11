@@ -1203,19 +1203,15 @@ export default function AnalystReferrals() {
                   const company = companiesMap.get(referral.companyId || 0);
                   return (
                     <Card key={referral.id} className="shadow-sm border-l-4 border-l-blue-500">
-                      <CardContent className="p-3">
-                        {/* Header with name, status badges */}
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1 text-xs text-gray-500 mb-0.5">
-                              <span className="font-mono">#{referral.id}</span>
-                              <span>•</span>
-                              <span>{new Date(referral.createdAt).toLocaleDateString("pt-BR")}</span>
-                            </div>
-                            <h3 className="font-semibold text-sm truncate">{referral.fullName}</h3>
-                            <p className="text-xs text-gray-600">{referral.phone}</p>
+                      <CardContent className="p-4">
+                        {/* Header with ID, date and status badges */}
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span className="font-mono font-semibold">#{referral.id}</span>
+                            <span>•</span>
+                            <span>{new Date(referral.createdAt).toLocaleDateString("pt-BR")}</span>
                           </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex flex-wrap items-center gap-1 justify-end">
                             <Badge className={`${statusColors[referral.status]} text-xs px-2 py-0.5`}>
                               {statusLabels[referral.status]}
                             </Badge>
@@ -1227,31 +1223,64 @@ export default function AnalystReferrals() {
                           </div>
                         </div>
                         
-                        {/* Key info grid */}
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs bg-gray-50 rounded p-2 mb-2">
+                        {/* Client name and phone */}
+                        <div className="mb-3">
+                          <h3 className="font-semibold text-base text-gray-900">{referral.fullName}</h3>
+                          <p className="text-sm text-gray-600">{referral.phone}</p>
+                        </div>
+                        
+                        {/* Key info grid - full information */}
+                        <div className="space-y-2 text-sm bg-gray-50 rounded-lg p-3 mb-3">
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                            <div>
+                              <span className="text-gray-500 block text-xs">Placa</span>
+                              <span className="font-mono font-medium">{referral.licensePlate}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 block text-xs">Tem Seguro</span>
+                              <span className={`font-medium ${referral.hasInsurance ? 'text-green-600' : 'text-red-600'}`}>
+                                {referral.hasInsurance ? 'Sim' : 'Não'}
+                              </span>
+                            </div>
+                          </div>
+                          
                           <div>
-                            <span className="text-gray-500">Placa:</span>
-                            <span className="font-medium ml-1">{referral.licensePlate}</span>
+                            <span className="text-gray-500 block text-xs">Seguradora</span>
+                            <span className="font-medium">{company?.name || "N/A"}</span>
                           </div>
-                          <div className="truncate">
-                            <span className="text-gray-500">Empresa:</span>
-                            <span className="ml-1">{company?.name || "N/A"}</span>
-                          </div>
-                          <div className="col-span-2 truncate">
-                            <span className="text-gray-500">Indicador:</span>
-                            <span className="font-medium ml-1">{indicador?.fullName || "N/A"}</span>
+                          
+                          <div>
+                            <span className="text-gray-500 block text-xs">Indicador</span>
+                            <span className="font-medium">{indicador?.fullName || "N/A"}</span>
                             {criador && criador.id !== indicador?.id && (
-                              <span className="text-gray-400 ml-1">(por {criador.fullName})</span>
+                              <span className="text-gray-400 text-xs block">(criado por {criador.fullName})</span>
                             )}
                           </div>
-                          {(referral.vehicleBrand || referral.vehicleModel) && (
-                            <div className="col-span-2 truncate">
-                              <span className="text-gray-500">Veículo:</span>
-                              <span className="ml-1">
+                          
+                          {(referral.city || referral.state) && (
+                            <div>
+                              <span className="text-gray-500 block text-xs">Localização</span>
+                              <span className="font-medium">
+                                {[referral.city, referral.state].filter(Boolean).join(' / ')}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) && (
+                            <div>
+                              <span className="text-gray-500 block text-xs">Veículo</span>
+                              <span className="font-medium">
                                 {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
                                   .filter(Boolean)
                                   .join(' ')}
                               </span>
+                            </div>
+                          )}
+                          
+                          {referral.notes && (
+                            <div>
+                              <span className="text-gray-500 block text-xs">Observações</span>
+                              <span className="text-gray-700">{referral.notes}</span>
                             </div>
                           )}
                         </div>
@@ -1269,9 +1298,9 @@ export default function AnalystReferrals() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditClick(referral)}
-                              className="text-xs h-8"
+                              className="text-xs h-9"
                             >
-                              <Edit className="h-3 w-3 mr-1" />
+                              <Edit className="h-3.5 w-3.5 mr-1" />
                               Editar
                             </Button>
                             <Button
@@ -1279,9 +1308,9 @@ export default function AnalystReferrals() {
                               size="sm"
                               onClick={() => handleValidateClick(referral)}
                               disabled={referral.status === "paid"}
-                              className="text-xs h-8"
+                              className="text-xs h-9"
                             >
-                              <CheckCircle className="h-3 w-3 mr-1" />
+                              <CheckCircle className="h-3.5 w-3.5 mr-1" />
                               Validar
                             </Button>
                           </div>
