@@ -1322,23 +1322,23 @@ export default function AnalystReferrals() {
               </div>
 
               {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto -mx-4 md:mx-0">
-                <Table className="w-full table-fixed">
+              <div className="hidden md:block overflow-x-auto">
+                <Table className="w-full">
                   <TableHeader>
                     <TableRow className="bg-gray-50">
-                      <TableHead className="w-[50px] text-xs font-semibold">ID</TableHead>
-                      <TableHead className="w-[140px] text-xs font-semibold">Cliente</TableHead>
-                      <TableHead className="w-[100px] text-xs font-semibold">Telefone</TableHead>
-                      <TableHead className="w-[70px] text-xs font-semibold">Placa</TableHead>
-                      <TableHead className="w-[50px] text-xs font-semibold">Seguro</TableHead>
-                      <TableHead className="w-[100px] text-xs font-semibold">Seguradora</TableHead>
-                      <TableHead className="w-[120px] text-xs font-semibold">Indicador</TableHead>
-                      <TableHead className="w-[90px] text-xs font-semibold">Local</TableHead>
-                      <TableHead className="w-[120px] text-xs font-semibold">Veículo</TableHead>
-                      <TableHead className="w-[80px] text-xs font-semibold">Status</TableHead>
-                      <TableHead className="w-[80px] text-xs font-semibold">Contato</TableHead>
-                      <TableHead className="w-[70px] text-xs font-semibold">Data</TableHead>
-                      {canEdit && <TableHead className="w-[180px] text-xs font-semibold">Ações</TableHead>}
+                      <TableHead className="text-xs font-semibold whitespace-nowrap">ID</TableHead>
+                      <TableHead className="text-xs font-semibold min-w-[140px]">Cliente</TableHead>
+                      <TableHead className="text-xs font-semibold whitespace-nowrap">Telefone</TableHead>
+                      <TableHead className="text-xs font-semibold whitespace-nowrap">Placa</TableHead>
+                      <TableHead className="text-xs font-semibold whitespace-nowrap">Seguro</TableHead>
+                      <TableHead className="text-xs font-semibold min-w-[100px]">Seguradora</TableHead>
+                      <TableHead className="text-xs font-semibold min-w-[120px]">Indicador</TableHead>
+                      <TableHead className="text-xs font-semibold whitespace-nowrap">Local</TableHead>
+                      <TableHead className="text-xs font-semibold min-w-[100px]">Veículo</TableHead>
+                      <TableHead className="text-xs font-semibold whitespace-nowrap">Status</TableHead>
+                      <TableHead className="text-xs font-semibold whitespace-nowrap">Contato</TableHead>
+                      <TableHead className="text-xs font-semibold whitespace-nowrap">Data</TableHead>
+                      {canEdit && <TableHead className="text-xs font-semibold whitespace-nowrap">Ações</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1348,36 +1348,36 @@ export default function AnalystReferrals() {
                       const company = companiesMap.get(referral.companyId || 0);
                       return (
                         <TableRow key={referral.id} className="hover:bg-gray-50">
-                          <TableCell className="text-xs font-mono font-semibold text-blue-600">#{referral.id}</TableCell>
+                          <TableCell className="text-xs font-mono font-semibold text-blue-600 whitespace-nowrap">#{referral.id}</TableCell>
                           <TableCell className="text-sm">
-                            <div className="font-medium break-words">{referral.fullName}</div>
+                            <div className="font-medium max-w-[180px] truncate" title={referral.fullName}>{referral.fullName}</div>
                           </TableCell>
-                          <TableCell className="text-xs">{referral.phone}</TableCell>
-                          <TableCell className="text-xs font-mono font-medium">{referral.licensePlate}</TableCell>
-                          <TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">{referral.phone}</TableCell>
+                          <TableCell className="text-xs font-mono font-medium whitespace-nowrap">{referral.licensePlate}</TableCell>
+                          <TableCell className="whitespace-nowrap">
                             <span className={`text-xs font-medium ${referral.hasInsurance ? 'text-green-600' : 'text-red-600'}`}>
                               {referral.hasInsurance ? 'Sim' : 'Não'}
                             </span>
                           </TableCell>
-                          <TableCell className="text-xs break-words">{company?.name || "N/A"}</TableCell>
+                          <TableCell className="text-xs">{company?.name || "N/A"}</TableCell>
                           <TableCell className="text-xs">
-                            <div className="break-words">
-                              <div className="font-medium">{indicador?.fullName || "N/A"}</div>
+                            <div className="max-w-[150px]">
+                              <div className="font-medium truncate" title={indicador?.fullName}>{indicador?.fullName || "N/A"}</div>
                               {criador && criador.id !== indicador?.id && (
-                                <div className="text-gray-500">por {criador.fullName}</div>
+                                <div className="text-gray-500 truncate text-[10px]">por {criador.fullName}</div>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs break-words">
+                          <TableCell className="text-xs whitespace-nowrap">
                             {(referral.city || referral.state) ? (
                               <span>{[referral.city, referral.state].filter(Boolean).join('/')}</span>
                             ) : (
                               <span className="text-gray-400">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs break-words">
+                          <TableCell className="text-xs">
                             {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) ? (
-                              <span className="text-gray-700">
+                              <span className="text-gray-700 max-w-[120px] truncate block" title={[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear].filter(Boolean).join(' ')}>
                                 {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
                                   .filter(Boolean)
                                   .join(' ')}
@@ -1386,25 +1386,25 @@ export default function AnalystReferrals() {
                               <span className="text-gray-400">-</span>
                             )}
                           </TableCell>
-                          <TableCell>
-                            <Badge className={`${statusColors[referral.status]} text-xs whitespace-nowrap`}>
+                          <TableCell className="whitespace-nowrap">
+                            <Badge className={`${statusColors[referral.status]} text-xs`}>
                               {statusLabels[referral.status]}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="whitespace-nowrap">
                             {referral.contactStatus ? (
-                              <Badge variant="outline" className={`${contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"} text-xs whitespace-nowrap`}>
+                              <Badge variant="outline" className={`${contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"} text-xs`}>
                                 {contactStatusLabels[referral.contactStatus] || "Sem status"}
                               </Badge>
                             ) : (
                               <span className="text-xs text-gray-400">-</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs text-gray-600">
+                          <TableCell className="text-xs text-gray-600 whitespace-nowrap">
                             {new Date(referral.createdAt).toLocaleDateString("pt-BR")}
                           </TableCell>
                           {canEdit && (
-                            <TableCell>
+                            <TableCell className="whitespace-nowrap">
                               <div className="flex gap-1 flex-nowrap">
                                 <ContactStatusDialog 
                                   referral={referral} 
