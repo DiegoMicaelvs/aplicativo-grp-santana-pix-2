@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Eye, Search, Filter, Edit, Check, X, Clock, DollarSign, Users, TrendingUp, AlertTriangle, AlertCircle, Trash2, UserCheck, Download, ChevronsUpDown, XCircle, RefreshCw, Phone, FileBarChart, ChevronDown, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -382,6 +383,63 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+// Component for status badge with tooltip showing last update info
+function StatusBadgeWithTooltip({ 
+  referral, 
+  users,
+  getStatusColor,
+  getStatusLabel
+}: { 
+  referral: any; 
+  users: any[];
+  getStatusColor: (status: string) => string;
+  getStatusLabel: (status: string) => string;
+}) {
+  const statusHistory = referral.statusHistory || [];
+  const lastStatusChange = statusHistory.length > 0 
+    ? statusHistory[statusHistory.length - 1] 
+    : null;
+
+  const lastUpdatedBy = lastStatusChange ? users.find(u => u.id === lastStatusChange.changedBy) : null;
+  const lastUpdatedAt = lastStatusChange ? new Date(lastStatusChange.changedAt) : null;
+
+  if (!lastStatusChange) {
+    return (
+      <Badge className={`${getStatusColor(referral.status)} text-xs`}>
+        {getStatusLabel(referral.status)}
+      </Badge>
+    );
+  }
+
+  const lastUpdaterName = lastUpdatedBy?.fullName || (lastStatusChange as any).changedByName || 'Usuário não encontrado';
+
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-block cursor-pointer">
+            <Badge className={`${getStatusColor(referral.status)} text-xs`}>
+              {getStatusLabel(referral.status)}
+            </Badge>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs bg-gray-900 text-white p-3 shadow-lg z-50">
+          <div className="text-xs space-y-1">
+            <p className="font-semibold text-yellow-400">Última atualização:</p>
+            <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
+            {lastUpdatedAt && (
+              <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
+            )}
+            {lastStatusChange.notes && lastStatusChange.notes.trim() && (
+              <p className="text-gray-300 italic mt-1 border-t border-gray-700 pt-1">"{lastStatusChange.notes}"</p>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -2173,9 +2231,12 @@ export default function AdminReferralsDetailedPage() {
                     <p className="font-semibold">{referral.fullName}</p>
                     <p className="text-sm text-gray-600">{referral.phone}</p>
                   </div>
-                  <Badge className={getStatusBadgeColor(referral.status)}>
-                    {getStatusLabel(referral.status)}
-                  </Badge>
+                  <StatusBadgeWithTooltip 
+                    referral={referral}
+                    users={allUsers}
+                    getStatusColor={getStatusBadgeColor}
+                    getStatusLabel={getStatusLabel}
+                  />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -2756,9 +2817,12 @@ export default function AdminReferralsDetailedPage() {
                       {getUserName(referral.userId)}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`${getStatusBadgeColor(referral.status)} text-xs`}>
-                        {getStatusLabel(referral.status)}
-                      </Badge>
+                      <StatusBadgeWithTooltip 
+                        referral={referral}
+                        users={allUsers}
+                        getStatusColor={getStatusBadgeColor}
+                        getStatusLabel={getStatusLabel}
+                      />
                     </TableCell>
                     <TableCell className="text-xs">
                       {referral.contactStatus ? (
