@@ -389,6 +389,7 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
 
 // Component for status badge with tooltip/popover showing last update info
 // Uses Popover for click support on mobile devices
+// Only shows referral status changes, NOT contact status changes
 function StatusBadgeWithTooltip({ 
   referral, 
   users,
@@ -402,11 +403,18 @@ function StatusBadgeWithTooltip({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const statusHistory = referral.statusHistory || [];
-  const lastStatusChange = statusHistory.length > 0 
-    ? statusHistory[statusHistory.length - 1] 
+  
+  // Filter only referral status changes (exclude 'contact_status' and 'system' entries)
+  const referralStatusChanges = statusHistory.filter(
+    (entry: any) => entry.status !== 'contact_status' && entry.status !== 'system'
+  );
+  
+  // Get the last referral status change (most recent)
+  const lastStatusChange = referralStatusChanges.length > 0 
+    ? referralStatusChanges[referralStatusChanges.length - 1] 
     : null;
 
-  const lastUpdatedBy = lastStatusChange ? users.find(u => u.id === lastStatusChange.changedBy) : null;
+  const lastUpdatedBy = lastStatusChange ? users.find((u: any) => u.id === lastStatusChange.changedBy) : null;
   const lastUpdatedAt = lastStatusChange ? new Date(lastStatusChange.changedAt) : null;
 
   if (!lastStatusChange) {
@@ -421,7 +429,7 @@ function StatusBadgeWithTooltip({
 
   const statusInfoContent = (
     <div className="text-xs space-y-1">
-      <p className="font-semibold text-yellow-400">Última atualização:</p>
+      <p className="font-semibold text-yellow-400">Última atualização de status:</p>
       <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
       {lastUpdatedAt && (
         <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
