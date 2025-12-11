@@ -149,21 +149,24 @@ function StatusBadgeWithTooltip({
     return badge;
   }
 
+  // Also check for changedByName in the history entry as a fallback
+  const lastUpdaterName = lastUpdatedBy?.fullName || (lastStatusChange as any).changedByName || 'Usuário não encontrado';
+
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
           {badge}
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs">
+        <TooltipContent className="max-w-xs bg-gray-900 text-white p-3 shadow-lg">
           <div className="text-xs space-y-1">
-            <p className="font-semibold">Última atualização:</p>
-            <p>Por: {lastUpdatedBy?.fullName || 'Usuário não encontrado'}</p>
+            <p className="font-semibold text-yellow-400">Última atualização:</p>
+            <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
             {lastUpdatedAt && (
               <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
             )}
-            {lastStatusChange.notes && (
-              <p className="text-gray-300 italic mt-1">"{lastStatusChange.notes}"</p>
+            {lastStatusChange.notes && lastStatusChange.notes.trim() && (
+              <p className="text-gray-300 italic mt-1 border-t border-gray-700 pt-1">"{lastStatusChange.notes}"</p>
             )}
           </div>
         </TooltipContent>
