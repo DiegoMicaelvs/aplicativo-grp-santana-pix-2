@@ -1334,7 +1334,6 @@ export default function AnalystReferrals() {
                       <TableHead className="text-xs font-semibold min-w-[100px]">Seguradora</TableHead>
                       <TableHead className="text-xs font-semibold min-w-[120px]">Indicador</TableHead>
                       <TableHead className="text-xs font-semibold whitespace-nowrap">Local</TableHead>
-                      <TableHead className="text-xs font-semibold min-w-[100px]">Veículo</TableHead>
                       <TableHead className="text-xs font-semibold whitespace-nowrap">Status</TableHead>
                       <TableHead className="text-xs font-semibold whitespace-nowrap">Contato</TableHead>
                       <TableHead className="text-xs font-semibold whitespace-nowrap">Data</TableHead>
@@ -1371,17 +1370,6 @@ export default function AnalystReferrals() {
                           <TableCell className="text-xs whitespace-nowrap">
                             {(referral.city || referral.state) ? (
                               <span>{[referral.city, referral.state].filter(Boolean).join('/')}</span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {(referral.vehicleBrand || referral.vehicleModel || referral.vehicleYear) ? (
-                              <span className="text-gray-700 max-w-[120px] truncate block" title={[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear].filter(Boolean).join(' ')}>
-                                {[referral.vehicleBrand, referral.vehicleModel, referral.vehicleYear]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                              </span>
                             ) : (
                               <span className="text-gray-400">-</span>
                             )}
