@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRealtimeUpdates } from "@/hooks/use-realtime-updates";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -524,6 +525,9 @@ export default function AdminReferralsDetailedPage() {
 
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // Enable real-time updates via WebSocket
+  useRealtimeUpdates();
 
   const { data: referrals = [], isLoading: referralsLoading, refetch: refetchReferrals } = useQuery<any[]>({
     queryKey: ["/api/admin/referrals"],

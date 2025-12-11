@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { db } from "@db";
@@ -1715,6 +1716,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Broadcast real-time update to all connected clients
+      if ((app as any).broadcastUpdate) {
+        (app as any).broadcastUpdate('referral_updated', result);
+      }
+      
       return res.json(result);
     } catch (error) {
       console.error("[/api/referrals/:id/status] Error:", error);
@@ -2039,6 +2045,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Dados da indicação ${referralId} atualizados por ${req.user!.role}${userId !== undefined ? ` - Usuário alterado de ${existingReferral.userId} para ${userId}` : ''}`
       });
       
+      // Broadcast real-time update to all connected clients
+      if ((app as any).broadcastUpdate) {
+        (app as any).broadcastUpdate('referral_updated', updatedReferral);
+      }
+      
       return res.json(updatedReferral);
     } catch (error) {
       console.error("Error updating referral:", error);
@@ -2120,6 +2131,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newValues: { contactStatus },
         details: `Status de contato da indicação ${referralId} alterado para ${contactStatus || 'nenhum'}`
       });
+      
+      // Broadcast real-time update to all connected clients
+      if ((app as any).broadcastUpdate) {
+        (app as any).broadcastUpdate('referral_updated', result[0]);
+      }
       
       return res.json(result[0]);
     } catch (error) {
@@ -3367,6 +3383,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create HTTP server
   const server = createServer(app);
+
+  // Setup WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server, path: '/ws' });
+  
+  // Store connected clients
+  const clients = new Set<WebSocket>();
+  
+  wss.on('connection', (ws) => {
+    console.log('[WebSocket] New client connected');
+    clients.add(ws);
+    
+    ws.on('close', () => {
+      console.log('[WebSocket] Client disconnected');
+      clients.delete(ws);
+    });
+    
+    ws.on('error', (error) => {
+      console.error('[WebSocket] Error:', error);
+      clients.delete(ws);
+    });
+  });
+  
+  // Function to broadcast updates to all connected clients
+  const broadcastUpdate = (type: string, data: any) => {
+    const message = JSON.stringify({ type, data, timestamp: new Date().toISOString() });
+    clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+    console.log(`[WebSocket] Broadcasted ${type} to ${clients.size} clients`);
+  };
+  
+  // Make broadcast function available globally for use in routes
+  (app as any).broadcastUpdate = broadcastUpdate;
 
   return server;
 }

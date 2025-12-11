@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useRealtimeUpdates } from "@/hooks/use-realtime-updates";
 import {
   Table,
   TableBody,
@@ -267,6 +268,10 @@ const ITEMS_PER_PAGE = 50; // Número de itens por página para performance
 export default function AnalystReferrals() {
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Enable real-time updates via WebSocket
+  useRealtimeUpdates();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [contactStatusFilter, setContactStatusFilter] = useState("all_contact_statuses");
