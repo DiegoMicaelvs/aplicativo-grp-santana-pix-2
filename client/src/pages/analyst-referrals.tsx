@@ -139,14 +139,12 @@ function StatusBadgeWithTooltip({
   const lastUpdatedBy = lastStatusChange ? usersMap.get(lastStatusChange.changedBy) : null;
   const lastUpdatedAt = lastStatusChange ? new Date(lastStatusChange.changedAt) : null;
 
-  const badge = (
-    <Badge className={`${statusColors[referral.status]} text-xs cursor-pointer`}>
-      {statusLabels[referral.status]}
-    </Badge>
-  );
-
   if (!lastStatusChange) {
-    return badge;
+    return (
+      <Badge className={`${statusColors[referral.status]} text-xs`}>
+        {statusLabels[referral.status]}
+      </Badge>
+    );
   }
 
   // Also check for changedByName in the history entry as a fallback
@@ -156,9 +154,13 @@ function StatusBadgeWithTooltip({
     <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
-          {badge}
+          <span className="inline-block cursor-pointer">
+            <Badge className={`${statusColors[referral.status]} text-xs`}>
+              {statusLabels[referral.status]}
+            </Badge>
+          </span>
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs bg-gray-900 text-white p-3 shadow-lg">
+        <TooltipContent className="max-w-xs bg-gray-900 text-white p-3 shadow-lg z-50">
           <div className="text-xs space-y-1">
             <p className="font-semibold text-yellow-400">Última atualização:</p>
             <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
