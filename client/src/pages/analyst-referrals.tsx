@@ -34,6 +34,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -109,6 +115,62 @@ const contactStatusColors: Record<string, string> = {
   em_negociacao: "bg-blue-100 text-blue-800 border-blue-300",
   aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300",
 };
+
+// Component to show status badge with tooltip showing who last updated it
+function StatusBadgeWithTooltip({ 
+  referral, 
+  usersMap 
+}: { 
+  referral: Referral; 
+  usersMap: Map<number, User>;
+}) {
+  // Get the latest status change from history
+  const lastStatusChange = useMemo(() => {
+    if (!referral.statusHistory || referral.statusHistory.length === 0) {
+      return null;
+    }
+    // Sort by date descending and get the latest
+    const sorted = [...referral.statusHistory].sort(
+      (a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+    );
+    return sorted[0];
+  }, [referral.statusHistory]);
+
+  const lastUpdatedBy = lastStatusChange ? usersMap.get(lastStatusChange.changedBy) : null;
+  const lastUpdatedAt = lastStatusChange ? new Date(lastStatusChange.changedAt) : null;
+
+  const badge = (
+    <Badge className={`${statusColors[referral.status]} text-xs cursor-pointer`}>
+      {statusLabels[referral.status]}
+    </Badge>
+  );
+
+  if (!lastStatusChange) {
+    return badge;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {badge}
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          <div className="text-xs space-y-1">
+            <p className="font-semibold">Última atualização:</p>
+            <p>Por: {lastUpdatedBy?.fullName || 'Usuário não encontrado'}</p>
+            {lastUpdatedAt && (
+              <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
+            )}
+            {lastStatusChange.notes && (
+              <p className="text-gray-300 italic mt-1">"{lastStatusChange.notes}"</p>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -1209,9 +1271,7 @@ export default function AnalystReferrals() {
                             <span>{new Date(referral.createdAt).toLocaleDateString("pt-BR")}</span>
                           </div>
                           <div className="flex flex-wrap items-center gap-1 justify-end">
-                            <Badge className={`${statusColors[referral.status]} text-xs px-2 py-0.5`}>
-                              {statusLabels[referral.status]}
-                            </Badge>
+                            <StatusBadgeWithTooltip referral={referral} usersMap={usersMap} />
                             {referral.contactStatus && (
                               <Badge variant="outline" className={`${contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"} text-xs px-2 py-0.5`}>
                                 {contactStatusLabels[referral.contactStatus] || "Sem status"}
@@ -1370,9 +1430,7 @@ export default function AnalystReferrals() {
                             )}
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
-                            <Badge className={`${statusColors[referral.status]} text-xs`}>
-                              {statusLabels[referral.status]}
-                            </Badge>
+                            <StatusBadgeWithTooltip referral={referral} usersMap={usersMap} />
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
                             {referral.contactStatus ? (
