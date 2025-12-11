@@ -126,11 +126,18 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
       });
       if (!response.ok) throw new Error("Erro ao atualizar status de contato");
       
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
+      const updatedReferral = await response.json();
+      
+      // Surgical cache update - avoid slow refetch of 2900+ referrals
+      queryClient.setQueryData<any[]>(["/api/analyst/referrals"], (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map((ref) => 
+          ref.id === updatedReferral.id ? updatedReferral : ref
+        );
+      });
+      
       toast({ title: "Status de contato atualizado!" });
       setIsOpen(false);
-      onUpdate();
     } catch (error) {
       toast({ title: "Erro ao atualizar status de contato", variant: "destructive" });
     } finally {
@@ -318,6 +325,7 @@ export default function AnalystReferrals() {
     },
     onSuccess: (updatedReferral: Referral) => {
       // Surgical cache update: update only the affected referral in the base list
+      // No invalidation needed - surgical update is sufficient and avoids slow refetch of 2900+ referrals
       queryClient.setQueryData<Referral[]>(["/api/analyst/referrals"], (oldData) => {
         if (!oldData) return oldData;
         return oldData.map((ref) => 
@@ -325,15 +333,8 @@ export default function AnalystReferrals() {
         );
       });
       
-      // Invalidate all analyst referral queries to update filtered views and variants
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
-      
-      // Invalidate related queries for cross-role synchronization
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
+      // Only invalidate stats (lightweight) - referrals are already updated via surgical cache update
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
       
       toast({ title: "Sucesso", description: "Indicação validada com sucesso!" });
       setIsValidateDialogOpen(false);
@@ -387,17 +388,13 @@ export default function AnalystReferrals() {
       return response.json();
     },
     onSuccess: async (updatedReferral) => {
-      // Update only the specific referral in the cache (surgical update)
+      // Surgical cache update - no full refetch needed for 2900+ referrals
       queryClient.setQueryData(["/api/analyst/referrals"], (old: any[] = []) =>
         old.map(ref => ref.id === updatedReferral.id ? updatedReferral : ref)
       );
       
-      // Invalidar queries relacionadas para sincronização cross-role
-      queryClient.invalidateQueries({ queryKey: ["/api/analyst/users"] });
+      // Only invalidate stats (lightweight) - referrals are already updated via surgical cache update
       queryClient.invalidateQueries({ queryKey: ["/api/analyst/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/withdrawals"] });
       
       toast({ title: "Sucesso", description: "Indicação editada com sucesso!" });
       setIsEditDialogOpen(false);
@@ -1290,9 +1287,7 @@ export default function AnalystReferrals() {
                           <div className="grid grid-cols-3 gap-2">
                             <ContactStatusDialog 
                               referral={referral} 
-                              onUpdate={() => {
-                                queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
-                              }} 
+                              onUpdate={() => {}} 
                             />
                             <Button
                               variant="outline"
@@ -1396,9 +1391,7 @@ export default function AnalystReferrals() {
                               <div className="flex gap-1 flex-nowrap">
                                 <ContactStatusDialog 
                                   referral={referral} 
-                                  onUpdate={() => {
-                                    queryClient.invalidateQueries({ queryKey: ["/api/analyst/referrals"] });
-                                  }} 
+                                  onUpdate={() => {}} 
                                 />
                                 <Button
                                   variant="outline"
