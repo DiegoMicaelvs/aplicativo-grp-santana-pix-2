@@ -1037,7 +1037,7 @@ export default function AnalystReferrals() {
   }
 
   return (
-    <div className="container mx-auto py-4 sm:py-6 space-y-4 sm:space-y-6 px-4 sm:px-6">
+    <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6 px-3 sm:px-4 lg:px-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex-1">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Indicações para Análise</h1>
