@@ -409,10 +409,11 @@ function StatusBadgeWithTooltip({
     (entry: any) => entry.status !== 'contact_status' && entry.status !== 'system'
   );
   
-  // Get the last referral status change (most recent)
-  const lastStatusChange = referralStatusChanges.length > 0 
-    ? referralStatusChanges[referralStatusChanges.length - 1] 
-    : null;
+  // Sort by date descending and get the most recent one
+  const sortedChanges = [...referralStatusChanges].sort(
+    (a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+  );
+  const lastStatusChange = sortedChanges.length > 0 ? sortedChanges[0] : null;
 
   const lastUpdatedBy = lastStatusChange ? users.find((u: any) => u.id === lastStatusChange.changedBy) : null;
   const lastUpdatedAt = lastStatusChange ? new Date(lastStatusChange.changedAt) : null;
@@ -426,15 +427,16 @@ function StatusBadgeWithTooltip({
   }
 
   const lastUpdaterName = lastUpdatedBy?.fullName || (lastStatusChange as any).changedByName || 'Usuário não encontrado';
+  const statusChangedTo = getStatusLabel(lastStatusChange.status);
 
   const statusInfoContent = (
     <div className="text-xs space-y-1">
-      <p className="font-semibold text-yellow-400">Última atualização de status:</p>
+      <p className="font-semibold text-yellow-400">Status alterado para: {statusChangedTo}</p>
       <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
       {lastUpdatedAt && (
         <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
       )}
-      {lastStatusChange.notes && lastStatusChange.notes.trim() && (
+      {lastStatusChange.notes && lastStatusChange.notes.trim() && lastStatusChange.notes !== 'Indicação criada' && (
         <p className="text-gray-300 italic mt-1 border-t border-gray-700 pt-1">"{lastStatusChange.notes}"</p>
       )}
     </div>
