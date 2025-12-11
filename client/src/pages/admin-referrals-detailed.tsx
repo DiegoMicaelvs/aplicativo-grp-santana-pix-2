@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -409,6 +409,8 @@ function convertLocalToUTC(localDateTimeString: string): string {
   return localDate.toISOString();
 }
 
+const ITEMS_PER_PAGE = 50; // Limite de itens por página para performance
+
 export default function AdminReferralsDetailedPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -423,6 +425,7 @@ export default function AdminReferralsDetailedPage() {
   const [newStatus, setNewStatus] = useState<ReferralStatus>("pending");
   const [statusNotes, setStatusNotes] = useState("");
   const [paymentProof, setPaymentProof] = useState<string>("");
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   
   // Debounce search input to avoid filtering on every keystroke
   React.useEffect(() => {
@@ -724,6 +727,22 @@ export default function AdminReferralsDetailedPage() {
       return true;
     });
   }, [referrals, userLookupMap, searchTerm, statusFilter, contactStatusFilter, userFilter, companyFilter, monthFilter, localFilter]);
+
+  // Referências visíveis com paginação virtual (memoizado)
+  const visibleReferrals = useMemo(() => 
+    filteredReferrals.slice(0, visibleCount),
+    [filteredReferrals, visibleCount]
+  );
+
+  // Reset visibleCount quando filtros mudam
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [searchTerm, statusFilter, contactStatusFilter, userFilter, companyFilter, monthFilter, localFilter]);
+
+  // Carregar mais itens
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount(prev => Math.min(prev + ITEMS_PER_PAGE, filteredReferrals.length));
+  }, [filteredReferrals.length]);
 
   // Memoized filter options to prevent recalculation on every render
   const activeIndicators = useMemo(() => {
@@ -2147,7 +2166,7 @@ export default function AdminReferralsDetailedPage() {
         <CardContent className="p-0 md:p-6">
           {/* Mobile View - Cards */}
           <div className="block md:hidden">
-            {filteredReferrals.map((referral) => (
+            {visibleReferrals.map((referral) => (
               <div key={referral.id} className="border-b p-4 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
@@ -2675,6 +2694,19 @@ export default function AdminReferralsDetailedPage() {
                 </div>
               </div>
             ))}
+            
+            {/* Mobile Load More Button */}
+            {visibleCount < filteredReferrals.length && (
+              <div className="flex justify-center py-4">
+                <Button 
+                  variant="outline" 
+                  onClick={handleLoadMore}
+                  className="w-full mx-4"
+                >
+                  Carregar mais ({visibleCount} de {filteredReferrals.length})
+                </Button>
+              </div>
+            )}
           </div>
           
           {/* Desktop View - Table */}
@@ -2698,7 +2730,7 @@ export default function AdminReferralsDetailedPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredReferrals.map((referral) => (
+                {visibleReferrals.map((referral) => (
                   <TableRow key={referral.id}>
                     <TableCell className="font-medium text-sm">
                       {referral.fullName}
@@ -3359,6 +3391,19 @@ export default function AdminReferralsDetailedPage() {
               </TableBody>
             </Table>
             </div>
+            
+            {/* Load More Button */}
+            {visibleCount < filteredReferrals.length && (
+              <div className="flex justify-center mt-4 pb-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleLoadMore}
+                  className="w-full max-w-xs"
+                >
+                  Carregar mais ({visibleCount} de {filteredReferrals.length})
+                </Button>
+              </div>
+            )}
             
             {filteredReferrals.length === 0 && (
               <div className="text-center py-8">

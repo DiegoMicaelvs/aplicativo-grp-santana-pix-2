@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -183,6 +183,8 @@ function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: 
   );
 }
 
+const ITEMS_PER_PAGE = 50; // Número de itens por página para performance
+
 export default function AnalystReferrals() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -194,6 +196,7 @@ export default function AnalystReferrals() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [paymentProof, setPaymentProof] = useState<string>("");
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
   // Fetch referrals with reduced refresh for better performance
   const { data: referrals = [], isLoading, refetch: refetchReferrals, isFetching } = useQuery<Referral[]>({
@@ -213,20 +216,24 @@ export default function AnalystReferrals() {
     refetchOnWindowFocus: false,
   });
 
-  // Coletar IDs únicos de usuários do histórico de status para buscar informações específicas
-  const statusHistoryUserIds = referrals.reduce((ids: number[], referral) => {
-    if (referral.statusHistory) {
-      referral.statusHistory.forEach((entry: any) => {
-        if (entry.changedBy && !ids.includes(entry.changedBy)) {
-          ids.push(entry.changedBy);
-        }
-      });
-    }
-    return ids;
-  }, []);
+  // Coletar IDs únicos de usuários do histórico de status (memoizado para performance)
+  const statusHistoryUserIds = useMemo(() => {
+    const ids = new Set<number>();
+    referrals.forEach(referral => {
+      if (referral.statusHistory) {
+        referral.statusHistory.forEach((entry: any) => {
+          if (entry.changedBy) ids.add(entry.changedBy);
+        });
+      }
+    });
+    return Array.from(ids);
+  }, [referrals]);
 
-  // Fetch specific users from status history if not in current user list
-  const missingUserIds = statusHistoryUserIds.filter(id => !users.find(u => u.id === id));
+  // Fetch specific users from status history if not in current user list (memoizado)
+  const missingUserIds = useMemo(() => 
+    statusHistoryUserIds.filter(id => !users.find(u => u.id === id)),
+    [statusHistoryUserIds, users]
+  );
   const { data: historyUsers = [] } = useQuery<User[]>({
     queryKey: ["/api/users/by-ids", missingUserIds],
     queryFn: async () => {
@@ -243,8 +250,8 @@ export default function AnalystReferrals() {
     staleTime: 60000, // Cache por 1 minuto
   });
 
-  // Combinar lista de usuários normais com usuários do histórico
-  const allUsers = [...users, ...historyUsers];
+  // Combinar lista de usuários normais com usuários do histórico (memoizado)
+  const allUsers = useMemo(() => [...users, ...historyUsers], [users, historyUsers]);
 
   // Função para refresh manual
   const handleManualRefresh = async () => {
@@ -408,28 +415,61 @@ export default function AnalystReferrals() {
     (user?.permissions as AnalystPermission[])?.includes("edit_referral_status") || 
     user?.role === "admin";
 
-  // Filter referrals
-  const filteredReferrals = referrals.filter((referral) => {
-    const user = allUsers.find((u) => u.id === referral.userId);
-    const matchesSearch =
-      referral.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      referral.phone?.includes(searchTerm) ||
-      referral.licensePlate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || referral.status === statusFilter;
-    
-    // Contact status filter
-    let matchesContactStatus = true;
-    if (contactStatusFilter !== "all_contact_statuses") {
-      if (contactStatusFilter === "no_contact_status") {
-        matchesContactStatus = !referral.contactStatus;
-      } else {
-        matchesContactStatus = referral.contactStatus === contactStatusFilter;
+  // Criar lookup map de usuários para busca O(1) (memoizado)
+  const usersMap = useMemo(() => {
+    const map = new Map<number, User>();
+    allUsers.forEach(u => map.set(u.id, u));
+    return map;
+  }, [allUsers]);
+
+  // Criar lookup map de empresas para busca O(1) (memoizado)
+  const companiesMap = useMemo(() => {
+    const map = new Map<number, Company>();
+    companies.forEach(c => map.set(c.id, c));
+    return map;
+  }, [companies]);
+
+  // Filter referrals (memoizado para evitar recálculos)
+  const filteredReferrals = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase();
+    return referrals.filter((referral) => {
+      const referralUser = usersMap.get(referral.userId);
+      const matchesSearch = !searchTerm || 
+        referral.fullName?.toLowerCase().includes(searchLower) ||
+        referral.phone?.includes(searchTerm) ||
+        referral.licensePlate?.toLowerCase().includes(searchLower) ||
+        referralUser?.fullName?.toLowerCase().includes(searchLower);
+      const matchesStatus = statusFilter === "all" || referral.status === statusFilter;
+      
+      // Contact status filter
+      let matchesContactStatus = true;
+      if (contactStatusFilter !== "all_contact_statuses") {
+        if (contactStatusFilter === "no_contact_status") {
+          matchesContactStatus = !referral.contactStatus;
+        } else {
+          matchesContactStatus = referral.contactStatus === contactStatusFilter;
+        }
       }
-    }
-    
-    return matchesSearch && matchesStatus && matchesContactStatus;
-  });
+      
+      return matchesSearch && matchesStatus && matchesContactStatus;
+    });
+  }, [referrals, searchTerm, statusFilter, contactStatusFilter, usersMap]);
+
+  // Referências visíveis com paginação virtual (memoizado)
+  const visibleReferrals = useMemo(() => 
+    filteredReferrals.slice(0, visibleCount),
+    [filteredReferrals, visibleCount]
+  );
+
+  // Reset visibleCount quando filtros mudam
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [searchTerm, statusFilter, contactStatusFilter]);
+
+  // Carregar mais itens
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount(prev => Math.min(prev + ITEMS_PER_PAGE, filteredReferrals.length));
+  }, [filteredReferrals.length]);
 
   // Function to convert file to base64
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1157,10 +1197,10 @@ export default function AnalystReferrals() {
             <>
               {/* Mobile Card View */}
               <div className="block md:hidden space-y-3">
-                {filteredReferrals.map((referral) => {
-                  const indicador = users.find((u) => u.id === referral.userId);
-                  const criador = users.find((u) => u.id === referral.createdBy);
-                  const company = companies.find((c) => c.id === referral.companyId);
+                {visibleReferrals.map((referral) => {
+                  const indicador = usersMap.get(referral.userId);
+                  const criador = usersMap.get(referral.createdBy || 0);
+                  const company = companiesMap.get(referral.companyId || 0);
                   return (
                     <Card key={referral.id} className="shadow-sm border-l-4 border-l-blue-500">
                       <CardContent className="p-3">
@@ -1271,10 +1311,10 @@ export default function AnalystReferrals() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredReferrals.map((referral) => {
-                      const indicador = users.find((u) => u.id === referral.userId);
-                      const criador = users.find((u) => u.id === referral.createdBy);
-                      const company = companies.find((c) => c.id === referral.companyId);
+                    {visibleReferrals.map((referral) => {
+                      const indicador = usersMap.get(referral.userId);
+                      const criador = usersMap.get(referral.createdBy || 0);
+                      const company = companiesMap.get(referral.companyId || 0);
                       return (
                         <TableRow key={referral.id}>
                           <TableCell className="text-xs font-mono">#{referral.id}</TableCell>
@@ -1364,6 +1404,19 @@ export default function AnalystReferrals() {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Load More Button */}
+              {visibleCount < filteredReferrals.length && (
+                <div className="flex justify-center mt-4 pb-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleLoadMore}
+                    className="w-full max-w-xs"
+                  >
+                    Carregar mais ({visibleCount} de {filteredReferrals.length})
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </CardContent>
