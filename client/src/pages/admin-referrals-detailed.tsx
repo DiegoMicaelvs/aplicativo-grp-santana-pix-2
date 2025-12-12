@@ -749,6 +749,23 @@ export default function AdminReferralsDetailedPage() {
         const targetStatus = statusFilter !== "all_statuses" ? statusFilter : referral.status;
         let analystMatch = false;
         
+        // Helper function to check if a date matches the search term
+        const dateMatchesSearch = (dateStr: string | null | undefined): boolean => {
+          if (!hasDateSearch) return true; // No date filter active
+          if (!dateStr) return false; // Date filter active but no date to check
+          try {
+            const date = new Date(dateStr);
+            const formattedDate = format(date, "dd/MM/yyyy", { locale: ptBR });
+            const shortDate = format(date, "dd/MM", { locale: ptBR });
+            const mediumDate = format(date, "dd/MM/yy", { locale: ptBR });
+            return formattedDate.includes(searchTerm) || 
+                   shortDate.includes(searchTerm) || 
+                   mediumDate.includes(searchTerm);
+          } catch (error) {
+            return false;
+          }
+        };
+        
         // Check statusHistory for who made the status change
         if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
           // Find entries matching the target status that were changed by the selected analyst
@@ -758,21 +775,7 @@ export default function AdminReferralsDetailedPage() {
             if (entry.changedBy?.toString() !== analystFilter) return false;
             
             // If searching by date, also filter the statusHistory entry by date
-            if (hasDateSearch && entry.changedAt) {
-              try {
-                const entryDate = new Date(entry.changedAt);
-                const formattedDate = format(entryDate, "dd/MM/yyyy", { locale: ptBR });
-                const shortDate = format(entryDate, "dd/MM", { locale: ptBR });
-                const mediumDate = format(entryDate, "dd/MM/yy", { locale: ptBR });
-                if (!formattedDate.includes(searchTerm) && 
-                    !shortDate.includes(searchTerm) && 
-                    !mediumDate.includes(searchTerm)) {
-                  return false;
-                }
-              } catch (error) {
-                // Date parsing failed
-              }
-            }
+            if (!dateMatchesSearch(entry.changedAt)) return false;
             
             return true;
           });
@@ -780,9 +783,14 @@ export default function AdminReferralsDetailedPage() {
           analystMatch = matchingEntries.length > 0;
         }
         
-        // Also check validatedBy for validated status
+        // Also check validatedBy for validated status (with date check if searching by date)
         if (!analystMatch && targetStatus === 'validated' && referral.validatedBy?.toString() === analystFilter) {
-          analystMatch = true;
+          // If we have a date search, also check validatedAt matches the date
+          if (hasDateSearch) {
+            analystMatch = dateMatchesSearch(referral.validatedAt);
+          } else {
+            analystMatch = true;
+          }
         }
         
         if (!analystMatch) return false;
