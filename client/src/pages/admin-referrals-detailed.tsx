@@ -2011,55 +2011,77 @@ export default function AdminReferralsDetailedPage() {
 
       // Build the data array with styles
       const metricsPerAnalyst = 4; // Validações, Em Análise, Convertidas, Rejeitadas
+      const colsPerAnalyst = metricsPerAnalyst + 1; // +1 for separator column between analysts
       const data: any[][] = [];
+      
+      // Empty separator style
+      const separatorStyle = {
+        fill: { fgColor: { rgb: "FFFFFF" } }
+      };
 
       // Title row
       const titleRow: any[] = [{ v: `Relatório de Performance de Analistas - ${periodLabel}`, s: { font: { bold: true, sz: 14 } } }];
-      for (let i = 1; i < 1 + analystsList.length * metricsPerAnalyst; i++) {
+      for (let i = 1; i < 1 + analystsList.length * colsPerAnalyst; i++) {
         titleRow.push({ v: '', s: {} });
       }
       data.push(titleRow);
 
       // Analyst names row (will be merged)
       const analystRow: any[] = [{ v: 'Data', s: headerStyle }];
-      analystsList.forEach(analyst => {
+      analystsList.forEach((analyst, index) => {
         analystRow.push({ v: analyst.name, s: headerStyle });
         for (let i = 1; i < metricsPerAnalyst; i++) {
           analystRow.push({ v: '', s: headerStyle });
+        }
+        // Add separator column (except after last analyst)
+        if (index < analystsList.length - 1) {
+          analystRow.push({ v: '', s: separatorStyle });
         }
       });
       data.push(analystRow);
 
       // Metrics labels row
       const metricsRow: any[] = [{ v: '', s: subHeaderStyle }];
-      analystsList.forEach(() => {
+      analystsList.forEach((_, index) => {
         metricsRow.push({ v: 'Validações', s: subHeaderStyle });
         metricsRow.push({ v: 'Em Análise', s: subHeaderStyle });
         metricsRow.push({ v: 'Convertidas', s: subHeaderStyle });
         metricsRow.push({ v: 'Rejeitadas', s: subHeaderStyle });
+        // Add separator column (except after last analyst)
+        if (index < analystsList.length - 1) {
+          metricsRow.push({ v: '', s: separatorStyle });
+        }
       });
       data.push(metricsRow);
 
       // Data rows
       sortedDates.forEach(date => {
         const row: any[] = [{ v: date, s: { font: { bold: true }, ...cellStyle } }];
-        analystsList.forEach(analyst => {
+        analystsList.forEach((analyst, index) => {
           const dayData = analyst.dailyData[date] || { validacoes: 0, emAnalise: 0, convertidas: 0, rejeitadas: 0 };
           row.push({ v: dayData.validacoes, s: cellStyle });
           row.push({ v: dayData.emAnalise, s: cellStyle });
           row.push({ v: dayData.convertidas, s: cellStyle });
           row.push({ v: dayData.rejeitadas, s: cellStyle });
+          // Add separator column (except after last analyst)
+          if (index < analystsList.length - 1) {
+            row.push({ v: '', s: separatorStyle });
+          }
         });
         data.push(row);
       });
 
       // Totals row
       const totalsRow: any[] = [{ v: 'TOTAL', s: totalStyle }];
-      analystsList.forEach(analyst => {
+      analystsList.forEach((analyst, index) => {
         totalsRow.push({ v: analyst.totals.validacoes, s: totalStyle });
         totalsRow.push({ v: analyst.totals.emAnalise, s: totalStyle });
         totalsRow.push({ v: analyst.totals.convertidas, s: totalStyle });
         totalsRow.push({ v: analyst.totals.rejeitadas, s: totalStyle });
+        // Add separator column (except after last analyst)
+        if (index < analystsList.length - 1) {
+          totalsRow.push({ v: '', s: separatorStyle });
+        }
       });
       data.push(totalsRow);
 
@@ -2068,23 +2090,31 @@ export default function AdminReferralsDetailedPage() {
 
       // Set column widths
       const colWidths = [{ wch: 10 }]; // Date column
-      analystsList.forEach(() => {
+      analystsList.forEach((_, index) => {
         colWidths.push({ wch: 12 }); // Validações
         colWidths.push({ wch: 12 }); // Em Análise
         colWidths.push({ wch: 12 }); // Convertidas
         colWidths.push({ wch: 12 }); // Rejeitadas
+        // Add separator column width (except after last analyst)
+        if (index < analystsList.length - 1) {
+          colWidths.push({ wch: 3 }); // Narrow separator column
+        }
       });
       sheet['!cols'] = colWidths;
 
       // Merge cells for analyst names
       const merges: XLSX.Range[] = [];
       let colStart = 1;
-      analystsList.forEach(() => {
+      analystsList.forEach((_, index) => {
         merges.push({
           s: { r: 1, c: colStart },
           e: { r: 1, c: colStart + metricsPerAnalyst - 1 }
         });
         colStart += metricsPerAnalyst;
+        // Skip separator column (except after last analyst)
+        if (index < analystsList.length - 1) {
+          colStart += 1;
+        }
       });
       sheet['!merges'] = merges;
 
