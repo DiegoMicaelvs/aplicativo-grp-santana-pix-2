@@ -1890,42 +1890,60 @@ export default function AdminReferralsDetailedPage() {
       });
 
       // Iterate through all referrals and their statusHistory
+      // NEW LOGIC: For each referral + each day + each status type, only credit the LAST analyst
+      // This ensures each referral only counts once per day per status type
       referrals.forEach((referral: any) => {
         if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) return;
 
+        // Group entries by date and status
+        const entriesByDateAndStatus: Record<string, Record<string, any>> = {};
+        
         referral.statusHistory.forEach((entry: any) => {
           if (!entry.changedAt || !entry.changedBy) return;
+          if (entry.status === 'contact_status') return; // Skip contact_status entries
           
           const entryDate = new Date(entry.changedAt);
           if (entryDate < startDate || entryDate > endDate) return;
           
-          const analystId = entry.changedBy.toString();
-          if (!analystsData[analystId]) return;
-          
           const dateKey = format(entryDate, 'dd/MM', { locale: ptBR });
-          if (!analystsData[analystId].dailyData[dateKey]) return;
-
-          // Skip contact_status entries - only count actual status changes
-          if (entry.status === 'contact_status') return;
-
-          switch (entry.status) {
-            case 'validated':
-              analystsData[analystId].dailyData[dateKey].validacoes++;
-              analystsData[analystId].totals.validacoes++;
-              break;
-            case 'analyzing':
-              analystsData[analystId].dailyData[dateKey].emAnalise++;
-              analystsData[analystId].totals.emAnalise++;
-              break;
-            case 'converted':
-              analystsData[analystId].dailyData[dateKey].convertidas++;
-              analystsData[analystId].totals.convertidas++;
-              break;
-            case 'rejected':
-              analystsData[analystId].dailyData[dateKey].rejeitadas++;
-              analystsData[analystId].totals.rejeitadas++;
-              break;
+          const statusKey = entry.status;
+          
+          // Create nested structure if needed
+          if (!entriesByDateAndStatus[dateKey]) {
+            entriesByDateAndStatus[dateKey] = {};
           }
+          
+          // Always overwrite with the latest entry (since we iterate in order)
+          // This means the LAST entry for each status on each day will be kept
+          entriesByDateAndStatus[dateKey][statusKey] = entry;
+        });
+        
+        // Now process only the LAST entry for each date + status combination
+        Object.entries(entriesByDateAndStatus).forEach(([dateKey, statusEntries]) => {
+          Object.entries(statusEntries).forEach(([status, entry]) => {
+            const analystId = entry.changedBy.toString();
+            if (!analystsData[analystId]) return;
+            if (!analystsData[analystId].dailyData[dateKey]) return;
+            
+            switch (status) {
+              case 'validated':
+                analystsData[analystId].dailyData[dateKey].validacoes++;
+                analystsData[analystId].totals.validacoes++;
+                break;
+              case 'analyzing':
+                analystsData[analystId].dailyData[dateKey].emAnalise++;
+                analystsData[analystId].totals.emAnalise++;
+                break;
+              case 'converted':
+                analystsData[analystId].dailyData[dateKey].convertidas++;
+                analystsData[analystId].totals.convertidas++;
+                break;
+              case 'rejected':
+                analystsData[analystId].dailyData[dateKey].rejeitadas++;
+                analystsData[analystId].totals.rejeitadas++;
+                break;
+            }
+          });
         });
       });
 
