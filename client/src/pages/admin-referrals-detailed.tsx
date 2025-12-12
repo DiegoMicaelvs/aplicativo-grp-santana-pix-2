@@ -821,10 +821,12 @@ export default function AdminReferralsDetailedPage() {
   }, [filteredReferrals.length]);
 
   // Memoized filter options to prevent recalculation on every render
-  const activeIndicators = useMemo(() => {
+  // Includes indicators, analysts, promoters, and admins for filtering and reports
+  const activeUsersForFilter = useMemo(() => {
     return users
       .filter(u => 
-        (u.role === "indicador" || u.role === "indicador_nivel_1") && 
+        (u.role === "indicador" || u.role === "indicador_nivel_1" || 
+         u.role === "analista" || u.role === "promotor" || u.role === "admin") && 
         u.isActive === true
       )
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
@@ -1993,13 +1995,13 @@ export default function AdminReferralsDetailedPage() {
               
               <Select value={userFilter} onValueChange={setUserFilter}>
                 <SelectTrigger className="w-full text-sm md:text-base">
-                  <SelectValue placeholder="Indicador" />
+                  <SelectValue placeholder="Usuário" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all_users">Todos os Indicadores</SelectItem>
-                  {activeIndicators.map(user => (
+                  <SelectItem value="all_users">Todos os Usuários</SelectItem>
+                  {activeUsersForFilter.map(user => (
                     <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.fullName}
+                      {user.fullName} ({user.role === 'indicador' ? 'Ind' : user.role === 'indicador_nivel_1' ? 'Ind N1' : user.role === 'analista' ? 'Ana' : user.role === 'promotor' ? 'Pro' : 'Adm'})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -2149,23 +2151,23 @@ export default function AdminReferralsDetailedPage() {
                       </Select>
                     </div>
                     
-                    {/* Indicator Search */}
+                    {/* User Search */}
                     <div className="space-y-2">
-                      <Label>Buscar Indicador</Label>
+                      <Label>Buscar Usuário</Label>
                       <Input
-                        placeholder="Digite o nome do indicador..."
+                        placeholder="Digite o nome do usuário..."
                         value={indicatorSearchTerm}
                         onChange={(e) => setIndicatorSearchTerm(e.target.value)}
                       />
                     </div>
                     
-                    {/* Indicator List with Checkboxes - Only Active Indicators */}
+                    {/* User List with Checkboxes - Active Indicators, Analysts, Promoters and Admins */}
                     <div className="space-y-2">
-                      <Label>Indicadores Ativos ({selectedIndicators.length} selecionados)</Label>
+                      <Label>Usuários Ativos ({selectedIndicators.length} selecionados)</Label>
                       <ScrollArea className="h-[200px] border rounded-md p-2">
                         <div className="space-y-2">
                           {sortedUsers
-                            .filter(u => (u.role === 'indicador' || u.role === 'indicador_nivel_1' || u.role === 'promotor') && u.isActive === true)
+                            .filter(u => (u.role === 'indicador' || u.role === 'indicador_nivel_1' || u.role === 'promotor' || u.role === 'analista' || u.role === 'admin') && u.isActive === true)
                             .filter(u => 
                               indicatorSearchTerm === '' || 
                               u.fullName?.toLowerCase().includes(indicatorSearchTerm.toLowerCase())
@@ -2187,7 +2189,7 @@ export default function AdminReferralsDetailedPage() {
                                   htmlFor={`indicator-${user.id}`} 
                                   className="text-sm cursor-pointer flex-1"
                                 >
-                                  {user.fullName}
+                                  {user.fullName} <span className="text-gray-400 text-xs">({user.role === 'indicador' ? 'Indicador' : user.role === 'indicador_nivel_1' ? 'Ind N1' : user.role === 'analista' ? 'Analista' : user.role === 'promotor' ? 'Promotor' : 'Admin'})</span>
                                 </Label>
                               </div>
                             ))}
