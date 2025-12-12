@@ -778,19 +778,29 @@ export default function AdminReferralsDetailedPage() {
         
         // Check statusHistory for who made the status change
         if (parsedStatusHistory && Array.isArray(parsedStatusHistory)) {
-          // Find entries matching the target status that were changed by the selected analyst
-          const matchingEntries = parsedStatusHistory.filter((entry: any) => {
-            if (entry.status !== targetStatus) return false;
-            if (entry.changedBy?.toString() !== analystFilter) return false;
-            
-            // If searching by date, also check the entry date
-            if (hasDateSearch) {
+          if (hasDateSearch) {
+            // When filtering by date: find the LAST entry with target status on that date
+            // This ensures each referral only counts once (for the last analyst who changed it on that date)
+            const entriesOnTargetDate = parsedStatusHistory.filter((entry: any) => {
+              if (entry.status !== targetStatus) return false;
               return checkDateMatch(entry.changedAt);
+            });
+            
+            if (entriesOnTargetDate.length > 0) {
+              // Get the LAST entry (most recent) on that date
+              const lastEntry = entriesOnTargetDate[entriesOnTargetDate.length - 1];
+              analystMatch = lastEntry.changedBy?.toString() === analystFilter;
             }
-            return true;
-          });
-          
-          analystMatch = matchingEntries.length > 0;
+          } else {
+            // No date filter - find any entry by this analyst with target status
+            const matchingEntries = parsedStatusHistory.filter((entry: any) => {
+              if (entry.status !== targetStatus) return false;
+              if (entry.changedBy?.toString() !== analystFilter) return false;
+              return true;
+            });
+            
+            analystMatch = matchingEntries.length > 0;
+          }
         }
         
         // Also check validatedBy for validated status (only when NOT searching by date)
