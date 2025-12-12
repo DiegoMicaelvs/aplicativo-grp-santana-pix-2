@@ -749,12 +749,12 @@ export default function AdminReferralsDetailedPage() {
         const targetStatus = statusFilter !== "all_statuses" ? statusFilter : referral.status;
         let analystMatch = false;
         
-        // Helper function to check if a date matches the search term
-        const dateMatchesSearch = (dateStr: string | null | undefined): boolean => {
-          if (!hasDateSearch) return true; // No date filter active
-          if (!dateStr) return false; // Date filter active but no date to check
+        // Helper function to check if a date matches the search term (format dd/MM or dd/MM/yy)
+        const checkDateMatch = (dateStr: string | null | undefined): boolean => {
+          if (!dateStr) return false;
           try {
             const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return false;
             const formattedDate = format(date, "dd/MM/yyyy", { locale: ptBR });
             const shortDate = format(date, "dd/MM", { locale: ptBR });
             const mediumDate = format(date, "dd/MM/yy", { locale: ptBR });
@@ -769,14 +769,14 @@ export default function AdminReferralsDetailedPage() {
         // Check statusHistory for who made the status change
         if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
           // Find entries matching the target status that were changed by the selected analyst
-          // Also filter by date if date search is active
           const matchingEntries = referral.statusHistory.filter((entry: any) => {
             if (entry.status !== targetStatus) return false;
             if (entry.changedBy?.toString() !== analystFilter) return false;
             
-            // If searching by date, also filter the statusHistory entry by date
-            if (!dateMatchesSearch(entry.changedAt)) return false;
-            
+            // If searching by date, also check the entry date
+            if (hasDateSearch) {
+              return checkDateMatch(entry.changedAt);
+            }
             return true;
           });
           
@@ -787,7 +787,7 @@ export default function AdminReferralsDetailedPage() {
         if (!analystMatch && targetStatus === 'validated' && referral.validatedBy?.toString() === analystFilter) {
           // If we have a date search, also check validatedAt matches the date
           if (hasDateSearch) {
-            analystMatch = dateMatchesSearch(referral.validatedAt);
+            analystMatch = checkDateMatch(referral.validatedAt);
           } else {
             analystMatch = true;
           }
