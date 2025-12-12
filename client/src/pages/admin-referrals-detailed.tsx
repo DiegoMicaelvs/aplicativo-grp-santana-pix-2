@@ -490,6 +490,7 @@ export default function AdminReferralsDetailedPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all_statuses");
   const [contactStatusFilter, setContactStatusFilter] = useState<string>("all_contact_statuses");
   const [userFilter, setUserFilter] = useState<string>("all_users");
+  const [analystFilter, setAnalystFilter] = useState<string>("all_analysts");
   const [companyFilter, setCompanyFilter] = useState<string>("all_companies");
   const [monthFilter, setMonthFilter] = useState<string>("all_months");
   const [localFilter, setLocalFilter] = useState<string>("all_locals");
@@ -720,6 +721,7 @@ export default function AdminReferralsDetailedPage() {
         statusFilter === "all_statuses" && 
         contactStatusFilter === "all_contact_statuses" &&
         userFilter === "all_users" && 
+        analystFilter === "all_analysts" &&
         companyFilter === "all_companies" && 
         monthFilter === "all_months" && 
         localFilter === "all_locals") {
@@ -741,6 +743,50 @@ export default function AdminReferralsDetailedPage() {
       }
       if (userFilter !== "all_users" && referral.userId.toString() !== userFilter) return false;
       if (companyFilter !== "all_companies" && referral.companyId?.toString() !== companyFilter) return false;
+      
+      // Analyst filter - check who changed to the current status (or filter status)
+      if (analystFilter !== "all_analysts") {
+        const targetStatus = statusFilter !== "all_statuses" ? statusFilter : referral.status;
+        let analystMatch = false;
+        
+        // Check statusHistory for who made the status change
+        if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+          // Find entries matching the target status that were changed by the selected analyst
+          // Also filter by date if date search is active
+          const matchingEntries = referral.statusHistory.filter((entry: any) => {
+            if (entry.status !== targetStatus) return false;
+            if (entry.changedBy?.toString() !== analystFilter) return false;
+            
+            // If searching by date, also filter the statusHistory entry by date
+            if (hasDateSearch && entry.changedAt) {
+              try {
+                const entryDate = new Date(entry.changedAt);
+                const formattedDate = format(entryDate, "dd/MM/yyyy", { locale: ptBR });
+                const shortDate = format(entryDate, "dd/MM", { locale: ptBR });
+                const mediumDate = format(entryDate, "dd/MM/yy", { locale: ptBR });
+                if (!formattedDate.includes(searchTerm) && 
+                    !shortDate.includes(searchTerm) && 
+                    !mediumDate.includes(searchTerm)) {
+                  return false;
+                }
+              } catch (error) {
+                // Date parsing failed
+              }
+            }
+            
+            return true;
+          });
+          
+          analystMatch = matchingEntries.length > 0;
+        }
+        
+        // Also check validatedBy for validated status
+        if (!analystMatch && targetStatus === 'validated' && referral.validatedBy?.toString() === analystFilter) {
+          analystMatch = true;
+        }
+        
+        if (!analystMatch) return false;
+      }
       
       // Local filter
       if (localFilter !== "all_locals") {
@@ -768,7 +814,8 @@ export default function AdminReferralsDetailedPage() {
       }
       
       // Search term (most expensive - do last and only if needed)
-      if (searchTerm !== "") {
+      // Skip date search if analyst filter is active (already handled above)
+      if (searchTerm !== "" && !(analystFilter !== "all_analysts" && hasDateSearch)) {
         const user = userLookupMap.get(referral.userId);
         
         // Check simple fields first (cheapest)
@@ -808,7 +855,7 @@ export default function AdminReferralsDetailedPage() {
       
       return true;
     });
-  }, [referrals, userLookupMap, searchTerm, statusFilter, contactStatusFilter, userFilter, companyFilter, monthFilter, localFilter]);
+  }, [referrals, userLookupMap, searchTerm, statusFilter, contactStatusFilter, userFilter, analystFilter, companyFilter, monthFilter, localFilter]);
 
   // Referências visíveis com paginação virtual (memoizado)
   const visibleReferrals = useMemo(() => 
@@ -819,7 +866,7 @@ export default function AdminReferralsDetailedPage() {
   // Reset visibleCount quando filtros mudam
   useEffect(() => {
     setVisibleCount(ITEMS_PER_PAGE);
-  }, [searchTerm, statusFilter, contactStatusFilter, userFilter, companyFilter, monthFilter, localFilter]);
+  }, [searchTerm, statusFilter, contactStatusFilter, userFilter, analystFilter, companyFilter, monthFilter, localFilter]);
 
   // Carregar mais itens
   const handleLoadMore = useCallback(() => {
@@ -833,6 +880,16 @@ export default function AdminReferralsDetailedPage() {
       .filter(u => 
         (u.role === "indicador" || u.role === "indicador_nivel_1" || 
          u.role === "analista" || u.role === "promotor" || u.role === "admin") && 
+        u.isActive === true
+      )
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }, [users]);
+  
+  // Analysts and Admins for analyst filter (who can validate/analyze/convert)
+  const activeAnalystsForFilter = useMemo(() => {
+    return users
+      .filter(u => 
+        (u.role === "analista" || u.role === "admin") && 
         u.isActive === true
       )
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
@@ -2252,7 +2309,7 @@ export default function AdminReferralsDetailedPage() {
             </div>
             
             {/* Filter Selects - Responsive Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full text-sm md:text-base">
                   <SelectValue placeholder="Status" />
@@ -2288,10 +2345,10 @@ export default function AdminReferralsDetailedPage() {
               
               <Select value={userFilter} onValueChange={setUserFilter}>
                 <SelectTrigger className="w-full text-sm md:text-base">
-                  <SelectValue placeholder="Usuário" />
+                  <SelectValue placeholder="Indicador" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all_users">Todos os Usuários</SelectItem>
+                  <SelectItem value="all_users">Todos os Indicadores</SelectItem>
                   {activeUsersForFilter.map(user => (
                     <SelectItem key={user.id} value={user.id.toString()}>
                       {user.fullName} ({user.role === 'indicador' ? 'Ind' : user.role === 'indicador_nivel_1' ? 'Ind N1' : user.role === 'analista' ? 'Ana' : user.role === 'promotor' ? 'Pro' : 'Adm'})
@@ -2300,6 +2357,23 @@ export default function AdminReferralsDetailedPage() {
                 </SelectContent>
               </Select>
               
+              <Select value={analystFilter} onValueChange={setAnalystFilter}>
+                <SelectTrigger className="w-full text-sm md:text-base">
+                  <SelectValue placeholder="Analista" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_analysts">Todos os Analistas</SelectItem>
+                  {activeAnalystsForFilter.map(user => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.fullName} ({user.role === 'analista' ? 'Analista' : 'Admin'})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Second row of filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <Select value={companyFilter} onValueChange={setCompanyFilter}>
                 <SelectTrigger className="w-full text-sm md:text-base">
                   <SelectValue placeholder="Seguradora" />
