@@ -532,6 +532,12 @@ export default function AdminReferralsDetailedPage() {
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
   const [comparativeReportType, setComparativeReportType] = useState<'weekly' | 'monthly' | 'daily_general'>('monthly');
   const [indicatorSearchTerm, setIndicatorSearchTerm] = useState("");
+  
+  // Analyst report state
+  const [isAnalystReportDialogOpen, setIsAnalystReportDialogOpen] = useState(false);
+  const [selectedAnalysts, setSelectedAnalysts] = useState<string[]>([]);
+  const [analystReportType, setAnalystReportType] = useState<'weekly' | 'monthly' | 'daily_general'>('monthly');
+  const [analystSearchTerm, setAnalystSearchTerm] = useState("");
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -1717,6 +1723,293 @@ export default function AdminReferralsDetailedPage() {
     }
   };
 
+  // Generate analyst performance report
+  const handleAnalystReport = () => {
+    try {
+      if (selectedAnalysts.length === 0) {
+        toast({
+          title: "Selecione pelo menos 1 analista",
+          description: "O relatório de analistas precisa de pelo menos 1 analista selecionado.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+      let periodLabel: string;
+      
+      switch (analystReportType) {
+        case 'weekly':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          periodLabel = 'Semanal';
+          break;
+        case 'monthly':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          periodLabel = 'Mensal';
+          break;
+        case 'daily_general':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          endDate = now;
+          periodLabel = 'Geral Diário';
+          break;
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          periodLabel = 'Mensal';
+      }
+
+      // Process data for each analyst based on statusHistory
+      const analystsData: Record<string, {
+        name: string;
+        dailyData: Record<string, {
+          validacoes: number;
+          emAnalise: number;
+          convertidas: number;
+          rejeitadas: number;
+        }>;
+        totals: { validacoes: number; emAnalise: number; convertidas: number; rejeitadas: number };
+      }> = {};
+
+      // Initialize dates
+      const allDates: Set<string> = new Set();
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateKey = format(currentDate, 'dd/MM', { locale: ptBR });
+        allDates.add(dateKey);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      selectedAnalysts.forEach(analystId => {
+        const analyst = users.find(u => u.id.toString() === analystId);
+        if (!analyst) return;
+        
+        analystsData[analystId] = {
+          name: analyst.fullName || analyst.username,
+          dailyData: {},
+          totals: { validacoes: 0, emAnalise: 0, convertidas: 0, rejeitadas: 0 }
+        };
+
+        // Initialize daily data
+        allDates.forEach(date => {
+          analystsData[analystId].dailyData[date] = {
+            validacoes: 0,
+            emAnalise: 0,
+            convertidas: 0,
+            rejeitadas: 0
+          };
+        });
+      });
+
+      // Iterate through all referrals and their statusHistory
+      referrals.forEach((referral: any) => {
+        if (!referral.statusHistory || !Array.isArray(referral.statusHistory)) return;
+
+        referral.statusHistory.forEach((entry: any) => {
+          if (!entry.changedAt || !entry.changedBy) return;
+          
+          const entryDate = new Date(entry.changedAt);
+          if (entryDate < startDate || entryDate > endDate) return;
+          
+          const analystId = entry.changedBy.toString();
+          if (!analystsData[analystId]) return;
+          
+          const dateKey = format(entryDate, 'dd/MM', { locale: ptBR });
+          if (!analystsData[analystId].dailyData[dateKey]) return;
+
+          // Skip contact_status entries - only count actual status changes
+          if (entry.status === 'contact_status') return;
+
+          switch (entry.status) {
+            case 'validated':
+              analystsData[analystId].dailyData[dateKey].validacoes++;
+              analystsData[analystId].totals.validacoes++;
+              break;
+            case 'analyzing':
+              analystsData[analystId].dailyData[dateKey].emAnalise++;
+              analystsData[analystId].totals.emAnalise++;
+              break;
+            case 'converted':
+              analystsData[analystId].dailyData[dateKey].convertidas++;
+              analystsData[analystId].totals.convertidas++;
+              break;
+            case 'rejected':
+              analystsData[analystId].dailyData[dateKey].rejeitadas++;
+              analystsData[analystId].totals.rejeitadas++;
+              break;
+          }
+        });
+      });
+
+      // Create Excel workbook with xlsx-js-style
+      const workbook = XLSX.utils.book_new();
+
+      // Prepare data for Excel
+      const analystsList = selectedAnalysts
+        .map(id => analystsData[id])
+        .filter(Boolean);
+
+      const sortedDates = Array.from(allDates).sort((a, b) => {
+        const [dayA, monthA] = a.split('/').map(Number);
+        const [dayB, monthB] = b.split('/').map(Number);
+        if (monthA !== monthB) return monthA - monthB;
+        return dayA - dayB;
+      });
+
+      // Create header rows
+      const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "2563EB" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        }
+      };
+
+      const subHeaderStyle = {
+        font: { bold: true, sz: 9 },
+        fill: { fgColor: { rgb: "DBEAFE" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        }
+      };
+
+      const cellStyle = {
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "CCCCCC" } },
+          bottom: { style: "thin", color: { rgb: "CCCCCC" } },
+          left: { style: "thin", color: { rgb: "CCCCCC" } },
+          right: { style: "thin", color: { rgb: "CCCCCC" } }
+        }
+      };
+
+      const totalStyle = {
+        font: { bold: true },
+        fill: { fgColor: { rgb: "FEF3C7" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "medium", color: { rgb: "000000" } },
+          bottom: { style: "medium", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        }
+      };
+
+      // Build the data array with styles
+      const metricsPerAnalyst = 4; // Validações, Em Análise, Convertidas, Rejeitadas
+      const data: any[][] = [];
+
+      // Title row
+      const titleRow: any[] = [{ v: `Relatório de Performance de Analistas - ${periodLabel}`, s: { font: { bold: true, sz: 14 } } }];
+      for (let i = 1; i < 1 + analystsList.length * metricsPerAnalyst; i++) {
+        titleRow.push({ v: '', s: {} });
+      }
+      data.push(titleRow);
+
+      // Analyst names row (will be merged)
+      const analystRow: any[] = [{ v: 'Data', s: headerStyle }];
+      analystsList.forEach(analyst => {
+        analystRow.push({ v: analyst.name, s: headerStyle });
+        for (let i = 1; i < metricsPerAnalyst; i++) {
+          analystRow.push({ v: '', s: headerStyle });
+        }
+      });
+      data.push(analystRow);
+
+      // Metrics labels row
+      const metricsRow: any[] = [{ v: '', s: subHeaderStyle }];
+      analystsList.forEach(() => {
+        metricsRow.push({ v: 'Validações', s: subHeaderStyle });
+        metricsRow.push({ v: 'Em Análise', s: subHeaderStyle });
+        metricsRow.push({ v: 'Convertidas', s: subHeaderStyle });
+        metricsRow.push({ v: 'Rejeitadas', s: subHeaderStyle });
+      });
+      data.push(metricsRow);
+
+      // Data rows
+      sortedDates.forEach(date => {
+        const row: any[] = [{ v: date, s: { font: { bold: true }, ...cellStyle } }];
+        analystsList.forEach(analyst => {
+          const dayData = analyst.dailyData[date] || { validacoes: 0, emAnalise: 0, convertidas: 0, rejeitadas: 0 };
+          row.push({ v: dayData.validacoes, s: cellStyle });
+          row.push({ v: dayData.emAnalise, s: cellStyle });
+          row.push({ v: dayData.convertidas, s: cellStyle });
+          row.push({ v: dayData.rejeitadas, s: cellStyle });
+        });
+        data.push(row);
+      });
+
+      // Totals row
+      const totalsRow: any[] = [{ v: 'TOTAL', s: totalStyle }];
+      analystsList.forEach(analyst => {
+        totalsRow.push({ v: analyst.totals.validacoes, s: totalStyle });
+        totalsRow.push({ v: analyst.totals.emAnalise, s: totalStyle });
+        totalsRow.push({ v: analyst.totals.convertidas, s: totalStyle });
+        totalsRow.push({ v: analyst.totals.rejeitadas, s: totalStyle });
+      });
+      data.push(totalsRow);
+
+      // Create worksheet
+      const sheet = XLSX.utils.aoa_to_sheet(data);
+
+      // Set column widths
+      const colWidths = [{ wch: 10 }]; // Date column
+      analystsList.forEach(() => {
+        colWidths.push({ wch: 12 }); // Validações
+        colWidths.push({ wch: 12 }); // Em Análise
+        colWidths.push({ wch: 12 }); // Convertidas
+        colWidths.push({ wch: 12 }); // Rejeitadas
+      });
+      sheet['!cols'] = colWidths;
+
+      // Merge cells for analyst names
+      const merges: XLSX.Range[] = [];
+      let colStart = 1;
+      analystsList.forEach(() => {
+        merges.push({
+          s: { r: 1, c: colStart },
+          e: { r: 1, c: colStart + metricsPerAnalyst - 1 }
+        });
+        colStart += metricsPerAnalyst;
+      });
+      sheet['!merges'] = merges;
+
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Performance Analistas');
+
+      // Generate filename
+      const startFormatted = format(startDate, 'dd-MM-yyyy', { locale: ptBR });
+      const endFormatted = format(endDate, 'dd-MM-yyyy', { locale: ptBR });
+      const filename = `relatorio_analistas_${periodLabel.toLowerCase().replace(' ', '_')}_${startFormatted}_a_${endFormatted}.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+
+      toast({
+        title: "Relatório de analistas gerado!",
+        description: `Analisando ${analystsList.length} analista(s) - ${periodLabel}`
+      });
+
+      setIsAnalystReportDialogOpen(false);
+      setSelectedAnalysts([]);
+    } catch (error) {
+      console.error('Erro ao gerar relatório de analistas:', error);
+      toast({
+        title: "Erro ao gerar relatório",
+        description: "Não foi possível gerar o relatório de analistas. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Calculate statistics - memoized to avoid recalculating on every render
   const stats = useMemo(() => ({
     totalReferrals: referrals.length,
@@ -2122,6 +2415,10 @@ export default function AdminReferralsDetailedPage() {
                     <Users className="h-4 w-4 mr-2" />
                     Comparativo (2+ Indicadores)
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsAnalystReportDialogOpen(true)}>
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Relatório de Analistas
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               
@@ -2231,6 +2528,120 @@ export default function AdminReferralsDetailedPage() {
                     <Button 
                       onClick={handleComparativeReport}
                       disabled={selectedIndicators.length < 2}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Gerar Relatório
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              
+              {/* Analyst Report Dialog */}
+              <Dialog open={isAnalystReportDialogOpen} onOpenChange={setIsAnalystReportDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Relatório de Performance de Analistas</DialogTitle>
+                    <DialogDescription>
+                      Selecione os analistas para gerar um relatório de performance mostrando validações, contatos em análise, conversões e rejeições.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4">
+                    {/* Period Selection */}
+                    <div className="space-y-2">
+                      <Label>Período</Label>
+                      <Select value={analystReportType} onValueChange={(v: 'weekly' | 'monthly' | 'daily_general') => setAnalystReportType(v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o período" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Semanal (últimos 7 dias)</SelectItem>
+                          <SelectItem value="monthly">Mensal (mês atual)</SelectItem>
+                          <SelectItem value="daily_general">Geral Diário (mês até hoje)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Analyst Search */}
+                    <div className="space-y-2">
+                      <Label>Buscar Analista</Label>
+                      <Input
+                        placeholder="Digite o nome do analista..."
+                        value={analystSearchTerm}
+                        onChange={(e) => setAnalystSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    
+                    {/* Analyst List with Checkboxes - Only Analysts and Admins */}
+                    <div className="space-y-2">
+                      <Label>Analistas Ativos ({selectedAnalysts.length} selecionados)</Label>
+                      <ScrollArea className="h-[200px] border rounded-md p-2">
+                        <div className="space-y-2">
+                          {sortedUsers
+                            .filter(u => (u.role === 'analista' || u.role === 'admin') && u.isActive === true)
+                            .filter(u => 
+                              analystSearchTerm === '' || 
+                              u.fullName?.toLowerCase().includes(analystSearchTerm.toLowerCase())
+                            )
+                            .map(user => (
+                              <div key={user.id} className="flex items-center space-x-2 py-1">
+                                <Checkbox
+                                  id={`analyst-${user.id}`}
+                                  checked={selectedAnalysts.includes(user.id.toString())}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedAnalysts([...selectedAnalysts, user.id.toString()]);
+                                    } else {
+                                      setSelectedAnalysts(selectedAnalysts.filter(id => id !== user.id.toString()));
+                                    }
+                                  }}
+                                />
+                                <Label 
+                                  htmlFor={`analyst-${user.id}`} 
+                                  className="text-sm cursor-pointer flex-1"
+                                >
+                                  {user.fullName} <span className="text-gray-400 text-xs">({user.role === 'analista' ? 'Analista' : 'Admin'})</span>
+                                </Label>
+                              </div>
+                            ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                    
+                    {/* Selected Analysts Preview */}
+                    {selectedAnalysts.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {selectedAnalysts.map(id => {
+                          const user = users.find(u => u.id.toString() === id);
+                          return (
+                            <Badge 
+                              key={id} 
+                              variant="secondary" 
+                              className="text-xs cursor-pointer"
+                              onClick={() => setSelectedAnalysts(selectedAnalysts.filter(i => i !== id))}
+                            >
+                              {user?.fullName} ✕
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <DialogFooter className="gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setIsAnalystReportDialogOpen(false);
+                        setSelectedAnalysts([]);
+                        setAnalystSearchTerm("");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleAnalystReport}
+                      disabled={selectedAnalysts.length === 0}
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Gerar Relatório
