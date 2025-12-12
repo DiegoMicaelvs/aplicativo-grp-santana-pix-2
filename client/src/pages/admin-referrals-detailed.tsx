@@ -766,10 +766,20 @@ export default function AdminReferralsDetailedPage() {
           }
         };
         
+        // Parse statusHistory if it's a string (JSON)
+        let parsedStatusHistory = referral.statusHistory;
+        if (typeof referral.statusHistory === 'string') {
+          try {
+            parsedStatusHistory = JSON.parse(referral.statusHistory);
+          } catch (e) {
+            parsedStatusHistory = null;
+          }
+        }
+        
         // Check statusHistory for who made the status change
-        if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+        if (parsedStatusHistory && Array.isArray(parsedStatusHistory)) {
           // Find entries matching the target status that were changed by the selected analyst
-          const matchingEntries = referral.statusHistory.filter((entry: any) => {
+          const matchingEntries = parsedStatusHistory.filter((entry: any) => {
             if (entry.status !== targetStatus) return false;
             if (entry.changedBy?.toString() !== analystFilter) return false;
             
@@ -783,14 +793,15 @@ export default function AdminReferralsDetailedPage() {
           analystMatch = matchingEntries.length > 0;
         }
         
-        // Also check validatedBy for validated status (with date check if searching by date)
+        // Also check validatedBy for validated status (only when NOT searching by date)
+        // When searching by date, we only use statusHistory because validatedAt might not match the actual validation date
         if (!analystMatch && targetStatus === 'validated' && referral.validatedBy?.toString() === analystFilter) {
-          // If we have a date search, also check validatedAt matches the date
-          if (hasDateSearch) {
-            analystMatch = checkDateMatch(referral.validatedAt);
-          } else {
+          if (!hasDateSearch) {
+            // No date filter - just match by analyst
             analystMatch = true;
           }
+          // When hasDateSearch is true, we don't use validatedAt fallback because the date might be inconsistent
+          // The user should only see results where statusHistory clearly shows the analyst changed to validated on that date
         }
         
         if (!analystMatch) return false;
