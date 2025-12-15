@@ -733,9 +733,9 @@ export default function AdminReferralsDetailedPage() {
     
     return referrals.filter((referral: any) => {
       // Quick filters first (cheapest operations)
-      // When searching by date with status filter, we need to check statusHistory, not current status
-      // This allows finding referrals that were validated on a date but later converted/paid
-      if (statusFilter !== "all_statuses" && referral.status !== statusFilter && !hasDateSearch) {
+      // Status filter ALWAYS checks current status - if user filters by "Validado", only show currently validated referrals
+      // The date search just adds an additional filter for WHEN it became that status
+      if (statusFilter !== "all_statuses" && referral.status !== statusFilter) {
         return false;
       }
       if (contactStatusFilter !== "all_contact_statuses") {
