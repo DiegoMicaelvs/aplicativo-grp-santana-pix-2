@@ -1201,22 +1201,49 @@ export default function AdminReferralsDetailedPage() {
           }
         }
         
-        // Track validados by VALIDATION date - ONLY count referrals with CURRENT status = 'validated'
-        // This matches what the referrals page shows when filtered by status = 'validated'
-        if (referral.status === 'validated') {
-          const validationDate = getStatusDate(referral, 'validated');
-          if (validationDate && validationDate >= startDate && validationDate <= endDate) {
-            const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
-            if (dailyData[validatedKey]) {
-              dailyData[validatedKey].validados++;
-              
-              // Track empresa (associação) for validated referrals too
-              const company = companies.find((c: any) => c.id === referral.companyId);
-              if (company?.name) {
-                dailyData[validatedKey].empresas.add(company.name);
-              }
+        // Track validados by VALIDATION date - count ACTUAL status changes to 'validated' in the statusHistory
+        // This includes referrals that were later converted/paid
+        if (referral.statusHistory && Array.isArray(referral.statusHistory)) {
+          let parsedHistory = referral.statusHistory;
+          if (typeof referral.statusHistory === 'string') {
+            try {
+              parsedHistory = JSON.parse(referral.statusHistory);
+            } catch (e) {
+              parsedHistory = [];
             }
           }
+          
+          // Find ACTUAL validation status changes (where status changed TO validated)
+          parsedHistory.forEach((entry: any, index: number) => {
+            if (entry.status !== 'validated') return;
+            if (!entry.changedAt) return;
+            
+            // Check if this is an ACTUAL status change
+            let previousStatus = 'pending';
+            for (let i = index - 1; i >= 0; i--) {
+              const prevEntry = parsedHistory[i];
+              if (prevEntry.status === 'contact_status' || prevEntry.status === 'system') continue;
+              previousStatus = prevEntry.status;
+              break;
+            }
+            
+            // Only count if the status actually CHANGED to validated
+            if (previousStatus === 'validated') return;
+            
+            const validationDate = new Date(entry.changedAt);
+            if (validationDate >= startDate && validationDate <= endDate) {
+              const validatedKey = format(validationDate, 'dd/MM', { locale: ptBR });
+              if (dailyData[validatedKey]) {
+                dailyData[validatedKey].validados++;
+                
+                // Track empresa (associação) for validated referrals too
+                const company = companies.find((c: any) => c.id === referral.companyId);
+                if (company?.name) {
+                  dailyData[validatedKey].empresas.add(company.name);
+                }
+              }
+            }
+          });
         }
         
         // Track convertidos by updatedAt - this matches what the referrals page shows
