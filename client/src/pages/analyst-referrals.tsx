@@ -286,6 +286,8 @@ export default function AnalystReferrals() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [contactStatusFilter, setContactStatusFilter] = useState("all_contact_statuses");
+  const [analystFilter, setAnalystFilter] = useState("all_analysts");
+  const [companyFilter, setCompanyFilter] = useState("all_companies");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [isValidateDialogOpen, setIsValidateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -514,6 +516,16 @@ export default function AnalystReferrals() {
     return map;
   }, [companies]);
 
+  // Analistas ativos para filtro (memoizado)
+  const activeAnalystsForFilter = useMemo(() => {
+    return allUsers
+      .filter(u => 
+        (u.role === "analista" || u.role === "admin") && 
+        u.isActive === true
+      )
+      .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+  }, [allUsers]);
+
   // Filter referrals (memoizado para evitar recálculos)
   const filteredReferrals = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
@@ -536,9 +548,24 @@ export default function AnalystReferrals() {
         }
       }
       
-      return matchesSearch && matchesStatus && matchesContactStatus;
+      // Analyst filter - check statusHistory for validatedBy
+      let matchesAnalyst = true;
+      if (analystFilter !== "all_analysts") {
+        const analystId = parseInt(analystFilter);
+        // Check if this analyst validated the referral (based on statusHistory)
+        const hasAnalystAction = referral.statusHistory?.some((entry: any) => 
+          entry.changedBy === analystId && entry.status !== 'contact_status'
+        );
+        matchesAnalyst = !!hasAnalystAction;
+      }
+      
+      // Company filter
+      const matchesCompany = companyFilter === "all_companies" || 
+        referral.companyId?.toString() === companyFilter;
+      
+      return matchesSearch && matchesStatus && matchesContactStatus && matchesAnalyst && matchesCompany;
     });
-  }, [referrals, searchTerm, statusFilter, contactStatusFilter, usersMap]);
+  }, [referrals, searchTerm, statusFilter, contactStatusFilter, analystFilter, companyFilter, usersMap]);
 
   // Referências visíveis com paginação virtual (memoizado)
   const visibleReferrals = useMemo(() => 
@@ -549,7 +576,7 @@ export default function AnalystReferrals() {
   // Reset visibleCount quando filtros mudam
   useEffect(() => {
     setVisibleCount(ITEMS_PER_PAGE);
-  }, [searchTerm, statusFilter, contactStatusFilter]);
+  }, [searchTerm, statusFilter, contactStatusFilter, analystFilter, companyFilter]);
 
   // Carregar mais itens
   const handleLoadMore = useCallback(() => {
@@ -1181,8 +1208,8 @@ export default function AnalystReferrals() {
                 />
               </div>
             </div>
-            {/* Filters - side by side on mobile */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Filters - 2 columns on mobile, 4 columns on desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <Label htmlFor="status" className="text-xs text-gray-500">Status</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -1217,6 +1244,38 @@ export default function AnalystReferrals() {
                     <SelectItem value="sem_sucesso">Sem Sucesso</SelectItem>
                     <SelectItem value="em_negociacao">Negociação</SelectItem>
                     <SelectItem value="aguardando_pagamento">Aguardando</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="analyst-filter" className="text-xs text-gray-500">Analista</Label>
+                <Select value={analystFilter} onValueChange={setAnalystFilter}>
+                  <SelectTrigger id="analyst-filter" className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all_analysts">Todos os Analistas</SelectItem>
+                    {activeAnalystsForFilter.map(analyst => (
+                      <SelectItem key={analyst.id} value={analyst.id.toString()}>
+                        {analyst.fullName} ({analyst.role === 'analista' ? 'Analista' : 'Admin'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="company-filter" className="text-xs text-gray-500">Seguradora</Label>
+                <Select value={companyFilter} onValueChange={setCompanyFilter}>
+                  <SelectTrigger id="company-filter" className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all_companies">Todas as Seguradoras</SelectItem>
+                    {companies.filter(company => company.isActive).map(company => (
+                      <SelectItem key={company.id} value={company.id.toString()}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
