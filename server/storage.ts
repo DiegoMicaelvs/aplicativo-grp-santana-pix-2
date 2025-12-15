@@ -1788,9 +1788,11 @@ class DatabaseStorage implements IStorage {
     });
 
     // For each withdrawal, get the license plates from user's referrals
+    // Only show plates that correspond to the withdrawal amount
     const withdrawalsWithPlates = await Promise.all(
       withdrawals.map(async (withdrawal) => {
         // Get license plates from user's validated/converted/paid referrals
+        // Order by date to show the most recent ones first
         const userReferrals = await db.query.referrals.findMany({
           where: and(
             eq(referrals.userId, withdrawal.userId),
@@ -1801,12 +1803,21 @@ class DatabaseStorage implements IStorage {
             )
           ),
           columns: {
-            licensePlate: true
-          }
+            licensePlate: true,
+            createdAt: true
+          },
+          orderBy: desc(referrals.createdAt)
         });
 
-        // Get unique plates
-        const plates = Array.from(new Set(userReferrals.map(r => r.licensePlate).filter(Boolean)));
+        // Calculate how many referrals this withdrawal corresponds to
+        // Commission rate is R$ 3.00 per referral
+        const commissionPerReferral = 3.00;
+        const withdrawalAmount = parseFloat(withdrawal.amount);
+        const referralCount = Math.round(withdrawalAmount / commissionPerReferral);
+        
+        // Get unique plates - limit to the number of referrals in this withdrawal
+        const allPlates = Array.from(new Set(userReferrals.map(r => r.licensePlate).filter(Boolean)));
+        const plates = allPlates.slice(0, Math.max(referralCount, 1));
         
         return {
           ...withdrawal,
