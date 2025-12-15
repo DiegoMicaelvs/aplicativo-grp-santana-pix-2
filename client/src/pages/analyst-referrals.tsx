@@ -516,13 +516,10 @@ export default function AnalystReferrals() {
     return map;
   }, [companies]);
 
-  // Analistas ativos para filtro (memoizado)
+  // Analistas ativos para filtro (memoizado) - somente role="analista"
   const activeAnalystsForFilter = useMemo(() => {
     return allUsers
-      .filter(u => 
-        (u.role === "analista" || u.role === "admin") && 
-        u.isActive === true
-      )
+      .filter(u => u.role === "analista" && u.isActive === true)
       .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
   }, [allUsers]);
 
@@ -1257,7 +1254,7 @@ export default function AnalystReferrals() {
                     <SelectItem value="all_analysts">Todos os Analistas</SelectItem>
                     {activeAnalystsForFilter.map(analyst => (
                       <SelectItem key={analyst.id} value={analyst.id.toString()}>
-                        {analyst.fullName} ({analyst.role === 'analista' ? 'Analista' : 'Admin'})
+                        {analyst.fullName}
                       </SelectItem>
                     ))}
                   </SelectContent>
