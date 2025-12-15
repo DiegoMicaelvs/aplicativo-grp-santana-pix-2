@@ -733,7 +733,11 @@ export default function AdminReferralsDetailedPage() {
     
     return referrals.filter((referral: any) => {
       // Quick filters first (cheapest operations)
-      if (statusFilter !== "all_statuses" && referral.status !== statusFilter) return false;
+      // When searching by date with status filter, we need to check statusHistory, not current status
+      // This allows finding referrals that were validated on a date but later converted/paid
+      if (statusFilter !== "all_statuses" && referral.status !== statusFilter && !hasDateSearch) {
+        return false;
+      }
       if (contactStatusFilter !== "all_contact_statuses") {
         if (contactStatusFilter === "no_contact_status") {
           if (referral.contactStatus) return false;
