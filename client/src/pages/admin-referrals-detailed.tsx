@@ -892,22 +892,63 @@ export default function AdminReferralsDetailedPage() {
         // Only check date if search contains '/' and nothing else matched
         if (hasDateSearch) {
           try {
-            let dateToUse = referral.createdAt;
-            if (statusFilter === "validated" && referral.validatedAt) {
-              dateToUse = referral.validatedAt;
-            } else if ((statusFilter === "converted" || statusFilter === "paid") && referral.updatedAt) {
-              dateToUse = referral.updatedAt;
+            // When filtering by status, use statusHistory to find ACTUAL status changes on that date
+            // This prevents showing referrals where only vehicle data was updated
+            if (statusFilter !== "all_statuses" && referral.statusHistory && Array.isArray(referral.statusHistory)) {
+              // Parse statusHistory if it's a string
+              let parsedHistory = referral.statusHistory;
+              if (typeof referral.statusHistory === 'string') {
+                try {
+                  parsedHistory = JSON.parse(referral.statusHistory);
+                } catch (e) {
+                  parsedHistory = [];
+                }
+              }
+              
+              // Check if there was an ACTUAL status change to the filtered status on this date
+              let foundActualStatusChange = false;
+              parsedHistory.forEach((entry: any, index: number) => {
+                if (foundActualStatusChange) return;
+                if (entry.status !== statusFilter) return;
+                if (entry.status === 'contact_status' || entry.status === 'system') return;
+                
+                // Check date match
+                const entryDate = new Date(entry.changedAt);
+                const formattedDate = format(entryDate, "dd/MM/yyyy", { locale: ptBR });
+                const shortDate = format(entryDate, "dd/MM", { locale: ptBR });
+                const mediumDate = format(entryDate, "dd/MM/yy", { locale: ptBR });
+                const dateMatches = formattedDate.includes(searchTerm) || 
+                                   shortDate.includes(searchTerm) || 
+                                   mediumDate.includes(searchTerm);
+                if (!dateMatches) return;
+                
+                // Check if this was an ACTUAL status change
+                let previousStatus = 'pending';
+                for (let i = index - 1; i >= 0; i--) {
+                  const prevEntry = parsedHistory[i];
+                  if (prevEntry.status === 'contact_status' || prevEntry.status === 'system') continue;
+                  previousStatus = prevEntry.status;
+                  break;
+                }
+                
+                if (previousStatus !== entry.status) {
+                  foundActualStatusChange = true;
+                }
+              });
+              
+              if (foundActualStatusChange) return true;
+            } else {
+              // No status filter - use original logic with createdAt
+              const referralDate = new Date(referral.createdAt);
+              const formattedDate = format(referralDate, "dd/MM/yyyy", { locale: ptBR });
+              if (formattedDate.includes(searchTerm)) return true;
+              
+              const shortDate = format(referralDate, "dd/MM", { locale: ptBR });
+              if (shortDate.includes(searchTerm)) return true;
+              
+              const mediumDate = format(referralDate, "dd/MM/yy", { locale: ptBR });
+              if (mediumDate.includes(searchTerm)) return true;
             }
-            
-            const referralDate = new Date(dateToUse);
-            const formattedDate = format(referralDate, "dd/MM/yyyy", { locale: ptBR });
-            if (formattedDate.includes(searchTerm)) return true;
-            
-            const shortDate = format(referralDate, "dd/MM", { locale: ptBR });
-            if (shortDate.includes(searchTerm)) return true;
-            
-            const mediumDate = format(referralDate, "dd/MM/yy", { locale: ptBR });
-            if (mediumDate.includes(searchTerm)) return true;
           } catch (error) {
             // Date parsing failed, skip
           }
