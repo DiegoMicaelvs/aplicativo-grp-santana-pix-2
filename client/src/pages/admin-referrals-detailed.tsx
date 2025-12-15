@@ -779,11 +779,31 @@ export default function AdminReferralsDetailedPage() {
         // Check statusHistory for who made the status change
         if (parsedStatusHistory && Array.isArray(parsedStatusHistory)) {
           if (hasDateSearch) {
-            // When filtering by date: find the LAST entry with target status on that date
-            // This ensures each referral only counts once (for the last analyst who changed it on that date)
-            const entriesOnTargetDate = parsedStatusHistory.filter((entry: any) => {
-              if (entry.status !== targetStatus) return false;
-              return checkDateMatch(entry.changedAt);
+            // When filtering by date: find the LAST ACTUAL STATUS CHANGE to target status on that date
+            // Only count entries where the status ACTUALLY CHANGED (not just vehicle data updates)
+            const entriesOnTargetDate: any[] = [];
+            
+            parsedStatusHistory.forEach((entry: any, index: number) => {
+              // Must be the target status
+              if (entry.status !== targetStatus) return;
+              // Must match the date
+              if (!checkDateMatch(entry.changedAt)) return;
+              
+              // Check if this is an ACTUAL status change by comparing to previous entries
+              // Find the most recent DIFFERENT status before this entry
+              let previousStatus = 'pending'; // Default initial status
+              for (let i = index - 1; i >= 0; i--) {
+                const prevEntry = parsedStatusHistory[i];
+                // Skip contact_status and system entries - they're not status changes
+                if (prevEntry.status === 'contact_status' || prevEntry.status === 'system') continue;
+                previousStatus = prevEntry.status;
+                break;
+              }
+              
+              // Only count if the status actually CHANGED
+              if (previousStatus !== targetStatus) {
+                entriesOnTargetDate.push(entry);
+              }
             });
             
             if (entriesOnTargetDate.length > 0) {
@@ -792,11 +812,25 @@ export default function AdminReferralsDetailedPage() {
               analystMatch = lastEntry.changedBy?.toString() === analystFilter;
             }
           } else {
-            // No date filter - find any entry by this analyst with target status
-            const matchingEntries = parsedStatusHistory.filter((entry: any) => {
-              if (entry.status !== targetStatus) return false;
-              if (entry.changedBy?.toString() !== analystFilter) return false;
-              return true;
+            // No date filter - find any entry by this analyst with target status (ACTUAL status change)
+            const matchingEntries: any[] = [];
+            
+            parsedStatusHistory.forEach((entry: any, index: number) => {
+              if (entry.status !== targetStatus) return;
+              if (entry.changedBy?.toString() !== analystFilter) return;
+              
+              // Check if this is an ACTUAL status change
+              let previousStatus = 'pending';
+              for (let i = index - 1; i >= 0; i--) {
+                const prevEntry = parsedStatusHistory[i];
+                if (prevEntry.status === 'contact_status' || prevEntry.status === 'system') continue;
+                previousStatus = prevEntry.status;
+                break;
+              }
+              
+              if (previousStatus !== targetStatus) {
+                matchingEntries.push(entry);
+              }
             });
             
             analystMatch = matchingEntries.length > 0;
@@ -1898,12 +1932,25 @@ export default function AdminReferralsDetailedPage() {
         // Group entries by date and status
         const entriesByDateAndStatus: Record<string, Record<string, any>> = {};
         
-        referral.statusHistory.forEach((entry: any) => {
+        referral.statusHistory.forEach((entry: any, index: number) => {
           if (!entry.changedAt || !entry.changedBy) return;
-          if (entry.status === 'contact_status') return; // Skip contact_status entries
+          if (entry.status === 'contact_status' || entry.status === 'system') return; // Skip non-status entries
           
           const entryDate = new Date(entry.changedAt);
           if (entryDate < startDate || entryDate > endDate) return;
+          
+          // Check if this is an ACTUAL status change by comparing to previous entries
+          // This prevents counting vehicle data updates as new validations
+          let previousStatus = 'pending'; // Default initial status
+          for (let i = index - 1; i >= 0; i--) {
+            const prevEntry = referral.statusHistory[i];
+            if (prevEntry.status === 'contact_status' || prevEntry.status === 'system') continue;
+            previousStatus = prevEntry.status;
+            break;
+          }
+          
+          // Only count if the status actually CHANGED
+          if (previousStatus === entry.status) return;
           
           const dateKey = format(entryDate, 'dd/MM', { locale: ptBR });
           const statusKey = entry.status;
