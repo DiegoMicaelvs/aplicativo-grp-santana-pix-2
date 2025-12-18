@@ -1288,6 +1288,7 @@ export default function AnalystReferrals() {
                     <SelectItem value="sem_sucesso">Sem Sucesso</SelectItem>
                     <SelectItem value="em_negociacao">Negociação</SelectItem>
                     <SelectItem value="aguardando_pagamento">Aguardando</SelectItem>
+                    <SelectItem value="enviar_cotacao">Enviar cotação</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

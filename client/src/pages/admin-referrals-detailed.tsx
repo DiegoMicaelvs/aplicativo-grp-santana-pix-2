@@ -2603,6 +2603,7 @@ export default function AdminReferralsDetailedPage() {
                   <SelectItem value="sem_sucesso">Sem Sucesso</SelectItem>
                   <SelectItem value="em_negociacao">Em negociação</SelectItem>
                   <SelectItem value="aguardando_pagamento">Aguardando pagamento</SelectItem>
+                  <SelectItem value="enviar_cotacao">Enviar cotação</SelectItem>
                 </SelectContent>
               </Select>
               
