@@ -2070,7 +2070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { contactStatus } = req.body;
       
       // Validate contact status value
-      const validContactStatuses = ["retornar_contato", "sem_sucesso", "em_negociacao", "aguardando_pagamento", null];
+      const validContactStatuses = ["retornar_contato", "sem_sucesso", "em_negociacao", "aguardando_pagamento", "enviar_cotacao", null];
       if (!validContactStatuses.includes(contactStatus)) {
         return res.status(400).json({ error: "Status de contato inválido" });
       }
@@ -2090,7 +2090,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         retornar_contato: "Retornar Contato",
         sem_sucesso: "Sem Sucesso",
         em_negociacao: "Em negociação",
-        aguardando_pagamento: "Aguardando pagamento"
+        aguardando_pagamento: "Aguardando pagamento",
+        enviar_cotacao: "Enviar cotação"
       };
       
       // Create status history entry for contact status change
