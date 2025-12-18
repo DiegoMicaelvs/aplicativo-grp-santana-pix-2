@@ -288,20 +288,22 @@ function ValidationDialog({ referral, onValidate }: { referral: any; onValidate:
 }
 
 // Contact Status types and labels
-type ContactStatus = "retornar_contato" | "sem_sucesso" | "em_negociacao" | "aguardando_pagamento" | null;
+type ContactStatus = "retornar_contato" | "sem_sucesso" | "em_negociacao" | "aguardando_pagamento" | "enviar_cotacao" | null;
 
 const contactStatusLabels: Record<string, string> = {
   retornar_contato: "Retornar Contato",
   sem_sucesso: "Sem Sucesso",
   em_negociacao: "Em negociação",
-  aguardando_pagamento: "Aguardando pagamento"
+  aguardando_pagamento: "Aguardando pagamento",
+  enviar_cotacao: "Enviar cotação"
 };
 
 const contactStatusColors: Record<string, string> = {
   retornar_contato: "bg-yellow-100 text-yellow-800 border-yellow-300",
   sem_sucesso: "bg-red-100 text-red-800 border-red-300",
   em_negociacao: "bg-blue-100 text-blue-800 border-blue-300",
-  aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300"
+  aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300",
+  enviar_cotacao: "bg-orange-100 text-orange-800 border-orange-300"
 };
 
 // Contact Status Dialog Component - Optimized for performance

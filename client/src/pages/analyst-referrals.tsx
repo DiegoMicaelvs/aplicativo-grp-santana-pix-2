@@ -101,13 +101,14 @@ const statusLabels: Record<string, string> = {
   contact_list: "Lista de contato",
 };
 
-type ContactStatus = "retornar_contato" | "sem_sucesso" | "em_negociacao" | "aguardando_pagamento" | null;
+type ContactStatus = "retornar_contato" | "sem_sucesso" | "em_negociacao" | "aguardando_pagamento" | "enviar_cotacao" | null;
 
 const contactStatusLabels: Record<string, string> = {
   retornar_contato: "Retornar Contato",
   sem_sucesso: "Sem Sucesso",
   em_negociacao: "Em negociação",
   aguardando_pagamento: "Aguardando pagamento",
+  enviar_cotacao: "Enviar cotação",
 };
 
 const contactStatusColors: Record<string, string> = {
@@ -115,6 +116,7 @@ const contactStatusColors: Record<string, string> = {
   sem_sucesso: "bg-red-100 text-red-800 border-red-300",
   em_negociacao: "bg-blue-100 text-blue-800 border-blue-300",
   aguardando_pagamento: "bg-purple-100 text-purple-800 border-purple-300",
+  enviar_cotacao: "bg-orange-100 text-orange-800 border-orange-300",
 };
 
 // Component to show status badge with popover showing who last updated it
