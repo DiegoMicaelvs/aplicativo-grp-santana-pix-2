@@ -306,6 +306,70 @@ const contactStatusColors: Record<string, string> = {
   enviar_cotacao: "bg-orange-100 text-orange-800 border-orange-300"
 };
 
+// Contact Status Badge with Tooltip - shows who updated the contact status
+function ContactStatusBadgeWithTooltip({ 
+  referral, 
+  users 
+}: { 
+  referral: any; 
+  users: any[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const statusHistory = referral.statusHistory || [];
+  
+  // Filter only contact_status entries
+  const contactStatusChanges = statusHistory.filter(
+    (entry: any) => entry.status === 'contact_status'
+  );
+  
+  // Sort by date descending and get the most recent one
+  const sortedChanges = [...contactStatusChanges].sort(
+    (a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+  );
+  const lastContactStatusChange = sortedChanges.length > 0 ? sortedChanges[0] : null;
+
+  const lastUpdatedBy = lastContactStatusChange ? users.find((u: any) => u.id === lastContactStatusChange.changedBy) : null;
+  const lastUpdatedAt = lastContactStatusChange ? new Date(lastContactStatusChange.changedAt) : null;
+
+  if (!referral.contactStatus) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  const lastUpdaterName = lastUpdatedBy?.fullName || lastContactStatusChange?.changedByName || 'Usuário não encontrado';
+
+  const statusInfoContent = (
+    <div className="text-xs space-y-1">
+      <p className="font-semibold text-purple-400">Status de contato: {contactStatusLabels[referral.contactStatus]}</p>
+      {lastContactStatusChange && (
+        <>
+          <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
+          {lastUpdatedAt && (
+            <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
+          )}
+          {lastContactStatusChange.notes && lastContactStatusChange.notes.trim() && (
+            <p className="text-gray-300 italic mt-1 border-t border-gray-700 pt-1">"{lastContactStatusChange.notes}"</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <span className="inline-block cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+          <Badge className={cn("text-xs", contactStatusColors[referral.contactStatus])}>
+            {contactStatusLabels[referral.contactStatus]}
+          </Badge>
+        </span>
+      </PopoverTrigger>
+      <PopoverContent className="max-w-xs bg-gray-900 text-white p-3 shadow-lg z-50 border-gray-700" side="top" sideOffset={4}>
+        {statusInfoContent}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // Contact Status Dialog Component - Optimized for performance
 function ContactStatusDialog({ referral, onUpdate }: { referral: any; onUpdate: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -3529,13 +3593,10 @@ export default function AdminReferralsDetailedPage() {
                       />
                     </TableCell>
                     <TableCell className="text-xs">
-                      {referral.contactStatus ? (
-                        <Badge className={cn("text-xs", contactStatusColors[referral.contactStatus])}>
-                          {contactStatusLabels[referral.contactStatus]}
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                      <ContactStatusBadgeWithTooltip 
+                        referral={referral}
+                        users={allUsers}
+                      />
                     </TableCell>
                     <TableCell className="text-xs">
                       <div>

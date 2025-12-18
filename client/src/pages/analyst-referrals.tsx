@@ -119,6 +119,70 @@ const contactStatusColors: Record<string, string> = {
   enviar_cotacao: "bg-orange-100 text-orange-800 border-orange-300",
 };
 
+// Contact Status Badge with Tooltip - shows who updated the contact status
+function ContactStatusBadgeWithTooltip({ 
+  referral, 
+  usersMap 
+}: { 
+  referral: any; 
+  usersMap: Map<number, any>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const statusHistory = referral.statusHistory || [];
+  
+  // Filter only contact_status entries
+  const contactStatusChanges = statusHistory.filter(
+    (entry: any) => entry.status === 'contact_status'
+  );
+  
+  // Sort by date descending and get the most recent one
+  const sortedChanges = [...contactStatusChanges].sort(
+    (a: any, b: any) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+  );
+  const lastContactStatusChange = sortedChanges.length > 0 ? sortedChanges[0] : null;
+
+  const lastUpdatedBy = lastContactStatusChange ? usersMap.get(lastContactStatusChange.changedBy) : null;
+  const lastUpdatedAt = lastContactStatusChange ? new Date(lastContactStatusChange.changedAt) : null;
+
+  if (!referral.contactStatus) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  const lastUpdaterName = lastUpdatedBy?.fullName || lastContactStatusChange?.changedByName || 'Usuário não encontrado';
+
+  const statusInfoContent = (
+    <div className="text-xs space-y-1">
+      <p className="font-semibold text-purple-400">Status de contato: {contactStatusLabels[referral.contactStatus]}</p>
+      {lastContactStatusChange && (
+        <>
+          <p>Por: <span className="font-medium">{lastUpdaterName}</span></p>
+          {lastUpdatedAt && (
+            <p>Em: {lastUpdatedAt.toLocaleDateString("pt-BR")} às {lastUpdatedAt.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</p>
+          )}
+          {lastContactStatusChange.notes && lastContactStatusChange.notes.trim() && (
+            <p className="text-gray-300 italic mt-1 border-t border-gray-700 pt-1">"{lastContactStatusChange.notes}"</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <span className="inline-block cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+          <Badge className={cn("text-xs", contactStatusColors[referral.contactStatus])}>
+            {contactStatusLabels[referral.contactStatus]}
+          </Badge>
+        </span>
+      </PopoverTrigger>
+      <PopoverContent className="max-w-xs bg-gray-900 text-white p-3 shadow-lg z-50 border-gray-700" side="top" sideOffset={4}>
+        {statusInfoContent}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // Component to show status badge with popover showing who last updated it
 // Uses Popover for click support on mobile devices
 // Only shows referral status changes, NOT contact status changes
@@ -1492,13 +1556,7 @@ export default function AnalystReferrals() {
                             <StatusBadgeWithTooltip referral={referral} usersMap={usersMap} />
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
-                            {referral.contactStatus ? (
-                              <Badge variant="outline" className={`${contactStatusColors[referral.contactStatus] || "bg-gray-100 text-gray-800"} text-xs`}>
-                                {contactStatusLabels[referral.contactStatus] || "Sem status"}
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-gray-400">-</span>
-                            )}
+                            <ContactStatusBadgeWithTooltip referral={referral} usersMap={usersMap} />
                           </TableCell>
                           <TableCell className="text-xs text-gray-600 whitespace-nowrap">
                             {new Date(referral.createdAt).toLocaleDateString("pt-BR")}
