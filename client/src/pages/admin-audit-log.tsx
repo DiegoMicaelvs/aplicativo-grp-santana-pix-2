@@ -142,9 +142,12 @@ export default function AdminAuditLog() {
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Tipo de Entidade
               </label>
-              <Select value={filters.entityType} onValueChange={(value) => 
-                setFilters(prev => ({ ...prev, entityType: value === 'all' ? '' : value }))
-              }>
+              <Select 
+                value={filters.entityType || 'all'} 
+                onValueChange={(value) => 
+                  setFilters(prev => ({ ...prev, entityType: value === 'all' ? '' : value }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
