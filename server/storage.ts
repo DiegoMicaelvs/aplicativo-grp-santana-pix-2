@@ -2140,12 +2140,14 @@ class DatabaseStorage implements IStorage {
     
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     
+    // Limit results to 500 for performance - with 20k+ logs, unlimited queries are too slow
     return await db.query.auditLog.findMany({
       where: whereClause,
       with: {
         user: true
       },
-      orderBy: desc(auditLog.createdAt)
+      orderBy: desc(auditLog.createdAt),
+      limit: 500
     });
   }
 
