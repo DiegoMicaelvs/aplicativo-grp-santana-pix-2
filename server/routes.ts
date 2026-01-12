@@ -1305,7 +1305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const promoter = await storage.getUserById(req.user!.id);
       
       // Special case: certain promoters only create indicador_nivel_1
-      const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@gmail.com'];
+      const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@yahoo.com.br'];
       const isSpecialPromoter = specialPromoterEmails.includes(promoter?.username?.toLowerCase() || '');
       const indicadorRole = isSpecialPromoter ? "indicador_nivel_1" as const : "indicador" as const;
       

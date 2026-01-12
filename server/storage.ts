@@ -2649,7 +2649,7 @@ class DatabaseStorage implements IStorage {
             const owner = link.user;
             
             // Special case: certain promoters' referral links create indicador_nivel_1
-            const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@gmail.com'];
+            const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@yahoo.com.br'];
             const isSpecialPromoter = specialPromoterEmails.includes(owner.username?.toLowerCase() || '');
             if (isSpecialPromoter) {
               userData.role = 'indicador_nivel_1';
