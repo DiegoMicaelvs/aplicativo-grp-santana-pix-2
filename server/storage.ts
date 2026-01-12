@@ -1346,23 +1346,29 @@ class DatabaseStorage implements IStorage {
       const user = await this.getUserById(referral.userId);
       
       // Special rule: indicador_nivel_1 users don't receive commissions - their commissions go to the promoter
-      // This applies to promoters: Marcelo Macedo (marcelomacedo@gmail.com) and Wescley Gondim (wescleygondim@yahoo.com.br)
-      const isIndicadorNivel1 = user?.role === 'indicador_nivel_1';
+      // This ONLY applies to indicators whose promoter is Marcelo Macedo or Wescley Gondim
+      const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@yahoo.com.br'];
+      let isSpecialPromoterIndicator = false;
+      
+      if (user?.role === 'indicador_nivel_1' && user?.promoterId) {
+        const promoter = await this.getUserById(user.promoterId);
+        isSpecialPromoterIndicator = specialPromoterEmails.includes(promoter?.username?.toLowerCase() || '');
+      }
       
       let finalCommissionIndicator = newCommissionIndicator;
       let finalCommissionPromoter = newCommissionPromoter;
       
-      if (isIndicadorNivel1) {
+      if (isSpecialPromoterIndicator) {
         // Transfer indicator commission to promoter
         finalCommissionPromoter = newCommissionIndicator + newCommissionPromoter;
         finalCommissionIndicator = 0;
-        console.log(`[updateReferralStatus] indicador_nivel_1 detected - redirecting commissions to promoter: indicator=0, promoter=${finalCommissionPromoter}`);
+        console.log(`[updateReferralStatus] indicador_nivel_1 with special promoter detected - redirecting commissions to promoter: indicator=0, promoter=${finalCommissionPromoter}`);
       }
       
-      // Recalculate previous commissions for indicador_nivel_1 (they were already redirected)
+      // Recalculate previous commissions for special promoter indicators (they were already redirected)
       let prevIndicatorCommission = previousCommissionIndicator;
       let prevPromoterCommission = previousCommissionPromoter;
-      if (isIndicadorNivel1) {
+      if (isSpecialPromoterIndicator) {
         // Previous commissions were already combined into promoter
         prevIndicatorCommission = 0;
         prevPromoterCommission = previousCommissionIndicator + previousCommissionPromoter;
@@ -1375,8 +1381,8 @@ class DatabaseStorage implements IStorage {
       console.log(`[updateReferralStatus] Commission differences: indicator=${commissionDifferenceIndicator}, promoter=${commissionDifferencePromoter}`);
       
       // Update user balances based on commission differences
-      if (isIndicadorNivel1) {
-        // indicador_nivel_1: Only update promoter balance (indicator gets nothing)
+      if (isSpecialPromoterIndicator) {
+        // Special promoter indicator: Only update promoter balance (indicator gets nothing)
         if (user?.promoterId && commissionDifferencePromoter !== 0) {
           await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
           console.log(`[updateReferralStatus] Updated promoter balance for special promoter ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter} (includes indicator commission)`);
