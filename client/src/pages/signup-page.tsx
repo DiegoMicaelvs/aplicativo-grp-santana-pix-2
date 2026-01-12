@@ -152,14 +152,14 @@ export default function SignupPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <Header />
         <main className="container mx-auto px-4 py-8">
           <div className="max-w-md mx-auto">
             <Card>
               <CardContent className="text-center py-8">
-                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-green-600 mb-2">
+                <CheckCircle className="h-12 w-12 text-primary mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-primary mb-2">
                   Cadastro Realizado!
                 </h2>
                 <p className="text-muted-foreground mb-4">
@@ -178,14 +178,14 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <Header />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-green-600">
-                Cadastro Grupo Santana Pix
+              <CardTitle className="text-2xl font-bold text-primary">
+                Cadastro LeadFlow
               </CardTitle>
               <CardDescription>
                 {referralToken 
@@ -320,8 +320,8 @@ export default function SignupPage() {
                     
                     {/* Show info when coming from referral link */}
                     {referralToken && (
-                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-700">
+                      <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                        <p className="text-sm text-primary">
                           <strong>Cadastro como Indicador:</strong> Você poderá indicar pessoas e ganhar R$3 por cada cadastro validado + R$50 de bônus na conversão.
                         </p>
                       </div>
