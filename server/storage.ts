@@ -1342,23 +1342,57 @@ class DatabaseStorage implements IStorage {
       
       console.log(`[updateReferralStatus] New commissions: indicator=${newCommissionIndicator}, promoter=${newCommissionPromoter}`);
       
+      // Get user to check their role
+      const user = await this.getUserById(referral.userId);
+      
+      // Special rule: indicador_nivel_1 users don't receive commissions - their commissions go to the promoter
+      // This applies to promoters: Marcelo Macedo (marcelomacedo@gmail.com) and Wescley Gondim (wescleygondim@yahoo.com.br)
+      const isIndicadorNivel1 = user?.role === 'indicador_nivel_1';
+      
+      let finalCommissionIndicator = newCommissionIndicator;
+      let finalCommissionPromoter = newCommissionPromoter;
+      
+      if (isIndicadorNivel1) {
+        // Transfer indicator commission to promoter
+        finalCommissionPromoter = newCommissionIndicator + newCommissionPromoter;
+        finalCommissionIndicator = 0;
+        console.log(`[updateReferralStatus] indicador_nivel_1 detected - redirecting commissions to promoter: indicator=0, promoter=${finalCommissionPromoter}`);
+      }
+      
+      // Recalculate previous commissions for indicador_nivel_1 (they were already redirected)
+      let prevIndicatorCommission = previousCommissionIndicator;
+      let prevPromoterCommission = previousCommissionPromoter;
+      if (isIndicadorNivel1) {
+        // Previous commissions were already combined into promoter
+        prevIndicatorCommission = 0;
+        prevPromoterCommission = previousCommissionIndicator + previousCommissionPromoter;
+      }
+      
       // Calculate the difference in commissions
-      const commissionDifferenceIndicator = newCommissionIndicator - previousCommissionIndicator;
-      const commissionDifferencePromoter = newCommissionPromoter - previousCommissionPromoter;
+      const commissionDifferenceIndicator = finalCommissionIndicator - prevIndicatorCommission;
+      const commissionDifferencePromoter = finalCommissionPromoter - prevPromoterCommission;
       
       console.log(`[updateReferralStatus] Commission differences: indicator=${commissionDifferenceIndicator}, promoter=${commissionDifferencePromoter}`);
       
       // Update user balances based on commission differences
-      const user = await this.getUserById(referral.userId);
-      if (user && commissionDifferenceIndicator !== 0) {
-        await this.updateUserBalance(user.id, commissionDifferenceIndicator);
-        console.log(`[updateReferralStatus] Updated indicator balance for user ${user.id}: ${commissionDifferenceIndicator > 0 ? '+' : ''}${commissionDifferenceIndicator}`);
-      }
-      
-      // Update promoter balance if exists
-      if (user?.promoterId && commissionDifferencePromoter !== 0) {
-        await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
-        console.log(`[updateReferralStatus] Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
+      if (isIndicadorNivel1) {
+        // indicador_nivel_1: Only update promoter balance (indicator gets nothing)
+        if (user?.promoterId && commissionDifferencePromoter !== 0) {
+          await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
+          console.log(`[updateReferralStatus] Updated promoter balance for special promoter ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter} (includes indicator commission)`);
+        }
+      } else {
+        // Normal flow: update indicator and promoter separately
+        if (user && commissionDifferenceIndicator !== 0) {
+          await this.updateUserBalance(user.id, commissionDifferenceIndicator);
+          console.log(`[updateReferralStatus] Updated indicator balance for user ${user.id}: ${commissionDifferenceIndicator > 0 ? '+' : ''}${commissionDifferenceIndicator}`);
+        }
+        
+        // Update promoter balance if exists
+        if (user?.promoterId && commissionDifferencePromoter !== 0) {
+          await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
+          console.log(`[updateReferralStatus] Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
+        }
       }
       
       // REMOVIDO: Não atualizar totalEarnings quando indicação é paga
@@ -1390,12 +1424,12 @@ class DatabaseStorage implements IStorage {
           : newNoteEntry;
       }
       
-      // Prepare update data
+      // Prepare update data - use final commission values (adjusted for indicador_nivel_1)
       const updateData: any = {
         status, 
         notes: updatedNotes,
-        commissionIndicator: newCommissionIndicator.toFixed(2),
-        commissionPromoter: newCommissionPromoter.toFixed(2),
+        commissionIndicator: finalCommissionIndicator.toFixed(2),
+        commissionPromoter: finalCommissionPromoter.toFixed(2),
         statusHistory: [...currentHistory, newHistoryEntry],
         updatedAt: new Date()
       };
@@ -1438,8 +1472,8 @@ class DatabaseStorage implements IStorage {
             },
             newValues: { 
               status, 
-              commissionIndicator: newCommissionIndicator,
-              commissionPromoter: newCommissionPromoter 
+              commissionIndicator: finalCommissionIndicator,
+              commissionPromoter: finalCommissionPromoter 
             },
             details: `Status alterado de ${previousStatus} para ${status}${commissionDifferenceIndicator < 0 ? ' (comissões revertidas)' : ''}${notes ? `: ${notes}` : ''}`
           });
