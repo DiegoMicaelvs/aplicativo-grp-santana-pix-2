@@ -344,7 +344,6 @@ export default function NewReferralPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
       <div className="flex-grow bg-gray-50 py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <PromotionalAlert />
@@ -774,14 +773,13 @@ export default function NewReferralPage() {
                   <li>Indique apenas pessoas que realmente não possuam seguro atualmente.</li>
                   <li>Converse com a pessoa antes de indicá-la para garantir que ela tem interesse.</li>
                   <li>Veículos mais novos e bem conservados têm mais chances de aprovação.</li>
-                  <li>Avise a pessoa indicada que ela receberá contato do Grupo Santana.</li>
+                  <li>Avise a pessoa indicada que ela receberá contato do LeadFlow.</li>
                 </ul>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
       <Footer />
     </div>
   );
