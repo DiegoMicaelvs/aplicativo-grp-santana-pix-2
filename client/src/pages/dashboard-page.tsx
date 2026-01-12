@@ -130,9 +130,14 @@ export default function DashboardPage() {
   }, [user, setLocation]);
   
   // Fetch referrals - for Metis Viewer, get all Metis referrals; for others, get user's own referrals
-  const { data: referrals, isLoading: isLoadingReferrals } = useQuery<Referral[]>({
+  const { data: referralsResponse, isLoading: isLoadingReferrals } = useQuery<{ data: Referral[], total: number } | Referral[]>({
     queryKey: user?.role === 'metis_viewer' ? ['/api/metis-viewer/referrals'] : ['/api/referrals'],
   });
+  
+  // Handle both paginated response and array response
+  const referrals: Referral[] = Array.isArray(referralsResponse) 
+    ? referralsResponse 
+    : (referralsResponse?.data || []);
 
   // Calculate statistics
   const totalReferrals = referrals?.length || 0;

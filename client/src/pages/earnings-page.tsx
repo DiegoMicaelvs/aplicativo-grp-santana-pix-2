@@ -59,9 +59,14 @@ export default function EarningsPage() {
   }
   
   // Fetch referrals for the current user
-  const { data: referrals, isLoading: isLoadingReferrals } = useQuery<Referral[]>({
+  const { data: referralsResponse, isLoading: isLoadingReferrals } = useQuery<{ data: Referral[], total: number } | Referral[]>({
     queryKey: ['/api/referrals'],
   });
+  
+  // Handle both paginated response and array response
+  const referrals: Referral[] = Array.isArray(referralsResponse) 
+    ? referralsResponse 
+    : (referralsResponse?.data || []);
 
   // Filter only paid or validated referrals with commission
   const paidReferrals = referrals?.filter(r => 
