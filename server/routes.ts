@@ -1304,6 +1304,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get promoter info to check if they have a supervisor
       const promoter = await storage.getUserById(req.user!.id);
       
+      // Special case: marcelomacedo@gmail.com only creates indicador_nivel_1
+      const isMarceloMacedo = promoter?.username?.toLowerCase() === 'marcelomacedo@gmail.com';
+      const indicadorRole = isMarceloMacedo ? "indicador_nivel_1" as const : "indicador" as const;
+      
       // Add promoter relationship
       const userData = {
         ...validatedData,
@@ -1312,7 +1316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         analystId: undefined, // Explicitly set to undefined
         // Set the promoter as supervisor of the indicador
         supervisorId: req.user!.id,
-        role: "indicador" as const
+        role: indicadorRole
       };
       
       const newUser = await storage.createUser(userData);
