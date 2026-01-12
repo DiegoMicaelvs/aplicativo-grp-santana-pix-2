@@ -445,7 +445,7 @@ export default function AdminIndicatorsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        {user.role === "indicador" ? (
+                        {(user.role === "indicador" || user.role === "indicador_nivel_1") ? (
                           <div className="flex items-center gap-2">
                             {(() => {
                               const assignment = getIndicatorAssignment(user);
