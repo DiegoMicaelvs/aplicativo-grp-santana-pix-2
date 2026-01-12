@@ -1304,9 +1304,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get promoter info to check if they have a supervisor
       const promoter = await storage.getUserById(req.user!.id);
       
-      // Special case: marcelomacedo@gmail.com only creates indicador_nivel_1
-      const isMarceloMacedo = promoter?.username?.toLowerCase() === 'marcelomacedo@gmail.com';
-      const indicadorRole = isMarceloMacedo ? "indicador_nivel_1" as const : "indicador" as const;
+      // Special case: certain promoters only create indicador_nivel_1
+      const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@gmail.com'];
+      const isSpecialPromoter = specialPromoterEmails.includes(promoter?.username?.toLowerCase() || '');
+      const indicadorRole = isSpecialPromoter ? "indicador_nivel_1" as const : "indicador" as const;
       
       // Add promoter relationship
       const userData = {
