@@ -116,7 +116,7 @@ export default function Header() {
                   {user ? (
                     <>
                       {user.role !== 'indicador_nivel_1' && (
-                        <Link href="/dashboard" onClick={() => setIsOpen(false)}>
+                        <Link href={user.role === 'promotor' ? '/promoter' : '/dashboard'} onClick={() => setIsOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start">Dashboard</Button>
                         </Link>
                       )}
@@ -225,7 +225,7 @@ export default function Header() {
                       <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       {user.role !== 'indicador_nivel_1' && (
-                        <Link href="/dashboard">
+                        <Link href={user.role === 'promotor' ? '/promoter' : '/dashboard'}>
                           <DropdownMenuItem>Dashboard</DropdownMenuItem>
                         </Link>
                       )}
