@@ -84,9 +84,14 @@ export default function PromoterDashboard() {
   });
   
   // Fetch promoter's own referrals
-  const { data: myReferrals = [], isLoading: isLoadingMyReferrals } = useQuery<Referral[]>({
+  const { data: myReferralsResponse, isLoading: isLoadingMyReferrals } = useQuery<{ data: Referral[], total: number } | Referral[]>({
     queryKey: ["/api/referrals"],
   });
+  
+  // Handle both paginated response and array response
+  const myReferrals: Referral[] = Array.isArray(myReferralsResponse) 
+    ? myReferralsResponse 
+    : (myReferralsResponse?.data || []);
 
   // Fetch referral links
   const { data: referralLinks = [], isLoading: isLoadingLinks } = useQuery<ReferralLink[]>({
