@@ -63,14 +63,17 @@ export default function SignupPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
 
-  // Check for referral token in URL
+  // Check for referral token in URL - redirect to auth if no token
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const refToken = urlParams.get('ref');
     if (refToken) {
       setReferralToken(refToken);
+    } else {
+      // No referral token, redirect to auth page
+      setLocation('/auth');
     }
-  }, []);
+  }, [setLocation]);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),

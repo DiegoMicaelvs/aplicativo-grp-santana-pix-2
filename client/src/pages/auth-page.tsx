@@ -249,10 +249,16 @@ export default function AuthPage() {
                   onValueChange={(value) => setActiveTab(value)}
                   className="w-full"
                 >
-                  <TabsList className="grid w-full grid-cols-2 mb-6">
-                    <TabsTrigger value="login">Entrar</TabsTrigger>
-                    <TabsTrigger value="register">Cadastrar</TabsTrigger>
-                  </TabsList>
+                  {referralToken ? (
+                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                      <TabsTrigger value="login">Entrar</TabsTrigger>
+                      <TabsTrigger value="register">Cadastrar</TabsTrigger>
+                    </TabsList>
+                  ) : (
+                    <TabsList className="grid w-full grid-cols-1 mb-6">
+                      <TabsTrigger value="login">Entrar</TabsTrigger>
+                    </TabsList>
+                  )}
                   
                   <TabsContent value="login">
                     <Form {...loginForm}>
