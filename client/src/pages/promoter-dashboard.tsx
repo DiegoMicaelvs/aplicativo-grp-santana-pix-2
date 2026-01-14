@@ -105,6 +105,37 @@ export default function PromoterDashboard() {
     queryKey: ["/api/user"],
   });
 
+  // Check if current user is a special promoter (Marcelo Macedo or Wescley Gondim)
+  // These users can mark indicator payments as paid/not paid regardless of their role
+  const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@yahoo.com.br'];
+  const isSpecialPromoter = currentUser?.username 
+    ? specialPromoterEmails.includes(currentUser.username.toLowerCase())
+    : false;
+
+  // Mutation to update indicator payment status
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: async ({ referralId, status }: { referralId: number; status: 'paid' | 'not_paid' }) => {
+      const response = await apiRequest("PATCH", `/api/referrals/${referralId}/indicator-payment-status`, {
+        indicatorPaymentStatus: status
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/promoter/team-referrals"] });
+      toast({
+        title: "Status atualizado",
+        description: "O status de pagamento foi atualizado com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Fetch supervisor details if assigned
   const { data: supervisor } = useQuery<User>({
     queryKey: ["/api/users", currentUser?.supervisorId],
@@ -839,6 +870,9 @@ export default function PromoterDashboard() {
                             <TableHead className="min-w-[100px]">Status</TableHead>
                             <TableHead className="min-w-[120px]">Sua Comissão</TableHead>
                             <TableHead className="min-w-[80px]">Data</TableHead>
+                            {isSpecialPromoter && (
+                              <TableHead className="min-w-[120px]">Pgto Indicador</TableHead>
+                            )}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -879,6 +913,29 @@ export default function PromoterDashboard() {
                                 <TableCell className="whitespace-nowrap">
                                   {new Date(referral.createdAt).toLocaleDateString('pt-BR')}
                                 </TableCell>
+                                {isSpecialPromoter && (
+                                  <TableCell>
+                                    {['validated', 'converted', 'paid'].includes(referral.status) ? (
+                                      <div className="flex items-center gap-2">
+                                        <Switch
+                                          checked={referral.indicatorPaymentStatus === 'paid'}
+                                          onCheckedChange={(checked) => {
+                                            updatePaymentStatusMutation.mutate({
+                                              referralId: referral.id,
+                                              status: checked ? 'paid' : 'not_paid'
+                                            });
+                                          }}
+                                          disabled={updatePaymentStatusMutation.isPending}
+                                        />
+                                        <span className={`text-xs font-medium ${referral.indicatorPaymentStatus === 'paid' ? 'text-green-600' : 'text-orange-600'}`}>
+                                          {referral.indicatorPaymentStatus === 'paid' ? 'Pago' : 'Não Pago'}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400 text-xs">-</span>
+                                    )}
+                                  </TableCell>
+                                )}
                               </TableRow>
                             );
                           })}

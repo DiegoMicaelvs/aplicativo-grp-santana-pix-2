@@ -2153,11 +2153,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update indicator payment status (for special promoters Marcelo Macedo and Wescley Gondim)
   app.patch("/api/referrals/:id/indicator-payment-status", requireAuth, async (req, res) => {
     try {
-      // Only allow promoters with special emails (Marcelo Macedo and Wescley Gondim)
+      // Only allow users with special emails (Marcelo Macedo and Wescley Gondim) regardless of their role
       const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@yahoo.com.br'];
       const userEmail = req.user!.username?.toLowerCase() || '';
       
-      if (req.user!.role !== 'promotor' || !specialPromoterEmails.includes(userEmail)) {
+      if (!specialPromoterEmails.includes(userEmail)) {
         return res.status(403).json({ error: "Apenas promotores autorizados podem atualizar status de pagamento" });
       }
 
@@ -2176,9 +2176,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Indicação não encontrada" });
       }
       
-      // Check if the referral belongs to one of this promoter's indicators
+      // Check if the referral belongs to this promoter (via referral.promoterId or indicator.promoterId)
       const indicator = await storage.getUserById(existingReferral.userId);
-      if (!indicator || indicator.promoterId !== req.user!.id) {
+      const isOwner = existingReferral.promoterId === req.user!.id || indicator?.promoterId === req.user!.id;
+      if (!isOwner) {
         return res.status(403).json({ error: "Esta indicação não pertence a um indicador seu" });
       }
       
