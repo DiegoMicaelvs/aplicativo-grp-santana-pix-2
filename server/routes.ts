@@ -2150,6 +2150,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update indicator payment status (for special promoters Marcelo Macedo and Wescley Gondim)
+  app.patch("/api/referrals/:id/indicator-payment-status", requireAuth, async (req, res) => {
+    try {
+      // Only allow promoters with special emails (Marcelo Macedo and Wescley Gondim)
+      const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@yahoo.com.br'];
+      const userEmail = req.user!.username?.toLowerCase() || '';
+      
+      if (req.user!.role !== 'promotor' || !specialPromoterEmails.includes(userEmail)) {
+        return res.status(403).json({ error: "Apenas promotores autorizados podem atualizar status de pagamento" });
+      }
+
+      const referralId = parseInt(req.params.id);
+      const { indicatorPaymentStatus } = req.body;
+      
+      // Validate payment status value
+      const validPaymentStatuses = ["paid", "not_paid"];
+      if (!validPaymentStatuses.includes(indicatorPaymentStatus)) {
+        return res.status(400).json({ error: "Status de pagamento inválido" });
+      }
+      
+      // Check if referral exists
+      const existingReferral = await storage.getReferralById(referralId);
+      if (!existingReferral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+      
+      // Check if the referral belongs to one of this promoter's indicators
+      const indicator = await storage.getUserById(existingReferral.userId);
+      if (!indicator || indicator.promoterId !== req.user!.id) {
+        return res.status(403).json({ error: "Esta indicação não pertence a um indicador seu" });
+      }
+      
+      // Only allow updating payment status for validated or converted referrals
+      const allowedStatuses = ['validated', 'converted', 'paid'];
+      if (!allowedStatuses.includes(existingReferral.status)) {
+        return res.status(400).json({ error: "Só é possível marcar pagamento para indicações validadas ou convertidas" });
+      }
+      
+      // Import required Drizzle functions
+      const { eq } = await import('drizzle-orm');
+      const { referrals } = await import('@shared/schema.ts');
+      
+      // Payment status labels for history
+      const paymentStatusLabels: Record<string, string> = {
+        paid: "Pago",
+        not_paid: "Não Pago"
+      };
+      
+      // Create status history entry for payment status change
+      const statusHistoryEntry = {
+        status: 'indicator_payment_status',
+        changedBy: req.user!.id,
+        changedByName: req.user!.fullName || req.user!.username,
+        changedAt: new Date().toISOString(),
+        notes: `Pagamento ao indicador: ${paymentStatusLabels[indicatorPaymentStatus]}`
+      };
+      
+      const newHistory = [...(existingReferral.statusHistory || []), statusHistoryEntry];
+      
+      // Update indicator payment status and add to history
+      const result = await db
+        .update(referrals)
+        .set({
+          indicatorPaymentStatus: indicatorPaymentStatus,
+          indicatorPaymentStatusUpdatedAt: new Date(),
+          indicatorPaymentStatusUpdatedBy: req.user!.id,
+          statusHistory: newHistory as any,
+          updatedAt: new Date()
+        })
+        .where(eq(referrals.id, referralId))
+        .returning();
+      
+      console.log(`[INDICATOR PAYMENT STATUS] Promoter ${req.user!.id} updated referral ${referralId} payment status to ${indicatorPaymentStatus}`);
+      
+      // Log the update
+      await storage.logUserAction({
+        userId: req.user!.id,
+        action: "update_indicator_payment_status",
+        entityType: "referral",
+        entityId: referralId,
+        oldValues: { indicatorPaymentStatus: existingReferral.indicatorPaymentStatus },
+        newValues: { indicatorPaymentStatus },
+        details: `Status de pagamento ao indicador da indicação ${referralId} alterado para ${paymentStatusLabels[indicatorPaymentStatus]}`
+      });
+      
+      // Broadcast real-time update to all connected clients
+      if ((app as any).broadcastUpdate) {
+        (app as any).broadcastUpdate('referral_updated', result[0]);
+      }
+      
+      return res.json(result[0]);
+    } catch (error) {
+      console.error("Error updating indicator payment status:", error);
+      return res.status(500).json({ error: "Erro ao atualizar status de pagamento" });
+    }
+  });
+
   // Bulk update referral company (admin only)
   app.patch("/api/referrals/bulk-company-update", requireAdmin, async (req, res) => {
     try {
