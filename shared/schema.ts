@@ -124,6 +124,10 @@ export const referrals = pgTable("referrals", {
   contactStatus: text("contact_status").$type<ContactStatus>(), // Status do contato
   contactStatusUpdatedAt: timestamp("contact_status_updated_at"), // Quando o status de contato foi atualizado
   contactStatusUpdatedBy: integer("contact_status_updated_by").references(() => users.id), // Quem atualizou
+  // Indicator payment status (for special promoters like Marcelo Macedo and Wescley Gondim)
+  indicatorPaymentStatus: text("indicator_payment_status").$type<"paid" | "not_paid">().default("not_paid"), // Status do pagamento ao indicador
+  indicatorPaymentStatusUpdatedAt: timestamp("indicator_payment_status_updated_at"), // Quando foi atualizado
+  indicatorPaymentStatusUpdatedBy: integer("indicator_payment_status_updated_by").references(() => users.id), // Quem atualizou
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
