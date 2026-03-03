@@ -2622,35 +2622,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new indicador (promotors can create)
+  // Create new indicador (promotors can create with custom commission split)
   app.post("/api/promoter/indicators", requireAuth, async (req, res) => {
     try {
-      // Check if user is a promotor
-      if (req.user!.role !== "promotor") {
+      if (req.user!.role !== "promotor" && req.user!.role !== "admin") {
         return res.status(403).json({ error: "Apenas promotores podem cadastrar indicadores" });
       }
 
-      // Hash the password before saving
       const hashedPassword = await hashPassword(req.body.password);
+      const { commissionValidated, commissionConverted, teamSupervisorId, ...rest } = req.body;
 
-      // Force role to be indicador and set promotor as creator
+      // Validate commission values against pool limits
+      const POOL_VALIDATED = 4;
+      const POOL_CONVERTED = 60;
+      if (commissionValidated !== undefined && (parseFloat(commissionValidated) < 0 || parseFloat(commissionValidated) > POOL_VALIDATED)) {
+        return res.status(400).json({ error: `Comissão validado deve estar entre R$0 e R$${POOL_VALIDATED}` });
+      }
+      if (commissionConverted !== undefined && (parseFloat(commissionConverted) < 0 || parseFloat(commissionConverted) > POOL_CONVERTED)) {
+        return res.status(400).json({ error: `Comissão convertido deve estar entre R$0 e R$${POOL_CONVERTED}` });
+      }
+
+      // If indicator is under a supervisor, validate against supervisor's allocation
+      if (teamSupervisorId) {
+        const supervisor = await storage.getUserById(parseInt(teamSupervisorId));
+        if (!supervisor || supervisor.role !== 'supervisor') {
+          return res.status(400).json({ error: "Supervisor inválido" });
+        }
+        const supAllocValidated = parseFloat(supervisor.commissionValidated?.toString() || '0');
+        const supAllocConverted = parseFloat(supervisor.commissionConverted?.toString() || '0');
+        if (commissionValidated !== undefined && parseFloat(commissionValidated) > supAllocValidated) {
+          return res.status(400).json({ error: `Comissão validado do indicador (R$${commissionValidated}) não pode exceder a alocação do supervisor (R$${supAllocValidated})` });
+        }
+        if (commissionConverted !== undefined && parseFloat(commissionConverted) > supAllocConverted) {
+          return res.status(400).json({ error: `Comissão convertido do indicador (R$${commissionConverted}) não pode exceder a alocação do supervisor (R$${supAllocConverted})` });
+        }
+      }
+
       const userData = {
-        ...req.body,
+        ...rest,
         password: hashedPassword,
         role: "indicador",
         createdBy: req.user!.id,
-        promoterId: req.user!.id // Automatically assign to the creating promotor
+        promoterId: req.user!.id,
+        ...(commissionValidated !== undefined && { commissionValidated: parseFloat(commissionValidated).toFixed(2) }),
+        ...(commissionConverted !== undefined && { commissionConverted: parseFloat(commissionConverted).toFixed(2) }),
+        ...(teamSupervisorId && { teamSupervisorId: parseInt(teamSupervisorId) }),
       };
       
       const newUser = await storage.createUser(userData);
       const { password, ...userWithoutPassword } = newUser;
 
-      // Send welcome SMS to new user if they have a phone
       if (newUser.phone) {
         try {
           const { sendWelcomeSMS } = await import('./sms-service');
           await sendWelcomeSMS(newUser.phone, newUser.fullName);
-          console.log(`Welcome SMS sent to new indicador: ${newUser.fullName} (${newUser.phone})`);
         } catch (smsError) {
           console.log('Welcome SMS failed (non-critical):', smsError);
         }
@@ -2660,6 +2685,259 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating indicador:", error);
       return res.status(500).json({ error: "Erro ao criar indicador" });
+    }
+  });
+
+  // Create new supervisor (promotors only)
+  app.post("/api/promoter/supervisors", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== "promotor" && req.user!.role !== "admin") {
+        return res.status(403).json({ error: "Apenas promotores podem cadastrar supervisores" });
+      }
+
+      const POOL_VALIDATED = 4;
+      const POOL_CONVERTED = 60;
+      const { commissionValidated, commissionConverted, ...rest } = req.body;
+
+      if (commissionValidated === undefined || commissionConverted === undefined) {
+        return res.status(400).json({ error: "Defina os valores de comissão para o supervisor" });
+      }
+      if (parseFloat(commissionValidated) < 0 || parseFloat(commissionValidated) > POOL_VALIDATED) {
+        return res.status(400).json({ error: `Alocação validado deve estar entre R$0 e R$${POOL_VALIDATED}` });
+      }
+      if (parseFloat(commissionConverted) < 0 || parseFloat(commissionConverted) > POOL_CONVERTED) {
+        return res.status(400).json({ error: `Alocação convertido deve estar entre R$0 e R$${POOL_CONVERTED}` });
+      }
+
+      const hashedPassword = await hashPassword(rest.password);
+      const userData = {
+        ...rest,
+        password: hashedPassword,
+        role: "supervisor",
+        createdBy: req.user!.id,
+        promoterId: req.user!.id,
+        commissionValidated: parseFloat(commissionValidated).toFixed(2),
+        commissionConverted: parseFloat(commissionConverted).toFixed(2),
+      };
+
+      const newUser = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = newUser;
+
+      if (newUser.phone) {
+        try {
+          const { sendWelcomeSMS } = await import('./sms-service');
+          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+        } catch (smsError) {
+          console.log('Welcome SMS failed (non-critical):', smsError);
+        }
+      }
+
+      return res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating supervisor:", error);
+      return res.status(500).json({ error: "Erro ao criar supervisor" });
+    }
+  });
+
+  // Get all supervisors for a promotor
+  app.get("/api/promoter/supervisors", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== "promotor" && req.user!.role !== "admin") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      const supervisors = await storage.getSupervisorsByPromoter(req.user!.id);
+      return res.json(supervisors);
+    } catch (error) {
+      console.error("Error fetching supervisors:", error);
+      return res.status(500).json({ error: "Erro ao buscar supervisores" });
+    }
+  });
+
+  // Update commission values for a user (promotor can update supervisor/indicator commissions)
+  app.patch("/api/promoter/users/:id/commissions", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== "promotor" && req.user!.role !== "admin") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      const userId = parseInt(req.params.id);
+      const targetUser = await storage.getUserById(userId);
+      if (!targetUser) return res.status(404).json({ error: "Usuário não encontrado" });
+
+      // Ensure target is under this promotor
+      if (targetUser.promoterId !== req.user!.id && req.user!.role !== "admin") {
+        return res.status(403).json({ error: "Você não tem permissão para editar este usuário" });
+      }
+
+      const { commissionValidated, commissionConverted } = req.body;
+      const POOL_VALIDATED = 4;
+      const POOL_CONVERTED = 60;
+
+      if (commissionValidated !== undefined) {
+        const val = parseFloat(commissionValidated);
+        if (val < 0 || val > POOL_VALIDATED) {
+          return res.status(400).json({ error: `Valor deve estar entre R$0 e R$${POOL_VALIDATED}` });
+        }
+        // If updating a supervisor's allocation, ensure existing indicadores under them don't exceed it
+        if (targetUser.role === 'supervisor') {
+          const indicadoresUnderSup = await storage.getIndicadoresBySupervisor(userId);
+          for (const ind of indicadoresUnderSup) {
+            const indVal = parseFloat(ind.commissionValidated?.toString() || '0');
+            if (indVal > val) {
+              return res.status(400).json({ error: `A nova alocação (R$${val}) é menor que a comissão de um indicador vinculado (R$${indVal}). Ajuste o indicador primeiro.` });
+            }
+          }
+        }
+        // If updating an indicador under a supervisor, check supervisor allocation
+        if (targetUser.role === 'indicador' && targetUser.teamSupervisorId) {
+          const sup = await storage.getUserById(targetUser.teamSupervisorId);
+          const supAlloc = parseFloat(sup?.commissionValidated?.toString() || '0');
+          if (val > supAlloc) {
+            return res.status(400).json({ error: `Comissão não pode exceder alocação do supervisor (R$${supAlloc})` });
+          }
+        }
+      }
+      if (commissionConverted !== undefined) {
+        const val = parseFloat(commissionConverted);
+        if (val < 0 || val > POOL_CONVERTED) {
+          return res.status(400).json({ error: `Valor deve estar entre R$0 e R$${POOL_CONVERTED}` });
+        }
+        if (targetUser.role === 'supervisor') {
+          const indicadoresUnderSup = await storage.getIndicadoresBySupervisor(userId);
+          for (const ind of indicadoresUnderSup) {
+            const indVal = parseFloat(ind.commissionConverted?.toString() || '0');
+            if (indVal > val) {
+              return res.status(400).json({ error: `A nova alocação (R$${val}) é menor que a comissão de um indicador vinculado (R$${indVal}). Ajuste o indicador primeiro.` });
+            }
+          }
+        }
+        if (targetUser.role === 'indicador' && targetUser.teamSupervisorId) {
+          const sup = await storage.getUserById(targetUser.teamSupervisorId);
+          const supAlloc = parseFloat(sup?.commissionConverted?.toString() || '0');
+          if (val > supAlloc) {
+            return res.status(400).json({ error: `Comissão não pode exceder alocação do supervisor (R$${supAlloc})` });
+          }
+        }
+      }
+
+      const updates: any = {};
+      if (commissionValidated !== undefined) updates.commissionValidated = parseFloat(commissionValidated).toFixed(2);
+      if (commissionConverted !== undefined) updates.commissionConverted = parseFloat(commissionConverted).toFixed(2);
+
+      const updatedUser = await storage.updateUserProfile(userId, updates);
+      const { password, ...userWithoutPassword } = updatedUser;
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating commissions:", error);
+      return res.status(500).json({ error: "Erro ao atualizar comissões" });
+    }
+  });
+
+  // === SUPERVISOR ROUTES ===
+
+  // Supervisor: get their team (indicadores)
+  app.get("/api/supervisor/team", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== "supervisor" && req.user!.role !== "admin") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      const indicadores = await storage.getIndicadoresBySupervisor(req.user!.id);
+      return res.json(indicadores.map(u => {
+        const { password, ...rest } = u;
+        return rest;
+      }));
+    } catch (error) {
+      console.error("Error fetching supervisor team:", error);
+      return res.status(500).json({ error: "Erro ao buscar equipe" });
+    }
+  });
+
+  // Supervisor: create indicador
+  app.post("/api/supervisor/indicators", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== "supervisor" && req.user!.role !== "admin") {
+        return res.status(403).json({ error: "Apenas supervisores podem usar esta rota" });
+      }
+
+      const supervisor = await storage.getUserById(req.user!.id);
+      if (!supervisor) return res.status(404).json({ error: "Supervisor não encontrado" });
+
+      const supAllocValidated = parseFloat(supervisor.commissionValidated?.toString() || '0');
+      const supAllocConverted = parseFloat(supervisor.commissionConverted?.toString() || '0');
+
+      const { commissionValidated, commissionConverted, ...rest } = req.body;
+
+      if (commissionValidated === undefined || commissionConverted === undefined) {
+        return res.status(400).json({ error: "Defina os valores de comissão para o indicador" });
+      }
+      if (parseFloat(commissionValidated) < 0 || parseFloat(commissionValidated) > supAllocValidated) {
+        return res.status(400).json({ error: `Comissão validado deve estar entre R$0 e R$${supAllocValidated} (sua alocação)` });
+      }
+      if (parseFloat(commissionConverted) < 0 || parseFloat(commissionConverted) > supAllocConverted) {
+        return res.status(400).json({ error: `Comissão convertido deve estar entre R$0 e R$${supAllocConverted} (sua alocação)` });
+      }
+
+      const hashedPassword = await hashPassword(rest.password);
+      const userData = {
+        ...rest,
+        password: hashedPassword,
+        role: "indicador",
+        createdBy: req.user!.id,
+        promoterId: supervisor.promoterId, // Link to the root promotor
+        teamSupervisorId: req.user!.id,
+        commissionValidated: parseFloat(commissionValidated).toFixed(2),
+        commissionConverted: parseFloat(commissionConverted).toFixed(2),
+      };
+
+      const newUser = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = newUser;
+
+      if (newUser.phone) {
+        try {
+          const { sendWelcomeSMS } = await import('./sms-service');
+          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+        } catch (smsError) {
+          console.log('Welcome SMS failed (non-critical):', smsError);
+        }
+      }
+
+      return res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating indicador by supervisor:", error);
+      return res.status(500).json({ error: "Erro ao criar indicador" });
+    }
+  });
+
+  // Supervisor: get their referrals
+  app.get("/api/supervisor/referrals", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== "supervisor" && req.user!.role !== "admin") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      const indicadores = await storage.getIndicadoresBySupervisor(req.user!.id);
+      const indicadorIds = indicadores.map(i => i.id);
+      if (indicadorIds.length === 0) return res.json([]);
+      const allReferrals = await storage.getReferrals({ limit: 1000 });
+      const teamReferrals = (allReferrals.data || allReferrals).filter((r: any) => indicadorIds.includes(r.userId));
+      return res.json(teamReferrals);
+    } catch (error) {
+      console.error("Error fetching supervisor referrals:", error);
+      return res.status(500).json({ error: "Erro ao buscar indicações" });
+    }
+  });
+
+  // Supervisor: get their own info (allocation from promotor)
+  app.get("/api/supervisor/info", requireAuth, async (req, res) => {
+    try {
+      if (req.user!.role !== "supervisor" && req.user!.role !== "admin") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      const supervisor = await storage.getUserById(req.user!.id);
+      if (!supervisor) return res.status(404).json({ error: "Não encontrado" });
+      const { password, ...rest } = supervisor;
+      return res.json(rest);
+    } catch (error) {
+      console.error("Error fetching supervisor info:", error);
+      return res.status(500).json({ error: "Erro ao buscar informações" });
     }
   });
 

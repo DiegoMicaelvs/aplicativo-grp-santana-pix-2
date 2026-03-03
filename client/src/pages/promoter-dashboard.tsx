@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Users, TrendingUp, DollarSign, UserCheck, FileText, ArrowLeft, Wallet, Plus, ExternalLink, Copy, Edit, Trash2, Eye, MousePointer } from "lucide-react";
+import { PlusCircle, Users, TrendingUp, DollarSign, UserCheck, FileText, ArrowLeft, Wallet, Plus, ExternalLink, Copy, Edit, Trash2, Eye, MousePointer, Edit2, Check, X, UserCog } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,7 @@ interface ReferralLinkFormData {
 
 export default function PromoterDashboard() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateSupervisorOpen, setIsCreateSupervisorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [createLinkDialogOpen, setCreateLinkDialogOpen] = useState(false);
   const [editLinkDialogOpen, setEditLinkDialogOpen] = useState(false);
@@ -70,12 +71,19 @@ export default function PromoterDashboard() {
     name: "",
     isActive: true
   });
+  const [editingCommissionId, setEditingCommissionId] = useState<number | null>(null);
+  const [editCommValues, setEditCommValues] = useState({ commissionValidated: "", commissionConverted: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch indicadores under this promoter
   const { data: indicadores = [], isLoading: isLoadingIndicadores } = useQuery<User[]>({
     queryKey: ["/api/users/indicadores"],
+  });
+
+  // Fetch supervisors under this promoter
+  const { data: supervisors = [], isLoading: isLoadingSupervisors } = useQuery<User[]>({
+    queryKey: ["/api/promoter/supervisors"],
   });
   
   // Fetch all referrals from promoter's indicadores
@@ -150,10 +158,11 @@ export default function PromoterDashboard() {
   // Create indicador mutation
   const createIndicadorMutation = useMutation({
     mutationFn: async (data: CreateIndicador) => {
-      const response = await fetch("/api/users/indicador", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      const response = await apiRequest("POST", "/api/promoter/indicators", {
+        ...data,
+        commissionValidated: parseFloat(indicatorCommissions.validated),
+        commissionConverted: parseFloat(indicatorCommissions.converted),
+        ...(selectedSupervisorId !== "none" && { teamSupervisorId: parseInt(selectedSupervisorId) }),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -162,14 +171,16 @@ export default function PromoterDashboard() {
       return response.json();
     },
     onSuccess: () => {
-      // Use comprehensive invalidation for indicator-related queries
       invalidateRelatedQueries(queryClient, 'indicator');
+      queryClient.invalidateQueries({ queryKey: ["/api/users/indicadores"] });
       toast({
         title: "Sucesso",
         description: "Indicador criado com sucesso!",
       });
       setIsCreateDialogOpen(false);
       form.reset();
+      setIndicatorCommissions({ validated: "3", converted: "50" });
+      setSelectedSupervisorId("none");
     },
     onError: (error: Error) => {
       toast({
@@ -199,8 +210,74 @@ export default function PromoterDashboard() {
     },
   });
 
+  // Supervisor creation state
+  const [supervisorCommissions, setSupervisorCommissions] = useState({ validated: "0", converted: "0" });
+  const [supervisorFormData, setSupervisorFormData] = useState({
+    fullName: "", email: "", cpf: "", phone: "", pixKey: "", password: ""
+  });
+
+  // Commission fields for indicator creation
+  const [indicatorCommissions, setIndicatorCommissions] = useState({ validated: "3", converted: "50" });
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>("none");
+
+  // Mutation to create supervisor
+  const createSupervisorMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/promoter/supervisors", {
+        ...supervisorFormData,
+        username: supervisorFormData.email,
+        commissionValidated: parseFloat(supervisorCommissions.validated),
+        commissionConverted: parseFloat(supervisorCommissions.converted),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao criar supervisor");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/promoter/supervisors"] });
+      toast({ title: "Sucesso", description: "Supervisor criado com sucesso!" });
+      setIsCreateSupervisorOpen(false);
+      setSupervisorFormData({ fullName: "", email: "", cpf: "", phone: "", pixKey: "", password: "" });
+      setSupervisorCommissions({ validated: "0", converted: "0" });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    },
+  });
+
+  // Mutation to update commission values for a user
+  const updateCommissionMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: number }) => {
+      const res = await apiRequest("PATCH", `/api/promoter/users/${userId}/commissions`, {
+        commissionValidated: parseFloat(editCommValues.commissionValidated),
+        commissionConverted: parseFloat(editCommValues.commissionConverted),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao atualizar comissões");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/promoter/supervisors"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users/indicadores"] });
+      toast({ title: "Sucesso", description: "Comissões atualizadas!" });
+      setEditingCommissionId(null);
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    },
+  });
+
   const onSubmit = (data: CreateIndicador) => {
     createIndicadorMutation.mutate(data);
+  };
+
+  const formatCurrency = (val: any) => {
+    const num = parseFloat(val?.toString() || "0");
+    return isNaN(num) ? "R$ 0,00" : `R$ ${num.toFixed(2).replace(".", ",")}`;
   };
 
   // Referral Links Mutations
@@ -392,18 +469,95 @@ export default function PromoterDashboard() {
             <p className="text-sm sm:text-base text-gray-600">Gerencie sua rede de indicadores e acompanhe suas comissões</p>
           </div>
         
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                <span className="truncate">Cadastrar Indicador</span>
-              </Button>
-            </DialogTrigger>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Create Supervisor Dialog */}
+            <Dialog open={isCreateSupervisorOpen} onOpenChange={setIsCreateSupervisorOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  <UserCog className="mr-2 h-4 w-4" />
+                  <span className="truncate">Criar Supervisor</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
+                <DialogHeader>
+                  <DialogTitle>Cadastrar Supervisor</DialogTitle>
+                  <DialogDescription>
+                    O supervisor vai gerenciar seus próprios indicadores. Defina quanto alocar do pool (R$4 validado / R$60 convertido) para este supervisor.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Nome Completo</Label>
+                      <Input value={supervisorFormData.fullName} onChange={e => setSupervisorFormData(p => ({ ...p, fullName: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label>CPF</Label>
+                      <Input placeholder="000.000.000-00" value={supervisorFormData.cpf} onChange={e => setSupervisorFormData(p => ({ ...p, cpf: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>E-mail</Label>
+                      <Input type="email" value={supervisorFormData.email} onChange={e => setSupervisorFormData(p => ({ ...p, email: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label>Telefone</Label>
+                      <Input placeholder="(11) 99999-9999" value={supervisorFormData.phone} onChange={e => setSupervisorFormData(p => ({ ...p, phone: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Chave PIX</Label>
+                      <Input value={supervisorFormData.pixKey} onChange={e => setSupervisorFormData(p => ({ ...p, pixKey: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label>Senha</Label>
+                      <Input type="password" value={supervisorFormData.password} onChange={e => setSupervisorFormData(p => ({ ...p, password: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-3 bg-amber-50">
+                    <p className="text-xs font-semibold text-amber-800 mb-1">Alocação de Comissão para este Supervisor</p>
+                    <p className="text-xs text-amber-700 mb-3">Você fica com a diferença. Pool total: R$4 validado / R$60 convertido.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Por validado (máx R$4,00)</Label>
+                        <div className="relative mt-1">
+                          <span className="absolute left-2 top-2 text-xs text-gray-500">R$</span>
+                          <Input type="number" step="0.01" min="0" max="4" className="pl-7" value={supervisorCommissions.validated} onChange={e => setSupervisorCommissions(p => ({ ...p, validated: e.target.value }))} />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Você fica com: R$ {(4 - parseFloat(supervisorCommissions.validated || "0")).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Por convertido (máx R$60,00)</Label>
+                        <div className="relative mt-1">
+                          <span className="absolute left-2 top-2 text-xs text-gray-500">R$</span>
+                          <Input type="number" step="0.01" min="0" max="60" className="pl-7" value={supervisorCommissions.converted} onChange={e => setSupervisorCommissions(p => ({ ...p, converted: e.target.value }))} />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Você fica com: R$ {(60 - parseFloat(supervisorCommissions.converted || "0")).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <Button className="w-full" onClick={() => createSupervisorMutation.mutate()} disabled={createSupervisorMutation.isPending}>
+                    {createSupervisorMutation.isPending ? "Criando..." : "Criar Supervisor"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Create Indicator Dialog */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <span className="truncate">Cadastrar Indicador</span>
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
               <DialogHeader>
                 <DialogTitle className="text-base sm:text-lg">Cadastrar Novo Indicador</DialogTitle>
                 <DialogDescription className="text-sm">
-                  Crie um novo indicador em sua rede. Você receberá R$ 1,00 por cada indicação registrada e R$ 10,00 por cada venda fechada.
+                  Defina quanto o indicador vai receber. Você fica com a diferença do pool (R$4 validado / R$60 convertido).
                 </DialogDescription>
               </DialogHeader>
               
@@ -597,6 +751,45 @@ export default function PromoterDashboard() {
                     )}
                   />
 
+                  {/* Commission split section */}
+                  <div className="border rounded-lg p-3 bg-green-50">
+                    <p className="text-xs font-semibold text-green-800 mb-1">Comissão do Indicador</p>
+                    <p className="text-xs text-green-700 mb-3">Você fica com a diferença. Pool total: R$4 validado / R$60 convertido.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Por validado (máx R$4,00)</Label>
+                        <div className="relative mt-1">
+                          <span className="absolute left-2 top-2 text-xs text-gray-500">R$</span>
+                          <Input type="number" step="0.01" min="0" max="4" className="pl-7" value={indicatorCommissions.validated} onChange={e => setIndicatorCommissions(p => ({ ...p, validated: e.target.value }))} />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Você fica com: R$ {(4 - parseFloat(indicatorCommissions.validated || "0")).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Por convertido (máx R$60,00)</Label>
+                        <div className="relative mt-1">
+                          <span className="absolute left-2 top-2 text-xs text-gray-500">R$</span>
+                          <Input type="number" step="0.01" min="0" max="60" className="pl-7" value={indicatorCommissions.converted} onChange={e => setIndicatorCommissions(p => ({ ...p, converted: e.target.value }))} />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Você fica com: R$ {(60 - parseFloat(indicatorCommissions.converted || "0")).toFixed(2)}</p>
+                      </div>
+                    </div>
+                    {(supervisors as any[]).length > 0 && (
+                      <div className="mt-3">
+                        <Label className="text-xs">Vincular a um Supervisor (opcional)</Label>
+                        <select
+                          className="w-full mt-1 border rounded px-2 py-1.5 text-sm bg-white"
+                          value={selectedSupervisorId}
+                          onChange={e => setSelectedSupervisorId(e.target.value)}
+                        >
+                          <option value="none">Sem supervisor (direto ao promotor)</option>
+                          {(supervisors as any[]).map((sup: any) => (
+                            <option key={sup.id} value={String(sup.id)}>{sup.fullName} (validado: R${parseFloat(sup.commissionValidated || 0).toFixed(2)})</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-end space-x-2 pt-4">
                     <Button
                       type="button"
@@ -616,11 +809,12 @@ export default function PromoterDashboard() {
               </Form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex min-w-full sm:grid sm:grid-cols-5 gap-1">
+            <TabsList className="inline-flex min-w-full sm:grid sm:grid-cols-6 gap-1">
               <TabsTrigger value="overview" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
                 <span className="hidden sm:inline">Visão Geral</span>
                 <span className="sm:hidden">Geral</span>
@@ -636,6 +830,10 @@ export default function PromoterDashboard() {
               <TabsTrigger value="indicadores" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
                 <span className="hidden sm:inline">Meus Indicadores</span>
                 <span className="sm:hidden">Indicadores</span>
+              </TabsTrigger>
+              <TabsTrigger value="supervisores" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
+                <span className="hidden sm:inline">Supervisores</span>
+                <span className="sm:hidden">Sup.</span>
               </TabsTrigger>
               <TabsTrigger value="referral-links" className="text-xs sm:text-sm px-3 sm:px-4 flex-shrink-0">
                 <span className="hidden sm:inline">Links de Referência</span>
@@ -980,29 +1178,79 @@ export default function PromoterDashboard() {
                         <TableHeader>
                           <TableRow>
                             <TableHead className="min-w-[150px]">Nome</TableHead>
-                            <TableHead className="min-w-[180px]">Email</TableHead>
-                            <TableHead className="min-w-[100px]">Telefone</TableHead>
+                            <TableHead className="min-w-[150px]">Email</TableHead>
                             <TableHead className="min-w-[80px]">Indicações</TableHead>
                             <TableHead className="min-w-[80px]">Saldo</TableHead>
-                            <TableHead className="min-w-[80px]">Status</TableHead>
+                            <TableHead className="min-w-[80px] text-center">Comis. Valid.</TableHead>
+                            <TableHead className="min-w-[80px] text-center">Comis. Conv.</TableHead>
+                            <TableHead className="min-w-[60px]">Status</TableHead>
+                            <TableHead className="min-w-[60px]">Ações</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {indicadores.map((indicador) => {
                             const indicadorReferrals = teamReferrals.filter(r => r.userId === indicador.id);
                             const totalReferrals = indicadorReferrals.length;
+                            const isEditing = editingCommissionId === indicador.id;
                             
                             return (
                               <TableRow key={indicador.id}>
                                 <TableCell className="font-medium">{indicador.fullName}</TableCell>
-                                <TableCell className="truncate max-w-[180px]">{indicador.email}</TableCell>
-                                <TableCell>{indicador.phone}</TableCell>
+                                <TableCell className="truncate max-w-[150px] text-sm text-gray-500">{indicador.email}</TableCell>
                                 <TableCell>{totalReferrals}</TableCell>
                                 <TableCell className="whitespace-nowrap">R$ {parseFloat(indicador.balance || "0").toFixed(2)}</TableCell>
+                                {isEditing ? (
+                                  <>
+                                    <TableCell className="text-center">
+                                      <Input type="number" step="0.01" min="0" max="4" className="h-7 text-xs w-20"
+                                        value={editCommValues.commissionValidated}
+                                        onChange={e => setEditCommValues(p => ({ ...p, commissionValidated: e.target.value }))} />
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <Input type="number" step="0.01" min="0" max="60" className="h-7 text-xs w-20"
+                                        value={editCommValues.commissionConverted}
+                                        onChange={e => setEditCommValues(p => ({ ...p, commissionConverted: e.target.value }))} />
+                                    </TableCell>
+                                  </>
+                                ) : (
+                                  <>
+                                    <TableCell className="text-center">
+                                      <span className="text-amber-700 font-semibold">{formatCurrency(indicador.commissionValidated)}</span>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <span className="text-purple-700 font-semibold">{formatCurrency(indicador.commissionConverted)}</span>
+                                    </TableCell>
+                                  </>
+                                )}
                                 <TableCell>
                                   <Badge variant={indicador.isActive ? "default" : "secondary"}>
                                     {indicador.isActive ? "Ativo" : "Inativo"}
                                   </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {isEditing ? (
+                                    <div className="flex gap-1">
+                                      <Button size="icon" variant="ghost" className="h-7 w-7"
+                                        onClick={() => updateCommissionMutation.mutate({ userId: indicador.id })}
+                                        disabled={updateCommissionMutation.isPending}>
+                                        <Check className="h-3 w-3 text-green-600" />
+                                      </Button>
+                                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingCommissionId(null)}>
+                                        <X className="h-3 w-3 text-red-500" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button size="icon" variant="ghost" className="h-7 w-7"
+                                      onClick={() => {
+                                        setEditingCommissionId(indicador.id);
+                                        setEditCommValues({
+                                          commissionValidated: indicador.commissionValidated || "0",
+                                          commissionConverted: indicador.commissionConverted || "0",
+                                        });
+                                      }}>
+                                      <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                 </TableCell>
                               </TableRow>
                             );
@@ -1010,6 +1258,120 @@ export default function PromoterDashboard() {
                         </TableBody>
                       </Table>
                     </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="supervisores" className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCog className="h-5 w-5" />
+                    Supervisores
+                  </CardTitle>
+                  <CardDescription>Gerencie os supervisores e suas alocações de comissão</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoadingSupervisors ? (
+                  <p className="text-sm text-gray-500 text-center py-6">Carregando...</p>
+                ) : (supervisors as any[]).length === 0 ? (
+                  <div className="text-center py-10">
+                    <UserCog className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">Nenhum supervisor cadastrado ainda.</p>
+                    <p className="text-gray-400 text-xs mt-1">Clique em "Criar Supervisor" para adicionar um.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead className="text-center">Alocação Validado</TableHead>
+                          <TableHead className="text-center">Alocação Convertido</TableHead>
+                          <TableHead className="text-center">Você Fica (Validado)</TableHead>
+                          <TableHead className="text-center">Você Fica (Convertido)</TableHead>
+                          <TableHead className="text-center">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(supervisors as any[]).map((sup: any) => (
+                          <TableRow key={sup.id}>
+                            <TableCell className="font-medium">{sup.fullName}</TableCell>
+                            <TableCell className="text-sm text-gray-500">{sup.email}</TableCell>
+                            {editingCommissionId === sup.id ? (
+                              <>
+                                <TableCell className="text-center">
+                                  <div className="relative inline-block">
+                                    <span className="absolute left-1 top-1.5 text-xs text-gray-400">R$</span>
+                                    <Input type="number" step="0.01" min="0" max="4" className="pl-6 h-7 text-xs w-24"
+                                      value={editCommValues.commissionValidated}
+                                      onChange={e => setEditCommValues(p => ({ ...p, commissionValidated: e.target.value }))} />
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div className="relative inline-block">
+                                    <span className="absolute left-1 top-1.5 text-xs text-gray-400">R$</span>
+                                    <Input type="number" step="0.01" min="0" max="60" className="pl-6 h-7 text-xs w-24"
+                                      value={editCommValues.commissionConverted}
+                                      onChange={e => setEditCommValues(p => ({ ...p, commissionConverted: e.target.value }))} />
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center text-sm text-gray-500">
+                                  R$ {(4 - parseFloat(editCommValues.commissionValidated || "0")).toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-center text-sm text-gray-500">
+                                  R$ {(60 - parseFloat(editCommValues.commissionConverted || "0")).toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div className="flex justify-center gap-1">
+                                    <Button size="icon" variant="ghost" className="h-7 w-7"
+                                      onClick={() => updateCommissionMutation.mutate({ userId: sup.id })}
+                                      disabled={updateCommissionMutation.isPending}>
+                                      <Check className="h-3 w-3 text-green-600" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingCommissionId(null)}>
+                                      <X className="h-3 w-3 text-red-500" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            ) : (
+                              <>
+                                <TableCell className="text-center">
+                                  <span className="font-semibold text-amber-700">{formatCurrency(sup.commissionValidated)}</span>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <span className="font-semibold text-purple-700">{formatCurrency(sup.commissionConverted)}</span>
+                                </TableCell>
+                                <TableCell className="text-center text-sm text-green-700">
+                                  {formatCurrency(4 - parseFloat(sup.commissionValidated || "0"))}
+                                </TableCell>
+                                <TableCell className="text-center text-sm text-green-700">
+                                  {formatCurrency(60 - parseFloat(sup.commissionConverted || "0"))}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7"
+                                    onClick={() => {
+                                      setEditingCommissionId(sup.id);
+                                      setEditCommValues({
+                                        commissionValidated: sup.commissionValidated || "0",
+                                        commissionConverted: sup.commissionConverted || "0",
+                                      });
+                                    }}>
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                </TableCell>
+                              </>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </CardContent>

@@ -22,16 +22,19 @@ The platform features role-based routing and dashboards, responsive design with 
 - **SMS Service**: Twilio integration for location-based SMS notifications.
 
 ### Feature Specifications
-- **Multi-role authentication**: Supports `indicador`, `promotor`, `analista` (levels 1-3), `gerente`, `admin`, and `vendedor` roles with hierarchical relationships and granular access control via `supervisorId` and `promoterId` links.
+- **Multi-role authentication**: Supports `indicador`, `promotor`, `analista` (levels 1-3), `gerente`, `admin`, `vendedor`, and `supervisor` roles with hierarchical relationships (Promotor → Supervisor → Indicador) and granular access control via `supervisorId`, `promoterId`, and `teamSupervisorId` links.
 - **Referral Management**: Complete lifecycle tracking including status, commission management, geographic location (city/state), and data validation fields.
 - **Supervisor-based Filtering**: Analyst Level 3 users automatically view only users, referrals, and statistics relevant to their supervised teams.
 - **Public Dashboard Security**: Secure token-based links for public company dashboards, replacing predictable IDs with random tokens.
 - **Plate Search Functionality**: Available for all authenticated users to check vehicle registration status and prevent duplicates.
+- **Hierarchical Commission System**: Pool of R$4 (validated) / R$60 (converted) per referral. Promotor allocates a portion to supervisor; supervisor allocates a portion to indicator; each level keeps the difference. Special rule: for `indicador_nivel_1` users under marcelomacedo@gmail.com or wescleygondim@yahoo.com.br, the indicator receives R$0 and the promoter receives the full pool.
+- **Supervisor Dashboard**: Dedicated dashboard for supervisors to view team referrals, manage their indicators, and track commissions.
+- **Promoter Supervisor Management**: Promoters can create supervisors via a dedicated tab ("Supervisores") and assign them commission allocations. The Meus Indicadores tab shows per-indicator commission values with inline edit capability.
 - **Withdrawal System**: Allows users to use any valid PIX key for withdrawals, with corrected balance deduction logic to prevent negative balances and ensure proper return of funds for rejected withdrawals.
 - **Company Selection**: Simplified for non-admin users, defaulting to "Metis da Pix."
 
 ### System Design Choices
-- **Database Schema**: Includes `Users`, `Referrals`, `Companies`, `Withdrawals`, `Audit Log`, `Cash Flow`, and `Support Tickets` tables. `Users` table defines `supervisorId`, `promoterId`, and `analystLevel`. `Referrals` table tracks status history, commission, and geographic data.
+- **Database Schema**: Includes `Users`, `Referrals`, `Companies`, `Withdrawals`, `Audit Log`, `Cash Flow`, and `Support Tickets` tables. `Users` table defines `supervisorId`, `promoterId`, `teamSupervisorId`, `analystLevel`, `commissionValidated`, and `commissionConverted`. `Referrals` table tracks status history, commission (including `commission_supervisor` and `supervisor_id_ref`), and geographic data.
 - **API Architecture**: Role-based endpoints with automatic filtering for Analyst Level 3 users to retrieve supervised users, referrals, and statistics.
 - **Authentication System**: Critical fixes ensure password hashing is applied only once during user creation and environment detection for cookie security is accurate.
 

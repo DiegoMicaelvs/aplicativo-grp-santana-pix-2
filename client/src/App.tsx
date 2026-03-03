@@ -28,6 +28,7 @@ import AdminSettings from "@/pages/admin-settings";
 import CompanyDashboard from "@/pages/company-dashboard";
 import PublicCompanyDashboard from "@/pages/public-company-dashboard";
 import PromoterDashboard from "@/pages/promoter-dashboard";
+import SupervisorDashboard from "@/pages/supervisor-dashboard";
 import TeamDashboard from "@/pages/team-dashboard";
 import VendedorDashboard from "@/pages/vendedor-dashboard";
 import RegisterIndicator from "@/pages/register-indicator";
@@ -44,7 +45,7 @@ import AnalystAnalytics from "@/pages/analyst-analytics";
 import PlateSearchPage from "@/pages/plate-search";
 import { ReferralLinksPage } from "@/pages/referral-links-page";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AdminRoute, PromoterRoute, VendedorRoute, ManagerRoute, AnalystRoute, ReferralLinkRoute, HomePageRoute } from "./lib/protected-route";
+import { AdminRoute, PromoterRoute, SupervisorRoute, VendedorRoute, ManagerRoute, AnalystRoute, ReferralLinkRoute, HomePageRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
 
 function Router() {
@@ -83,6 +84,7 @@ function Router() {
       <AdminRoute path="/admin/settings" component={AdminSettings} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
       <PromoterRoute path="/promoter-dashboard" component={PromoterDashboard} />
+      <SupervisorRoute path="/supervisor-dashboard" component={SupervisorDashboard} />
       <PromoterRoute path="/register-indicator" component={RegisterIndicator} />
       <PromoterRoute path="/team" component={TeamDashboard} />
       <VendedorRoute path="/vendedor" component={VendedorDashboard} />

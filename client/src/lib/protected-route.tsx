@@ -241,6 +241,36 @@ export function ReferralLinkRoute({
   return <Route path={path} component={Component} />;
 }
 
+export function SupervisorRoute({
+  path,
+  component: Component,
+}: {
+  path: string;
+  component: () => React.JSX.Element;
+}) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Route path={path}>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Route>
+    );
+  }
+
+  if (!user || (user.role !== "supervisor" && user.role !== "admin" && user.role !== "promotor")) {
+    return (
+      <Route path={path}>
+        <Redirect to="/auth" />
+      </Route>
+    );
+  }
+
+  return <Route path={path} component={Component} />;
+}
+
 export function HomePageRoute({
   path,
   component: Component,

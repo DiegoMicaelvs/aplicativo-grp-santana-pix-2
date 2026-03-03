@@ -4,7 +4,7 @@ import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // User roles
-export type UserRole = "indicador" | "indicador_nivel_1" | "promotor" | "admin" | "analista" | "vendedor" | "gerente" | "metis_viewer";
+export type UserRole = "indicador" | "indicador_nivel_1" | "promotor" | "supervisor" | "admin" | "analista" | "vendedor" | "gerente" | "metis_viewer";
 export type AnalystLevel = 1 | 2 | 3;
 
 // Analyst permissions
@@ -54,6 +54,9 @@ export const users = pgTable("users", {
   promoterId: integer("promoter_id"), // ID do promotor que cadastrou este indicador
   analystId: integer("analyst_id"), // ID do analista nível 3 responsável (para promotores)
   supervisorId: integer("supervisor_id"), // ID do supervisor (analista nível 3) deste usuário
+  teamSupervisorId: integer("team_supervisor_id"), // ID do supervisor na cadeia do promotor (role=supervisor)
+  commissionValidated: decimal("commission_validated", { precision: 10, scale: 2 }), // Valor por lead validado (para indicador=o que recebe; para supervisor=alocação do promotor)
+  commissionConverted: decimal("commission_converted", { precision: 10, scale: 2 }), // Valor bônus por lead convertido (para indicador=o que recebe; para supervisor=alocação do promotor)
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0.00").notNull(), // Saldo disponível
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00").notNull(), // Total ganho
   mustChangePassword: boolean("must_change_password").default(false).notNull(), // Força alteração de senha no próximo login
@@ -101,6 +104,8 @@ export const referrals = pgTable("referrals", {
   status: text("status").default("pending").notNull().$type<ReferralStatus>(),
   commissionIndicator: decimal("commission_indicator", { precision: 10, scale: 2 }).default("0.00"),
   commissionPromoter: decimal("commission_promoter", { precision: 10, scale: 2 }).default("0.00"),
+  commissionSupervisor: decimal("commission_supervisor", { precision: 10, scale: 2 }).default("0.00"),
+  supervisorId: integer("supervisor_id_ref").references(() => users.id), // ID do supervisor que supervisionou esta indicação
   statusHistory: jsonb("status_history").$type<{status: string, changedBy: number, changedAt: string, notes?: string}[]>(), // Histórico de mudanças de status
   // Campos de validação
   vehicleBrand: text("vehicle_brand"), // Marca do veículo

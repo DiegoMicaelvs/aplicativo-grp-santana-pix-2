@@ -52,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLocation("/admin");
       } else if (user.role === "promotor") {
         setLocation("/promoter-dashboard");
+      } else if (user.role === "supervisor") {
+        setLocation("/supervisor-dashboard");
       } else {
         setLocation("/dashboard");
       }

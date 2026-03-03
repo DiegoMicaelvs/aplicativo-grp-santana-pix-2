@@ -57,6 +57,8 @@ export interface IStorage {
   getUsersByRole(role: string): Promise<any[]>;
   getUsersByCreator(creatorId: number): Promise<any[]>;
   getIndicadoresByPromoter(promoterId: number): Promise<any[]>;
+  getSupervisorsByPromoter(promoterId: number): Promise<any[]>;
+  getIndicadoresBySupervisor(supervisorId: number): Promise<any[]>;
   updateUserBalance(userId: number, amount: number): Promise<void>;
   updateUserPermissions(userId: number, permissions: string[], analystLevel?: number): Promise<any>;
   updateUserProfile(userId: number, updates: any): Promise<any>;
@@ -311,6 +313,20 @@ class DatabaseStorage implements IStorage {
   async getIndicadoresByPromoter(promoterId: number) {
     return await db.query.users.findMany({
       where: eq(users.promoterId, promoterId),
+      orderBy: desc(users.createdAt)
+    });
+  }
+
+  async getSupervisorsByPromoter(promoterId: number) {
+    return await db.query.users.findMany({
+      where: and(eq(users.promoterId, promoterId), eq(users.role, 'supervisor')),
+      orderBy: desc(users.createdAt)
+    });
+  }
+
+  async getIndicadoresBySupervisor(supervisorId: number) {
+    return await db.query.users.findMany({
+      where: eq(users.teamSupervisorId, supervisorId),
       orderBy: desc(users.createdAt)
     });
   }
@@ -1317,34 +1333,85 @@ class DatabaseStorage implements IStorage {
         notes: notes || ''
       };
       
-      // Calculate new commission values based on status
+      // Get user to check their role and custom commissions
+      const user = await this.getUserById(referral.userId);
+
+      // --- Custom commission split logic ---
+      // Total pools: validated = R$4, converted bonus = R$60
+      const POOL_VALIDATED = 4;
+      const POOL_CONVERTED = 60;
+
+      // Determine indicador's custom commission (if set, else default)
+      const indicadorCustomValidated = user?.commissionValidated ? parseFloat(user.commissionValidated.toString()) : null;
+      const indicadorCustomConverted = user?.commissionConverted ? parseFloat(user.commissionConverted.toString()) : null;
+
+      // Check if indicador has a team supervisor
+      let supervisorUser: any = null;
+      if (user?.teamSupervisorId) {
+        supervisorUser = await this.getUserById(user.teamSupervisorId);
+      }
+
+      // Supervisor's allocation (what promotor gave the supervisor)
+      const supervisorAllocValidated = supervisorUser?.commissionValidated ? parseFloat(supervisorUser.commissionValidated.toString()) : null;
+      const supervisorAllocConverted = supervisorUser?.commissionConverted ? parseFloat(supervisorUser.commissionConverted.toString()) : null;
+
+      // Compute effective commissions based on status
       let newCommissionIndicator = 0;
       let newCommissionPromoter = 0;
-      
+      let newCommissionSupervisor = 0;
+
+      const previousCommissionSupervisor = parseFloat((referral as any).commissionSupervisor?.toString() || '0');
+
       if (status === 'validated') {
-        newCommissionIndicator = 3; // R$ 3 por validado
-        newCommissionPromoter = 1; // R$ 1 para o promotor
-      } else if (status === 'converted') {
-        // Se estava validado antes, soma as comissões
-        if (previousStatus === 'validated') {
-          newCommissionIndicator = previousCommissionIndicator + 50; // Soma R$ 50 aos R$ 3 existentes
-          newCommissionPromoter = previousCommissionPromoter + 10; // Soma R$ 10 ao R$ 1 existente
+        // Indicador's take
+        const indTake = indicadorCustomValidated !== null ? indicadorCustomValidated : 3;
+        newCommissionIndicator = indTake;
+
+        if (supervisorUser && supervisorAllocValidated !== null) {
+          // Supervisor keeps: their allocation - indicador's take
+          newCommissionSupervisor = supervisorAllocValidated - indTake;
+          // Promotor keeps: pool - supervisor's allocation
+          newCommissionPromoter = POOL_VALIDATED - supervisorAllocValidated;
         } else {
-          newCommissionIndicator = 50; // R$ 50 por conversão
-          newCommissionPromoter = 10; // R$ 10 para o promotor
+          // No supervisor: promotor keeps the remainder
+          newCommissionSupervisor = 0;
+          newCommissionPromoter = POOL_VALIDATED - indTake;
+        }
+      } else if (status === 'converted') {
+        // Converted bonus on top of what was already validated
+        const indBonusTake = indicadorCustomConverted !== null ? indicadorCustomConverted : 50;
+
+        if (previousStatus === 'validated') {
+          newCommissionIndicator = previousCommissionIndicator + indBonusTake;
+          if (supervisorUser && supervisorAllocConverted !== null) {
+            const supBonus = supervisorAllocConverted - indBonusTake;
+            newCommissionSupervisor = previousCommissionSupervisor + supBonus;
+            const promBonus = POOL_CONVERTED - supervisorAllocConverted;
+            newCommissionPromoter = previousCommissionPromoter + promBonus;
+          } else {
+            newCommissionSupervisor = 0;
+            const promBonus = POOL_CONVERTED - indBonusTake;
+            newCommissionPromoter = previousCommissionPromoter + promBonus;
+          }
+        } else {
+          newCommissionIndicator = indBonusTake;
+          if (supervisorUser && supervisorAllocConverted !== null) {
+            newCommissionSupervisor = supervisorAllocConverted - indBonusTake;
+            newCommissionPromoter = POOL_CONVERTED - supervisorAllocConverted;
+          } else {
+            newCommissionSupervisor = 0;
+            newCommissionPromoter = POOL_CONVERTED - indBonusTake;
+          }
         }
       } else if (status === 'paid') {
-        // Mantém as comissões existentes quando muda para pago
         newCommissionIndicator = previousCommissionIndicator;
         newCommissionPromoter = previousCommissionPromoter;
+        newCommissionSupervisor = previousCommissionSupervisor;
       }
-      // Para outros status (pending, rejected, analyzing), as comissões são zero
-      
-      console.log(`[updateReferralStatus] New commissions: indicator=${newCommissionIndicator}, promoter=${newCommissionPromoter}`);
-      
-      // Get user to check their role
-      const user = await this.getUserById(referral.userId);
-      
+      // For other statuses (pending, rejected, analyzing) commissions are zero
+
+      console.log(`[updateReferralStatus] New commissions: indicator=${newCommissionIndicator}, supervisor=${newCommissionSupervisor}, promoter=${newCommissionPromoter}`);
+
       // Special rule: indicador_nivel_1 users don't receive commissions - their commissions go to the promoter
       // This ONLY applies to indicators whose promoter is Marcelo Macedo or Wescley Gondim
       const specialPromoterEmails = ['marcelomacedo@gmail.com', 'wescleygondim@yahoo.com.br'];
@@ -1357,28 +1424,32 @@ class DatabaseStorage implements IStorage {
       
       let finalCommissionIndicator = newCommissionIndicator;
       let finalCommissionPromoter = newCommissionPromoter;
+      let finalCommissionSupervisor = newCommissionSupervisor;
       
       if (isSpecialPromoterIndicator) {
         // Transfer indicator commission to promoter
         finalCommissionPromoter = newCommissionIndicator + newCommissionPromoter;
         finalCommissionIndicator = 0;
+        finalCommissionSupervisor = 0;
         console.log(`[updateReferralStatus] indicador_nivel_1 with special promoter detected - redirecting commissions to promoter: indicator=0, promoter=${finalCommissionPromoter}`);
       }
       
       // Recalculate previous commissions for special promoter indicators (they were already redirected)
       let prevIndicatorCommission = previousCommissionIndicator;
       let prevPromoterCommission = previousCommissionPromoter;
+      let prevSupervisorCommission = previousCommissionSupervisor;
       if (isSpecialPromoterIndicator) {
-        // Previous commissions were already combined into promoter
         prevIndicatorCommission = 0;
         prevPromoterCommission = previousCommissionIndicator + previousCommissionPromoter;
+        prevSupervisorCommission = 0;
       }
       
       // Calculate the difference in commissions
       const commissionDifferenceIndicator = finalCommissionIndicator - prevIndicatorCommission;
       const commissionDifferencePromoter = finalCommissionPromoter - prevPromoterCommission;
+      const commissionDifferenceSupervisor = finalCommissionSupervisor - prevSupervisorCommission;
       
-      console.log(`[updateReferralStatus] Commission differences: indicator=${commissionDifferenceIndicator}, promoter=${commissionDifferencePromoter}`);
+      console.log(`[updateReferralStatus] Commission differences: indicator=${commissionDifferenceIndicator}, supervisor=${commissionDifferenceSupervisor}, promoter=${commissionDifferencePromoter}`);
       
       // Update user balances based on commission differences
       if (isSpecialPromoterIndicator) {
@@ -1388,12 +1459,18 @@ class DatabaseStorage implements IStorage {
           console.log(`[updateReferralStatus] Updated promoter balance for special promoter ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter} (includes indicator commission)`);
         }
       } else {
-        // Normal flow: update indicator and promoter separately
+        // Normal flow: update indicator, supervisor and promoter separately
         if (user && commissionDifferenceIndicator !== 0) {
           await this.updateUserBalance(user.id, commissionDifferenceIndicator);
           console.log(`[updateReferralStatus] Updated indicator balance for user ${user.id}: ${commissionDifferenceIndicator > 0 ? '+' : ''}${commissionDifferenceIndicator}`);
         }
-        
+
+        // Update supervisor balance if exists
+        if (supervisorUser && commissionDifferenceSupervisor !== 0) {
+          await this.updateUserBalance(supervisorUser.id, commissionDifferenceSupervisor);
+          console.log(`[updateReferralStatus] Updated supervisor balance for user ${supervisorUser.id}: ${commissionDifferenceSupervisor > 0 ? '+' : ''}${commissionDifferenceSupervisor}`);
+        }
+
         // Update promoter balance if exists
         if (user?.promoterId && commissionDifferencePromoter !== 0) {
           await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
@@ -1436,6 +1513,8 @@ class DatabaseStorage implements IStorage {
         notes: updatedNotes,
         commissionIndicator: finalCommissionIndicator.toFixed(2),
         commissionPromoter: finalCommissionPromoter.toFixed(2),
+        commissionSupervisor: finalCommissionSupervisor.toFixed(2),
+        supervisorId: supervisorUser?.id || (referral as any).supervisorId || null,
         statusHistory: [...currentHistory, newHistoryEntry],
         updatedAt: new Date()
       };
