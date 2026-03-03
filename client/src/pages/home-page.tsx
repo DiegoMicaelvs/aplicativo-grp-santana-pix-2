@@ -58,7 +58,7 @@ export default function HomePage() {
                   <span className="block">Simples assim.</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Chega de programas de indicação que só pagam se a empresa vender! Aqui você ganha <span className="font-semibold text-primary">R$3 por cada cadastro validado</span>, mesmo que a venda ainda nem tenha acontecido. Se o nosso time converter em venda, você ainda recebe <span className="font-semibold text-primary">R$50 de bônus!</span>
+                  Chega de programas de indicação que só pagam se a empresa vender! Aqui você <span className="font-semibold text-primary">recebe por cada cadastro validado</span>, mesmo que a venda ainda nem tenha acontecido. Se o nosso time converter em venda, você ainda <span className="font-semibold text-primary">recebe um bônus!</span> Os valores exatos são apresentados após o seu cadastro como indicador.
                 </p>
                 <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start">
                   <div className="flex-1 sm:flex-initial">
@@ -149,10 +149,10 @@ export default function HomePage() {
                   <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-primary text-white">
                     <span className="text-xl font-bold">4</span>
                   </div>
-                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">PIX automático de R$3</p>
+                  <p className="ml-16 text-lg leading-6 font-medium text-gray-900">PIX automático por cadastro validado</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-600">
-                  Por cadastro validado. Se nosso time comercial fechar a venda, você ganha mais R$50 de bônus!
+                  Você recebe por cada indicação validada. Se nosso time comercial fechar a venda, você ainda ganha um bônus extra! Os valores são definidos no momento do seu cadastro.
                 </dd>
               </div>
             </dl>
@@ -168,7 +168,7 @@ export default function HomePage() {
               Renda extra real e imediata
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
-              Temos casos de pessoas que faturaram mais de R$5.000 em um único mês. Foco em quem tem contato com motoristas: frentistas, lava-jatos, despachantes, panfleteiros - vocês têm ouro nas mãos!
+              Temos casos de pessoas que transformaram as indicações em uma renda extra expressiva em um único mês. Foco em quem tem contato com motoristas: frentistas, lava-jatos, despachantes, panfleteiros — vocês têm ouro nas mãos!
             </p>
           </div>
 
@@ -352,7 +352,7 @@ export default function HomePage() {
                   Quantos cadastros posso fazer por dia?
                 </AccordionTrigger>
                 <AccordionContent className="text-base text-gray-600">
-                  O usuário tem um limite de 100 cadastros diários. Alcance 100 cadastros VALIDADOS por dia e conquiste uma renda de R$ 6.600 por mês.
+                  O sistema possui um limite diário de cadastros por usuário. Quanto mais indicações válidas você fizer, maior a sua renda. Os detalhes sobre limites e valores são apresentados após o seu cadastro como indicador.
                 </AccordionContent>
               </AccordionItem>
               
