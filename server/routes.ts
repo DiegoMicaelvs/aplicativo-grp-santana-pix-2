@@ -2664,6 +2664,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "indicador",
         createdBy: req.user!.id,
         promoterId: req.user!.id,
+        city: rest.city || "",
+        state: rest.state || "",
+        zipCode: rest.zipCode || "",
         ...(commissionValidated !== undefined && { commissionValidated: parseFloat(commissionValidated).toFixed(2) }),
         ...(commissionConverted !== undefined && { commissionConverted: parseFloat(commissionConverted).toFixed(2) }),
         ...(teamSupervisorId && { teamSupervisorId: parseInt(teamSupervisorId) }),
@@ -2718,6 +2721,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         promoterId: req.user!.id,
         commissionValidated: parseFloat(commissionValidated).toFixed(2),
         commissionConverted: parseFloat(commissionConverted).toFixed(2),
+        city: rest.city || "",
+        state: rest.state || "",
+        zipCode: rest.zipCode || "",
       };
 
       const newUser = await storage.createUser(userData);
@@ -2884,6 +2890,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.user!.id,
         promoterId: supervisor.promoterId, // Link to the root promotor
         teamSupervisorId: req.user!.id,
+        city: rest.city || "",
+        state: rest.state || "",
+        zipCode: rest.zipCode || "",
         commissionValidated: parseFloat(commissionValidated).toFixed(2),
         commissionConverted: parseFloat(commissionConverted).toFixed(2),
       };
