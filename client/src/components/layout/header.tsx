@@ -80,92 +80,66 @@ export default function Header() {
                   </SheetDescription>
                 </SheetHeader>
                 <div className="py-4 flex flex-col gap-2">
-                  <Link href="/#como-funciona" onClick={() => {
-                    setIsOpen(false);
-                    if (location === '/') {
-                      document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}>
-                    <Button variant="ghost" className="w-full justify-start">Como Funciona</Button>
-                  </Link>
-                  <Link href="/#vantagens" onClick={() => {
-                    setIsOpen(false);
-                    if (location === '/') {
-                      document.getElementById('vantagens')?.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}>
-                    <Button variant="ghost" className="w-full justify-start">Vantagens</Button>
-                  </Link>
-                  <Link href="/#parceiros" onClick={() => {
-                    setIsOpen(false);
-                    if (location === '/') {
-                      document.getElementById('parceiros')?.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}>
-                    <Button variant="ghost" className="w-full justify-start">Parceiros</Button>
-                  </Link>
-                  <Link href="/#faq" onClick={() => {
-                    setIsOpen(false);
-                    if (location === '/') {
-                      document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}>
-                    <Button variant="ghost" className="w-full justify-start">Perguntas Frequentes</Button>
-                  </Link>
+                  <Button asChild variant="ghost" className="w-full justify-start">
+                    <Link href="/#como-funciona" onClick={() => { setIsOpen(false); if (location === '/') document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' }); }}>Como Funciona</Link>
+                  </Button>
+                  <Button asChild variant="ghost" className="w-full justify-start">
+                    <Link href="/#vantagens" onClick={() => { setIsOpen(false); if (location === '/') document.getElementById('vantagens')?.scrollIntoView({ behavior: 'smooth' }); }}>Vantagens</Link>
+                  </Button>
+                  <Button asChild variant="ghost" className="w-full justify-start">
+                    <Link href="/#faq" onClick={() => { setIsOpen(false); if (location === '/') document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' }); }}>Perguntas Frequentes</Link>
+                  </Button>
                   
                   {user ? (
                     <>
                       {user.role !== 'indicador_nivel_1' && (
-                        <Link href={user.role === 'promotor' ? '/promoter' : '/dashboard'} onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">Dashboard</Button>
-                        </Link>
+                        <Button asChild variant="ghost" className="w-full justify-start">
+                          <Link href={user.role === 'promotor' ? '/promoter' : '/dashboard'} onClick={() => setIsOpen(false)}>Dashboard</Link>
+                        </Button>
                       )}
-                      <Link href="/referrals" onClick={() => setIsOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">Minhas Indicações</Button>
-                      </Link>
-                      <Link href="/new-referral" onClick={() => setIsOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">Nova Indicação</Button>
-                      </Link>
+                      <Button asChild variant="ghost" className="w-full justify-start">
+                        <Link href="/referrals" onClick={() => setIsOpen(false)}>Minhas Indicações</Link>
+                      </Button>
+                      <Button asChild variant="ghost" className="w-full justify-start">
+                        <Link href="/new-referral" onClick={() => setIsOpen(false)}>Nova Indicação</Link>
+                      </Button>
                       {user.role !== 'metis_viewer' && user.role !== 'indicador_nivel_1' && (
-                        <Link href="/earnings" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">Meus Ganhos</Button>
-                        </Link>
+                        <Button asChild variant="ghost" className="w-full justify-start">
+                          <Link href="/earnings" onClick={() => setIsOpen(false)}>Meus Ganhos</Link>
+                        </Button>
                       )}
                       {user.role !== 'metis_viewer' && user.role !== 'indicador_nivel_1' && (
-                        <Link href="/withdrawals" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">Saques</Button>
-                        </Link>
+                        <Button asChild variant="ghost" className="w-full justify-start">
+                          <Link href="/withdrawals" onClick={() => setIsOpen(false)}>Saques</Link>
+                        </Button>
                       )}
                       {user.role === 'admin' && (
-                        <Link href="/admin" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">Painel Admin</Button>
-                        </Link>
+                        <Button asChild variant="ghost" className="w-full justify-start">
+                          <Link href="/admin" onClick={() => setIsOpen(false)}>Painel Admin</Link>
+                        </Button>
                       )}
                       {user.role === 'gerente' && (
-                        <Link href="/manager" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">Painel Gerente</Button>
-                        </Link>
+                        <Button asChild variant="ghost" className="w-full justify-start">
+                          <Link href="/manager" onClick={() => setIsOpen(false)}>Painel Gerente</Link>
+                        </Button>
                       )}
                       {user.role === 'analista' && (
-                        <Link href="/analyst" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">Painel Analista</Button>
-                        </Link>
+                        <Button asChild variant="ghost" className="w-full justify-start">
+                          <Link href="/analyst" onClick={() => setIsOpen(false)}>Painel Analista</Link>
+                        </Button>
                       )}
                       {user.role === 'promotor' && (
-                        <Link href="/team" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">Minha Equipe</Button>
-                        </Link>
+                        <Button asChild variant="ghost" className="w-full justify-start">
+                          <Link href="/team" onClick={() => setIsOpen(false)}>Minha Equipe</Link>
+                        </Button>
                       )}
                       {(user.role === 'admin' || user.role === 'promotor' || (user.role === 'analista' && user.analystLevel === 3)) && (
-                        <Link href="/referral-links" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start">Links de Referência</Button>
-                        </Link>
+                        <Button asChild variant="ghost" className="w-full justify-start">
+                          <Link href="/referral-links" onClick={() => setIsOpen(false)}>Links de Referência</Link>
+                        </Button>
                       )}
                       <div className="border-t border-gray-200 mt-2 pt-2">
-                        <Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => {
-                          handleLogout();
-                          setIsOpen(false);
-                        }}>
+                        <Button variant="ghost" className="w-full justify-start text-destructive" onClick={() => { handleLogout(); setIsOpen(false); }}>
                           <LogOut className="mr-2 h-4 w-4" />
                           Sair
                         </Button>
@@ -173,12 +147,12 @@ export default function Header() {
                     </>
                   ) : (
                     <>
-                      <Link href="/auth" onClick={() => setIsOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start">Entrar</Button>
-                      </Link>
-                      <Link href="/auth" onClick={() => setIsOpen(false)}>
-                        <Button className="w-full">Cadastre-se</Button>
-                      </Link>
+                      <Button asChild variant="ghost" className="w-full justify-start">
+                        <Link href="/auth" onClick={() => setIsOpen(false)}>Entrar</Link>
+                      </Button>
+                      <Button asChild className="w-full">
+                        <Link href="/auth" onClick={() => setIsOpen(false)}>Cadastre-se</Link>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -292,16 +266,12 @@ export default function Header() {
                   </div>
                 ) : (
                   <div className="flex items-center space-x-4">
-                    <Link href="/auth">
-                      <Button variant="ghost" className="text-base font-medium text-gray-600 hover:text-gray-900">
-                        Entrar
-                      </Button>
-                    </Link>
-                    <Link href="/auth">
-                      <Button>
-                        Cadastre-se
-                      </Button>
-                    </Link>
+                    <Button asChild variant="ghost" className="text-base font-medium text-gray-600 hover:text-gray-900">
+                      <Link href="/auth">Entrar</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/auth">Cadastre-se</Link>
+                    </Button>
                   </div>
                 )}
               </div>

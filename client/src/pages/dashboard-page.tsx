@@ -233,9 +233,9 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="mt-4 sm:mt-6">
-                        <Link href="/referrals">
-                          <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Ver todas</Button>
-                        </Link>
+                        <Button asChild variant="link" className="text-primary p-0 text-xs sm:text-sm">
+                          <Link href="/referrals">Ver todas</Link>
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -253,9 +253,9 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="mt-4 sm:mt-6">
-                        <Link href="/referrals?status=converted">
-                          <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Ver detalhes</Button>
-                        </Link>
+                        <Button asChild variant="link" className="text-primary p-0 text-xs sm:text-sm">
+                          <Link href="/referrals?status=converted">Ver detalhes</Link>
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -294,9 +294,9 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="mt-4 sm:mt-6">
-                          <Link href="/withdrawals">
-                            <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Solicitar saque</Button>
-                          </Link>
+                          <Button asChild variant="link" className="text-primary p-0 text-xs sm:text-sm">
+                            <Link href="/withdrawals">Solicitar saque</Link>
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -316,9 +316,9 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="mt-4 sm:mt-6">
-                          <Link href="/earnings">
-                            <Button variant="link" className="text-primary p-0 text-xs sm:text-sm">Ver histórico</Button>
-                          </Link>
+                          <Button asChild variant="link" className="text-primary p-0 text-xs sm:text-sm">
+                            <Link href="/earnings">Ver histórico</Link>
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -400,17 +400,17 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="mt-5 flex flex-col sm:flex-row gap-3">
-                      <Link href="/new-referral" className="w-full sm:w-auto">
-                        <Button className="w-full sm:w-auto">Fazer Nova Indicação</Button>
-                      </Link>
-                      <Link href="/plate-search" className="w-full sm:w-auto">
-                        <Button variant="outline" className="w-full sm:w-auto">Consultar Placa</Button>
-                      </Link>
+                      <Button asChild className="w-full sm:w-auto">
+                        <Link href="/new-referral">Fazer Nova Indicação</Link>
+                      </Button>
+                      <Button asChild variant="outline" className="w-full sm:w-auto">
+                        <Link href="/plate-search">Consultar Placa</Link>
+                      </Button>
                       {user?.role === "promotor" && (
                         <>
-                          <Link href="/promoter-dashboard" className="w-full sm:w-auto">
-                            <Button variant="outline" className="w-full sm:w-auto">Dashboard Promotor</Button>
-                          </Link>
+                          <Button asChild variant="outline" className="w-full sm:w-auto">
+                            <Link href="/promoter-dashboard">Dashboard Promotor</Link>
+                          </Button>
                           <Dialog open={isIndicatorDialogOpen} onOpenChange={setIsIndicatorDialogOpen}>
                             <DialogTrigger asChild>
                               <Button variant="outline" className="w-full sm:w-auto">

@@ -505,9 +505,9 @@ export default function ReferralsPage() {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <BackButton to="/dashboard" />
-              <Link href="/new-referral" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto">Nova Indicação</Button>
-              </Link>
+              <Button asChild className="w-full sm:w-auto">
+                <Link href="/new-referral">Nova Indicação</Link>
+              </Button>
             </div>
           </div>
           
@@ -862,9 +862,9 @@ export default function ReferralsPage() {
               ) : (
                 <div className="text-center py-12">
                   <p className="text-gray-500 mb-4">Nenhuma indicação encontrada.</p>
-                  <Link href="/new-referral">
-                    <Button>Fazer Nova Indicação</Button>
-                  </Link>
+                  <Button asChild>
+                    <Link href="/new-referral">Fazer Nova Indicação</Link>
+                  </Button>
                 </div>
               )}
             </CardContent>

@@ -458,12 +458,12 @@ export default function PromoterDashboard() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
-              <Link href="/dashboard">
-                <Button variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/dashboard">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Painel do Promotor</h1>
             </div>
             <p className="text-sm sm:text-base text-gray-600">Gerencie sua rede de indicadores e acompanhe suas comissões</p>
@@ -1156,12 +1156,12 @@ export default function PromoterDashboard() {
                       Gerencie os indicadores em sua rede
                     </CardDescription>
                   </div>
-                  <Link href="/register-indicator">
-                    <Button size="sm">
+                  <Button asChild size="sm">
+                    <Link href="/register-indicator">
                       <Plus className="h-4 w-4 mr-2" />
                       Novo Indicador
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>

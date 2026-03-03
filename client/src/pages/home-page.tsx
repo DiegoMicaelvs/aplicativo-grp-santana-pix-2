@@ -62,11 +62,9 @@ export default function HomePage() {
                 </p>
                 <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start">
                   <div className="flex-1 sm:flex-initial">
-                    <Link href={user ? "/new-referral" : "/auth"}>
-                      <Button size="lg" className="w-full whitespace-nowrap">
-                        Comece a Ganhar
-                      </Button>
-                    </Link>
+                    <Button asChild size="lg" className="w-full whitespace-nowrap">
+                      <Link href={user ? "/new-referral" : "/auth"}>Comece a Ganhar</Link>
+                    </Button>
                   </div>
                   <div className="flex-1 sm:flex-initial">
                     <Button
@@ -297,20 +295,12 @@ export default function HomePage() {
             <span className="block text-secondary">Junte-se a mais de 600 indicadores ativos.</span>
           </h2>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 lg:mt-0 lg:flex-shrink-0">
-            <div className="flex-1 sm:flex-initial">
-              <Link href={user ? "/dashboard" : "/auth"}>
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto whitespace-nowrap">
-                  Cadastre-se agora
-                </Button>
-              </Link>
-            </div>
-            <div className="flex-1 sm:flex-initial">
-              <Link href={user ? "/dashboard" : "/auth"}>
-                <Button size="lg" variant="default" className="w-full sm:w-auto whitespace-nowrap">
-                  {user ? "Acessar Dashboard" : "Já sou indicador"}
-                </Button>
-              </Link>
-            </div>
+            <Button asChild size="lg" variant="secondary" className="w-full sm:w-auto whitespace-nowrap">
+              <Link href={user ? "/dashboard" : "/auth"}>Cadastre-se agora</Link>
+            </Button>
+            <Button asChild size="lg" variant="default" className="w-full sm:w-auto whitespace-nowrap">
+              <Link href={user ? "/dashboard" : "/auth"}>{user ? "Acessar Dashboard" : "Já sou indicador"}</Link>
+            </Button>
           </div>
         </div>
       </div>
