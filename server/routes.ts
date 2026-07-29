@@ -1057,116 +1057,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Empresa não encontrada" });
       }
 
-      // Get referrals for this specific company (efficient query)
-      let companyReferrals = await storage.getReferralsByCompanyId(companyId);
-      
-      // Filter by month if specified
+      /**
+       * Agregação no BANCO.
+       *
+       * Antes: carregava TODAS as indicações da empresa, filtrava e somava em
+       * JavaScript — e no recorte mensal carregava a lista inteira uma SEGUNDA
+       * vez. Sendo rota pública e sem autenticação, bastava recarregar a página
+       * para o servidor repetir tudo.
+       */
+      let periodo: { inicio: Date; fim: Date } | undefined;
       if (monthFilter && monthFilter !== "all_time") {
         const [year, month] = monthFilter.split('-');
-        const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-        const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
-        
-        companyReferrals = companyReferrals.filter((r: any) => {
-          // For validated referrals, check validatedAt date
-          if (r.status === 'validated' && r.validatedAt) {
-            const validatedDate = new Date(r.validatedAt);
-            return validatedDate >= startDate && validatedDate <= endDate;
-          }
-          
-          // For converted/paid referrals, check updatedAt date (when status changed)
-          if ((r.status === 'converted' || r.status === 'paid') && r.updatedAt) {
-            const convertedDate = new Date(r.updatedAt);
-            return convertedDate >= startDate && convertedDate <= endDate;
-          }
-          
-          // For other statuses, check createdAt date
-          const referralDate = new Date(r.createdAt);
-          return referralDate >= startDate && referralDate <= endDate;
-        });
+        const ano = parseInt(year);
+        const mes = parseInt(month);
+        if (Number.isInteger(ano) && Number.isInteger(mes) && mes >= 1 && mes <= 12) {
+          periodo = {
+            inicio: new Date(ano, mes - 1, 1),
+            fim: new Date(ano, mes, 0, 23, 59, 59),
+          };
+        }
       }
-      
-      // Calculate metrics (same logic as admin endpoint)
-      const totalReferrals = companyReferrals.length;
-      const convertedReferrals = companyReferrals.filter((r: any) => 
-        r.status === 'converted' || r.status === 'paid'
-      ).length;
-      const pendingReferrals = companyReferrals.filter((r: any) => r.status === 'pending').length;
-      const analyzingReferrals = companyReferrals.filter((r: any) => r.status === 'analyzing').length;
-      const validatedReferrals = companyReferrals.filter((r: any) => r.status === 'validated').length;
-      const rejectedReferrals = companyReferrals.filter((r: any) => 
-        r.status === 'rejected' || r.status === 'false' || r.status === 'not_converted'
-      ).length;
+
+      const m = await storage.getCompanyPublicMetrics(companyId, periodo);
+
+      const totalReferrals = m.total;
+      const convertedReferrals = m.convertidas;
+      const pendingReferrals = m.pendentes;
+      const analyzingReferrals = m.analisando;
+      const validatedReferrals = m.validadas;
+      const rejectedReferrals = m.rejeitadas;
 
       const conversionRate = validatedReferrals > 0 ? (convertedReferrals / validatedReferrals) * 100 : 0;
 
-      // Calculate commissions based on whether we're filtering by month or not
-      let totalCommissionIndicators = 0;
-      let totalCommissionPromoters = 0;
-      
-      if (monthFilter && monthFilter !== "all_time") {
-        // Monthly view: calculate only commissions GENERATED in this specific month
-        const [year, month] = monthFilter.split('-');
-        const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-        const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
-        
-        // Get ALL referrals for the company (not just filtered ones)
-        const allCompanyReferrals = await storage.getReferralsByCompanyId(companyId);
-        
-        for (const referral of allCompanyReferrals) {
-          // Check if validated in this month
-          if (referral.validatedAt) {
-            const validatedDate = new Date(referral.validatedAt);
-            if (validatedDate >= startDate && validatedDate <= endDate) {
-              totalCommissionIndicators += 3; // Validation commission for indicator
-              totalCommissionPromoters += 1; // Validation commission for promoter
-            }
-          }
-          
-          // Check if converted in this month
-          if ((referral.status === 'converted' || referral.status === 'paid') && referral.updatedAt) {
-            const convertedDate = new Date(referral.updatedAt);
-            if (convertedDate >= startDate && convertedDate <= endDate) {
-              totalCommissionIndicators += 50; // Conversion commission for indicator
-              totalCommissionPromoters += 10; // Conversion commission for promoter
-            }
-          }
-        }
-      } else {
-        // All-time view: use total accumulated commissions
-        const paidReferrals = companyReferrals.filter((r: any) => 
-          r.status === 'validated' || r.status === 'converted' || r.status === 'paid'
-        );
-        
-        totalCommissionIndicators = paidReferrals.reduce((sum: number, r: any) => 
-          sum + (parseFloat(r.commissionIndicator) || 0), 0
-        );
-        totalCommissionPromoters = paidReferrals.reduce((sum: number, r: any) => 
-          sum + (parseFloat(r.commissionPromoter) || 0), 0
-        );
-      }
-      
+      const totalCommissionIndicators = m.comissaoIndicadores;
+      const totalCommissionPromoters = m.comissaoPromotores;
       const totalCommissions = totalCommissionIndicators + totalCommissionPromoters;
 
-      // Get unique users involved with this company
-      const indicatorsInvolved = new Set(companyReferrals.map((r: any) => r.userId));
-      const promotersInvolved = new Set(companyReferrals.map((r: any) => r.promoterId).filter(Boolean));
-
-      const totalIndicators = indicatorsInvolved.size;
-      const totalPromoters = promotersInvolved.size;
-
-      // Calculate active indicators (those who made referrals in last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const recentReferrals = companyReferrals.filter((r: any) => 
-        new Date(r.createdAt) >= thirtyDaysAgo
-      ).length;
-      
-      const activeIndicators = new Set(
-        companyReferrals
-          .filter((r: any) => new Date(r.createdAt) >= thirtyDaysAgo)
-          .map((r: any) => r.userId)
-      ).size;
+      const totalIndicators = m.indicadores;
+      const totalPromoters = m.promotores;
+      const recentReferrals = m.recentes;
+      const activeIndicators = m.indicadoresAtivos;
 
       const averageReferralsPerIndicator = totalIndicators > 0 ? totalReferrals / totalIndicators : 0;
 
@@ -2129,8 +2059,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      /**
+       * Esta rota NÃO muda status.
+       *
+       * Ela escreve direto na tabela, sem passar por updateReferralStatus —
+       * ou seja, sem creditar nem estornar comissão. Um analista marcava a
+       * indicação como 'validated' por aqui e ela ficava validada com ninguém
+       * pago, e os campos de comissão dessincronizados do saldo real. Pior:
+       * o valor gravado vira o `previousCommission` da próxima transição, que
+       * calcula o crédito como diferença.
+       *
+       * Mudança de status tem uma rota só: PATCH /api/referrals/:id/status,
+       * que roda o rateio dentro de transação com guarda de concorrência.
+       * Nenhum cliente manda `status` para cá — o formulário de edição do
+       * admin não tem esse campo.
+       */
+      if (status !== undefined) {
+        return res.status(400).json({
+          error: "Status não pode ser alterado por esta rota",
+          details: "Use PATCH /api/referrals/:id/status, que aplica o rateio de comissão corretamente.",
+        });
+      }
+
       console.log("[PATCH /api/referrals/:id] Dados recebidos:", req.body);
-      
+
       // Check if referral exists
       const existingReferral = await storage.getReferralById(referralId);
       if (!existingReferral) {
@@ -2177,7 +2129,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (phone !== undefined) updateData.phone = phone;
       if (licensePlate !== undefined) updateData.licensePlate = licensePlate;
       if (companyId !== undefined) updateData.companyId = parseInt(companyId);
-      if (status !== undefined) updateData.status = status;
       if (notes !== undefined) updateData.notes = notes;
       if (hasInsurance !== undefined) updateData.hasInsurance = hasInsurance;
 

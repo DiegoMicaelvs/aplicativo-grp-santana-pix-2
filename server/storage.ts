@@ -1114,6 +1114,103 @@ class DatabaseStorage implements IStorage {
     };
   }
 
+  /**
+   * Métricas públicas da empresa agregadas NO BANCO.
+   *
+   * A rota carregava todas as indicações da empresa (e uma segunda vez no ramo
+   * mensal) só para contar e somar em JavaScript. É endpoint público, sem
+   * autenticação: bastava recarregar a página para o servidor trazer a tabela
+   * inteira de novo. Agora são três agregações que não trafegam linha alguma.
+   *
+   * A data considerada varia por status — a mesma regra que existia no filtro
+   * em memória: validated usa validatedAt, converted/paid usam updatedAt, o
+   * resto usa createdAt.
+   */
+  async getCompanyPublicMetrics(
+    companyId: number,
+    periodo?: { inicio: Date; fim: Date },
+  ) {
+    const dataDoStatus = sql`CASE
+      WHEN ${referrals.status} = 'validated' AND ${referrals.validatedAt} IS NOT NULL THEN ${referrals.validatedAt}
+      WHEN ${referrals.status} IN ('converted','paid') AND ${referrals.updatedAt} IS NOT NULL THEN ${referrals.updatedAt}
+      ELSE ${referrals.createdAt}
+    END`;
+
+    const filtroEmpresa = eq(referrals.companyId, companyId);
+    const filtroPeriodo = periodo
+      ? and(
+          filtroEmpresa,
+          sql`${dataDoStatus} >= ${periodo.inicio.toISOString()}`,
+          sql`${dataDoStatus} <= ${periodo.fim.toISOString()}`,
+        )
+      : filtroEmpresa;
+
+    const [contagens] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        convertidas: sql<number>`count(*) FILTER (WHERE ${referrals.status} IN ('converted','paid'))::int`,
+        pendentes: sql<number>`count(*) FILTER (WHERE ${referrals.status} = 'pending')::int`,
+        analisando: sql<number>`count(*) FILTER (WHERE ${referrals.status} = 'analyzing')::int`,
+        validadas: sql<number>`count(*) FILTER (WHERE ${referrals.status} = 'validated')::int`,
+        rejeitadas: sql<number>`count(*) FILTER (WHERE ${referrals.status} IN ('rejected','false','not_converted'))::int`,
+        indicadores: sql<number>`count(DISTINCT ${referrals.userId})::int`,
+        promotores: sql<number>`count(DISTINCT ${referrals.promoterId})::int`,
+        comissaoIndicadores: sql<number>`COALESCE(SUM(${referrals.commissionIndicator}) FILTER (WHERE ${referrals.status} IN ('validated','converted','paid')), 0)::float`,
+        comissaoPromotores: sql<number>`COALESCE(SUM(${referrals.commissionPromoter}) FILTER (WHERE ${referrals.status} IN ('validated','converted','paid')), 0)::float`,
+      })
+      .from(referrals)
+      .where(filtroPeriodo);
+
+    // Janela fixa de 30 dias, sempre sobre createdAt (independe do filtro de mês)
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+    const [recentes] = await db
+      .select({
+        recentes: sql<number>`count(*)::int`,
+        indicadoresAtivos: sql<number>`count(DISTINCT ${referrals.userId})::int`,
+      })
+      .from(referrals)
+      .where(
+        and(filtroEmpresa, sql`${referrals.createdAt} >= ${trintaDiasAtras.toISOString()}`),
+      );
+
+    // No recorte mensal as comissões são contadas por EVENTO ocorrido no mês
+    // (validação e conversão), não pelo acumulado da indicação.
+    let comissaoIndicadores = contagens?.comissaoIndicadores ?? 0;
+    let comissaoPromotores = contagens?.comissaoPromotores ?? 0;
+
+    if (periodo) {
+      const [eventos] = await db
+        .select({
+          validadasNoMes: sql<number>`count(*) FILTER (WHERE ${referrals.validatedAt} >= ${periodo.inicio.toISOString()} AND ${referrals.validatedAt} <= ${periodo.fim.toISOString()})::int`,
+          convertidasNoMes: sql<number>`count(*) FILTER (WHERE ${referrals.status} IN ('converted','paid') AND ${referrals.updatedAt} >= ${periodo.inicio.toISOString()} AND ${referrals.updatedAt} <= ${periodo.fim.toISOString()})::int`,
+        })
+        .from(referrals)
+        .where(filtroEmpresa);
+
+      const validadas = eventos?.validadasNoMes ?? 0;
+      const convertidas = eventos?.convertidasNoMes ?? 0;
+      comissaoIndicadores = validadas * 3 + convertidas * 50;
+      comissaoPromotores = validadas * 1 + convertidas * 10;
+    }
+
+    return {
+      total: contagens?.total ?? 0,
+      convertidas: contagens?.convertidas ?? 0,
+      pendentes: contagens?.pendentes ?? 0,
+      analisando: contagens?.analisando ?? 0,
+      validadas: contagens?.validadas ?? 0,
+      rejeitadas: contagens?.rejeitadas ?? 0,
+      indicadores: contagens?.indicadores ?? 0,
+      promotores: contagens?.promotores ?? 0,
+      comissaoIndicadores,
+      comissaoPromotores,
+      recentes: recentes?.recentes ?? 0,
+      indicadoresAtivos: recentes?.indicadoresAtivos ?? 0,
+    };
+  }
+
   async getReferralsByCreator(creatorId: number) {
     return await db.query.referrals.findMany({
       where: eq(referrals.createdBy, creatorId),

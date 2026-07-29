@@ -92,6 +92,15 @@ class RateLimiter {
 const loginLimiter = new RateLimiter(WINDOW_MS);
 const registerLimiter = new RateLimiter(WINDOW_MS);
 
+/**
+ * Rotas públicas (dashboard da empresa por token). Janela curta e teto alto:
+ * a intenção é conter varredura automatizada, não atrapalhar quem atualiza a
+ * página. Como não há autenticação, sem isso qualquer um mantém o endpoint
+ * sob carga contínua.
+ */
+const PUBLIC_WINDOW_MS = 60 * 1000;
+const publicLimiter = new RateLimiter(PUBLIC_WINDOW_MS);
+
 function clientIp(req: Request): string {
   return req.ip || req.socket.remoteAddress || "unknown";
 }
@@ -208,10 +217,27 @@ export function setupSecurity(app: Express) {
     next();
   });
 
+  // --- Rotas públicas: sem autenticação, precisam de teto próprio ---
+  app.use("/api/public", (req: Request, res: Response, next: NextFunction) => {
+    const now = Date.now();
+    const ipKey = `ip:${clientIp(req)}`;
+    const teto = envLimit("PUBLIC_MAX_PER_MINUTE", 60);
+
+    if (teto > 0 && publicLimiter.count(ipKey, now) >= teto) {
+      const seconds = publicLimiter.retryAfter(ipKey, now);
+      res.setHeader("Retry-After", String(seconds));
+      return res.status(429).json({ error: "Muitas requisições. Aguarde um instante." });
+    }
+
+    publicLimiter.increment(ipKey, now);
+    next();
+  });
+
   const sweeper = setInterval(() => {
     const now = Date.now();
     loginLimiter.sweep(now);
     registerLimiter.sweep(now);
+    publicLimiter.sweep(now);
   }, 60 * 1000);
   // não segura o processo aberto no shutdown
   sweeper.unref?.();
