@@ -231,18 +231,48 @@ os botões de aprovar/rejeitar funcionam nele.
 verdade (os dois acima) e a declaração de `req.user` no Express, que era um
 subconjunto escrito à mão e já divergia do schema — agora deriva do tipo real.
 
+## Rate limiting
+
+Os contadores ficam na tabela `rate_limits` do Postgres, **não em memória**:
+sobrevivem a restart/deploy e são compartilhados entre instâncias. Antes viviam
+num `Map`, o que significava N vezes mais tentativas permitidas com N instâncias,
+e um deploy zerando até os bloqueios ativos.
+
+Chaves usadas:
+
+| Prefixo | O que conta |
+| --- | --- |
+| `login:ip:<ip>` | tentativas de login por origem |
+| `login:user:<email>` | tentativas contra uma conta específica |
+| `register:ip:<ip>` | cadastros por origem |
+| `public:ip:<ip>` | acesso às rotas públicas por origem |
+
+Destravar alguém no meio do evento:
+
+```sql
+DELETE FROM rate_limits WHERE chave = 'login:user:fulano@exemplo.com';
+```
+
+Ver quem está bloqueado:
+
+```sql
+SELECT chave, contador, janela_expira_em FROM rate_limits
+WHERE janela_expira_em > now() ORDER BY contador DESC;
+```
+
+> Em banco novo (máquina nova, Supabase, staging), rode
+> `db/migrations/manual/002-rate-limits.sql` **antes** do primeiro `db:push`:
+> sem a tabela criada, o Drizzle não sabe se `rate_limits` é nova ou um rename
+> de `session` e trava numa pergunta interativa.
+>
+> E reaplique `db/migrations/manual/001-placa-unica.sql` **depois** de cada
+> `db:push` — é índice único sobre expressão com WHERE parcial, que o Drizzle
+> não expressa e o push remove por não conhecer.
+
 ## Pontos de atenção antes do deploy na Vercel
 
 1. **A app é um servidor Express de longa duração** (`server.listen`), não funções
    serverless. Vai precisar de um entrypoint compatível com Vercel Functions ou de um
    host que rode processo contínuo (Fly.io, Railway, VPS). Isso ainda não está feito.
-2. **Sessões em memória de rate limit** (`server/security.ts`) não sobrevivem a
-   múltiplas instâncias — em serverless cada invocação teria seu próprio contador.
-3. **Payload de 50 MB** em `express.json` (`server/index.ts`) vale para todas as rotas.
-   O limite alto existe por causa dos comprovantes em base64 — considere aplicá-lo
-   só nas rotas de upload.
-4. **Rate limiting em memória** não sobrevive a múltiplas instâncias. Em serverless
-   cada invocação teria seu próprio contador, o que anula o limite. Migre para
-   Postgres/Redis antes de escalar horizontalmente.
-5. **`cookies*.txt` continuam no histórico do git** (cookies de `localhost`,
+2. **`cookies*.txt` continuam no histórico do git** (cookies de `localhost`,
    expirados em ago/2025 — risco baixo, mas o ideal é limpar o histórico).

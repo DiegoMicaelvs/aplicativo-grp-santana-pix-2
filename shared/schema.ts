@@ -250,6 +250,27 @@ export const referralConversations = pgTable("referral_conversations", {
 // Support tickets
 export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
 export type TicketPriority = "low" | "medium" | "high" | "urgent";
+/**
+ * Contadores de rate limiting compartilhados.
+ *
+ * Estavam num Map em memória, o que significava: cada instância da aplicação
+ * com o próprio contador (com 2 instâncias, o dobro de tentativas permitidas)
+ * e restart zerando tudo — inclusive os bloqueios ativos.
+ *
+ * Fica no Postgres porque a aplicação já depende dele: nenhuma infra nova para
+ * subir no dia do evento. O volume é baixo (só login, cadastro e rotas
+ * públicas) e a escrita é um UPSERT atômico.
+ */
+export const rateLimits = pgTable("rate_limits", {
+  // ex.: "login:ip:203.0.113.7" ou "login:user:fulano@x.com"
+  chave: text("chave").primaryKey(),
+  contador: integer("contador").default(0).notNull(),
+  janelaExpiraEm: timestamp("janela_expira_em").notNull(),
+}, (table) => ({
+  // usado pela limpeza periódica das janelas vencidas
+  expiraEmIdx: index("rate_limits_expira_em_idx").on(table.janelaExpiraEm),
+}));
+
 export type TicketCategory = "bug" | "feature" | "question" | "other";
 
 export const supportTickets = pgTable("support_tickets", {

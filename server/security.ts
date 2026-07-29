@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import { registrar, zerar, limparVencidos } from "./rateLimitStore";
 
 /**
  * Rate limiting de autenticação.
@@ -14,6 +15,10 @@ import type { Express, Request, Response, NextFunction } from "express";
  *    IPs. Contamos também por usuário-alvo.
  * 3. O contador antigo subia em TODA requisição a /api/login, inclusive as bem
  *    sucedidas — um usuário legítimo se autobloqueava. Agora só falha conta.
+ * 4. Os contadores viviam num Map em memória: com mais de uma instância cada
+ *    uma tinha o próprio limite (N instâncias = N vezes mais tentativas) e um
+ *    restart zerava até os bloqueios ativos. Agora ficam no Postgres —
+ *    ver server/rateLimitStore.ts.
  */
 
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutos
@@ -48,50 +53,6 @@ const MAX_ATTEMPTS_PER_IP = envLimit("LOGIN_MAX_PER_IP", 300);
 const MAX_ATTEMPTS_PER_ACCOUNT = envLimit("LOGIN_MAX_PER_ACCOUNT", 10);
 const MAX_REGISTRATIONS_PER_IP = envLimit("REGISTER_MAX_PER_IP", 500);
 
-type Bucket = { count: number; resetTime: number };
-
-class RateLimiter {
-  private buckets = new Map<string, Bucket>();
-
-  constructor(private readonly windowMs: number) {}
-
-  /** Quantas tentativas já foram contadas para esta chave na janela atual. */
-  count(key: string, now: number): number {
-    const bucket = this.buckets.get(key);
-    if (!bucket || now >= bucket.resetTime) return 0;
-    return bucket.count;
-  }
-
-  /** Segundos restantes até a janela zerar. */
-  retryAfter(key: string, now: number): number {
-    const bucket = this.buckets.get(key);
-    if (!bucket || now >= bucket.resetTime) return 0;
-    return Math.ceil((bucket.resetTime - now) / 1000);
-  }
-
-  increment(key: string, now: number): void {
-    const bucket = this.buckets.get(key);
-    if (!bucket || now >= bucket.resetTime) {
-      this.buckets.set(key, { count: 1, resetTime: now + this.windowMs });
-      return;
-    }
-    bucket.count++;
-  }
-
-  reset(key: string): void {
-    this.buckets.delete(key);
-  }
-
-  sweep(now: number): void {
-    for (const [key, bucket] of this.buckets.entries()) {
-      if (now >= bucket.resetTime) this.buckets.delete(key);
-    }
-  }
-}
-
-const loginLimiter = new RateLimiter(WINDOW_MS);
-const registerLimiter = new RateLimiter(WINDOW_MS);
-
 /**
  * Rotas públicas (dashboard da empresa por token). Janela curta e teto alto:
  * a intenção é conter varredura automatizada, não atrapalhar quem atualiza a
@@ -99,7 +60,11 @@ const registerLimiter = new RateLimiter(WINDOW_MS);
  * sob carga contínua.
  */
 const PUBLIC_WINDOW_MS = 60 * 1000;
-const publicLimiter = new RateLimiter(PUBLIC_WINDOW_MS);
+
+/** Segundos que faltam para a janela virar, para o cabeçalho Retry-After. */
+function segundosRestantes(expiraEm: Date): number {
+  return Math.max(1, Math.ceil((expiraEm.getTime() - Date.now()) / 1000));
+}
 
 function clientIp(req: Request): string {
   return req.ip || req.socket.remoteAddress || "unknown";
@@ -152,26 +117,39 @@ export function setupSecurity(app: Express) {
   app.disable("x-powered-by");
 
   // --- Login: bloqueia se IP OU conta-alvo estourarem a janela ---
-  app.use("/api/login", (req: Request, res: Response, next: NextFunction) => {
-    const now = Date.now();
-    const ipKey = `ip:${clientIp(req)}`;
+  app.use("/api/login", async (req: Request, res: Response, next: NextFunction) => {
+    const ipKey = `login:ip:${clientIp(req)}`;
     const account = attemptedAccount(req);
-    const accountKey = account ? `user:${account}` : null;
+    const accountKey = account ? `login:user:${account}` : null;
+
+    const chaves = accountKey ? [ipKey, accountKey] : [ipKey];
+
+    /**
+     * Incrementa ANTES de processar, não depois.
+     *
+     * A versão que contava em `res.on("finish")` tinha uma janela de corrida:
+     * a escrita era disparada sem await, então a requisição seguinte lia o
+     * contador desatualizado. Num teste sequencial de 12 tentativas erradas,
+     * as 12 passaram — o contador chegou a 12 no banco, mas sempre tarde
+     * demais para bloquear. Um atacante disparando em paralelo nunca seria
+     * barrado.
+     *
+     * Contando na entrada, o UPSERT atômico já devolve o valor definitivo e a
+     * decisão é imediata. O login bem-sucedido zera as chaves logo abaixo,
+     * então o usuário legítimo não acumula penalidade.
+     */
+    const [porIp, porConta] = await Promise.all([
+      MAX_ATTEMPTS_PER_IP > 0 ? registrar(ipKey, WINDOW_MS) : null,
+      accountKey && MAX_ATTEMPTS_PER_ACCOUNT > 0 ? registrar(accountKey, WINDOW_MS) : null,
+    ]);
 
     // limite 0 = desligado (ver comentário sobre IP compartilhado no topo)
-    const overIp =
-      MAX_ATTEMPTS_PER_IP > 0 &&
-      loginLimiter.count(ipKey, now) >= MAX_ATTEMPTS_PER_IP;
-    const overAccount =
-      MAX_ATTEMPTS_PER_ACCOUNT > 0 &&
-      accountKey !== null &&
-      loginLimiter.count(accountKey, now) >= MAX_ATTEMPTS_PER_ACCOUNT;
+    const estourouIp = porIp !== null && porIp.contador > MAX_ATTEMPTS_PER_IP;
+    const estourouConta = porConta !== null && porConta.contador > MAX_ATTEMPTS_PER_ACCOUNT;
 
-    if (overIp || overAccount) {
-      const seconds = Math.max(
-        loginLimiter.retryAfter(ipKey, now),
-        accountKey ? loginLimiter.retryAfter(accountKey, now) : 0,
-      );
+    if (estourouIp || estourouConta) {
+      const expiraEm = estourouConta && porConta ? porConta.expiraEm : porIp!.expiraEm;
+      const seconds = segundosRestantes(expiraEm);
       const minutesLeft = Math.ceil(seconds / 60);
       res.setHeader("Retry-After", String(seconds));
       return res.status(429).json({
@@ -180,65 +158,55 @@ export function setupSecurity(app: Express) {
       });
     }
 
-    // Só conta o que falhou: login bem-sucedido não penaliza o usuário.
+    // Login bem-sucedido limpa o histórico de tentativas do usuário.
     res.on("finish", () => {
-      if (res.statusCode === 401 || res.statusCode === 403) {
-        loginLimiter.increment(ipKey, Date.now());
-        if (accountKey) loginLimiter.increment(accountKey, Date.now());
-      } else if (res.statusCode < 400) {
-        loginLimiter.reset(ipKey);
-        if (accountKey) loginLimiter.reset(accountKey);
-      }
+      if (res.statusCode < 400) void zerar(chaves);
     });
 
     next();
   });
 
   // --- Registro: limite generoso, só para conter criação em massa de contas ---
-  app.use("/api/register", (req: Request, res: Response, next: NextFunction) => {
-    const now = Date.now();
-    const ipKey = `ip:${clientIp(req)}`;
+  app.use("/api/register", async (req: Request, res: Response, next: NextFunction) => {
+    if (MAX_REGISTRATIONS_PER_IP <= 0) return next();
 
-    if (
-      MAX_REGISTRATIONS_PER_IP > 0 &&
-      registerLimiter.count(ipKey, now) >= MAX_REGISTRATIONS_PER_IP
-    ) {
-      const seconds = registerLimiter.retryAfter(ipKey, now);
-      res.setHeader("Retry-After", String(seconds));
+    // Mesmo motivo do login: contar na entrada, com o valor já definitivo.
+    const ipKey = `register:ip:${clientIp(req)}`;
+    const { contador, expiraEm } = await registrar(ipKey, WINDOW_MS);
+
+    if (contador > MAX_REGISTRATIONS_PER_IP) {
+      res.setHeader("Retry-After", String(segundosRestantes(expiraEm)));
       return res.status(429).json({
         error: "Muitas tentativas de cadastro. Tente novamente mais tarde.",
       });
     }
 
-    res.on("finish", () => {
-      if (res.statusCode < 500) registerLimiter.increment(ipKey, Date.now());
-    });
-
     next();
   });
 
   // --- Rotas públicas: sem autenticação, precisam de teto próprio ---
-  app.use("/api/public", (req: Request, res: Response, next: NextFunction) => {
-    const now = Date.now();
-    const ipKey = `ip:${clientIp(req)}`;
+  app.use("/api/public", async (req: Request, res: Response, next: NextFunction) => {
     const teto = envLimit("PUBLIC_MAX_PER_MINUTE", 60);
+    if (teto <= 0) return next();
 
-    if (teto > 0 && publicLimiter.count(ipKey, now) >= teto) {
-      const seconds = publicLimiter.retryAfter(ipKey, now);
-      res.setHeader("Retry-After", String(seconds));
+    const ipKey = `public:ip:${clientIp(req)}`;
+    // Aqui incrementamos direto: toda requisição conta, então um único
+    // UPSERT resolve leitura e escrita numa ida só ao banco.
+    const { contador, expiraEm } = await registrar(ipKey, PUBLIC_WINDOW_MS);
+
+    if (contador > teto) {
+      res.setHeader("Retry-After", String(segundosRestantes(expiraEm)));
       return res.status(429).json({ error: "Muitas requisições. Aguarde um instante." });
     }
 
-    publicLimiter.increment(ipKey, now);
     next();
   });
 
+  // Janelas vencidas não são lidas (o `espiar` as ignora), mas sem limpeza a
+  // tabela cresceria para sempre.
   const sweeper = setInterval(() => {
-    const now = Date.now();
-    loginLimiter.sweep(now);
-    registerLimiter.sweep(now);
-    publicLimiter.sweep(now);
-  }, 60 * 1000);
+    void limparVencidos();
+  }, 5 * 60 * 1000);
   // não segura o processo aberto no shutdown
   sweeper.unref?.();
 }
