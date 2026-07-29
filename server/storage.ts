@@ -64,6 +64,43 @@ const POOL_CONVERTED = 60;
  * Devolve null quando não houver valor — nunca NaN, nunca acima do pool,
  * nunca negativo.
  */
+/**
+ * Reparte um pool de comissão entre indicador, supervisor e promotor.
+ *
+ * Invariantes garantidas:
+ *  - nenhuma parcela é negativa;
+ *  - a soma das três parcelas é EXATAMENTE o pool.
+ *
+ * O cálculo anterior fazia `alocaçãoSupervisor - takeIndicador` direto, o que
+ * fica negativo quando o promotor aloca ao supervisor menos do que o indicador
+ * já leva. Parcela negativa vira débito no saldo de quem não devia nada.
+ *
+ * @param alocacaoSupervisor quanto do pool o promotor reservou para o
+ *   supervisor. `null` = indicador não tem supervisor (ou não há alocação
+ *   definida); nesse caso o promotor fica com todo o resto.
+ */
+function repartirPool(
+  pool: number,
+  takeIndicador: number,
+  alocacaoSupervisor: number | null,
+): { indicador: number; supervisor: number; promotor: number } {
+  // O indicador nunca leva menos que zero nem mais que o pool inteiro.
+  const indicador = Math.min(Math.max(takeIndicador, 0), pool);
+
+  if (alocacaoSupervisor === null) {
+    return { indicador, supervisor: 0, promotor: pool - indicador };
+  }
+
+  // A alocação precisa cobrir o que o indicador leva e caber dentro do pool.
+  const alocacao = Math.min(Math.max(alocacaoSupervisor, indicador), pool);
+
+  return {
+    indicador,
+    supervisor: alocacao - indicador,
+    promotor: pool - alocacao,
+  };
+}
+
 function clampComissao(valor: unknown, teto: number): string | null {
   if (valor === undefined || valor === null || valor === "") return null;
   const n = typeof valor === "number" ? valor : Number(String(valor).trim());
@@ -1503,47 +1540,56 @@ class DatabaseStorage implements IStorage {
 
       const previousCommissionSupervisor = parseFloat((referral as any).commissionSupervisor?.toString() || '0');
 
+      /**
+       * Rateio ABSOLUTO.
+       *
+       * Dois defeitos foram corrigidos aqui:
+       *
+       * 1. O ramo 'converted' era INCREMENTAL: só somava o bônus quando
+       *    previousStatus === 'validated'. Vindo de qualquer outro estado ele
+       *    gravava apenas o bônus (R$50) e PERDIA a parcela do validado (R$3).
+       *    Consequência prática: remarcar 'converted' uma segunda vez caía no
+       *    ramo do else (o anterior já era 'converted'), gravava 53 -> 50 e
+       *    DEBITAVA R$3 do indicador. E pending -> converted direto pagava
+       *    R$50 em vez de R$53.
+       *
+       *    Agora 'converted' é sempre validado + bônus, calculado do zero.
+       *    O valor final não depende do caminho percorrido nem de quantas
+       *    vezes a transição foi aplicada.
+       *
+       * 2. `alocaçãoSupervisor - takeIndicador` podia ser NEGATIVO. Com o
+       *    supervisor alocado em R$2 e o indicador levando R$3, o supervisor
+       *    era debitado em R$1 por um lead da própria equipe.
+       *
+       *    repartirPool() garante parcela não-negativa e soma exatamente igual
+       *    ao pool.
+       */
+      const alocValidadoEfetiva =
+        supervisorUser && supervisorAllocValidated !== null ? supervisorAllocValidated : null;
+      const alocConvertidoEfetiva =
+        supervisorUser && supervisorAllocConverted !== null ? supervisorAllocConverted : null;
+
+      const rateioValidado = repartirPool(
+        POOL_VALIDATED,
+        indicadorCustomValidated !== null ? indicadorCustomValidated : 3,
+        alocValidadoEfetiva,
+      );
+
+      const rateioBonusConversao = repartirPool(
+        POOL_CONVERTED,
+        indicadorCustomConverted !== null ? indicadorCustomConverted : 50,
+        alocConvertidoEfetiva,
+      );
+
       if (status === 'validated') {
-        // Indicador's take
-        const indTake = indicadorCustomValidated !== null ? indicadorCustomValidated : 3;
-        newCommissionIndicator = indTake;
-
-        if (supervisorUser && supervisorAllocValidated !== null) {
-          // Supervisor keeps: their allocation - indicador's take
-          newCommissionSupervisor = supervisorAllocValidated - indTake;
-          // Promotor keeps: pool - supervisor's allocation
-          newCommissionPromoter = POOL_VALIDATED - supervisorAllocValidated;
-        } else {
-          // No supervisor: promotor keeps the remainder
-          newCommissionSupervisor = 0;
-          newCommissionPromoter = POOL_VALIDATED - indTake;
-        }
+        newCommissionIndicator = rateioValidado.indicador;
+        newCommissionSupervisor = rateioValidado.supervisor;
+        newCommissionPromoter = rateioValidado.promotor;
       } else if (status === 'converted') {
-        // Converted bonus on top of what was already validated
-        const indBonusTake = indicadorCustomConverted !== null ? indicadorCustomConverted : 50;
-
-        if (previousStatus === 'validated') {
-          newCommissionIndicator = previousCommissionIndicator + indBonusTake;
-          if (supervisorUser && supervisorAllocConverted !== null) {
-            const supBonus = supervisorAllocConverted - indBonusTake;
-            newCommissionSupervisor = previousCommissionSupervisor + supBonus;
-            const promBonus = POOL_CONVERTED - supervisorAllocConverted;
-            newCommissionPromoter = previousCommissionPromoter + promBonus;
-          } else {
-            newCommissionSupervisor = 0;
-            const promBonus = POOL_CONVERTED - indBonusTake;
-            newCommissionPromoter = previousCommissionPromoter + promBonus;
-          }
-        } else {
-          newCommissionIndicator = indBonusTake;
-          if (supervisorUser && supervisorAllocConverted !== null) {
-            newCommissionSupervisor = supervisorAllocConverted - indBonusTake;
-            newCommissionPromoter = POOL_CONVERTED - supervisorAllocConverted;
-          } else {
-            newCommissionSupervisor = 0;
-            newCommissionPromoter = POOL_CONVERTED - indBonusTake;
-          }
-        }
+        // Convertido = o que já valia pelo validado + o bônus de conversão.
+        newCommissionIndicator = rateioValidado.indicador + rateioBonusConversao.indicador;
+        newCommissionSupervisor = rateioValidado.supervisor + rateioBonusConversao.supervisor;
+        newCommissionPromoter = rateioValidado.promotor + rateioBonusConversao.promotor;
       } else if (status === 'paid') {
         newCommissionIndicator = previousCommissionIndicator;
         newCommissionPromoter = previousCommissionPromoter;
