@@ -55,6 +55,13 @@ import { useState } from "react";
 import type { SalesLead, CreateSalesLead, UpdateSalesLead } from "@shared/schema";
 import { createSalesLeadSchema, updateSalesLeadSchema } from "@shared/schema";
 
+type AvailableReferral = {
+  id: number;
+  fullName: string;
+  phone: string;
+  licensePlate: string;
+};
+
 type SalesStats = {
   total: number;
   novo: number;
@@ -85,7 +92,8 @@ export default function VendedorDashboard() {
   });
 
   // Fetch available referrals for conversion
-  const { data: availableReferrals } = useQuery({
+  // Sem o genérico, `data` vira `unknown` e contamina o JSX que o consome.
+  const { data: availableReferrals } = useQuery<AvailableReferral[]>({
     queryKey: ["/api/sales/available-referrals"],
   });
 

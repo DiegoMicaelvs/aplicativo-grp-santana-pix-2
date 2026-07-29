@@ -54,14 +54,20 @@ export const sendSMS = async (to: string, message: string): Promise<boolean> => 
       Content: message
     };
 
-    // Fazer requisição para API Comtele
+    /**
+     * Timeout obrigatório: sem ele, uma API externa lenta segura a requisição
+     * indefinidamente. Num dia de evento isso encadeia — cada cadastro fica
+     * preso esperando SMS, o pool de conexões esvazia e o sistema inteiro
+     * parece travado por causa de um fornecedor terceiro.
+     */
     const response = await fetch(COMTELE_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'auth-key': COMTELE_AUTH_KEY
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(Number(process.env.SMS_TIMEOUT_MS ?? 5000)),
     });
 
     const result = await response.json();

@@ -7,6 +7,7 @@ import { db } from "@db";
 import { users, referrals } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { Express } from "express";
+import { safeCompare } from "./secrets";
 
 // Interface para resposta de validação
 export interface CrossAppValidationResponse {
@@ -35,9 +36,23 @@ export function registerCrossAppValidationRoutes(app: Express) {
   app.post("/api/validate/cross-app", async (req, res) => {
     try {
       const { cpf, phone, licensePlate, appSecret } = req.body;
-      
-      // Verificar autenticação via app secret
-      if (appSecret !== process.env.CROSS_APP_SECRET) {
+
+      /**
+       * Falha FECHADA.
+       *
+       * Antes era `appSecret !== process.env.CROSS_APP_SECRET`. Com a variável
+       * de ambiente indefinida e o cliente omitindo o campo, a comparação vira
+       * `undefined !== undefined` — que é FALSO. A checagem passava e o
+       * endpoint ficava público, respondendo se um CPF/telefone/placa está
+       * cadastrado e devolvendo o nome do titular.
+       */
+      const segredoConfigurado = process.env.CROSS_APP_SECRET;
+      if (!segredoConfigurado) {
+        console.error("[CROSS_APP] CROSS_APP_SECRET não definido — endpoint desabilitado");
+        return res.status(503).json({ error: "Validação cruzada não configurada" });
+      }
+
+      if (!safeCompare(appSecret, segredoConfigurado)) {
         return res.status(401).json({ error: "Não autorizado" });
       }
       

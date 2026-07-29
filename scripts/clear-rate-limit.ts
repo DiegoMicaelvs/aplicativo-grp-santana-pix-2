@@ -1,5 +1,3 @@
-import { createClient } from '@neondatabase/serverless';
-
 // Script para limpar o rate limiting de login
 // Útil quando usuários legítimos são bloqueados
 

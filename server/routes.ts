@@ -1,8 +1,10 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { setupAuth, hashPassword } from "./auth";
-import { storage } from "./storage";
+import { setupAuth, hashPassword, sessionMiddleware } from "./auth";
+import { checkPixKeyOwnership } from "./pixValidation";
+import { safeCompare } from "./secrets";
+import { storage, InsufficientBalanceError, ConcurrentStatusChangeError } from "./storage";
 import { db } from "@db";
 import { z } from "zod";
 import { 
@@ -20,8 +22,10 @@ import {
   validateReferralSchema,
   createReferralLinkSchema,
   updateReferralLinkSchema,
+  insertUserSchema,
   type AnalystPermission,
-  type ManagerPermission
+  type ManagerPermission,
+  type WithdrawalStatus
 } from "@shared/schema";
 import { 
   registerCrossAppValidationRoutes,
@@ -29,6 +33,46 @@ import {
   validateReferralDuplicates 
 } from "./crossAppValidation";
 import { attachTenantMiddleware, getCurrentTenant } from "./tenancy";
+
+/**
+ * Teto do rateio por lead. R$4 = R$3 indicador + R$1 promotor (validado);
+ * R$60 = R$50 + R$10 (convertido). Limite superior ao aceitar valores de
+ * comissão vindos do cliente.
+ */
+const REFERRAL_POOL_VALIDATED = 4;
+const REFERRAL_POOL_CONVERTED = 60;
+
+/**
+ * Limite de corpo para as rotas que recebem comprovante em base64.
+ * O limite global (server/index.ts) é pequeno de propósito, para que ninguém
+ * consiga mandar megabytes contra rotas sem autenticação.
+ */
+const COMPROVANTE_LIMITE = process.env.UPLOAD_LIMIT ?? '8mb';
+
+/**
+ * Converte valor monetário vindo do cliente, ou null se não for número válido.
+ *
+ * `parseFloat` é armadilha aqui por dois motivos:
+ *  1. `parseFloat("12abc")` devolve 12 — aceita lixo silenciosamente;
+ *  2. `parseFloat("abc")` devolve NaN, e NaN falha TODA comparação:
+ *     `NaN < 0` é false e `NaN > 4` também é false, então validação de faixa
+ *     deixa passar. O Postgres aceita 'NaN' em coluna numeric e
+ *     `NaN + 3.00 = NaN`: o saldo do usuário vira NaN e não há cálculo que o
+ *     traga de volta.
+ *
+ * `Number()` é estrito (rejeita "12abc") e `Number.isFinite` barra NaN e
+ * Infinity de uma vez.
+ */
+function parseMoney(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -296,49 +340,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           search
         );
       } else if (req.user!.role === 'analista') {
-        // Analysts see all referrals or filtered by supervisor for level 3
+        /**
+         * Filtro, busca e paginação agora acontecem no BANCO.
+         * Antes isto carregava a tabela inteira de indicações a cada
+         * requisição e fatiava em memória — inviável no volume do evento.
+         */
         const user = await storage.getUserById(req.user!.id);
-        let allReferrals;
-        
-        if (user?.analystLevel === 3) {
-          // Level 3 analysts see only referrals from supervised users
-          allReferrals = await storage.getReferralsBySupervisor(req.user!.id);
-        } else {
-          // Other analyst levels see all referrals
-          allReferrals = await storage.getAllReferrals();
-        }
-        
-        // Apply status filter if provided
         const finalStatus = status && status !== 'all' ? status : undefined;
-        let filteredReferrals = allReferrals;
-        if (finalStatus) {
-          filteredReferrals = allReferrals.filter((r: any) => r.status === finalStatus);
+
+        let restringirAUsuarios: number[] | undefined;
+        if (user?.analystLevel === 3) {
+          // Nível 3 enxerga apenas a própria equipe
+          const supervisionados = await storage.getAllUsersBySupervisor(req.user!.id);
+          restringirAUsuarios = supervisionados.map((u: any) => u.id);
         }
-        
-        // Apply search filter if provided
-        if (search && search.trim()) {
-          const searchTerm = search.trim().toLowerCase();
-          filteredReferrals = filteredReferrals.filter((r: any) => 
-            r.fullName?.toLowerCase().includes(searchTerm) ||
-            r.phone?.includes(searchTerm) ||
-            r.licensePlate?.toLowerCase().includes(searchTerm) ||
-            r.city?.toLowerCase().includes(searchTerm) ||
-            r.state?.toLowerCase().includes(searchTerm)
-          );
-        }
-        
-        // Apply pagination
-        const total = filteredReferrals.length;
-        const offset = (page - 1) * limit;
-        const paginatedData = filteredReferrals.slice(offset, offset + limit);
-        
-        result = {
-          data: paginatedData,
-          total,
+
+        result = await storage.getReferralsPaginatedForAnalyst(
           page,
           limit,
-          totalPages: Math.ceil(total / limit)
-        };
+          finalStatus,
+          search,
+          restringirAUsuarios,
+        );
       } else {
         const finalStatus = status && status !== 'all' ? status : undefined;
         result = await storage.getReferralsByUserIdPaginated(
@@ -361,15 +384,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/:id", requireAuth, async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
+      if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(400).json({ error: "ID de usuário inválido" });
+      }
+
       const user = await storage.getUserById(userId);
-      
+
       if (!user) {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
-      
+
+      /**
+       * Este endpoint só exigia autenticação: qualquer usuário logado lia o
+       * cadastro completo de qualquer outro (CPF, chave PIX, telefone, saldo,
+       * papel). Agora o acesso é restrito à própria conta, aos papéis que já
+       * enxergam a base inteira e à hierarquia direta do solicitante.
+       */
+      const me = req.user!;
+      const isSelf = user.id === me.id;
+      const isPrivileged =
+        me.role === "admin" || me.role === "analista" || me.role === "gerente";
+
+      // Alguém acima na hierarquia do solicitante (ex.: promotor vendo seu supervisor)
+      const isMyUpline = [
+        me.supervisorId,
+        me.promoterId,
+        me.analystId,
+        me.teamSupervisorId,
+      ].some((linkedId) => linkedId != null && linkedId === user.id);
+
+      // Alguém da equipe do solicitante
+      const isMyDownline =
+        (user.promoterId != null && user.promoterId === me.id) ||
+        (user.supervisorId != null && user.supervisorId === me.id) ||
+        (user.teamSupervisorId != null && user.teamSupervisorId === me.id) ||
+        (user.analystId != null && user.analystId === me.id);
+
+      if (!isSelf && !isPrivileged && !isMyUpline && !isMyDownline) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
       // Remove password from response
       const { password, ...userWithoutPassword } = user;
-      
+
+      // Quem não é dono do registro nem tem papel privilegiado recebe apenas
+      // identificação — dados sensíveis e financeiros não saem daqui.
+      if (!isSelf && !isPrivileged) {
+        return res.json({
+          id: user.id,
+          fullName: user.fullName,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+        });
+      }
+
       return res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user details:", error);
@@ -492,16 +562,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const plate of licensePlates) {
         // Create a copy of referralData without licensePlates, then add single plate
         const { licensePlates: _, ...referralDataWithoutPlates } = finalReferralData;
-        
+
         console.log(`[CREATE REFERRAL] Creating referral for plate: ${plate}`);
-        const referralForPlate = await storage.createReferral({
-          ...referralDataWithoutPlates,
-          licensePlates: [plate], // Pass single plate in array for storage
-          userId: req.user!.id,
-          createdBy: req.user!.id
-        });
-        console.log(`[CREATE REFERRAL] Created referral ID: ${referralForPlate.id} for plate: ${plate}`);
-        createdReferrals.push(referralForPlate);
+        try {
+          const referralForPlate = await storage.createReferral({
+            ...referralDataWithoutPlates,
+            licensePlates: [plate], // Pass single plate in array for storage
+            userId: req.user!.id,
+            createdBy: req.user!.id
+          });
+          console.log(`[CREATE REFERRAL] Created referral ID: ${referralForPlate.id} for plate: ${plate}`);
+          createdReferrals.push(referralForPlate);
+        } catch (error: any) {
+          /**
+           * 23505 = violação de unicidade. O índice único no banco é a última
+           * linha de defesa contra duplicata: a checagem em memória logo acima
+           * consulta e só depois insere, e nesse intervalo dois envios
+           * simultâneos da mesma placa passavam os dois — gerando duas
+           * indicações e comissão em dobro pelo mesmo carro.
+           */
+          if (error?.code === '23505') {
+            return res.status(400).json({
+              error: "Indicação duplicada",
+              details: `A placa ${plate} já foi cadastrada.`,
+              duplicatedPlate: plate,
+            });
+          }
+          throw error;
+        }
       }
       
       console.log(`[CREATE REFERRAL] Total referrals created: ${createdReferrals.length}`);
@@ -512,11 +600,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const { sendReferralNotification } = await import('./sms-service');
           // Send notification for first referral (or we could mention "X placas cadastradas")
-          await sendReferralNotification(
+          // Sem await: o indicador não pode esperar a Comtele para ver o
+          // cadastro concluído.
+          void sendReferralNotification(
             user.phone,
             user.fullName,
             createdReferrals[0].id
-          );
+          ).catch((e) => console.log('SMS de indicação falhou (non-critical):', e?.message ?? e));
           console.log(`SMS notification sent to ${user.phone} for ${createdReferrals.length} new referral(s)`);
         } catch (smsError) {
           console.log('SMS notification failed (non-critical):', smsError);
@@ -1160,6 +1250,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Pré-checagem só para dar erro cedo e barato. A garantia real está no
+      // débito condicional dentro de storage.createWithdrawalRequest — esta
+      // leitura sozinha não protege contra dois pedidos simultâneos.
       if (parseFloat(user.balance) < validatedData.amount) {
         return res.status(400).json({ error: "Saldo insuficiente" });
       }
@@ -1173,40 +1266,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Permitir que o usuário use qualquer chave PIX válida
-      // Removida validação restritiva que forçava usar apenas a chave cadastrada no perfil
-      
-      const withdrawal = await storage.createWithdrawalRequest({
-        ...validatedData,
-        userId: req.user!.id,
-        requestType: user.role === 'promotor' ? 'promotor' : 'indicador'
+      /**
+       * Titularidade do saque.
+       *
+       * 1. O CPF informado precisa ser o do titular da conta. Não existe caso
+       *    legítimo de sacar declarando o CPF de outra pessoa — trava dura.
+       * 2. A chave PIX precisa corresponder ao CPF, celular ou e-mail do
+       *    cadastro. Se não corresponder, o saque NÃO é recusado: entra como
+       *    "retido" para intermediação do financeiro.
+       *
+       * Antes disso aqui não havia validação nenhuma: dava para pedir saque
+       * para chave de terceiro declarando CPF de terceiro, e o pedido era
+       * aceito normalmente.
+       */
+      if (!(await storage.validateCpfForWithdrawal(req.user!.id, validatedData.cpfKey))) {
+        return res.status(400).json({
+          error: "CPF inválido",
+          details: "O CPF informado precisa ser o mesmo do seu cadastro. O saque só pode ser feito para conta de sua titularidade.",
+        });
+      }
+
+      const pixCheck = checkPixKeyOwnership(validatedData.pixKey, {
+        cpf: user.cpf,
+        phone: user.phone,
+        email: user.email,
+        username: user.username,
       });
-      
-      // Descontar imediatamente o valor do saldo do usuário
-      await storage.updateUserBalance(req.user!.id, -validatedData.amount);
-      
+
+      // O débito do saldo acontece DENTRO desta chamada, na mesma transação e
+      // de forma condicional. Não debite de novo aqui.
+      let withdrawal;
+      try {
+        withdrawal = await storage.createWithdrawalRequest({
+          ...validatedData,
+          userId: req.user!.id,
+          requestType: user.role === 'promotor' ? 'promotor' : 'indicador',
+          status: pixCheck.matchesOwner ? 'pending' : 'retido',
+          notes: pixCheck.matchesOwner
+            ? undefined
+            : `Retido para intermediação: ${pixCheck.reason} (tipo detectado: ${pixCheck.kind})`,
+        });
+      } catch (error) {
+        if (error instanceof InsufficientBalanceError) {
+          return res.status(400).json({ error: "Saldo insuficiente" });
+        }
+        throw error;
+      }
+
       // Send SMS notification to admins about new withdrawal request
       try {
         const { sendAdminWithdrawalNotification } = await import('./sms-service');
         const admins = await storage.getUsersByRole('admin');
         
-        // Send SMS to all admins with phone numbers
-        for (const admin of admins) {
-          if (admin.phone) {
-            await sendAdminWithdrawalNotification(
-              admin.phone,
-              user.fullName,
-              user.cpf,
-              validatedData.amount
-            );
-            console.log(`SMS notification sent to admin ${admin.fullName} for new withdrawal request`);
-          }
-        }
+        // Em paralelo e fora do caminho da resposta. Antes era um laço
+        // sequencial COM await: com 5 admins, o usuário esperava 5 chamadas
+        // externas para ver o saque confirmado.
+        void Promise.allSettled(
+          admins
+            .filter((admin) => admin.phone)
+            .map((admin) =>
+              sendAdminWithdrawalNotification(
+                admin.phone,
+                user.fullName,
+                user.cpf,
+                validatedData.amount
+              )
+            )
+        ).then(() => {
+          console.log(`SMS de novo saque disparado para ${admins.filter((a) => a.phone).length} admin(s)`);
+        });
       } catch (smsError) {
         console.log('Admin SMS notification failed (non-critical):', smsError);
         // Don't fail the withdrawal creation if SMS fails
       }
       
+      // O usuário precisa saber na hora que o valor ficou retido e por quê.
+      if (!pixCheck.matchesOwner) {
+        return res.status(201).json({
+          ...withdrawal,
+          retained: true,
+          message:
+            "Saque registrado, mas retido para conferência. A chave PIX informada não corresponde ao CPF, celular ou e-mail do seu cadastro. " +
+            "O valor já saiu do saldo disponível e será liberado após intermediação do financeiro.",
+        });
+      }
+
       return res.status(201).json(withdrawal);
     } catch (error) {
       console.error("Error creating withdrawal:", error);
@@ -1219,7 +1363,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's tickets
   app.get("/api/tickets", requireAuth, async (req, res) => {
     try {
-      const tickets = await storage.getSupportTicketById(req.user!.id);
+      // Era getSupportTicketById(req.user!.id): passava o ID do USUÁRIO como ID
+      // do TICKET. O usuário #5 recebia o ticket #5, fosse de quem fosse — e
+      // com o dono do ticket embutido junto.
+      const tickets = await storage.getSupportTicketsByUserId(req.user!.id);
       return res.json(tickets);
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -1367,11 +1514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all users
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     try {
+      // getAllUsers() já não seleciona a coluna password no banco
       const users = await storage.getAllUsers();
-      return res.json(users.map(u => {
-        const { password, ...userWithoutPassword } = u;
-        return userWithoutPassword;
-      }));
+      return res.json(users);
     } catch (error) {
       console.error("Error fetching users:", error);
       return res.status(500).json({ error: "Erro ao buscar usuários" });
@@ -1500,13 +1645,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allUsers = await storage.getAllUsers();
       }
       
-      // Remove passwords from the response
-      const usersWithoutPasswords = allUsers.map(u => {
-        const { password, ...userWithoutPassword } = u;
-        return userWithoutPassword;
-      });
-      
-      return res.json(usersWithoutPasswords);
+      // getAllUsers() já não seleciona a coluna password no banco
+      return res.json(allUsers);
     } catch (error) {
       console.error("Error fetching users for analyst:", error);
       return res.status(500).json({ error: "Erro ao buscar usuários" });
@@ -1517,34 +1657,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/users/by-ids", requireAuth, async (req, res) => {
     try {
       const { userIds } = req.body;
-      
+
       if (!userIds || !Array.isArray(userIds)) {
         return res.status(400).json({ error: "Lista de IDs de usuário é obrigatória" });
       }
-      
-      if (userIds.length === 0) {
+
+      /**
+       * Este endpoint devolvia o cadastro COMPLETO de qualquer ID informado,
+       * para qualquer usuário autenticado — era o mesmo IDOR de /api/users/:id,
+       * porém em lote. Além disso não havia limite de tamanho: uma lista com
+       * milhares de IDs virava a mesma quantidade de consultas ao banco.
+       *
+       * Ele existe apenas para resolver NOMES no histórico de status, então
+       * agora devolve somente campos de identificação.
+       */
+      const MAX_IDS = 200;
+
+      const ids = Array.from(
+        new Set(
+          userIds
+            .map((id: unknown) => Number(id))
+            .filter((id: number) => Number.isInteger(id) && id > 0),
+        ),
+      );
+
+      if (ids.length === 0) {
         return res.json([]);
       }
-      
-      // Buscar usuários específicos
+
+      if (ids.length > MAX_IDS) {
+        return res.status(400).json({
+          error: `Máximo de ${MAX_IDS} IDs por requisição`,
+        });
+      }
+
       const foundUsers = await Promise.all(
-        userIds.map(async (id: number) => {
+        ids.map(async (id: number) => {
           try {
             const user = await storage.getUserById(id);
-            if (user) {
-              const { password, ...userWithoutPassword } = user;
-              return userWithoutPassword;
-            }
-            return null;
+            if (!user) return null;
+            return {
+              id: user.id,
+              fullName: user.fullName,
+              username: user.username,
+              role: user.role,
+            };
           } catch {
             return null;
           }
         })
       );
-      
+
       // Filtrar usuários válidos
       const validUsers = foundUsers.filter(user => user !== null);
-      
+
       return res.json(validUsers);
     } catch (error) {
       console.error("Error fetching users by IDs:", error);
@@ -1678,7 +1844,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Update referral status - OPTIMIZED (no duplicate queries)
   // Accessible by admin or analyst with edit_referral_status permission
-  app.patch("/api/referrals/:id/status", requireStatusEditPermission, async (req, res) => {
+  // Comprovante em base64 só trafega nestas duas rotas, e só depois da
+  // autenticação — o limite global de payload é pequeno (ver server/index.ts).
+  const aceitaComprovante = express.json({ limit: COMPROVANTE_LIMITE });
+
+  app.patch("/api/referrals/:id/status", requireStatusEditPermission, aceitaComprovante, async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = updateReferralStatusSchema.parse(req.body);
@@ -1701,15 +1871,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // updateReferralStatus handles all queries internally - no duplicates
-      const result = await storage.updateReferralStatus(
-        parseInt(id),
-        validatedData.status,
-        validatedData.notes,
-        req.user!.id,
-        validatedData.paymentProof,
-        req.user!.fullName || req.user!.username
-      );
-      
+      let result;
+      try {
+        result = await storage.updateReferralStatus(
+          parseInt(id),
+          validatedData.status,
+          validatedData.notes,
+          req.user!.id,
+          validatedData.paymentProof,
+          req.user!.fullName || req.user!.username
+        );
+      } catch (error) {
+        // Outra requisição transicionou esta indicação primeiro (duplo clique,
+        // retry do cliente). Nenhuma comissão foi creditada — a transação foi
+        // desfeita. 409 para o cliente saber que deve recarregar.
+        if (error instanceof ConcurrentStatusChangeError) {
+          return res.status(409).json({
+            error: "Indicação já atualizada",
+            details: error.message,
+          });
+        }
+        throw error;
+      }
+
       // Add observation as a conversation message if provided
       if (validatedData.observation && validatedData.observation.trim()) {
         await storage.createReferralConversation({
@@ -1920,7 +2104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Edit referral (for analysts, admins, and indicador_nivel_1 for company only)
-  app.patch("/api/referrals/:id", requireAuth, async (req, res) => {
+  app.patch("/api/referrals/:id", requireAuth, aceitaComprovante, async (req, res) => {
     try {
       const isAdminOrAnalyst = req.user!.role === "admin" || req.user!.role === "analista";
       const isIndicadorNivel1 = req.user!.role === "indicador_nivel_1";
@@ -1993,12 +2177,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (phone !== undefined) updateData.phone = phone;
       if (licensePlate !== undefined) updateData.licensePlate = licensePlate;
       if (companyId !== undefined) updateData.companyId = parseInt(companyId);
-      if (userId !== undefined) updateData.userId = parseInt(userId);
       if (status !== undefined) updateData.status = status;
       if (notes !== undefined) updateData.notes = notes;
       if (hasInsurance !== undefined) updateData.hasInsurance = hasInsurance;
-      if (commissionIndicator !== undefined) updateData.commissionIndicator = commissionIndicator;
-      if (commissionPromoter !== undefined) updateData.commissionPromoter = commissionPromoter;
+
+      /**
+       * Comissão e dono da indicação: só admin, e sempre validados.
+       *
+       * Antes, QUALQUER analista gravava commissionIndicator/commissionPromoter
+       * direto do corpo da requisição, sem validação de tipo nem teto de pool —
+       * e podia reatribuir a indicação para outro indicador via `userId`.
+       *
+       * O estrago não é só o valor gravado: updateReferralStatus calcula o
+       * crédito como `comissão final - comissão anterior`. Gravando um valor
+       * negativo aqui, a próxima transição de status gera uma diferença enorme
+       * e credita a diferença como saldo real.
+       */
+      const isAdmin = req.user!.role === "admin";
+
+      if (commissionIndicator !== undefined) {
+        if (!isAdmin) {
+          return res.status(403).json({ error: "Apenas admin pode alterar comissões" });
+        }
+        const n = parseMoney(commissionIndicator);
+        if (n === null || n < 0 || n > REFERRAL_POOL_CONVERTED) {
+          return res.status(400).json({
+            error: "Comissão do indicador inválida",
+            details: `Deve ser um número entre R$0 e R$${REFERRAL_POOL_CONVERTED}`,
+          });
+        }
+        updateData.commissionIndicator = n.toFixed(2);
+      }
+
+      if (commissionPromoter !== undefined) {
+        if (!isAdmin) {
+          return res.status(403).json({ error: "Apenas admin pode alterar comissões" });
+        }
+        const n = parseMoney(commissionPromoter);
+        if (n === null || n < 0 || n > REFERRAL_POOL_CONVERTED) {
+          return res.status(400).json({
+            error: "Comissão do promotor inválida",
+            details: `Deve ser um número entre R$0 e R$${REFERRAL_POOL_CONVERTED}`,
+          });
+        }
+        updateData.commissionPromoter = n.toFixed(2);
+      }
+
+      if (userId !== undefined) {
+        if (!isAdmin) {
+          return res.status(403).json({ error: "Apenas admin pode reatribuir a indicação a outro usuário" });
+        }
+        const novoDono = parseInt(userId);
+        if (!Number.isInteger(novoDono) || novoDono <= 0) {
+          return res.status(400).json({ error: "Usuário inválido" });
+        }
+        updateData.userId = novoDono;
+      }
       if (paymentProof !== undefined) updateData.paymentProof = paymentProof;
       if (city !== undefined) updateData.city = city;
       if (state !== undefined) updateData.state = state;
@@ -2359,7 +2593,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { status, notes } = req.body;
-      
+
+      // O status ia direto do body para o banco. Um valor digitado errado
+      // gravava um estado inexistente e o saque ficava fora de qualquer filtro.
+      const allowedStatuses: WithdrawalStatus[] = [
+        "pending",
+        "approved",
+        "paid",
+        "rejected",
+        "retido",
+      ];
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          error: "Status inválido",
+          details: `Valores aceitos: ${allowedStatuses.join(", ")}`,
+        });
+      }
+
       // Get withdrawal and user info before update for SMS notification
       const withdrawal = await storage.getWithdrawalRequestById(parseInt(id));
       const user = withdrawal ? await storage.getUserById(withdrawal.userId) : null;
@@ -2375,12 +2625,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user?.phone && withdrawal && (status === 'approved' || status === 'rejected')) {
         try {
           const { sendWithdrawalNotification } = await import('./sms-service');
-          await sendWithdrawalNotification(
+          void sendWithdrawalNotification(
             user.phone,
             user.fullName,
             parseFloat(withdrawal.amount.toString()),
             status as 'approved' | 'rejected'
-          );
+          ).catch((e) => console.log('SMS de saque falhou (non-critical):', e?.message ?? e));
           console.log(`SMS notification sent to ${user.phone} for withdrawal ${status}`);
         } catch (smsError) {
           console.log('SMS notification failed (non-critical):', smsError);
@@ -2517,7 +2767,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (newUser.phone) {
         try {
           const { sendWelcomeSMS } = await import('./sms-service');
-          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          // Sem await: SMS é notificação, não pode atrasar nem derrubar o cadastro
+          void sendWelcomeSMS(newUser.phone, newUser.fullName).catch((e) =>
+            console.log('Welcome SMS failed (non-critical):', e?.message ?? e));
           console.log(`Welcome SMS sent to new user: ${newUser.fullName} (${newUser.phone})`);
         } catch (smsError) {
           console.log('Welcome SMS failed (non-critical):', smsError);
@@ -2563,7 +2815,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (newUser.phone) {
         try {
           const { sendWelcomeSMS } = await import('./sms-service');
-          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          // Sem await: SMS é notificação, não pode atrasar nem derrubar o cadastro
+          void sendWelcomeSMS(newUser.phone, newUser.fullName).catch((e) =>
+            console.log('Welcome SMS failed (non-critical):', e?.message ?? e));
           console.log(`Welcome SMS sent to new indicador: ${newUser.fullName} (${newUser.phone})`);
         } catch (smsError) {
           console.log('Welcome SMS failed (non-critical):', smsError);
@@ -2608,7 +2862,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (newUser.phone) {
         try {
           const { sendWelcomeSMS } = await import('./sms-service');
-          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          // Sem await: SMS é notificação, não pode atrasar nem derrubar o cadastro
+          void sendWelcomeSMS(newUser.phone, newUser.fullName).catch((e) =>
+            console.log('Welcome SMS failed (non-critical):', e?.message ?? e));
           console.log(`Welcome SMS sent to new promotor: ${newUser.fullName} (${newUser.phone})`);
         } catch (smsError) {
           console.log('Welcome SMS failed (non-critical):', smsError);
@@ -2629,16 +2885,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Apenas promotores podem cadastrar indicadores" });
       }
 
-      const hashedPassword = await hashPassword(req.body.password);
       const { commissionValidated, commissionConverted, teamSupervisorId, ...rest } = req.body;
 
       // Validate commission values against pool limits
       const POOL_VALIDATED = 4;
       const POOL_CONVERTED = 60;
-      if (commissionValidated !== undefined && (parseFloat(commissionValidated) < 0 || parseFloat(commissionValidated) > POOL_VALIDATED)) {
+      // parseMoney barra NaN/Infinity/lixo; ver o comentário na definição.
+      const validadoNum = commissionValidated !== undefined ? parseMoney(commissionValidated) : undefined;
+      const convertidoNum = commissionConverted !== undefined ? parseMoney(commissionConverted) : undefined;
+
+      if (validadoNum !== undefined && (validadoNum === null || validadoNum < 0 || validadoNum > POOL_VALIDATED)) {
         return res.status(400).json({ error: `Comissão validado deve estar entre R$0 e R$${POOL_VALIDATED}` });
       }
-      if (commissionConverted !== undefined && (parseFloat(commissionConverted) < 0 || parseFloat(commissionConverted) > POOL_CONVERTED)) {
+      if (convertidoNum !== undefined && (convertidoNum === null || convertidoNum < 0 || convertidoNum > POOL_CONVERTED)) {
         return res.status(400).json({ error: `Comissão convertido deve estar entre R$0 e R$${POOL_CONVERTED}` });
       }
 
@@ -2650,25 +2909,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         const supAllocValidated = parseFloat(supervisor.commissionValidated?.toString() || '0');
         const supAllocConverted = parseFloat(supervisor.commissionConverted?.toString() || '0');
-        if (commissionValidated !== undefined && parseFloat(commissionValidated) > supAllocValidated) {
+        if (validadoNum != null && validadoNum > supAllocValidated) {
           return res.status(400).json({ error: `Comissão validado do indicador (R$${commissionValidated}) não pode exceder a alocação do supervisor (R$${supAllocValidated})` });
         }
-        if (commissionConverted !== undefined && parseFloat(commissionConverted) > supAllocConverted) {
+        if (convertidoNum != null && convertidoNum > supAllocConverted) {
           return res.status(400).json({ error: `Comissão convertido do indicador (R$${commissionConverted}) não pode exceder a alocação do supervisor (R$${supAllocConverted})` });
         }
       }
 
       const userData = {
         ...rest,
-        password: hashedPassword,
+        // senha em texto puro: storage.createUser() aplica o hash
         role: "indicador",
         createdBy: req.user!.id,
         promoterId: req.user!.id,
         city: rest.city || "",
         state: rest.state || "",
         zipCode: rest.zipCode || "",
-        ...(commissionValidated !== undefined && { commissionValidated: parseFloat(commissionValidated).toFixed(2) }),
-        ...(commissionConverted !== undefined && { commissionConverted: parseFloat(commissionConverted).toFixed(2) }),
+        ...(validadoNum != null && { commissionValidated: validadoNum.toFixed(2) }),
+        ...(convertidoNum != null && { commissionConverted: convertidoNum.toFixed(2) }),
         ...(teamSupervisorId && { teamSupervisorId: parseInt(teamSupervisorId) }),
       };
       
@@ -2678,7 +2937,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (newUser.phone) {
         try {
           const { sendWelcomeSMS } = await import('./sms-service');
-          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          // Sem await: SMS é notificação, não pode atrasar nem derrubar o cadastro
+          void sendWelcomeSMS(newUser.phone, newUser.fullName).catch((e) =>
+            console.log('Welcome SMS failed (non-critical):', e?.message ?? e));
         } catch (smsError) {
           console.log('Welcome SMS failed (non-critical):', smsError);
         }
@@ -2705,22 +2966,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (commissionValidated === undefined || commissionConverted === undefined) {
         return res.status(400).json({ error: "Defina os valores de comissão para o supervisor" });
       }
-      if (parseFloat(commissionValidated) < 0 || parseFloat(commissionValidated) > POOL_VALIDATED) {
+      const allocValidado = parseMoney(commissionValidated);
+      const allocConvertido = parseMoney(commissionConverted);
+      if (allocValidado === null || allocValidado < 0 || allocValidado > POOL_VALIDATED) {
         return res.status(400).json({ error: `Alocação validado deve estar entre R$0 e R$${POOL_VALIDATED}` });
       }
-      if (parseFloat(commissionConverted) < 0 || parseFloat(commissionConverted) > POOL_CONVERTED) {
+      if (allocConvertido === null || allocConvertido < 0 || allocConvertido > POOL_CONVERTED) {
         return res.status(400).json({ error: `Alocação convertido deve estar entre R$0 e R$${POOL_CONVERTED}` });
       }
 
-      const hashedPassword = await hashPassword(rest.password);
       const userData = {
         ...rest,
-        password: hashedPassword,
+        // senha em texto puro: storage.createUser() aplica o hash
         role: "supervisor",
         createdBy: req.user!.id,
         promoterId: req.user!.id,
-        commissionValidated: parseFloat(commissionValidated).toFixed(2),
-        commissionConverted: parseFloat(commissionConverted).toFixed(2),
+        commissionValidated: allocValidado.toFixed(2),
+        commissionConverted: allocConvertido.toFixed(2),
         city: rest.city || "",
         state: rest.state || "",
         zipCode: rest.zipCode || "",
@@ -2732,7 +2994,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (newUser.phone) {
         try {
           const { sendWelcomeSMS } = await import('./sms-service');
-          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          // Sem await: SMS é notificação, não pode atrasar nem derrubar o cadastro
+          void sendWelcomeSMS(newUser.phone, newUser.fullName).catch((e) =>
+            console.log('Welcome SMS failed (non-critical):', e?.message ?? e));
         } catch (smsError) {
           console.log('Welcome SMS failed (non-critical):', smsError);
         }
@@ -2779,8 +3043,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const POOL_CONVERTED = 60;
 
       if (commissionValidated !== undefined) {
-        const val = parseFloat(commissionValidated);
-        if (val < 0 || val > POOL_VALIDATED) {
+        const val = parseMoney(commissionValidated);
+        if (val === null || val < 0 || val > POOL_VALIDATED) {
           return res.status(400).json({ error: `Valor deve estar entre R$0 e R$${POOL_VALIDATED}` });
         }
         // If updating a supervisor's allocation, ensure existing indicadores under them don't exceed it
@@ -2803,8 +3067,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       if (commissionConverted !== undefined) {
-        const val = parseFloat(commissionConverted);
-        if (val < 0 || val > POOL_CONVERTED) {
+        const val = parseMoney(commissionConverted);
+        if (val === null || val < 0 || val > POOL_CONVERTED) {
           return res.status(400).json({ error: `Valor deve estar entre R$0 e R$${POOL_CONVERTED}` });
         }
         if (targetUser.role === 'supervisor') {
@@ -2826,8 +3090,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updates: any = {};
-      if (commissionValidated !== undefined) updates.commissionValidated = parseFloat(commissionValidated).toFixed(2);
-      if (commissionConverted !== undefined) updates.commissionConverted = parseFloat(commissionConverted).toFixed(2);
+      // val/valConv já validados acima com parseMoney
+      if (commissionValidated !== undefined) {
+        const n = parseMoney(commissionValidated);
+        if (n === null) return res.status(400).json({ error: "Comissão validado inválida" });
+        updates.commissionValidated = n.toFixed(2);
+      }
+      if (commissionConverted !== undefined) {
+        const n = parseMoney(commissionConverted);
+        if (n === null) return res.status(400).json({ error: "Comissão convertido inválida" });
+        updates.commissionConverted = n.toFixed(2);
+      }
 
       const updatedUser = await storage.updateUserProfile(userId, updates);
       const { password, ...userWithoutPassword } = updatedUser;
@@ -2875,17 +3148,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (commissionValidated === undefined || commissionConverted === undefined) {
         return res.status(400).json({ error: "Defina os valores de comissão para o indicador" });
       }
-      if (parseFloat(commissionValidated) < 0 || parseFloat(commissionValidated) > supAllocValidated) {
+      const indValidado = parseMoney(commissionValidated);
+      const indConvertido = parseMoney(commissionConverted);
+      if (indValidado === null || indValidado < 0 || indValidado > supAllocValidated) {
         return res.status(400).json({ error: `Comissão validado deve estar entre R$0 e R$${supAllocValidated} (sua alocação)` });
       }
-      if (parseFloat(commissionConverted) < 0 || parseFloat(commissionConverted) > supAllocConverted) {
+      if (indConvertido === null || indConvertido < 0 || indConvertido > supAllocConverted) {
         return res.status(400).json({ error: `Comissão convertido deve estar entre R$0 e R$${supAllocConverted} (sua alocação)` });
       }
 
-      const hashedPassword = await hashPassword(rest.password);
       const userData = {
         ...rest,
-        password: hashedPassword,
+        // senha em texto puro: storage.createUser() aplica o hash
         role: "indicador",
         createdBy: req.user!.id,
         promoterId: supervisor.promoterId, // Link to the root promotor
@@ -2893,8 +3167,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         city: rest.city || "",
         state: rest.state || "",
         zipCode: rest.zipCode || "",
-        commissionValidated: parseFloat(commissionValidated).toFixed(2),
-        commissionConverted: parseFloat(commissionConverted).toFixed(2),
+        commissionValidated: indValidado.toFixed(2),
+        commissionConverted: indConvertido.toFixed(2),
       };
 
       const newUser = await storage.createUser(userData);
@@ -2903,7 +3177,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (newUser.phone) {
         try {
           const { sendWelcomeSMS } = await import('./sms-service');
-          await sendWelcomeSMS(newUser.phone, newUser.fullName);
+          // Sem await: SMS é notificação, não pode atrasar nem derrubar o cadastro
+          void sendWelcomeSMS(newUser.phone, newUser.fullName).catch((e) =>
+            console.log('Welcome SMS failed (non-critical):', e?.message ?? e));
         } catch (smsError) {
           console.log('Welcome SMS failed (non-critical):', smsError);
         }
@@ -2925,8 +3201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const indicadores = await storage.getIndicadoresBySupervisor(req.user!.id);
       const indicadorIds = indicadores.map(i => i.id);
       if (indicadorIds.length === 0) return res.json([]);
-      const allReferrals = await storage.getReferrals({ limit: 1000 });
-      const teamReferrals = (allReferrals.data || allReferrals).filter((r: any) => indicadorIds.includes(r.userId));
+      const allReferrals = await storage.getAllReferrals();
+      const teamReferrals = allReferrals.filter((r: any) => indicadorIds.includes(r.userId));
       return res.json(teamReferrals);
     } catch (error) {
       console.error("Error fetching supervisor referrals:", error);
@@ -3077,20 +3353,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { masterPassword } = req.body;
       
-      console.log('Delete user request:', { id, masterPassword: masterPassword ? '***' : 'undefined', body: req.body });
-      
+      // Não logar req.body: ele contém a senha mestre em texto puro
+      // (mascarar só o campo `masterPassword` não adiantava nada).
+      console.log('Delete user request:', { id });
+
       // Validate master password
       const DEVELOPER_MASTER_PASSWORD = process.env.DEVELOPER_MASTER_PASSWORD;
-      if (!masterPassword) {
+      if (!masterPassword || typeof masterPassword !== "string") {
         return res.status(400).json({ error: "Senha mestre é obrigatória" });
       }
-      
+
       if (!DEVELOPER_MASTER_PASSWORD) {
         console.error("DEVELOPER_MASTER_PASSWORD environment variable not set");
         return res.status(500).json({ error: "Configuração do servidor incompleta" });
       }
-      
-      if (masterPassword !== DEVELOPER_MASTER_PASSWORD) {
+
+      if (!safeCompare(masterPassword, DEVELOPER_MASTER_PASSWORD)) {
         return res.status(403).json({ error: "Senha mestre incorreta" });
       }
       
@@ -3716,42 +3994,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Regular registration endpoint
-  app.post("/api/register", async (req, res) => {
-    try {
-      const userData = req.body;
-      
-      // Create user without referral attribution
-      const newUser = await storage.createUser(userData);
-      
-      return res.status(201).json({ 
-        message: "Usuário criado com sucesso", 
-        user: { id: newUser.id, username: newUser.username } 
-      });
-    } catch (error: any) {
-      console.error("Error registering user:", error);
-      
-      // Handle specific database errors
-      if (error.code === '23505') {
-        if (error.constraint === 'users_cpf_unique') {
-          return res.status(400).json({ error: "Este CPF já está cadastrado" });
-        } else if (error.constraint === 'users_username_unique') {
-          return res.status(400).json({ error: "Este e-mail já está cadastrado" });
-        }
-      }
-      
-      return res.status(500).json({ error: "Erro ao cadastrar usuário" });
-    }
-  });
+  /**
+   * REMOVIDO: havia aqui um segundo `app.post("/api/register")` que repassava
+   * `req.body` cru para storage.createUser — ou seja, cadastro com role,
+   * permissions e comissões escolhidos pelo cliente.
+   *
+   * Ele nunca chegou a executar porque setupAuth(app) na linha 55 registra
+   * /api/register antes, e o Express atende pela primeira rota registrada.
+   * Era uma mina: bastava alguém reordenar as chamadas para abrir a escalação
+   * de privilégio. O cadastro válido vive em server/auth.ts.
+   */
 
   // Registration with referral link
   app.post("/api/register-with-referral", async (req, res) => {
     try {
-      const { referralToken, userData } = req.body;
-      
-      // Create user with referral attribution
-      const newUser = await storage.createUserWithReferralAttribution(userData, referralToken);
-      
+      const { referralToken } = req.body;
+
+      /**
+       * ESTE ENDPOINT ERA A PIOR BRECHA DO SISTEMA.
+       *
+       * Ele repassava `req.body.userData` CRU para createUserWithReferralAttribution,
+       * que honra role, permissions, analystLevel e as comissões. Qualquer pessoa
+       * na internet, sem autenticação, criava uma conta `role: "admin"` com as
+       * permissões que quisesse e commissionValidated de R$9999,99.
+       *
+       * Agora passa pelo mesmo allowlist do cadastro normal (insertUserSchema)
+       * e o papel é fixado no servidor. A atribuição de promotor/supervisor vem
+       * do TOKEN do link, nunca do corpo da requisição.
+       */
+      const parsed = insertUserSchema.safeParse(req.body.userData);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: "Dados inválidos",
+          details: parsed.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`),
+        });
+      }
+
+      const token =
+        typeof referralToken === "string" && referralToken.trim()
+          ? referralToken.trim()
+          : undefined;
+
+      const newUser = await storage.createUserWithReferralAttribution(
+        { ...parsed.data, role: "indicador", createdBy: undefined },
+        token,
+      );
+
       return res.status(201).json({ 
         message: "Usuário criado com sucesso", 
         user: { id: newUser.id, username: newUser.username } 
@@ -3775,30 +4063,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
   const server = createServer(app);
 
-  // Setup WebSocket server for real-time updates
-  const wss = new WebSocketServer({ server, path: '/ws' });
-  
+  /**
+   * WebSocket de atualizações em tempo real.
+   *
+   * Antes: `new WebSocketServer({ server, path: '/ws' })` aceitava QUALQUER
+   * conexão, sem autenticação, e o broadcast enviava o objeto completo da
+   * indicação — nome, telefone, placa e o comprovante de pagamento em base64 —
+   * para todos os conectados. Bastava abrir um WebSocket para o endereço e
+   * ficar recebendo dado pessoal de todo mundo em tempo real.
+   *
+   * Agora o handshake exige sessão válida (mesmo cookie do Express) e o
+   * broadcast carrega só o identificador do que mudou; o cliente refaz o fetch
+   * autenticado, respeitando as permissões dele.
+   */
+  const wss = new WebSocketServer({ noServer: true });
+
+  server.on('upgrade', (req, socket, head) => {
+    const url = req.url ?? '';
+    if (!url.startsWith('/ws')) return; // deixa o Vite HMR e outros seguirem
+
+    const recusar = (motivo: string) => {
+      console.warn(`[WebSocket] Handshake recusado: ${motivo}`);
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+    };
+
+    if (!sessionMiddleware) return recusar('sessão não inicializada');
+
+    // Roda o middleware de sessão sobre a requisição de upgrade para
+    // materializar req.session a partir do cookie.
+    sessionMiddleware(req as any, {} as any, () => {
+      const sessao = (req as any).session;
+      const userId = sessao?.passport?.user;
+
+      if (!userId) return recusar('sem sessão autenticada');
+
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        (ws as any).userId = userId;
+        wss.emit('connection', ws, req);
+      });
+    });
+  });
+
   // Store connected clients
   const clients = new Set<WebSocket>();
-  
+
   wss.on('connection', (ws) => {
-    console.log('[WebSocket] New client connected');
+    console.log(`[WebSocket] Cliente conectado (userId=${(ws as any).userId})`);
     clients.add(ws);
-    
+
+    // Detecta conexões mortas: sem isso, sockets de celular que perderam sinal
+    // ficam acumulando no Set e o broadcast tenta escrever neles para sempre.
+    (ws as any).isAlive = true;
+    ws.on('pong', () => { (ws as any).isAlive = true; });
+
     ws.on('close', () => {
       console.log('[WebSocket] Client disconnected');
       clients.delete(ws);
     });
-    
+
     ws.on('error', (error) => {
       console.error('[WebSocket] Error:', error);
       clients.delete(ws);
     });
   });
-  
-  // Function to broadcast updates to all connected clients
+
+  const heartbeat = setInterval(() => {
+    for (const client of clients) {
+      if ((client as any).isAlive === false) {
+        clients.delete(client);
+        client.terminate();
+        continue;
+      }
+      (client as any).isAlive = false;
+      client.ping();
+    }
+  }, 30_000);
+  heartbeat.unref?.();
+
+  /**
+   * Envia apenas o necessário para o cliente saber O QUE mudou.
+   * O conteúdo em si ele busca por HTTP autenticado.
+   */
   const broadcastUpdate = (type: string, data: any) => {
-    const message = JSON.stringify({ type, data, timestamp: new Date().toISOString() });
+    const resumo = data && typeof data === 'object'
+      ? { id: data.id, status: data.status, updatedAt: data.updatedAt }
+      : data;
+
+    const message = JSON.stringify({ type, data: resumo, timestamp: new Date().toISOString() });
     clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);

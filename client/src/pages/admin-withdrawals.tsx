@@ -24,13 +24,15 @@ import { format } from 'date-fns';
 import { queryClient } from '@/lib/queryClient';
 import { BackButton } from '@/components/ui/back-button';
 import { invalidateRelatedQueries } from '@/lib/invalidateUtils';
+import type { WithdrawalStatus } from '@shared/schema';
 
 interface WithdrawalRequest {
   id: number;
   userId: number;
   amount: string;
   pixKey: string;
-  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  // Deriva do schema para não divergir quando um status novo é adicionado.
+  status: WithdrawalStatus;
   requestedAt: string;
   processedAt?: string;
   notes?: string;
@@ -122,6 +124,12 @@ export default function AdminWithdrawals() {
         return <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
           <XIcon className="w-3 h-3 mr-1" />
           Rejeitado
+        </Badge>;
+      case 'retido':
+        // Chave PIX não confere com os dados do titular — aguarda intermediação
+        return <Badge variant="secondary" className="bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100">
+          <AlertTriangleIcon className="w-3 h-3 mr-1" />
+          Retido
         </Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
@@ -238,6 +246,7 @@ export default function AdminWithdrawals() {
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
                   <SelectItem value="pending">Pendentes</SelectItem>
+                  <SelectItem value="retido">Retidos (intermediação)</SelectItem>
                   <SelectItem value="paid">Pagos</SelectItem>
                   <SelectItem value="rejected">Rejeitados</SelectItem>
                 </SelectContent>
@@ -376,7 +385,7 @@ export default function AdminWithdrawals() {
 
                                   {/* Ações */}
                                   <div className="flex justify-end gap-3">
-                                    {selectedWithdrawal.status === 'pending' && (
+                                    {(selectedWithdrawal.status === 'pending' || selectedWithdrawal.status === 'retido') && (
                                       <Button
                                         variant="destructive"
                                         onClick={() => handleProcessWithdrawal(selectedWithdrawal, 'rejected')}

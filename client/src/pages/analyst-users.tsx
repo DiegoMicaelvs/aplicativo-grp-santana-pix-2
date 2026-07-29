@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BackButton } from "@/components/ui/back-button";
-import { User } from "@shared/schema";
+import { User, type UserPermission } from "@shared/schema";
 import { Users, Search, UserPlus, Shield, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -47,7 +47,7 @@ export default function AnalystUsers() {
     enabled: user?.permissions?.includes("view_users") || false,
   });
 
-  const hasPermission = (permission: string) => {
+  const hasPermission = (permission: UserPermission) => {
     return user?.permissions?.includes(permission) || false;
   };
 

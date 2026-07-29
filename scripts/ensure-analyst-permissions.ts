@@ -1,9 +1,9 @@
 import { db } from "../db";
-import { users } from "@shared/schema";
+import { users, type UserPermission } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 // Definir permissões padrão por nível de analista
-const DEFAULT_PERMISSIONS = {
+const DEFAULT_PERMISSIONS: Record<number, UserPermission[]> = {
   1: [
     'view_referrals',
     'view_users', 

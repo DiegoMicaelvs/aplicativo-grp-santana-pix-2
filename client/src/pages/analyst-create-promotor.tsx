@@ -29,11 +29,9 @@ export default function AnalystCreatePromotorPage() {
   
   const form = useForm<UserInsertType>({
     resolver: zodResolver(insertUserSchema),
-    defaultValues: {
-      role: "promotor",
-      isActive: true,
-      mustChangePassword: true
-    }
+    // role/isActive/mustChangePassword são definidos pelo servidor
+    // (ver POST /api/analyst/promotores); não vão no formulário.
+    defaultValues: {}
   });
 
   const createPromotorMutation = useMutation({

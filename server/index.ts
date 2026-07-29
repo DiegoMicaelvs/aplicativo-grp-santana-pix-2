@@ -13,76 +13,186 @@
  * ----------------------------------------------------------------------------
  */
 
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { setupSecurity } from "./security";
+import { setupSecurity, configureTrustProxy } from "./security";
 
 const app = express();
 
-// Configurar CORS mais permissivo para Replit
+// Precisa vir antes de qualquer coisa que leia req.ip (rate limiting).
+configureTrustProxy(app);
+
+/**
+ * CORS.
+ *
+ * O client e a API são servidos pelo MESMO processo Express, então em operação
+ * normal nenhuma origem externa precisa de acesso e não emitimos cabeçalho algum.
+ * A versão anterior refletia `req.headers.origin` de volta com
+ * `Allow-Credentials: true`, ou seja: qualquer site na internet podia chamar a
+ * API com o cookie de sessão da vítima.
+ *
+ * Para liberar origens externas (app mobile, outro front), liste-as em
+ * CORS_ORIGINS separadas por vírgula.
+ */
+const configuredOrigins = (process.env.CORS_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const isDev = process.env.NODE_ENV !== "production";
+
+function isAllowedOrigin(origin: string): boolean {
+  if (configuredOrigins.includes(origin)) return true;
+  // Em desenvolvimento, libera localhost em qualquer porta para facilitar testes.
+  if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    return true;
+  }
+  return false;
+}
+
 app.use((req, res, next) => {
-  // Permitir qualquer origem temporariamente para debug
-  const origin = req.headers.origin || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-  res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
-  
+  const origin = req.headers.origin;
+
+  if (origin && isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    // Origem influencia a resposta: sem isso, caches podem servir a resposta
+    // de uma origem para outra.
+    res.setHeader('Vary', 'Origin');
+  }
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
-  
+
   next();
 });
 
-// Configurar segurança antes de tudo
+/**
+ * Limite de payload.
+ *
+ * O limite de 50mb valia para TODAS as rotas, inclusive as sem autenticação:
+ * qualquer anônimo podia mandar 50 MB para /api/login e o servidor bufferizava
+ * tudo na memória antes de descobrir quem era. Com algumas conexões
+ * simultâneas isso derruba o processo por consumo de heap.
+ *
+ * Agora o padrão é pequeno e o limite grande vale só onde comprovante em base64
+ * realmente trafega (definido em COMPROVANTE_LIMITE, aplicado nas rotas de
+ * status/edição de indicação, depois da autenticação).
+ */
+app.use(express.json({ limit: process.env.JSON_LIMIT ?? '256kb' }));
+app.use(express.urlencoded({ extended: false, limit: process.env.JSON_LIMIT ?? '256kb' }));
+
+// Depois dos parsers: o rate limiting de login precisa ler req.body.username
+// para contar tentativas por conta, não só por IP.
 setupSecurity(app);
 
-// Aumentar limite de payload para suportar upload de comprovantes (imagens em base64)
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
-
+/**
+ * Log de requisições.
+ *
+ * A versão anterior serializava o CORPO da resposta de toda rota /api no log.
+ * Isso despejava dados pessoais (CPF, chave PIX, telefone, saldo) e o retorno
+ * do login em texto claro. O truncamento em 80 caracteres não resolvia — só
+ * cortava o vazamento pela metade.
+ *
+ * Agora registramos apenas método, rota, status e duração.
+ */
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
+    if (!path.startsWith("/api")) return;
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
+    log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
   });
 
+  next();
+});
+
+/**
+ * Rede de segurança: nenhum hash de senha sai numa resposta.
+ *
+ * O objeto `user` é embutido por relação do Drizzle em ~32 consultas
+ * (tickets, saques, indicações, fluxo de caixa...). Várias rotas lembravam de
+ * fazer `const { password, ...resto } = user`, outras não — e a auditoria achou
+ * pelo menos duas devolvendo o hash scrypt completo.
+ *
+ * Corrigir rota por rota não impede a próxima de esquecer. Este interceptor
+ * remove a chave `password` em qualquer profundidade, uma vez só, no ponto por
+ * onde toda resposta JSON passa. Nenhuma resposta legítima do sistema tem um
+ * campo chamado `password`.
+ */
+const CAMPOS_PROIBIDOS = new Set(["password"]);
+
+function removerCamposSensiveis(valor: unknown, profundidade = 0): unknown {
+  // Guarda contra estruturas cíclicas/muito profundas
+  if (profundidade > 12 || valor === null || typeof valor !== "object") {
+    return valor;
+  }
+
+  if (Array.isArray(valor)) {
+    return valor.map((item) => removerCamposSensiveis(item, profundidade + 1));
+  }
+
+  // Não mexe em Date, Buffer e afins
+  if (Object.getPrototypeOf(valor) !== Object.prototype) {
+    return valor;
+  }
+
+  let copia: Record<string, unknown> | null = null;
+  for (const [chave, item] of Object.entries(valor as Record<string, unknown>)) {
+    if (CAMPOS_PROIBIDOS.has(chave)) {
+      copia ??= { ...(valor as Record<string, unknown>) };
+      delete copia[chave];
+      continue;
+    }
+    const limpo = removerCamposSensiveis(item, profundidade + 1);
+    if (limpo !== item) {
+      copia ??= { ...(valor as Record<string, unknown>) };
+      copia[chave] = limpo;
+    }
+  }
+
+  return copia ?? valor;
+}
+
+app.use((req, res, next) => {
+  if (!req.path.startsWith("/api")) return next();
+
+  const jsonOriginal = res.json.bind(res);
+  res.json = (corpo: unknown) => jsonOriginal(removerCamposSensiveis(corpo));
   next();
 });
 
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  /**
+   * Handler de erro final.
+   *
+   * Antes ele fazia `throw err` DEPOIS de responder — o erro voltava para o
+   * Express com a resposta já enviada, produzindo "Cannot set headers after
+   * they are sent" e derrubando a conexão. E devolvia `err.message` cru ao
+   * cliente, expondo detalhes internos (mensagens do Postgres, caminhos, etc).
+   */
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    const status = err?.status || err?.statusCode || 500;
+
+    console.error(`[ERROR] ${req.method} ${req.path} -> ${status}`, err);
+
+    if (res.headersSent) return;
+
+    // 4xx: mensagem própria da aplicação pode ir ao cliente.
+    // 5xx: mensagem genérica — o detalhe fica no log do servidor.
+    const message =
+      status < 500 ? err?.message || "Requisição inválida" : "Erro interno do servidor";
 
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after
@@ -94,15 +204,15 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  // Porta configurável (padrão 5000). Serve tanto a API quanto o client.
+  const port = Number(process.env.PORT ?? 5000);
+  const host = process.env.HOST ?? "0.0.0.0";
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host,
+    // SO_REUSEPORT não é suportado no Windows; só habilita fora dele.
+    reusePort: process.platform !== "win32",
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on http://${host === "0.0.0.0" ? "localhost" : host}:${port}`);
   });
 })();

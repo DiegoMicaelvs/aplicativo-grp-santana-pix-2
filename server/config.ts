@@ -1,15 +1,44 @@
+const isProduction =
+  process.env.NODE_ENV === "production" ||
+  process.env.PRODUCTION_MODE === "true";
+
+/**
+ * A senha master tinha um valor real embutido como fallback, versionado em um
+ * repositório público. Qualquer pessoa com acesso ao código conseguia executar
+ * as operações críticas protegidas por ela.
+ *
+ * Agora ela é obrigatória via ambiente. Em produção, a ausência derruba o boot
+ * em vez de silenciosamente aceitar um valor conhecido.
+ */
+function resolveMasterPassword(): string {
+  const fromEnv = process.env.MASTER_PASSWORD;
+  if (fromEnv) return fromEnv;
+
+  if (isProduction) {
+    throw new Error(
+      "MASTER_PASSWORD é obrigatório em produção. Defina a variável de ambiente.",
+    );
+  }
+
+  console.warn(
+    "[CONFIG] MASTER_PASSWORD não definido — operações críticas ficam bloqueadas " +
+      "neste ambiente. Defina a variável no .env para habilitá-las.",
+  );
+  // String vazia nunca confere: em dev sem a variável, as operações críticas
+  // simplesmente não passam, em vez de aceitarem uma senha conhecida.
+  return "";
+}
+
 // Configurações do sistema para produção
 export const config = {
   // Detectar modo de produção
-  isProduction: process.env.NODE_ENV === "production" || 
-                process.env.PRODUCTION_MODE === "true" ||
-                process.env.REPLIT_DEPLOYMENT === "1",
-  
+  isProduction,
+
   // Configurações de segurança
   security: {
-    // Senha master para operações críticas
-    masterPassword: process.env.MASTER_PASSWORD || "Diego91425751",
-    
+    // Senha master para operações críticas (obrigatória via env)
+    masterPassword: resolveMasterPassword(),
+
     // Configurações de sessão
     session: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 dias
