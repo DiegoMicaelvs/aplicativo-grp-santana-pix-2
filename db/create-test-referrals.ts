@@ -16,18 +16,16 @@ async function createTestReferrals() {
       
       const [newIndicador] = await db.insert(users).values({
         username: "indicador.teste@email.com",
+        email: "indicador.teste@email.com",
         password: "$2a$10$9ZXq0K7vT5Xh3vP2B4C5Ku9L8jR7mU6nW5Y1z", // senha: 123456
         fullName: "João Teste Indicador",
         phone: "11987654321",
         cpf: "12345678901",
         address: "Rua Teste, 123",
         pixKey: "joao@teste.com",
-        bankName: "Banco Teste",
-        agency: "1234",
-        account: "56789-0",
         role: "indicador",
-        balance: 0,
-        totalEarnings: 0,
+        balance: "0.00",
+        totalEarnings: "0.00",
         isActive: true
       }).returning();
 

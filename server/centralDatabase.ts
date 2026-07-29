@@ -3,14 +3,11 @@
  * Este módulo permite verificar duplicidades entre diferentes instâncias do sistema
  */
 
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import type pg from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { createPgPool } from "@db";
 import { eq, or, and, sql } from "drizzle-orm";
 import * as schema from "@shared/schema";
-
-// Configurar websocket para Neon
-neonConfig.webSocketConstructor = ws;
 
 // Interface para resultados de validação
 export interface ValidationResult {
@@ -22,7 +19,7 @@ export interface ValidationResult {
 }
 
 class CentralDatabaseValidator {
-  private pool: Pool | null = null;
+  private pool: pg.Pool | null = null;
   private db: any = null;
   private isConfigured: boolean = false;
 
@@ -32,8 +29,8 @@ class CentralDatabaseValidator {
     
     if (centralDbUrl) {
       try {
-        this.pool = new Pool({ connectionString: centralDbUrl });
-        this.db = drizzle({ client: this.pool, schema });
+        this.pool = createPgPool(centralDbUrl);
+        this.db = drizzle(this.pool, { schema });
         this.isConfigured = true;
         console.log("[CENTRAL_DB] Conexão com banco central configurada");
       } catch (error) {

@@ -3,7 +3,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { insertUserSchema, loginSchema } from "@shared/schema";
+import { insertUserSchema, loginSchema, type User as DbUser } from "@shared/schema";
 import { storage } from "./storage";
 import type { Express } from "express";
 import { validateUserDuplicates } from "./crossAppValidation";
@@ -50,17 +50,53 @@ export async function comparePasswords(
   }
 }
 
+/**
+ * O mesmo middleware de sessão usado no Express, exposto para que o handshake
+ * do WebSocket possa autenticar a conexão a partir do cookie metis.sid.
+ * Preenchido por setupAuth().
+ */
+export let sessionMiddleware: ReturnType<typeof session> | null = null;
+
 export function setupAuth(app: Express) {
-  // Detectar se estamos em produção real (deployment)
-  const isDeployment = process.env.REPLIT_DEPLOYMENT === "1";
-  
-  console.log(`[AUTH] Configurando autenticação - Modo: ${isDeployment ? 'PRODUÇÃO (DEPLOY)' : 'DESENVOLVIMENTO'}`);
-  console.log(`[AUTH] REPLIT_DEPLOYMENT: ${process.env.REPLIT_DEPLOYMENT}`);
-  console.log(`[AUTH] NODE_ENV: ${process.env.NODE_ENV}`);
-  
-  // Session configuration - usar secure cookies apenas em deployment real
+  const isProduction = process.env.NODE_ENV === "production";
+
+  /**
+   * O segredo de sessão precisa ser estável e explícito.
+   * O fallback aleatório anterior parecia inofensivo mas: invalidava todas as
+   * sessões a cada restart e, com mais de uma instância, cada uma assinava com
+   * um segredo diferente — o usuário caía deslogado a cada requisição.
+   * Em produção isso agora é erro de inicialização, não um comportamento
+   * silenciosamente quebrado.
+   */
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret && isProduction) {
+    throw new Error(
+      "SESSION_SECRET é obrigatório em produção. Gere um valor com: " +
+        "node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\"",
+    );
+  }
+  if (!sessionSecret) {
+    console.warn(
+      "[AUTH] SESSION_SECRET não definido — usando segredo efêmero de desenvolvimento. " +
+        "As sessões serão perdidas a cada restart.",
+    );
+  }
+
+  /**
+   * `secure` marca o cookie como exclusivo de HTTPS. Estava fixo em `false`,
+   * o que exporia o cookie de sessão em texto claro em produção.
+   * Use COOKIE_SECURE=false apenas se realmente servir produção sob HTTP.
+   */
+  const secureCookie = process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === "true"
+    : isProduction;
+
+  console.log(
+    `[AUTH] Configurando autenticação - NODE_ENV=${process.env.NODE_ENV ?? "development"}, secureCookie=${secureCookie}`,
+  );
+
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || process.env.REPL_ID || crypto.randomBytes(32).toString("hex"),
+    secret: sessionSecret || crypto.randomBytes(32).toString("hex"),
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
@@ -68,15 +104,17 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: false, // Desabilitar secure em desenvolvimento para funcionar com HTTP
-      sameSite: "lax", // Usar lax em desenvolvimento
+      secure: secureCookie,
+      sameSite: "lax",
       path: "/", // Cookie válido em todo o site
       domain: undefined // Deixar o navegador gerenciar o domínio automaticamente
     }
   };
 
-  app.set("trust proxy", 1);
-  app.use(session(sessionSettings));
+  // `trust proxy` é configurado centralmente em server/index.ts
+  // (configureTrustProxy), a partir de TRUST_PROXY.
+  sessionMiddleware = session(sessionSettings);
+  app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -171,18 +209,12 @@ export function setupAuth(app: Express) {
         });
       }
       
-      // Hash the password
-      const hashedPassword = await hashPassword(userData.password);
-      
-      // Create the user
+      // NÃO hashear aqui: storage.createUser() já faz o hash.
+      // Hashear nos dois lugares gera hash(hash(senha)) e o login passa a falhar sempre.
       const newUser = await storage.createUser({
         ...userData,
-        password: hashedPassword,
         role: "indicador", // Default role for new registrations
         createdBy: undefined, // Self-registration
-        promoterId: userData.promoterId || undefined,
-        analystId: userData.analystId || undefined,
-        supervisorId: userData.supervisorId || undefined
       });
       
       console.log(`[REGISTRO] Novo usuário cadastrado com sucesso: ${newUser.username} (ID: ${newUser.id})`);
@@ -267,7 +299,9 @@ export function setupAuth(app: Express) {
             return res.status(500).json({ message: "Erro ao iniciar sessão" });
           }
 
-          console.log(`[AUTH] Session created successfully for ${user.username} - SessionID: ${req.sessionID}`);
+          // Não logar req.sessionID: o ID de sessão é credencial — quem lê o log
+          // consegue sequestrar a sessão.
+          console.log(`[AUTH] Session created successfully for ${user.username}`);
           const { password, ...userWithoutPassword } = user;
           res.json(userWithoutPassword);
         });
@@ -353,17 +387,15 @@ export function setupAuth(app: Express) {
 
 }
 
-// Type declarations for Express
+/**
+ * `deserializeUser` coloca o registro COMPLETO do banco em `req.user`.
+ * Esta declaração era um subconjunto mantido à mão e já tinha divergido do
+ * schema (faltavam promoterId, supervisorId, analystId, teamSupervisorId,
+ * permissions...), o que escondia campos reais e tipava `role` como `string`.
+ * Derivar do tipo do schema mantém os dois lados sempre em sincronia.
+ */
 declare global {
   namespace Express {
-    interface User {
-      id: number;
-      username: string;
-      fullName: string;
-      role: string;
-      isActive: boolean;
-      balance: string;
-      totalEarnings: string;
-    }
+    interface User extends DbUser {}
   }
 }

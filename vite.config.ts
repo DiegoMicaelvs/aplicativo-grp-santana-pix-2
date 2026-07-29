@@ -25,6 +25,15 @@ export default defineConfig({
     },
   },
   root: path.resolve(import.meta.dirname, "client"),
+  server: {
+    // Bind mounts do Docker Desktop (Windows/macOS) não propagam eventos inotify,
+    // então o HMR do client precisa de polling. Fora do container fica desligado
+    // para não gastar CPU à toa.
+    watch:
+      process.env.VITE_USE_POLLING === "true"
+        ? { usePolling: true, interval: 400 }
+        : undefined,
+  },
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,

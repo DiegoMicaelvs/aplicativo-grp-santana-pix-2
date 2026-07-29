@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, decimal, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -32,6 +32,11 @@ export type ManagerPermission =
   | "manage_companies"
   | "audit_access";
 
+// Qualquer permissão atribuível a um usuário.
+// Precisa ser um único array de união (e não união de arrays), senão métodos como
+// `permissions.includes(x)` colapsam o parâmetro para a interseção dos dois tipos.
+export type UserPermission = AnalystPermission | ManagerPermission;
+
 // User types
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -49,7 +54,7 @@ export const users = pgTable("users", {
   pixKey: text("pix_key").notNull(),
   role: text("role").default("indicador").notNull().$type<UserRole>(),
   analystLevel: integer("analyst_level").$type<AnalystLevel>(), // Apenas para analistas
-  permissions: jsonb("permissions").$type<AnalystPermission[] | ManagerPermission[]>(), // Permissões específicas para analistas e gerentes
+  permissions: jsonb("permissions").$type<UserPermission[]>(), // Permissões específicas para analistas e gerentes
   createdBy: integer("created_by"), // Quem cadastrou este usuário
   promoterId: integer("promoter_id"), // ID do promotor que cadastrou este indicador
   analystId: integer("analyst_id"), // ID do analista nível 3 responsável (para promotores)
@@ -106,7 +111,7 @@ export const referrals = pgTable("referrals", {
   commissionPromoter: decimal("commission_promoter", { precision: 10, scale: 2 }).default("0.00"),
   commissionSupervisor: decimal("commission_supervisor", { precision: 10, scale: 2 }).default("0.00"),
   supervisorId: integer("supervisor_id_ref").references(() => users.id), // ID do supervisor que supervisionou esta indicação
-  statusHistory: jsonb("status_history").$type<{status: string, changedBy: number, changedAt: string, notes?: string}[]>(), // Histórico de mudanças de status
+  statusHistory: jsonb("status_history").$type<{status: string, changedBy: number, changedByName?: string, changedAt: string, notes?: string}[]>(), // Histórico de mudanças de status
   // Campos de validação
   vehicleBrand: text("vehicle_brand"), // Marca do veículo
   vehicleModel: text("vehicle_model"), // Modelo do veículo  
@@ -135,7 +140,26 @@ export const referrals = pgTable("referrals", {
   indicatorPaymentStatusUpdatedBy: integer("indicator_payment_status_updated_by").references(() => users.id), // Quem atualizou
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  /**
+   * Postgres NÃO cria índice automático para chave estrangeira. Esta tabela
+   * tinha só a primary key, e todo filtro de dashboard ("minhas indicações",
+   * "indicações da equipe", "pendentes de validação") virava sequential scan
+   * na tabela inteira. Com o volume de um dia de evento isso é o primeiro
+   * ponto a derreter.
+   */
+  userIdIdx: index("referrals_user_id_idx").on(table.userId),
+  promoterIdIdx: index("referrals_promoter_id_idx").on(table.promoterId),
+  supervisorIdIdx: index("referrals_supervisor_id_idx").on(table.supervisorId),
+  statusIdx: index("referrals_status_idx").on(table.status),
+  companyIdIdx: index("referrals_company_id_idx").on(table.companyId),
+  createdAtIdx: index("referrals_created_at_idx").on(table.createdAt),
+  // Checagem de duplicata a cada nova indicação
+  licensePlateIdx: index("referrals_license_plate_idx").on(table.licensePlate),
+  phoneIdx: index("referrals_phone_idx").on(table.phone),
+  // Listagens combinadas "as indicações deste usuário com este status"
+  userStatusIdx: index("referrals_user_status_idx").on(table.userId, table.status),
+}));
 
 
 // Referral plates - Support for multiple license plates per referral
@@ -145,10 +169,19 @@ export const referralPlates = pgTable("referral_plates", {
   plate: text("plate").notNull(), // Placa normalizada (sem hífen, maiúscula)
   isPrimary: boolean("is_primary").default(false).notNull(), // Primeira placa é primária
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  referralIdIdx: index("referral_plates_referral_id_idx").on(table.referralId),
+  // Busca de duplicata por placa
+  plateIdx: index("referral_plates_plate_idx").on(table.plate),
+}));
 
 // Withdrawal requests
-export type WithdrawalStatus = "pending" | "approved" | "paid" | "rejected";
+/**
+ * "retido": a chave PIX informada não corresponde aos dados do titular.
+ * O valor já saiu do saldo disponível, mas o pagamento fica bloqueado até o
+ * financeiro intermediar. Não é rejeição — é retenção.
+ */
+export type WithdrawalStatus = "pending" | "approved" | "paid" | "rejected" | "retido";
 
 export const withdrawalRequests = pgTable("withdrawal_requests", {
   id: serial("id").primaryKey(),
@@ -166,7 +199,11 @@ export const withdrawalRequests = pgTable("withdrawal_requests", {
   rejectionReason: text("rejection_reason"),
   hasInsurance: boolean("has_insurance").default(false), // Se possui adesão de seguro
   licensePlate: text("license_plate"), // Placa do veículo (se aplicável)
-});
+}, (table) => ({
+  // "meus saques" e a fila do financeiro por status
+  userIdIdx: index("withdrawal_requests_user_id_idx").on(table.userId),
+  statusIdx: index("withdrawal_requests_status_idx").on(table.status),
+}));
 
 // Audit trail for all system actions
 export const auditLog = pgTable("audit_log", {
@@ -213,6 +250,27 @@ export const referralConversations = pgTable("referral_conversations", {
 // Support tickets
 export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
 export type TicketPriority = "low" | "medium" | "high" | "urgent";
+/**
+ * Contadores de rate limiting compartilhados.
+ *
+ * Estavam num Map em memória, o que significava: cada instância da aplicação
+ * com o próprio contador (com 2 instâncias, o dobro de tentativas permitidas)
+ * e restart zerando tudo — inclusive os bloqueios ativos.
+ *
+ * Fica no Postgres porque a aplicação já depende dele: nenhuma infra nova para
+ * subir no dia do evento. O volume é baixo (só login, cadastro e rotas
+ * públicas) e a escrita é um UPSERT atômico.
+ */
+export const rateLimits = pgTable("rate_limits", {
+  // ex.: "login:ip:203.0.113.7" ou "login:user:fulano@x.com"
+  chave: text("chave").primaryKey(),
+  contador: integer("contador").default(0).notNull(),
+  janelaExpiraEm: timestamp("janela_expira_em").notNull(),
+}, (table) => ({
+  // usado pela limpeza periódica das janelas vencidas
+  expiraEmIdx: index("rate_limits_expira_em_idx").on(table.janelaExpiraEm),
+}));
+
 export type TicketCategory = "bug" | "feature" | "question" | "other";
 
 export const supportTickets = pgTable("support_tickets", {
@@ -484,19 +542,72 @@ export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
   phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
-}).omit({ id: true, createdAt: true, updatedAt: true, balance: true, totalEarnings: true });
+}).pick({
+  // Allowlist: apenas dados de perfil que o próprio usuário informa.
+  // NUNCA incluir aqui role, permissions, analystLevel, commissionValidated,
+  // commissionConverted, isActive, balance, totalEarnings nem os vínculos
+  // hierárquicos (promoterId/analystId/supervisorId/teamSupervisorId):
+  // todos são decididos pelo servidor. Com `.omit` esses campos ficavam
+  // graváveis por qualquer um que chamasse /api/register (escalação de
+  // privilégio e fraude de comissão).
+  username: true,
+  email: true,
+  password: true,
+  fullName: true,
+  cpf: true,
+  phone: true,
+  address: true,
+  city: true,
+  state: true,
+  zipCode: true,
+  shirtSize: true,
+  pixKey: true,
+});
 
+// ATENÇÃO: use SEMPRE allowlist (`.pick`) aqui, nunca blacklist (`.omit`).
+// Este schema é aplicado direto sobre `req.body` e o resultado vai para o INSERT.
+// Com `.omit` qualquer coluna nova da tabela passa a ser gravável pelo cliente —
+// foi assim que campos como `indicatorPaymentStatus`, `commissionSupervisor`,
+// `validatedBy` e `supervisorId` ficaram expostos (mass assignment).
+// Campos de comissão, validação, pagamento e vínculo hierárquico são definidos
+// pelo servidor e não podem vir do cliente.
 export const createReferralSchema = createInsertSchema(referrals, {
   fullName: (schema) => schema.min(1, "Nome completo é obrigatório"),
   phone: (schema) => schema.min(10, "Telefone inválido").max(15, "Telefone inválido"),
-  licensePlate: (schema) => schema.min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida"),
   companyId: z.coerce.number().positive("Empresa é obrigatória"),
   city: z.string().min(2, "Cidade é obrigatória"),
   state: z.string().length(2, "Estado deve ter 2 letras (ex: SP, RJ)"),
-}).omit({ id: true, userId: true, createdBy: true, promoterId: true, status: true, commissionIndicator: true, commissionPromoter: true, createdAt: true, updatedAt: true, notes: true, statusHistory: true }).extend({
+}).pick({
+  fullName: true,
+  phone: true,
+  hasInsurance: true,
+  companyId: true,
+  city: true,
+  state: true,
+}).extend({
   // Support for multiple license plates
-  licensePlates: z.array(z.string().min(7, "Placa do veículo é obrigatória").max(8, "Placa do veículo inválida").transform(val => val.toUpperCase().replace(/[^A-Z0-9]/g, ''))).min(1, "Pelo menos uma placa é obrigatória").max(3, "Máximo de 3 placas por indicação"),
-}).omit({ licensePlate: true }); // Remove single licensePlate in favor of licensePlates array
+  licensePlates: z
+    .array(
+      z
+        .string()
+        .min(7, "Placa do veículo é obrigatória")
+        .max(8, "Placa do veículo inválida")
+        .transform((val) => val.toUpperCase().replace(/[^A-Z0-9]/g, "")),
+    )
+    .min(1, "Pelo menos uma placa é obrigatória")
+    .max(3, "Máximo de 3 placas por indicação")
+    /**
+     * Deduplica APÓS a normalização. A rota cria uma indicação por placa da
+     * lista, e a checagem de duplicata consulta o banco — que ainda não tem
+     * nenhuma delas. Mandar ["ABC1234","ABC-1234","abc1234"] passava pela
+     * validação e gerava 3 indicações idênticas, com 3x a comissão, para o
+     * mesmo carro.
+     */
+    .transform((plates) => Array.from(new Set(plates)))
+    .refine((plates) => plates.length > 0, {
+      message: "Pelo menos uma placa é obrigatória",
+    }),
+});
 
 // Referral plates schemas
 export const createReferralPlateSchema = createInsertSchema(referralPlates, {
@@ -647,7 +758,32 @@ export const createSalesReminderSchema = createInsertSchema(salesReminders, {
 }).omit({ id: true, leadId: true, vendedorId: true, createdAt: true, completedAt: true, isCompleted: true });
 
 // Types for use in the application
+/**
+ * Dados de perfil vindos do cliente. NÃO contém campos privilegiados —
+ * ver o allowlist em `insertUserSchema`.
+ */
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+/**
+ * Campos que somente o servidor pode definir ao criar um usuário.
+ * Ficam fora de `InsertUser` de propósito: a fronteira de confiança entre
+ * "o que o cliente mandou" e "o que o servidor decidiu" é este tipo.
+ */
+export type ServerAssignedUserFields = {
+  role?: UserRole;
+  permissions?: UserPermission[] | null;
+  analystLevel?: AnalystLevel | null;
+  createdBy?: number;
+  promoterId?: number;
+  analystId?: number;
+  supervisorId?: number;
+  teamSupervisorId?: number;
+  commissionValidated?: string | null;
+  commissionConverted?: string | null;
+};
+
+/** Entrada aceita por `storage.createUser()`. */
+export type CreateUserInput = InsertUser & ServerAssignedUserFields;
 export type User = typeof users.$inferSelect;
 export type CreateReferral = z.infer<typeof createReferralSchema>;
 export type SalesLead = typeof salesLeads.$inferSelect;

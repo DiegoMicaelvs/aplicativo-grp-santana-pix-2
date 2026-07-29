@@ -29,11 +29,9 @@ export default function AnalystCreateIndicadorPage() {
   
   const form = useForm<UserInsertType>({
     resolver: zodResolver(insertUserSchema),
-    defaultValues: {
-      role: "indicador",
-      isActive: true,
-      mustChangePassword: true
-    }
+    // role/isActive/mustChangePassword são definidos pelo servidor
+    // (ver POST /api/analyst/indicadores); não vão no formulário.
+    defaultValues: {}
   });
 
   const createIndicadorMutation = useMutation({

@@ -1,5 +1,5 @@
 import { db } from "@db";
-import { eq, desc, asc, or, count, and, sql } from "drizzle-orm";
+import { eq, desc, asc, or, count, and, sql, inArray } from "drizzle-orm";
 import { 
   users, 
   referrals, 
@@ -16,7 +16,8 @@ import {
   salesLeads,
   salesActivities,
   salesReminders,
-  type InsertUser, 
+  type InsertUser,
+  type CreateUserInput,
   type CreateReferral, 
   type ReferralStatus,
   type WithdrawalStatus,
@@ -47,9 +48,88 @@ import { pool } from "@db";
 // Create session store
 const PostgresSessionStore = connectPg(session);
 
+/**
+ * Chave fixa do advisory lock que serializa a escrita do livro caixa.
+ * Qualquer número constante serve; só precisa não colidir com outro lock
+ * do mesmo banco.
+ */
+const CASH_FLOW_LOCK_KEY = 918273645;
+
+/** Teto do rateio por lead: R$3+R$1 no validado, R$50+R$10 no convertido. */
+const POOL_VALIDATED = 4;
+const POOL_CONVERTED = 60;
+
+/**
+ * Normaliza e limita um valor de comissão vindo de qualquer rota.
+ * Devolve null quando não houver valor — nunca NaN, nunca acima do pool,
+ * nunca negativo.
+ */
+/**
+ * Reparte um pool de comissão entre indicador, supervisor e promotor.
+ *
+ * Invariantes garantidas:
+ *  - nenhuma parcela é negativa;
+ *  - a soma das três parcelas é EXATAMENTE o pool.
+ *
+ * O cálculo anterior fazia `alocaçãoSupervisor - takeIndicador` direto, o que
+ * fica negativo quando o promotor aloca ao supervisor menos do que o indicador
+ * já leva. Parcela negativa vira débito no saldo de quem não devia nada.
+ *
+ * @param alocacaoSupervisor quanto do pool o promotor reservou para o
+ *   supervisor. `null` = indicador não tem supervisor (ou não há alocação
+ *   definida); nesse caso o promotor fica com todo o resto.
+ */
+function repartirPool(
+  pool: number,
+  takeIndicador: number,
+  alocacaoSupervisor: number | null,
+): { indicador: number; supervisor: number; promotor: number } {
+  // O indicador nunca leva menos que zero nem mais que o pool inteiro.
+  const indicador = Math.min(Math.max(takeIndicador, 0), pool);
+
+  if (alocacaoSupervisor === null) {
+    return { indicador, supervisor: 0, promotor: pool - indicador };
+  }
+
+  // A alocação precisa cobrir o que o indicador leva e caber dentro do pool.
+  const alocacao = Math.min(Math.max(alocacaoSupervisor, indicador), pool);
+
+  return {
+    indicador,
+    supervisor: alocacao - indicador,
+    promotor: pool - alocacao,
+  };
+}
+
+function clampComissao(valor: unknown, teto: number): string | null {
+  if (valor === undefined || valor === null || valor === "") return null;
+  const n = typeof valor === "number" ? valor : Number(String(valor).trim());
+  if (!Number.isFinite(n)) return null;
+  return Math.min(Math.max(n, 0), teto).toFixed(2);
+}
+
+/** Saldo insuficiente detectado no débito atômico do saque. */
+export class InsufficientBalanceError extends Error {
+  constructor() {
+    super("Saldo insuficiente");
+    this.name = "InsufficientBalanceError";
+  }
+}
+
+/**
+ * Outra requisição já mudou o status desta indicação entre a nossa leitura e a
+ * nossa escrita. Serve para desfazer a transação sem creditar comissão.
+ */
+export class ConcurrentStatusChangeError extends Error {
+  constructor(public readonly referralId: number) {
+    super("Esta indicação foi atualizada por outra requisição. Recarregue e tente novamente.");
+    this.name = "ConcurrentStatusChangeError";
+  }
+}
+
 export interface IStorage {
   // User methods
-  createUser(user: InsertUser & { createdBy?: number }): Promise<any>;
+  createUser(user: CreateUserInput): Promise<any>;
   getUserById(id: number): Promise<any>;
   getUserByUsername(username: string): Promise<any>;
   getUserByCpf(cpf: string): Promise<any>;
@@ -162,7 +242,7 @@ export interface IStorage {
   updateReferralLink(id: number, userId: number, data: UpdateReferralLink): Promise<ReferralLink>;
   deleteReferralLink(id: number, userId: number): Promise<void>;
   trackReferralLinkClick(token: string): Promise<void>;
-  createUserWithReferralAttribution(userData: InsertUser, referralToken?: string): Promise<any>;
+  createUserWithReferralAttribution(userData: CreateUserInput, referralToken?: string): Promise<any>;
   
   // Session store
   sessionStore: session.Store;
@@ -180,7 +260,14 @@ class DatabaseStorage implements IStorage {
   }
   
   // User methods
-  async createUser(userData: InsertUser & { createdBy?: number; promoterId?: number; analystId?: number; supervisorId?: number }) {
+  /**
+   * @param executor transação em curso. Quando chamado de dentro de um
+   *   db.transaction, PRECISA receber o `tx`: usar a conexão global aqui pega
+   *   uma segunda conexão do pool enquanto a primeira segue presa pela
+   *   transação aberta. Sob carga isso esgota o pool e, pior, o INSERT fica
+   *   fora da transação — um rollback não desfaz o usuário criado.
+   */
+  async createUser(userData: CreateUserInput, executor: any = db) {
     try {
       // Prepare user data with proper typing
       // Normalizar username e email - use email as username if username not provided
@@ -227,8 +314,14 @@ class DatabaseStorage implements IStorage {
         analystId: userData.analystId || null,
         supervisorId: userData.supervisorId || null,
         teamSupervisorId: (userData as any).teamSupervisorId || null,
-        commissionValidated: (userData as any).commissionValidated ?? null,
-        commissionConverted: (userData as any).commissionConverted ?? null,
+        /**
+         * Último portão das comissões: rotas diferentes validavam (ou não) o
+         * teto do pool cada uma do seu jeito. Aqui, no único ponto por onde
+         * todo usuário é criado, o valor é normalizado e limitado — nenhuma
+         * rota consegue gravar comissão fora da faixa nem um NaN.
+         */
+        commissionValidated: clampComissao((userData as any).commissionValidated, POOL_VALIDATED),
+        commissionConverted: clampComissao((userData as any).commissionConverted, POOL_CONVERTED),
         balance: "0",
         totalEarnings: "0",
         isActive: true,
@@ -237,10 +330,10 @@ class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       };
 
-      const [user] = await db.insert(users)
+      const [user] = await executor.insert(users)
         .values([insertData])
         .returning();
-      
+
       // Se é um analista, garantir que tenha as permissões corretas
       if (user.role === 'analista') {
         const { ensureAnalystPermissions } = await import('../scripts/ensure-analyst-permissions');
@@ -294,7 +387,10 @@ class DatabaseStorage implements IStorage {
   }
   
   async getAllUsers() {
+    // Nunca traz o hash da senha do banco. O único ponto que precisa dele é a
+    // LocalStrategy do passport, que usa getUserByUsername.
     return await db.query.users.findMany({
+      columns: { password: false },
       orderBy: desc(users.createdAt)
     });
   }
@@ -482,43 +578,44 @@ class DatabaseStorage implements IStorage {
     };
   }
   
-  async updateUserBalance(userId: number, amount: number, updateEarnings: boolean = false) {
+  /**
+   * @param executor transação em curso, quando o crédito precisa ser desfeito
+   *                 junto com o resto da operação. Sem ele usa a conexão normal.
+   */
+  async updateUserBalance(
+    userId: number,
+    amount: number,
+    updateEarnings: boolean = false,
+    executor: any = db,
+  ) {
     try {
       console.log(`[updateUserBalance] Atualizando saldo do usuário ${userId} com valor: ${amount}, updateEarnings: ${updateEarnings}`);
-      
-      // Buscar saldo atual para debug
-      const currentUser = await this.getUserById(userId);
-      if (currentUser) {
-        console.log(`[updateUserBalance] Saldo atual: ${currentUser.balance}, Total ganhos: ${currentUser.totalEarnings}`);
-      }
-      
+
       // REGRA DE NEGÓCIO CORRIGIDA:
       // - balance: saldo disponível para saque (comissões pendentes)
       // - totalEarnings: valor total já pago ao usuário (apenas saques pagos)
       // Por padrão, apenas atualiza o saldo disponível
       // O totalEarnings só é atualizado quando updateEarnings=true (quando saque é pago)
       if (updateEarnings) {
-        await db.update(users)
-          .set({ 
+        await executor.update(users)
+          .set({
             balance: sql`balance + ${amount}`,
             totalEarnings: sql`total_earnings + ${amount}`,
             updatedAt: new Date()
           })
           .where(eq(users.id, userId));
       } else {
-        await db.update(users)
-          .set({ 
+        await executor.update(users)
+          .set({
             balance: sql`balance + ${amount}`,
             updatedAt: new Date()
           })
           .where(eq(users.id, userId));
       }
-      
-      // Verificar saldo após atualização
-      const updatedUser = await this.getUserById(userId);
-      if (updatedUser) {
-        console.log(`[updateUserBalance] Novo saldo: ${updatedUser.balance}, Novo total ganhos: ${updatedUser.totalEarnings}`);
-      }
+
+      // Não relemos o usuário aqui: dentro de transação a leitura pela conexão
+      // normal enxergaria o valor antigo, e era uma consulta extra por crédito
+      // em todo caminho quente.
     } catch (error) {
       console.error(`[updateUserBalance] Erro ao atualizar saldo do usuário ${userId}:`, error);
       throw error;
@@ -936,6 +1033,181 @@ class DatabaseStorage implements IStorage {
       page: safePage,
       limit: safeLimit,
       totalPages: Math.ceil(total / safeLimit)
+    };
+  }
+
+  /**
+   * Paginação do analista feita no BANCO.
+   *
+   * A rota carregava getAllReferrals() — a tabela inteira, com joins — e só
+   * então filtrava e fatiava em JavaScript. Cada troca de página relia tudo.
+   * Com o volume de um dia de evento (milhares de leads), isso é o primeiro
+   * ponto a derreter: memória do processo, tempo de resposta e conexões presas.
+   *
+   * @param restringirAUsuarios analista nível 3 só enxerga a própria equipe.
+   *   Lista vazia significa "nenhum resultado"; undefined significa "todos".
+   */
+  async getReferralsPaginatedForAnalyst(
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+    search?: string,
+    restringirAUsuarios?: number[],
+  ) {
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.max(1, Math.min(limit, 200));
+    const offset = (safePage - 1) * safeLimit;
+
+    if (restringirAUsuarios && restringirAUsuarios.length === 0) {
+      return { data: [], total: 0, page: safePage, limit: safeLimit, totalPages: 0 };
+    }
+
+    const conditions: any[] = [];
+
+    if (restringirAUsuarios) {
+      conditions.push(inArray(referrals.userId, restringirAUsuarios));
+    }
+
+    if (status) {
+      conditions.push(eq(referrals.status, status as ReferralStatus));
+    }
+
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim().toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(${referrals.fullName}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.phone}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.licensePlate}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.city}) LIKE ${searchTerm}`,
+          sql`LOWER(${referrals.state}) LIKE ${searchTerm}`
+        )
+      );
+    }
+
+    const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const totalResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(referrals)
+      .where(whereCondition);
+    const total = totalResult[0]?.count || 0;
+
+    const data = await db.query.referrals.findMany({
+      where: whereCondition,
+      with: {
+        company: true,
+        user: true,
+        createdByUser: true
+      },
+      orderBy: desc(referrals.createdAt),
+      limit: safeLimit,
+      offset
+    });
+
+    return {
+      data,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit)
+    };
+  }
+
+  /**
+   * Métricas públicas da empresa agregadas NO BANCO.
+   *
+   * A rota carregava todas as indicações da empresa (e uma segunda vez no ramo
+   * mensal) só para contar e somar em JavaScript. É endpoint público, sem
+   * autenticação: bastava recarregar a página para o servidor trazer a tabela
+   * inteira de novo. Agora são três agregações que não trafegam linha alguma.
+   *
+   * A data considerada varia por status — a mesma regra que existia no filtro
+   * em memória: validated usa validatedAt, converted/paid usam updatedAt, o
+   * resto usa createdAt.
+   */
+  async getCompanyPublicMetrics(
+    companyId: number,
+    periodo?: { inicio: Date; fim: Date },
+  ) {
+    const dataDoStatus = sql`CASE
+      WHEN ${referrals.status} = 'validated' AND ${referrals.validatedAt} IS NOT NULL THEN ${referrals.validatedAt}
+      WHEN ${referrals.status} IN ('converted','paid') AND ${referrals.updatedAt} IS NOT NULL THEN ${referrals.updatedAt}
+      ELSE ${referrals.createdAt}
+    END`;
+
+    const filtroEmpresa = eq(referrals.companyId, companyId);
+    const filtroPeriodo = periodo
+      ? and(
+          filtroEmpresa,
+          sql`${dataDoStatus} >= ${periodo.inicio.toISOString()}`,
+          sql`${dataDoStatus} <= ${periodo.fim.toISOString()}`,
+        )
+      : filtroEmpresa;
+
+    const [contagens] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        convertidas: sql<number>`count(*) FILTER (WHERE ${referrals.status} IN ('converted','paid'))::int`,
+        pendentes: sql<number>`count(*) FILTER (WHERE ${referrals.status} = 'pending')::int`,
+        analisando: sql<number>`count(*) FILTER (WHERE ${referrals.status} = 'analyzing')::int`,
+        validadas: sql<number>`count(*) FILTER (WHERE ${referrals.status} = 'validated')::int`,
+        rejeitadas: sql<number>`count(*) FILTER (WHERE ${referrals.status} IN ('rejected','false','not_converted'))::int`,
+        indicadores: sql<number>`count(DISTINCT ${referrals.userId})::int`,
+        promotores: sql<number>`count(DISTINCT ${referrals.promoterId})::int`,
+        comissaoIndicadores: sql<number>`COALESCE(SUM(${referrals.commissionIndicator}) FILTER (WHERE ${referrals.status} IN ('validated','converted','paid')), 0)::float`,
+        comissaoPromotores: sql<number>`COALESCE(SUM(${referrals.commissionPromoter}) FILTER (WHERE ${referrals.status} IN ('validated','converted','paid')), 0)::float`,
+      })
+      .from(referrals)
+      .where(filtroPeriodo);
+
+    // Janela fixa de 30 dias, sempre sobre createdAt (independe do filtro de mês)
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+    const [recentes] = await db
+      .select({
+        recentes: sql<number>`count(*)::int`,
+        indicadoresAtivos: sql<number>`count(DISTINCT ${referrals.userId})::int`,
+      })
+      .from(referrals)
+      .where(
+        and(filtroEmpresa, sql`${referrals.createdAt} >= ${trintaDiasAtras.toISOString()}`),
+      );
+
+    // No recorte mensal as comissões são contadas por EVENTO ocorrido no mês
+    // (validação e conversão), não pelo acumulado da indicação.
+    let comissaoIndicadores = contagens?.comissaoIndicadores ?? 0;
+    let comissaoPromotores = contagens?.comissaoPromotores ?? 0;
+
+    if (periodo) {
+      const [eventos] = await db
+        .select({
+          validadasNoMes: sql<number>`count(*) FILTER (WHERE ${referrals.validatedAt} >= ${periodo.inicio.toISOString()} AND ${referrals.validatedAt} <= ${periodo.fim.toISOString()})::int`,
+          convertidasNoMes: sql<number>`count(*) FILTER (WHERE ${referrals.status} IN ('converted','paid') AND ${referrals.updatedAt} >= ${periodo.inicio.toISOString()} AND ${referrals.updatedAt} <= ${periodo.fim.toISOString()})::int`,
+        })
+        .from(referrals)
+        .where(filtroEmpresa);
+
+      const validadas = eventos?.validadasNoMes ?? 0;
+      const convertidas = eventos?.convertidasNoMes ?? 0;
+      comissaoIndicadores = validadas * 3 + convertidas * 50;
+      comissaoPromotores = validadas * 1 + convertidas * 10;
+    }
+
+    return {
+      total: contagens?.total ?? 0,
+      convertidas: contagens?.convertidas ?? 0,
+      pendentes: contagens?.pendentes ?? 0,
+      analisando: contagens?.analisando ?? 0,
+      validadas: contagens?.validadas ?? 0,
+      rejeitadas: contagens?.rejeitadas ?? 0,
+      indicadores: contagens?.indicadores ?? 0,
+      promotores: contagens?.promotores ?? 0,
+      comissaoIndicadores,
+      comissaoPromotores,
+      recentes: recentes?.recentes ?? 0,
+      indicadoresAtivos: recentes?.indicadoresAtivos ?? 0,
     };
   }
 
@@ -1365,47 +1637,56 @@ class DatabaseStorage implements IStorage {
 
       const previousCommissionSupervisor = parseFloat((referral as any).commissionSupervisor?.toString() || '0');
 
+      /**
+       * Rateio ABSOLUTO.
+       *
+       * Dois defeitos foram corrigidos aqui:
+       *
+       * 1. O ramo 'converted' era INCREMENTAL: só somava o bônus quando
+       *    previousStatus === 'validated'. Vindo de qualquer outro estado ele
+       *    gravava apenas o bônus (R$50) e PERDIA a parcela do validado (R$3).
+       *    Consequência prática: remarcar 'converted' uma segunda vez caía no
+       *    ramo do else (o anterior já era 'converted'), gravava 53 -> 50 e
+       *    DEBITAVA R$3 do indicador. E pending -> converted direto pagava
+       *    R$50 em vez de R$53.
+       *
+       *    Agora 'converted' é sempre validado + bônus, calculado do zero.
+       *    O valor final não depende do caminho percorrido nem de quantas
+       *    vezes a transição foi aplicada.
+       *
+       * 2. `alocaçãoSupervisor - takeIndicador` podia ser NEGATIVO. Com o
+       *    supervisor alocado em R$2 e o indicador levando R$3, o supervisor
+       *    era debitado em R$1 por um lead da própria equipe.
+       *
+       *    repartirPool() garante parcela não-negativa e soma exatamente igual
+       *    ao pool.
+       */
+      const alocValidadoEfetiva =
+        supervisorUser && supervisorAllocValidated !== null ? supervisorAllocValidated : null;
+      const alocConvertidoEfetiva =
+        supervisorUser && supervisorAllocConverted !== null ? supervisorAllocConverted : null;
+
+      const rateioValidado = repartirPool(
+        POOL_VALIDATED,
+        indicadorCustomValidated !== null ? indicadorCustomValidated : 3,
+        alocValidadoEfetiva,
+      );
+
+      const rateioBonusConversao = repartirPool(
+        POOL_CONVERTED,
+        indicadorCustomConverted !== null ? indicadorCustomConverted : 50,
+        alocConvertidoEfetiva,
+      );
+
       if (status === 'validated') {
-        // Indicador's take
-        const indTake = indicadorCustomValidated !== null ? indicadorCustomValidated : 3;
-        newCommissionIndicator = indTake;
-
-        if (supervisorUser && supervisorAllocValidated !== null) {
-          // Supervisor keeps: their allocation - indicador's take
-          newCommissionSupervisor = supervisorAllocValidated - indTake;
-          // Promotor keeps: pool - supervisor's allocation
-          newCommissionPromoter = POOL_VALIDATED - supervisorAllocValidated;
-        } else {
-          // No supervisor: promotor keeps the remainder
-          newCommissionSupervisor = 0;
-          newCommissionPromoter = POOL_VALIDATED - indTake;
-        }
+        newCommissionIndicator = rateioValidado.indicador;
+        newCommissionSupervisor = rateioValidado.supervisor;
+        newCommissionPromoter = rateioValidado.promotor;
       } else if (status === 'converted') {
-        // Converted bonus on top of what was already validated
-        const indBonusTake = indicadorCustomConverted !== null ? indicadorCustomConverted : 50;
-
-        if (previousStatus === 'validated') {
-          newCommissionIndicator = previousCommissionIndicator + indBonusTake;
-          if (supervisorUser && supervisorAllocConverted !== null) {
-            const supBonus = supervisorAllocConverted - indBonusTake;
-            newCommissionSupervisor = previousCommissionSupervisor + supBonus;
-            const promBonus = POOL_CONVERTED - supervisorAllocConverted;
-            newCommissionPromoter = previousCommissionPromoter + promBonus;
-          } else {
-            newCommissionSupervisor = 0;
-            const promBonus = POOL_CONVERTED - indBonusTake;
-            newCommissionPromoter = previousCommissionPromoter + promBonus;
-          }
-        } else {
-          newCommissionIndicator = indBonusTake;
-          if (supervisorUser && supervisorAllocConverted !== null) {
-            newCommissionSupervisor = supervisorAllocConverted - indBonusTake;
-            newCommissionPromoter = POOL_CONVERTED - supervisorAllocConverted;
-          } else {
-            newCommissionSupervisor = 0;
-            newCommissionPromoter = POOL_CONVERTED - indBonusTake;
-          }
-        }
+        // Convertido = o que já valia pelo validado + o bônus de conversão.
+        newCommissionIndicator = rateioValidado.indicador + rateioBonusConversao.indicador;
+        newCommissionSupervisor = rateioValidado.supervisor + rateioBonusConversao.supervisor;
+        newCommissionPromoter = rateioValidado.promotor + rateioBonusConversao.promotor;
       } else if (status === 'paid') {
         newCommissionIndicator = previousCommissionIndicator;
         newCommissionPromoter = previousCommissionPromoter;
@@ -1454,33 +1735,11 @@ class DatabaseStorage implements IStorage {
       
       console.log(`[updateReferralStatus] Commission differences: indicator=${commissionDifferenceIndicator}, supervisor=${commissionDifferenceSupervisor}, promoter=${commissionDifferencePromoter}`);
       
-      // Update user balances based on commission differences
-      if (isSpecialPromoterIndicator) {
-        // Special promoter indicator: Only update promoter balance (indicator gets nothing)
-        if (user?.promoterId && commissionDifferencePromoter !== 0) {
-          await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
-          console.log(`[updateReferralStatus] Updated promoter balance for special promoter ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter} (includes indicator commission)`);
-        }
-      } else {
-        // Normal flow: update indicator, supervisor and promoter separately
-        if (user && commissionDifferenceIndicator !== 0) {
-          await this.updateUserBalance(user.id, commissionDifferenceIndicator);
-          console.log(`[updateReferralStatus] Updated indicator balance for user ${user.id}: ${commissionDifferenceIndicator > 0 ? '+' : ''}${commissionDifferenceIndicator}`);
-        }
+      // Os créditos foram movidos para DEPOIS da reivindicação da transição
+      // (ver o db.transaction mais abaixo). Creditar antes de garantir que esta
+      // requisição é a dona da mudança de status era o que permitia pagar a
+      // mesma indicação duas vezes num duplo clique.
 
-        // Update supervisor balance if exists
-        if (supervisorUser && commissionDifferenceSupervisor !== 0) {
-          await this.updateUserBalance(supervisorUser.id, commissionDifferenceSupervisor);
-          console.log(`[updateReferralStatus] Updated supervisor balance for user ${supervisorUser.id}: ${commissionDifferenceSupervisor > 0 ? '+' : ''}${commissionDifferenceSupervisor}`);
-        }
-
-        // Update promoter balance if exists
-        if (user?.promoterId && commissionDifferencePromoter !== 0) {
-          await this.updateUserBalance(user.promoterId, commissionDifferencePromoter);
-          console.log(`[updateReferralStatus] Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
-        }
-      }
-      
       // REMOVIDO: Não atualizar totalEarnings quando indicação é paga
       // O totalEarnings deve ser atualizado apenas quando um SAQUE é pago, não quando uma indicação é paga
       
@@ -1537,11 +1796,66 @@ class DatabaseStorage implements IStorage {
         updateData.paymentProofUploadedBy = adminUserId;
       }
       
-      const [updatedReferral] = await db.update(referrals)
-        .set(updateData)
-        .where(eq(referrals.id, id))
-        .returning();
-      
+      /**
+       * Transição atômica + crédito das comissões.
+       *
+       * O UPDATE é CONDICIONAL: só altera a linha se ela ainda estiver no
+       * status que lemos no início. Quem perder a corrida não atualiza linha
+       * nenhuma, a transação inteira é desfeita e nenhum saldo é tocado.
+       *
+       * Antes, os saldos eram creditados ANTES deste UPDATE e fora de
+       * transação. Como updateUserBalance usa `balance + X` (incremento
+       * atômico), dois PATCH simultâneos SOMAVAM os créditos: R$8 de comissão
+       * para um lead de R$4, ou R$100 num lead convertido de R$50 — enquanto a
+       * indicação registrava o valor uma única vez. Um duplo clique do analista
+       * bastava.
+       */
+      const updatedReferral = await db.transaction(async (tx) => {
+        const [claimed] = await tx.update(referrals)
+          .set(updateData)
+          .where(
+            and(
+              eq(referrals.id, id),
+              // guarda de estado: ninguém mudou o status desde a nossa leitura
+              eq(referrals.status, previousStatus),
+            ),
+          )
+          .returning();
+
+        if (!claimed) {
+          throw new ConcurrentStatusChangeError(id);
+        }
+
+        // Só agora, com a transição garantida, o dinheiro se move.
+        if (isSpecialPromoterIndicator) {
+          // Special promoter indicator: Only update promoter balance (indicator gets nothing)
+          if (user?.promoterId && commissionDifferencePromoter !== 0) {
+            await this.updateUserBalance(user.promoterId, commissionDifferencePromoter, false, tx);
+            console.log(`[updateReferralStatus] Updated promoter balance for special promoter ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter} (includes indicator commission)`);
+          }
+        } else {
+          // Normal flow: update indicator, supervisor and promoter separately
+          if (user && commissionDifferenceIndicator !== 0) {
+            await this.updateUserBalance(user.id, commissionDifferenceIndicator, false, tx);
+            console.log(`[updateReferralStatus] Updated indicator balance for user ${user.id}: ${commissionDifferenceIndicator > 0 ? '+' : ''}${commissionDifferenceIndicator}`);
+          }
+
+          // Update supervisor balance if exists
+          if (supervisorUser && commissionDifferenceSupervisor !== 0) {
+            await this.updateUserBalance(supervisorUser.id, commissionDifferenceSupervisor, false, tx);
+            console.log(`[updateReferralStatus] Updated supervisor balance for user ${supervisorUser.id}: ${commissionDifferenceSupervisor > 0 ? '+' : ''}${commissionDifferenceSupervisor}`);
+          }
+
+          // Update promoter balance if exists
+          if (user?.promoterId && commissionDifferencePromoter !== 0) {
+            await this.updateUserBalance(user.promoterId, commissionDifferencePromoter, false, tx);
+            console.log(`[updateReferralStatus] Updated promoter balance for user ${user.promoterId}: ${commissionDifferencePromoter > 0 ? '+' : ''}${commissionDifferencePromoter}`);
+          }
+        }
+
+        return claimed;
+      });
+
       console.log(`[updateReferralStatus] Referral updated successfully`);
       console.log(`[updateReferralStatus] PaymentProof saved:`, updatedReferral.paymentProof ? `Yes (${updatedReferral.paymentProof.length} chars)` : 'No');
       
@@ -1571,10 +1885,66 @@ class DatabaseStorage implements IStorage {
         }
       }
       
+      // Bloqueio automático por fraude: só avalia quando a indicação ACABOU de
+      // virar "false" (falso), para não recontar em atualizações repetidas.
+      if (status === 'false' && previousStatus !== 'false') {
+        await this.enforceFraudBlock(referral.userId, adminUserId);
+      }
+
       return updatedReferral;
     } catch (error) {
       console.error(`[updateReferralStatus] Error updating referral ${id}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Regra antifraude: acima de FRAUD_BLOCK_THRESHOLD indicações marcadas como
+   * falsas, o indicador é bloqueado e não consegue mais indicar.
+   *
+   * O bloqueio reusa `isActive = false`, que é o mesmo mecanismo já aplicado
+   * manualmente pelo admin e que barra o login (ver server/auth.ts).
+   *
+   * Falhas aqui não derrubam a atualização de status da indicação — o analista
+   * não pode ficar travado por causa do efeito colateral.
+   */
+  async enforceFraudBlock(indicadorId: number, actorUserId?: number): Promise<void> {
+    const FRAUD_BLOCK_THRESHOLD = 10; // bloqueia ao ULTRAPASSAR 10
+
+    try {
+      const [row] = await db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(referrals)
+        .where(and(eq(referrals.userId, indicadorId), eq(referrals.status, 'false')));
+
+      const fraudCount = row?.total ?? 0;
+      if (fraudCount <= FRAUD_BLOCK_THRESHOLD) return;
+
+      const user = await this.getUserById(indicadorId);
+      if (!user || !user.isActive) return; // já bloqueado ou inexistente
+
+      await db
+        .update(users)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(users.id, indicadorId));
+
+      console.warn(
+        `[FRAUDE] Indicador ${indicadorId} (${user.username}) bloqueado automaticamente: ${fraudCount} indicações falsas.`,
+      );
+
+      await this.logUserAction({
+        userId: actorUserId ?? indicadorId,
+        action: 'auto_block_fraud',
+        entityType: 'user',
+        entityId: indicadorId,
+        oldValues: { isActive: true },
+        newValues: { isActive: false, fraudCount },
+        details:
+          `Indicador bloqueado automaticamente por fraude: ${fraudCount} indicações marcadas como falsas ` +
+          `(limite: ${FRAUD_BLOCK_THRESHOLD}).`,
+      });
+    } catch (error) {
+      console.error(`[FRAUDE] Falha ao avaliar bloqueio do indicador ${indicadorId}:`, error);
     }
   }
 
@@ -1865,31 +2235,72 @@ class DatabaseStorage implements IStorage {
   }
   
   // Withdrawal methods
-  async createWithdrawalRequest(request: CreateWithdrawalRequest & { userId: number; cpfKey: string; requestType: "indicador" | "promotor" }) {
-    // Permitir que o usuário informe o CPF do titular da conta
-    // Removida validação restritiva que exigia CPF idêntico ao do perfil
-    
-    const [withdrawal] = await db.insert(withdrawalRequests)
-      .values({
+  async createWithdrawalRequest(request: CreateWithdrawalRequest & {
+    userId: number;
+    cpfKey: string;
+    requestType: "indicador" | "promotor";
+    /** Definido pela rota após validar a titularidade da chave PIX. */
+    status?: WithdrawalStatus;
+    notes?: string;
+  }) {
+    /**
+     * Débito e criação do saque acontecem na MESMA transação, e o débito é
+     * condicional (`balance >= amount` dentro do próprio UPDATE).
+     *
+     * Antes, a rota lia o saldo, comparava, criava o saque e só então debitava.
+     * Dois pedidos simultâneos do mesmo usuário liam o mesmo saldo, os dois
+     * passavam na checagem e os dois eram debitados — saldo negativo e saque a
+     * mais. Duplo clique no botão já bastava para reproduzir.
+     *
+     * O UPDATE condicional resolve porque o Postgres serializa a escrita na
+     * linha: o segundo só enxerga o saldo já debitado e não encontra linha
+     * para atualizar.
+     */
+    return await db.transaction(async (tx) => {
+      const debited = await tx
+        .update(users)
+        .set({
+          balance: sql`${users.balance} - ${request.amount.toFixed(2)}::numeric`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(users.id, request.userId),
+            sql`${users.balance} >= ${request.amount.toFixed(2)}::numeric`,
+          ),
+        )
+        .returning({ balance: users.balance });
+
+      if (debited.length === 0) {
+        throw new InsufficientBalanceError();
+      }
+
+      // A titularidade (CPF e chave PIX) é validada em POST /api/withdrawals,
+      // que decide entre "pending" e "retido". Ver server/pixValidation.ts.
+      const [withdrawal] = await tx.insert(withdrawalRequests)
+        .values({
+          userId: request.userId,
+          amount: request.amount.toString(),
+          pixKey: request.pixKey,
+          cpfKey: request.cpfKey,
+          requestType: request.requestType,
+          status: request.status ?? "pending",
+          notes: request.notes,
+        })
+        .returning();
+
+      // Log audit trail
+      await this.logUserAction({
         userId: request.userId,
-        amount: request.amount.toString(),
-        pixKey: request.pixKey,
-        cpfKey: request.cpfKey,
-        requestType: request.requestType
-      })
-      .returning();
-    
-    // Log audit trail
-    await this.logUserAction({
-      userId: request.userId,
-      action: 'create',
-      entityType: 'withdrawal_request',
-      entityId: withdrawal.id,
-      newValues: withdrawal,
-      details: `Solicitação de saque criada: R$ ${request.amount}`
+        action: 'create',
+        entityType: 'withdrawal_request',
+        entityId: withdrawal.id,
+        newValues: withdrawal,
+        details: `Solicitação de saque criada: R$ ${request.amount}`
+      });
+
+      return withdrawal;
     });
-    
-    return withdrawal;
   }
   
   async getWithdrawalRequestsByUserId(userId: number) {
@@ -1962,48 +2373,74 @@ class DatabaseStorage implements IStorage {
   }
   
   async updateWithdrawalStatus(id: number, status: WithdrawalStatus, processedBy: number, notes?: string) {
-    // IDEMPOTENCY CHECK: Get current withdrawal status first
+    /**
+     * A "idempotência" daqui era check-then-act: lia o status, comparava em
+     * memória e depois fazia UPDATE sem guarda. Entre a leitura e a escrita não
+     * havia transação nem lock, então duas requisições simultâneas (duplo
+     * clique do financeiro, retry por timeout) passavam AMBAS pela checagem e
+     * executavam os efeitos monetários duas vezes:
+     *   - 'rejected' devolvia o valor ao saldo 2x (dinheiro criado do nada,
+     *     imediatamente sacável);
+     *   - 'paid' lançava duas saídas no fluxo de caixa e inflava totalEarnings.
+     * A existência de scripts/fix-duplicate-cashflow.ts mostra que isso já
+     * aconteceu em produção.
+     *
+     * Agora a transição é um UPDATE CONDICIONAL dentro de transação: só altera
+     * a linha se ela ainda estiver no status anterior. Quem perder a corrida
+     * não atualiza linha nenhuma e sai sem tocar em dinheiro.
+     */
     const currentWithdrawal = await db.query.withdrawalRequests.findFirst({
       where: eq(withdrawalRequests.id, id)
     });
-    
+
     if (!currentWithdrawal) {
       throw new Error(`Withdrawal request #${id} not found`);
     }
-    
-    // Prevent duplicate processing - if already in the target status, return early
+
     if (currentWithdrawal.status === status) {
       console.log(`[updateWithdrawalStatus] Withdrawal #${id} already has status "${status}" - skipping duplicate processing`);
       return currentWithdrawal;
     }
-    
-    // Special check for "paid" status to prevent duplicate cash flow entries
-    if (status === 'paid' && currentWithdrawal.status === 'paid') {
-      console.log(`[updateWithdrawalStatus] Withdrawal #${id} already paid - preventing duplicate cash flow entry`);
-      return currentWithdrawal;
-    }
-    
+
     const updateData: any = {
       status,
       processedBy,
       notes
     };
-    
+
     // Set processedAt for approved/rejected
     if (status === 'approved' || status === 'rejected') {
       updateData.processedAt = new Date();
     }
-    
+
     // Set paidAt only when marking as paid
     if (status === 'paid') {
       updateData.paidAt = new Date();
     }
-    
+
     const [updated] = await db.update(withdrawalRequests)
       .set(updateData)
-      .where(eq(withdrawalRequests.id, id))
+      .where(
+        and(
+          eq(withdrawalRequests.id, id),
+          // guarda de estado: a linha precisa ainda estar no status que lemos
+          eq(withdrawalRequests.status, currentWithdrawal.status),
+        ),
+      )
       .returning();
-    
+
+    // Perdeu a corrida: outra requisição já transicionou este saque.
+    // Sair sem executar nenhum efeito monetário.
+    if (!updated) {
+      console.warn(
+        `[updateWithdrawalStatus] Saque #${id} já foi transicionado por outra requisição concorrente — efeitos ignorados.`,
+      );
+      const atual = await db.query.withdrawalRequests.findFirst({
+        where: eq(withdrawalRequests.id, id),
+      });
+      return atual ?? currentWithdrawal;
+    }
+
     // Se o saque foi rejeitado, devolver o valor ao saldo do usuário
     if (status === 'rejected' && updated) {
       const amount = parseFloat(updated.amount);
@@ -2060,21 +2497,42 @@ class DatabaseStorage implements IStorage {
 
   
   // Cash flow methods
+  /**
+   * O saldo corrente do caixa era calculado com read-modify-write solto:
+   * lia o último lançamento e inseria o novo com o total recalculado. Duas
+   * chamadas simultâneas liam o MESMO saldo anterior e gravavam totais
+   * divergentes — o extrato passava a mentir a partir dali.
+   *
+   * Agora tudo acontece numa transação, serializada por advisory lock: só um
+   * lançamento por vez calcula e grava. São operações raras (pagamento de
+   * saque), então serializar não custa nada.
+   */
   async createCashFlowEntry(entry: CreateCashFlow & { createdBy: number }) {
-    const currentBalance = await this.getCurrentBalance();
-    const newBalance = entry.type === 'inflow' 
-      ? currentBalance + entry.amount 
-      : currentBalance - entry.amount;
-    
-    const [cashFlowEntry] = await db.insert(cashFlow)
-      .values({
-        ...entry,
-        amount: entry.amount.toString(),
-        balance: newBalance.toString()
-      })
-      .returning();
-    
-    return cashFlowEntry;
+    return await db.transaction(async (tx) => {
+      // Trava exclusiva do "livro caixa" enquanto a transação durar.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${CASH_FLOW_LOCK_KEY})`);
+
+      // Ordena por id, não por createdAt: dois lançamentos no mesmo instante
+      // empatam no timestamp e a leitura do "último" fica indefinida.
+      const lastEntry = await tx.query.cashFlow.findFirst({
+        orderBy: desc(cashFlow.id),
+      });
+      const currentBalance = lastEntry ? parseFloat(lastEntry.balance) : 0;
+
+      const newBalance = entry.type === 'inflow'
+        ? currentBalance + entry.amount
+        : currentBalance - entry.amount;
+
+      const [cashFlowEntry] = await tx.insert(cashFlow)
+        .values({
+          ...entry,
+          amount: entry.amount.toString(),
+          balance: newBalance.toFixed(2)
+        })
+        .returning();
+
+      return cashFlowEntry;
+    });
   }
   
   async getCashFlowEntries() {
@@ -2092,10 +2550,12 @@ class DatabaseStorage implements IStorage {
   }
   
   async getCurrentBalance() {
+    // desc(id) e não desc(createdAt): timestamps iguais tornam o "último"
+    // lançamento indeterminado e o saldo lido passa a variar por sorte.
     const lastEntry = await db.query.cashFlow.findFirst({
-      orderBy: desc(cashFlow.createdAt)
+      orderBy: desc(cashFlow.id)
     });
-    
+
     return lastEntry ? parseFloat(lastEntry.balance) : 0;
   }
   
@@ -2143,13 +2603,20 @@ class DatabaseStorage implements IStorage {
   }
   
   async getSupportTicketById(id: number) {
+    // Projeção explícita: o ticket carrega só identificação de quem abriu e de
+    // quem respondeu. Sem isso a relação trazia o registro completo (hash de
+    // senha, CPF, chave PIX) junto de cada resposta.
+    const usuarioBasico = {
+      columns: { id: true, fullName: true, username: true, role: true },
+    } as const;
+
     return await db.query.supportTickets.findFirst({
       where: eq(supportTickets.id, id),
       with: {
-        user: true,
+        user: usuarioBasico,
         responses: {
           with: {
-            user: true
+            user: usuarioBasico
           }
         }
       }
@@ -2574,6 +3041,7 @@ class DatabaseStorage implements IStorage {
         // Insert linkToken (which maps to 'slug' column in the database)
         const [newLink] = await db.insert(referralLinks).values({
           userId,
+          name: data.name.trim(),
           linkToken: slug,
           isActive: data.isActive ?? true,
         }).returning();
@@ -2747,7 +3215,7 @@ class DatabaseStorage implements IStorage {
     }
   }
 
-  async createUserWithReferralAttribution(userData: InsertUser, referralToken?: string): Promise<any> {
+  async createUserWithReferralAttribution(userData: CreateUserInput, referralToken?: string): Promise<any> {
     try {
       return await db.transaction(async (tx) => {
         let assignmentData: {
@@ -2812,7 +3280,9 @@ class DatabaseStorage implements IStorage {
           supervisorId: assignmentData.supervisorId ?? userData.supervisorId ?? undefined
         };
 
-        const newUser = await this.createUser(userDataWithAssignment);
+        // `tx` explícito: sem ele o INSERT sairia da transação e tomaria uma
+        // segunda conexão do pool com a primeira ainda presa.
+        const newUser = await this.createUser(userDataWithAssignment, tx);
 
         // Log audit trail if referral attribution was made
         if (referralToken && Object.keys(assignmentData).length > 0) {
