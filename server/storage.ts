@@ -56,8 +56,8 @@ const PostgresSessionStore = connectPg(session);
 const CASH_FLOW_LOCK_KEY = 918273645;
 
 /** Teto do rateio por lead: R$3+R$1 no validado, R$50+R$10 no convertido. */
-const POOL_VALIDATED = 4;
-const POOL_CONVERTED = 60;
+export const POOL_VALIDATED = 4;
+export const POOL_CONVERTED = 60;
 
 /**
  * Normaliza e limita um valor de comissão vindo de qualquer rota.
@@ -79,7 +79,7 @@ const POOL_CONVERTED = 60;
  *   supervisor. `null` = indicador não tem supervisor (ou não há alocação
  *   definida); nesse caso o promotor fica com todo o resto.
  */
-function repartirPool(
+export function repartirPool(
   pool: number,
   takeIndicador: number,
   alocacaoSupervisor: number | null,
@@ -101,7 +101,7 @@ function repartirPool(
   };
 }
 
-function clampComissao(valor: unknown, teto: number): string | null {
+export function clampComissao(valor: unknown, teto: number): string | null {
   if (valor === undefined || valor === null || valor === "") return null;
   const n = typeof valor === "number" ? valor : Number(String(valor).trim());
   if (!Number.isFinite(n)) return null;
