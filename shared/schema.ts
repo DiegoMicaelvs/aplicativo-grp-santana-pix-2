@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, boolean, timestamp, decimal, jsonb, ind
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
+import { normalizarCpf, cpfEhValido, normalizarTelefone, normalizarPlaca } from "./cpf";
 
 // User roles
 export type UserRole = "indicador" | "indicador_nivel_1" | "promotor" | "supervisor" | "admin" | "analista" | "vendedor" | "gerente" | "metis_viewer";
@@ -538,9 +539,24 @@ export const insertUserSchema = createInsertSchema(users, {
   fullName: z.string().min(1, "Nome completo é obrigatório"),
   username: z.string().email("Email inválido").min(1, "Email é obrigatório"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  cpf: z.string().min(11, "CPF inválido").max(14, "CPF inválido"),
+  /**
+   * Antes: qualquer 11 dígitos passava ("00000000000" inclusive), e o valor era
+   * gravado como veio — "123.456.789-09" e "12345678909" viravam duas contas
+   * distintas para a MESMA pessoa, furando a UNIQUE.
+   * Agora normaliza para só-dígitos e confere os verificadores.
+   */
+  cpf: z
+    .string()
+    .transform(normalizarCpf)
+    .refine((v) => v.length === 11, "CPF deve ter 11 dígitos")
+    .refine(cpfEhValido, "CPF inválido"),
   email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
-  phone: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
+  // Normalizado pelo mesmo motivo: é comparado por igualdade exata na
+  // validação de duplicidade entre aplicativos.
+  phone: z
+    .string()
+    .transform(normalizarTelefone)
+    .refine((v) => v.length >= 10 && v.length <= 11, "Telefone inválido"),
   pixKey: z.string().min(3, "Chave PIX é obrigatória"),
 }).pick({
   // Allowlist: apenas dados de perfil que o próprio usuário informa.
@@ -592,7 +608,8 @@ export const createReferralSchema = createInsertSchema(referrals, {
         .string()
         .min(7, "Placa do veículo é obrigatória")
         .max(8, "Placa do veículo inválida")
-        .transform((val) => val.toUpperCase().replace(/[^A-Z0-9]/g, "")),
+        // mesma função usada nos demais pontos de escrita/comparação
+        .transform(normalizarPlaca),
     )
     .min(1, "Pelo menos uma placa é obrigatória")
     .max(3, "Máximo de 3 placas por indicação")
@@ -619,10 +636,29 @@ export const selectReferralPlateSchema = createSelectSchema(referralPlates);
 // Audit log schema
 export const createAuditLogSchema = createInsertSchema(auditLog).omit({ id: true, createdAt: true });
 
+/**
+ * Comprovante de pagamento.
+ *
+ * O campo era `z.string().optional()`: a string "x" era aceita como
+ * comprovante de uma conversão que gera R$60 de comissão. E, sendo livre,
+ * cabia qualquer coisa até o limite de corpo da requisição — inclusive
+ * conteúdo que não é imagem.
+ *
+ * Agora exige data URI de imagem e tem teto de tamanho. ~2,7 MB de base64
+ * equivalem a ~2 MB de imagem, folgado para foto de comprovante.
+ */
+export const comprovanteSchema = z
+  .string()
+  .regex(
+    /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/]+=*$/,
+    "Comprovante deve ser uma imagem (PNG, JPEG ou WebP)",
+  )
+  .max(2_800_000, "Comprovante muito grande (máximo ~2 MB de imagem)");
+
 export const updateReferralStatusSchema = z.object({
   status: z.enum(["pending", "analyzing", "validated", "converted", "rejected", "paid", "false", "not_validated", "not_converted", "contact_list"]),
   notes: z.string().optional(),
-  paymentProof: z.string().optional(), // Base64 encoded image or file path
+  paymentProof: comprovanteSchema.optional(),
   observation: z.string().optional(), // Optional observation to add to conversation history
 });
 

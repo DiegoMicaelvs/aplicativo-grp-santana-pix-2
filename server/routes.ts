@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth, hashPassword, sessionMiddleware } from "./auth";
 import { checkPixKeyOwnership } from "./pixValidation";
 import { safeCompare } from "./secrets";
+import { normalizarPlaca } from "@shared/cpf";
 import { storage, InsufficientBalanceError, ConcurrentStatusChangeError } from "./storage";
 import { db } from "@db";
 import { z } from "zod";
@@ -75,6 +76,22 @@ function parseMoney(value: unknown): number | null {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  /**
+   * Valida `:id` uma vez só, para todas as rotas.
+   *
+   * Dezenas de rotas faziam `parseInt(req.params.id)` sem checar o resultado.
+   * `/api/tickets/abc` virava `NaN`, o Postgres recusava a consulta e o
+   * usuário recebia 500 — erro de servidor para o que é entrada inválida.
+   * Pior: mascarava problema real no meio de ruído.
+   */
+  app.param("id", (req, res, next, valor) => {
+    const n = Number(valor);
+    if (!Number.isInteger(n) || n <= 0) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
+    next();
+  });
+
   // Setup authentication routes
   setupAuth(app);
   
@@ -631,19 +648,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check for duplicate referrals
   app.post("/api/referrals/check-duplicate", requireAuth, async (req, res) => {
     try {
-      const { phone, licensePlate, licensePlates } = req.body;
-      
+      const corpo = z
+        .object({
+          phone: z.string().max(20).optional(),
+          licensePlate: z.string().max(10).optional(),
+          licensePlates: z.array(z.string().max(10)).max(3).optional(),
+        })
+        .safeParse(req.body);
+
+      if (!corpo.success) {
+        return res.status(400).json({ error: "Dados inválidos para verificação" });
+      }
+
+      const { phone, licensePlate, licensePlates } = corpo.data;
+
       // Support both single plate (legacy) and multiple plates (new)
-      const platesToCheck = licensePlates || (licensePlate ? [licensePlate] : []);
-      
+      const platesToCheck = licensePlates ?? (licensePlate ? [licensePlate] : []);
+      const platesNormalizadas = platesToCheck.map(normalizarPlaca);
+
       let allDuplicates: any[] = [];
-      
+
       // Check phone duplicates if provided
       if (phone) {
         const phoneDuplicates = await storage.checkDuplicateReferralWithOwner(phone);
         allDuplicates.push(...phoneDuplicates);
       }
-      
+
       // Check each plate for duplicates
       for (const plate of platesToCheck) {
         if (plate) {
@@ -656,14 +686,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
-      return res.json({ 
+
+      /**
+       * Projeção mínima.
+       *
+       * Antes a resposta fazia spread da LINHA INTEIRA da indicação: nome
+       * completo do lead, telefone, placa e id. Qualquer usuário autenticado
+       * sondava por telefone ou placa e recebia o cadastro de leads de outras
+       * equipes — uma base de dados pessoais consultável.
+       *
+       * O aviso legítimo ("essa placa já existe") precisa apenas de: quem
+       * cadastrou (primeiro nome + UF) e quando. Telefone e placa só voltam
+       * quando são os MESMOS que o solicitante enviou — valor que ele já
+       * conhece, porque acabou de digitar.
+       */
+      const telefoneEnviado = phone ? String(phone) : null;
+
+      return res.json({
         isDuplicate: allDuplicates.length > 0,
-        duplicates: allDuplicates.map(duplicate => ({
-          ...duplicate,
-          ownerFirstName: duplicate.createdByFirstName,
-          ownerState: duplicate.createdByState
-        }))
+        duplicates: allDuplicates.map((d) => ({
+          phone: telefoneEnviado && d.phone === telefoneEnviado ? d.phone : undefined,
+          licensePlate: platesNormalizadas.includes(normalizarPlaca(d.licensePlate ?? ""))
+            ? d.licensePlate
+            : undefined,
+          ownerFirstName: d.createdByFirstName,
+          ownerState: d.createdByState,
+          createdAt: d.createdAt,
+        })),
       });
     } catch (error) {
       console.error("Error checking duplicates:", error);
@@ -2270,7 +2319,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingReferral) {
         return res.status(404).json({ error: "Indicação não encontrada" });
       }
-      
+
+      /**
+       * A rota só checava o PAPEL do usuário, não se a indicação é dele.
+       * Qualquer indicador logado podia alterar o status de contato de
+       * qualquer lead do sistema — inclusive de outra equipe — e ainda
+       * carimbava o próprio nome no histórico.
+       *
+       * Mesma regra de acesso já usada em /api/referrals/:id/conversations.
+       */
+      const solicitante = req.user!;
+      const podeMexer =
+        solicitante.role === "admin" ||
+        solicitante.role === "analista" ||
+        solicitante.role === "gerente" ||
+        solicitante.role === "vendedor" ||
+        existingReferral.userId === solicitante.id ||
+        existingReferral.createdBy === solicitante.id ||
+        (solicitante.role === "promotor" && existingReferral.promoterId === solicitante.id);
+
+      if (!podeMexer) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
       // Import required Drizzle functions
       const { eq } = await import('drizzle-orm');
       const { referrals } = await import('@shared/schema.ts');

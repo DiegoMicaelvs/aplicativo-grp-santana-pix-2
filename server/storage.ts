@@ -1,5 +1,6 @@
 import { db } from "@db";
 import { eq, desc, asc, or, count, and, sql, inArray } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { 
   users, 
   referrals, 
@@ -2051,6 +2052,9 @@ class DatabaseStorage implements IStorage {
     if (updates.city !== undefined) updateData.city = updates.city;
     if (updates.state !== undefined) updateData.state = updates.state;
     
+    // Quanto de comissão precisa migrar junto com a indicação (0 = nada)
+    let transferirComissao = 0;
+
     // Handle user reassignment - transfer commissions and update promoter relationship
     if (updates.userId !== undefined && updates.userId !== currentReferral.userId) {
       console.log(`[updateReferral] Usuário sendo alterado de ${currentReferral.userId} para ${updates.userId}`);
@@ -2070,37 +2074,42 @@ class DatabaseStorage implements IStorage {
       }
       
       // Check if referral has commissions that need to be transferred
-      const currentCommissionIndicator = parseFloat(currentReferral.commissionIndicator?.toString() || '0');
-      const currentCommissionPromoter = parseFloat(currentReferral.commissionPromoter?.toString() || '0');
-      
-      if (currentCommissionIndicator > 0) {
-        console.log(`[updateReferral] Transferindo comissão de ${currentCommissionIndicator} do usuário ${currentReferral.userId} para ${updates.userId}`);
-        
-        // Remove commission from old user
-        await this.updateUserBalance(currentReferral.userId, -currentCommissionIndicator, false);
-        
-        // Add commission to new user  
-        await this.updateUserBalance(updates.userId, currentCommissionIndicator, true);
-        
-        // Also handle promoter commission if exists
-        if (currentReferral.promoterId && currentCommissionPromoter > 0) {
-          // The promoter commission stays with the original promoter, no change needed
-          console.log(`[updateReferral] Comissão do promotor mantida com o promotor original ${currentReferral.promoterId}`);
-        }
+      transferirComissao = parseFloat(currentReferral.commissionIndicator?.toString() || '0');
+      if (transferirComissao > 0) {
+        console.log(`[updateReferral] Transferindo comissão de ${transferirComissao} do usuário ${currentReferral.userId} para ${updates.userId}`);
       }
+      // A comissão do promotor permanece com o promotor original — nada a fazer.
     }
-    
+
     // Handle status update separately to ensure commission calculations
     if (updates.status !== undefined && updates.status !== currentReferral.status) {
       // Use updateReferralStatus for status changes to handle commissions
       return await this.updateReferralStatus(id, updates.status, updates.notes, editorUserId, updates.paymentProof);
     }
 
-    // Update referral
-    const [updatedReferral] = await db.update(referrals)
-      .set(updateData)
-      .where(eq(referrals.id, id))
-      .returning();
+    /**
+     * Reatribuição em UMA transação.
+     *
+     * Eram três escritas soltas: debita o indicador antigo, credita o novo,
+     * grava a indicação. Falha entre a primeira e a segunda e o dinheiro
+     * simplesmente evapora — saiu de um saldo e não entrou em nenhum outro.
+     *
+     * O crédito ao novo indicador também passava `updateEarnings = true`,
+     * inflando `totalEarnings` sem que existisse pagamento algum.
+     * `totalEarnings` é "total já sacado" e só updateWithdrawalStatus pode
+     * mexer nele.
+     */
+    const [updatedReferral] = await db.transaction(async (tx) => {
+      if (transferirComissao > 0) {
+        await this.updateUserBalance(currentReferral.userId, -transferirComissao, false, tx);
+        await this.updateUserBalance(updates.userId, transferirComissao, false, tx);
+      }
+
+      return await tx.update(referrals)
+        .set(updateData)
+        .where(eq(referrals.id, id))
+        .returning();
+    });
 
     // Log audit trail
     try {
@@ -2561,17 +2570,34 @@ class DatabaseStorage implements IStorage {
   
   // Support ticket methods
   async createSupportTicket(userId: number, ticketData: CreateSupportTicket) {
-    const ticketNumber = await this.generateTicketNumber();
-    
-    const [supportTicket] = await db.insert(supportTickets)
-      .values({
-        ...ticketData,
-        userId,
-        ticketNumber
-      })
-      .returning();
-    
-    return supportTicket;
+    // O banco é quem decide a unicidade; em colisão (23505) sorteia outro número.
+    const MAX_TENTATIVAS = 5;
+
+    for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+      try {
+        const [supportTicket] = await db.insert(supportTickets)
+          .values({
+            ...ticketData,
+            userId,
+            ticketNumber: this.gerarNumeroDeTicket(),
+          })
+          .returning();
+
+        return supportTicket;
+      } catch (erro: any) {
+        const colisaoDeNumero =
+          erro?.code === "23505" && String(erro?.constraint ?? "").includes("ticket_number");
+
+        if (!colisaoDeNumero || tentativa === MAX_TENTATIVAS) throw erro;
+
+        console.warn(
+          `[TICKET] Número já usado, sorteando outro (tentativa ${tentativa}/${MAX_TENTATIVAS})`,
+        );
+      }
+    }
+
+    // Inalcançável: o laço ou retorna ou relança.
+    throw new Error("Não foi possível gerar número de chamado");
   }
   
   async getUserSupportTickets(userId: number) {
@@ -2660,23 +2686,37 @@ class DatabaseStorage implements IStorage {
     return ticketResponse;
   }
   
+  /**
+   * Número do chamado, formato YYYYMMDD-XXXX.
+   *
+   * Era `COUNT(*) de hoje + 1`, com dois defeitos:
+   *
+   *  - sob concorrência, dois chamados abertos ao mesmo tempo contavam o mesmo
+   *    total e geravam o MESMO número. A coluna tem UNIQUE, então o segundo
+   *    usuário recebia erro 500 ao abrir chamado;
+   *  - `new Date(today.setHours(...))` MUTAVA `today`. Funcionava por sorte,
+   *    porque as duas chamadas caem no mesmo dia — mas `dateStr` vinha de
+   *    `toISOString()` (UTC) enquanto `setHours` é hora local, então perto da
+   *    meia-noite o prefixo e a janela de contagem discordavam.
+   *
+   * Agora o sufixo é aleatório e a colisão (improvável) é resolvida por retry
+   * no INSERT, que é onde o banco realmente decide.
+   */
+  private gerarNumeroDeTicket(): string {
+    const agora = new Date();
+    const data = [
+      agora.getFullYear(),
+      String(agora.getMonth() + 1).padStart(2, "0"),
+      String(agora.getDate()).padStart(2, "0"),
+    ].join("");
+
+    const sufixo = randomBytes(2).toString("hex").toUpperCase(); // 4 chars
+    return `${data}-${sufixo}`;
+  }
+
+  /** Mantido na interface por compatibilidade. */
   async generateTicketNumber() {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    
-    // Contar tickets criados hoje
-    const todayStart = new Date(today.setHours(0, 0, 0, 0));
-    const todayEnd = new Date(today.setHours(23, 59, 59, 999));
-    
-    const todayTickets = await db.query.supportTickets.findMany({
-      where: and(
-        sql`${supportTickets.createdAt} >= ${todayStart}`,
-        sql`${supportTickets.createdAt} <= ${todayEnd}`
-      )
-    });
-    
-    const sequenceNumber = (todayTickets.length + 1).toString().padStart(4, '0');
-    return `${dateStr}-${sequenceNumber}`;
+    return this.gerarNumeroDeTicket();
   }
   
   async transferReferralsToPromoter(indicadorId: number, promoterId: number | null) {
@@ -3123,14 +3163,23 @@ class DatabaseStorage implements IStorage {
         throw new Error('Insufficient permissions');
       }
 
-      // Generate new slug from name
-      const slug = data.name.trim().toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-      
+      /**
+       * O token NÃO muda na edição.
+       *
+       * Antes, renomear o link regerava o slug a partir do nome — SEM o sufixo
+       * aleatório que a criação usa. Dois problemas:
+       *
+       *  - o link já distribuído (QR code impresso, mensagem enviada) parava
+       *    de funcionar, e as indicações passavam a não ser atribuídas a
+       *    ninguém;
+       *  - dois links com o mesmo nome geravam o mesmo slug e batiam na UNIQUE,
+       *    devolvendo 500.
+       *
+       * Edição altera nome e situação; o token é identidade e é imutável.
+       */
       const [updatedLink] = await db.update(referralLinks)
         .set({
-          linkToken: slug, // Update slug/token (name will have same value automatically)
+          name: data.name.trim(),
           isActive: data.isActive
         })
         .where(eq(referralLinks.id, id))
