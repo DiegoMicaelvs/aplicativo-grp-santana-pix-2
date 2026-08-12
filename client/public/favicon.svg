@@ -1,57 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <defs>
-    <linearGradient id="metisGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  
-  <!-- Metis Logo - Goddess Profile with Crown -->
-  <g transform="translate(256, 256) scale(4.5)">
-    <!-- Outer Circle -->
-    <circle r="50" fill="none" stroke="url(#metisGradient)" stroke-width="4"/>
-    
-    <!-- Crown/Laurel -->
-    <g transform="translate(-15, -35)">
-      <path d="M 5 -5 L 8 -12 L 12 -8 L 15 -15 L 18 -10 L 22 -18 L 25 -12 L 28 -20 L 32 -15 L 35 -5" 
-            fill="none" stroke="url(#metisGradient)" stroke-width="2" stroke-linecap="round"/>
-    </g>
-    
-    <!-- Face Profile -->
-    <g transform="translate(0, 0)">
-      <!-- Head outline -->
-      <path d="M -20 -15 Q -25 -25 -15 -30 Q 0 -35 15 -30 Q 20 -25 15 -15 Q 10 0 5 10 Q 0 15 -5 10 Q -15 0 -20 -15 Z" 
-            fill="url(#metisGradient)" stroke="url(#metisGradient)" stroke-width="1"/>
-      
-      <!-- Hair waves -->
-      <path d="M -15 -25 Q -10 -20 -5 -25 Q 0 -20 5 -25 Q 10 -20 15 -25" 
-            fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M -12 -15 Q -7 -10 -2 -15 Q 3 -10 8 -15" 
-            fill="none" stroke="#ffffff" stroke-width="1" stroke-linecap="round"/>
-      
-      <!-- Eye -->
-      <circle cx="-5" cy="-10" r="1.5" fill="#ffffff"/>
-      
-      <!-- Nose -->
-      <path d="M -2 -5 L 0 0" fill="none" stroke="#ffffff" stroke-width="1" stroke-linecap="round"/>
-      
-      <!-- Mouth -->
-      <path d="M -3 5 Q 0 7 3 5" fill="none" stroke="#ffffff" stroke-width="1" stroke-linecap="round"/>
-      
-      <!-- Neck/Shoulder -->
-      <path d="M -5 10 Q 0 15 5 10 Q 8 12 10 18 Q 5 20 0 18 Q -5 20 -10 18 Q -8 12 -5 10" 
-            fill="url(#metisGradient)" stroke="url(#metisGradient)" stroke-width="1"/>
-    </g>
-    
-    <!-- Decorative elements around the circle -->
-    <g>
-      <!-- Small decorative rays -->
-      <line x1="0" y1="-55" x2="0" y2="-60" stroke="url(#metisGradient)" stroke-width="2" stroke-linecap="round"/>
-      <line x1="35" y1="-35" x2="40" y2="-40" stroke="url(#metisGradient)" stroke-width="2" stroke-linecap="round"/>
-      <line x1="35" y1="35" x2="40" y2="40" stroke="url(#metisGradient)" stroke-width="2" stroke-linecap="round"/>
-      <line x1="0" y1="55" x2="0" y2="60" stroke="url(#metisGradient)" stroke-width="2" stroke-linecap="round"/>
-      <line x1="-35" y1="35" x2="-40" y2="40" stroke="url(#metisGradient)" stroke-width="2" stroke-linecap="round"/>
-      <line x1="-35" y1="-35" x2="-40" y2="-40" stroke="url(#metisGradient)" stroke-width="2" stroke-linecap="round"/>
-    </g>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#1a9c62"/>
+  <path d="M46 21 27.5 39.5 18 30"
+        fill="none"
+        stroke="#ffffff"
+        stroke-width="7"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
 </svg>

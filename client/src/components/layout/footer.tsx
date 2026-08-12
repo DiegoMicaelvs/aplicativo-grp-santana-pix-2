@@ -1,11 +1,16 @@
 import { Link } from "wouter";
 import { PrivacyPolicyDialog } from "@/components/ui/privacy-policy-dialog";
 import { Button } from "@/components/ui/button";
+import { ValidaLogo } from "@/components/brand/valida-logo";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-800">
+    <footer className="border-t border-white/10 bg-[hsl(165_25%_9%)] text-white">
       <div className="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <ValidaLogo wordClassName="text-white" />
+          <p className="text-sm text-white/60">Cadastrou, validou é PIX.</p>
+        </div>
         <nav className="-mx-5 -my-2 flex flex-wrap justify-center" aria-label="Footer">
           <div className="px-5 py-2">
             <Link href="/sobre" className="text-base text-gray-300 hover:text-white">

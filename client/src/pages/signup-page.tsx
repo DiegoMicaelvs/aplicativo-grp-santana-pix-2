@@ -188,7 +188,7 @@ export default function SignupPage() {
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold text-primary">
-                Cadastro LeadFlow
+                Cadastro Valida
               </CardTitle>
               <CardDescription>
                 {referralToken 

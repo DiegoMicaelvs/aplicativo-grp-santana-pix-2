@@ -44,6 +44,7 @@ import { formatCPF } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ValidaLogo } from "@/components/brand/valida-logo";
 
 // Login schema
 const loginSchema = z.object({
@@ -219,12 +220,15 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <div className="flex-grow flex items-center justify-center bg-gray-50 py-6 md:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="flex-grow flex items-center justify-center bg-valida-glow py-6 md:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl w-full flex flex-col lg:flex-row">
           {/* Left column - Auth forms */}
           <div className="flex-1 max-w-md w-full mx-auto">
-            <Card className="shadow-lg">
+            <Card className="shadow-xl border-border/60">
               <CardHeader className="px-4 md:px-6">
+                <div className="flex justify-center mb-3">
+                  <ValidaLogo variant="mark" className="h-11 w-11" />
+                </div>
                 <CardTitle className="text-lg md:text-xl lg:text-2xl font-heading text-center">
                   {activeTab === "login" ? "Acesso de Indicadores" : "Cadastre-se como Indicador"}
                 </CardTitle>
@@ -300,7 +304,7 @@ export default function AuthPage() {
                           </div>
 
                           <div className="text-sm">
-                            <a href="#" className="font-medium text-primary hover:text-primary-600">
+                            <a href="#" className="font-medium text-primary hover:text-primary/80">
                               Esqueceu a senha?
                             </a>
                           </div>
@@ -597,13 +601,13 @@ export default function AuthPage() {
                                 <FormDescription>
                                   Concordo com a{" "}
                                   <PrivacyPolicyDialog title="Política de Privacidade">
-                                    <Button variant="link" className="text-primary hover:text-primary-600 p-0 h-auto font-normal text-sm underline">
+                                    <Button variant="link" className="text-primary hover:text-primary/80 p-0 h-auto font-normal text-sm underline">
                                       Política de Privacidade
                                     </Button>
                                   </PrivacyPolicyDialog>
                                   {" "}e os{" "}
                                   <PrivacyPolicyDialog title="Termo de Consentimento e Política de Privacidade">
-                                    <Button variant="link" className="text-primary hover:text-primary-600 p-0 h-auto font-normal text-sm underline">
+                                    <Button variant="link" className="text-primary hover:text-primary/80 p-0 h-auto font-normal text-sm underline">
                                       Termos de Consentimento
                                     </Button>
                                   </PrivacyPolicyDialog>
@@ -670,17 +674,18 @@ export default function AuthPage() {
           <div className="flex-1 hidden lg:flex">
             <div className="flex flex-col justify-center items-center px-8">
               <div className="max-w-lg">
-                <h2 className="text-3xl font-extrabold text-gray-900 font-heading mb-6">
-                  Junte-se ao programa Indique e Ganhe
+                <h2 className="text-4xl font-extrabold text-foreground font-heading mb-6 tracking-tight">
+                  Indique. Valide.
+                  <span className="block text-gradient-valida">Receba no PIX.</span>
                 </h2>
-                <div className="prose prose-blue">
-                  <p className="text-xl text-gray-600">
-                    Com o Indique e Ganhe, você pode transformar suas conexões em oportunidades lucrativas.
+                <div>
+                  <p className="text-xl text-muted-foreground">
+                    No Valida, cada cadastro validado vira comissão — mesmo antes da venda acontecer.
                   </p>
                   
-                  <h3 className="text-xl font-medium text-gray-900 mt-8 mb-4">Por que participar?</h3>
-                  
-                  <ul className="space-y-2">
+                  <h3 className="text-xl font-semibold text-foreground mt-8 mb-4">Por que participar?</h3>
+
+                  <ul className="space-y-3">
                     <li className="flex items-start">
                       <svg className="h-5 w-5 text-primary flex-shrink-0 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -707,9 +712,16 @@ export default function AuthPage() {
                     </li>
                   </ul>
                   
-                  <div className="mt-10 p-6 bg-primary-50 rounded-lg border border-primary-100">
-                    <h4 className="text-lg font-medium text-primary-800">Indicador destaque do mês:</h4>
-                    <p className="mt-2 text-primary-700">Carlos Silva indicou 12 pessoas e ganhou R$ 4.800 em comissões!</p>
+                  {/*
+                    Era bg-primary-50/text-primary-800: shades numeradas que não
+                    existem neste tema (só o token `primary`), então o bloco
+                    renderizava sem cor nenhuma. Agora usa opacidade do token.
+                  */}
+                  <div className="mt-10 p-6 bg-primary/5 rounded-xl border border-primary/15">
+                    <h4 className="text-lg font-semibold text-primary">Indicador destaque do mês</h4>
+                    <p className="mt-2 text-muted-foreground">
+                      Carlos Silva indicou 12 pessoas e ganhou R$ 4.800 em comissões.
+                    </p>
                   </div>
                 </div>
               </div>

@@ -773,7 +773,7 @@ export default function NewReferralPage() {
                   <li>Indique apenas pessoas que realmente não possuam seguro atualmente.</li>
                   <li>Converse com a pessoa antes de indicá-la para garantir que ela tem interesse.</li>
                   <li>Veículos mais novos e bem conservados têm mais chances de aprovação.</li>
-                  <li>Avise a pessoa indicada que ela receberá contato do LeadFlow.</li>
+                  <li>Avise a pessoa indicada que ela receberá contato do Valida.</li>
                 </ul>
               </div>
             </div>

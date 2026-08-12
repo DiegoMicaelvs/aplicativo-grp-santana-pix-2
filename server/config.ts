@@ -72,9 +72,11 @@ export const config = {
     allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'],
   },
   
-  // Informações da empresa
+  // Informações da marca/empresa.
+  // `name` é o nome do PRODUTO (aparece em SMS e relatórios).
+  // A razão social permanece Grupo Santana nos textos legais/INPI.
   company: {
-    name: "Grupo Santana Pix",
+    name: "Valida",
     cnpj: "00.000.000/0001-00", // ATUALIZAR COM CNPJ REAL
     email: "admin@gruposantana.com.br",
     privacyEmail: "privacidade@gruposantana.com.br",

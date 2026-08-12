@@ -1,12 +1,12 @@
 /**
- * Indique e Ganhe - Metis da Pix
+ * Valida - Indique e Ganhe
  * ----------------------------------------------------------------------------
  * @application Indique e Ganhe
- * @client Metis da Pix
+ * @client Grupo Santana
  * @version 1.0.0
  * @signature MX25-9D7F4B2E835CAC1170-AUTHCODE-PROTECTED
  * @copyright Todas as funcionalidades e o código-fonte desta aplicação são
- * propriedade exclusiva da Metis da Pix e estão protegidos por leis de
+ * propriedade exclusiva do Grupo Santana e estão protegidos por leis de
  * propriedade intelectual. Qualquer reprodução, modificação ou uso não
  * autorizado deste software constitui violação dos direitos autorais.
  * @date Maio 2025

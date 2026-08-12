@@ -1,20 +1,21 @@
 {
-  "name": "LeadFlow - Indique e Ganhe",
-  "short_name": "LeadFlow",
-  "description": "Programa de indicação que realmente paga. Ganhe R$3 por cadastro validado + R$50 de bônus na conversão.",
+  "name": "Valida — Cadastrou, validou é PIX",
+  "short_name": "Valida",
+  "description": "Indique, valide e receba via PIX. Ganhe por cada cadastro validado, mesmo antes da venda acontecer.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#1D3A5A",
+  "background_color": "#0f1a16",
+  "theme_color": "#1a9c62",
   "icons": [
     {
-      "src": "/favicon.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
       "src": "/favicon.png",
-      "sizes": "256x256",
+      "sizes": "192x192",
       "type": "image/png"
     },
     {

@@ -379,7 +379,7 @@ export default function DashboardPage() {
                     ) : (
                       <div className="p-6 text-center text-gray-500">
                         {user?.role === "metis_viewer" 
-                          ? "Não há indicações da Metis da Pix para mostrar no momento."
+                          ? "Não há indicações para mostrar no momento."
                           : "Você ainda não tem indicações. Que tal começar a indicar agora?"
                         }
                       </div>

@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, User, LogOut, ChevronDown } from "lucide-react";
+import { Menu, LogOut, ChevronDown } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -21,7 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-import logoIcon from "@assets/fivicon (3)_1762537559063.png";
+import { ValidaLogo } from "@/components/brand/valida-logo";
 
 export default function Header() {
   const [location] = useLocation();
@@ -44,23 +44,17 @@ export default function Header() {
   };
   
   const isActive = (path: string) => {
-    return location === path ? "border-primary-500 text-gray-900" : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300";
+    return location === path ? "text-primary" : "text-muted-foreground hover:text-foreground";
   };
 
   return (
-    <header className="bg-white shadow-sm">
+    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/70">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4 md:justify-start md:space-x-10">
+        <div className="flex justify-between items-center h-16 md:justify-start md:space-x-10">
           <div className="flex justify-start lg:w-0 lg:flex-1">
-            <Link href="/" className="flex items-center space-x-4 group">
-              <span className="sr-only">LeadFlow</span>
-              <img 
-                src={logoIcon} 
-                alt="LeadFlow Logo" 
-                className="h-24 w-auto transition-transform duration-200 group-hover:scale-105" 
-                style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))' }}
-              />
-              <span className="text-3xl font-bold text-primary font-heading">LeadFlow</span>
+            <Link href="/" className="flex items-center group transition-transform duration-200 hover:scale-[1.02]">
+              <span className="sr-only">Valida</span>
+              <ValidaLogo />
             </Link>
           </div>
 
@@ -74,7 +68,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                  <SheetTitle className="font-heading">LeadFlow</SheetTitle>
+                  <SheetTitle className="font-heading">Valida</SheetTitle>
                   <SheetDescription>
                     Cadastrou, validou é PIX! Indique e ganhe comissões
                   </SheetDescription>
@@ -259,8 +253,8 @@ export default function Header() {
               <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
                 {user ? (
                   <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-700 mr-2">Olá, {user.fullName.split(' ')[0]}</span>
-                    <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-800 font-bold">
+                    <span className="text-sm font-medium text-muted-foreground mr-2">Olá, {user.fullName.split(' ')[0]}</span>
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold ring-1 ring-primary/20">
                       {getUserInitials()}
                     </div>
                   </div>

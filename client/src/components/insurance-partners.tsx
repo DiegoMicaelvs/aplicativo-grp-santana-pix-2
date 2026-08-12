@@ -109,8 +109,8 @@ export function InsurancePartnersSection() {
                 <Card key={product.name} className="h-full hover:shadow-md transition-all duration-200">
                   <CardHeader className="pb-2">
                     <div className="flex items-center mb-2">
-                      <div className="flex-shrink-0 mr-3 p-2 rounded-full bg-primary-100">
-                        <Icon className="h-5 w-5 text-primary-600" />
+                      <div className="flex-shrink-0 mr-3 p-2 rounded-full bg-primary/10">
+                        <Icon className="h-5 w-5 text-primary" />
                       </div>
                       <CardTitle className="text-lg">{product.name}</CardTitle>
                     </div>

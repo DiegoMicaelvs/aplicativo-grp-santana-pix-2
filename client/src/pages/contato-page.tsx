@@ -8,21 +8,21 @@ import { Mail, Phone, MapPin, Globe, Instagram, Facebook } from "lucide-react";
 export default function ContatoPage() {
   useEffect(() => {
     // Update page title and meta description for SEO
-    document.title = "Contato - Grupo Santana | Fale Conosco";
+    document.title = "Contato - Valida | Fale Conosco";
     
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', 'Entre em contato com o Grupo Santana. Tire suas dúvidas sobre nosso programa de indicação. E-mail, telefone e endereço.');
+      metaDescription.setAttribute('content', 'Entre em contato com o Valida. Tire suas dúvidas sobre nosso programa de indicação. E-mail, telefone e endereço.');
     }
     
     const ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) {
-      ogTitle.setAttribute('content', 'Contato - Grupo Santana | Fale Conosco');
+      ogTitle.setAttribute('content', 'Contato - Valida | Fale Conosco');
     }
     
     const ogDescription = document.querySelector('meta[property="og:description"]');
     if (ogDescription) {
-      ogDescription.setAttribute('content', 'Entre em contato com o Grupo Santana. Tire suas dúvidas sobre nosso programa de indicação.');
+      ogDescription.setAttribute('content', 'Entre em contato com o Valida. Tire suas dúvidas sobre nosso programa de indicação.');
     }
   }, []);
   return (

@@ -13,8 +13,7 @@ import Footer from '@/components/layout/footer';
 import { ChevronDown, Clock, DollarSign, Shield, Users, BarChart, HeadphonesIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { PromotionalAlert } from '@/components/promotional-alert';
-
-import logoLeadFlow from "@assets/Logo completo Vetor (2)_1762537433723.png";
+import { ValidaLogo } from '@/components/brand/valida-logo';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -39,55 +38,88 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       {/* Hero Section */}
-      <div className="relative bg-white overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
-            <svg
-              className="hidden lg:block absolute right-0 inset-y-0 h-full w-48 text-white transform translate-x-1/2"
-              fill="currentColor"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <polygon points="50,0 100,0 50,100 0,100" />
-            </svg>
-            <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
-              <div className="sm:text-center lg:text-left">
-                <h1 className="text-4xl tracking-tight font-bold text-gray-900 sm:text-5xl md:text-6xl font-heading">
-                  <span className="block text-primary">Cadastrou, Validou é PIX!</span>
-                  <span className="block">Simples assim.</span>
-                </h1>
-                <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Chega de programas de indicação que só pagam se a empresa vender! Aqui você <span className="font-semibold text-primary">recebe por cada cadastro validado</span>, mesmo que a venda ainda nem tenha acontecido. Se o nosso time converter em venda, você ainda <span className="font-semibold text-primary">recebe um bônus!</span> Os valores exatos são apresentados após o seu cadastro como indicador.
-                </p>
-                <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start">
-                  <div className="flex-1 sm:flex-initial">
-                    <Button asChild size="lg" className="w-full whitespace-nowrap">
-                      <Link href={user ? "/new-referral" : "/auth"}>Comece a Ganhar</Link>
-                    </Button>
+      <div className="relative overflow-hidden bg-valida-glow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            {/* Coluna de texto */}
+            <div className="text-center lg:text-left">
+              <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1.5 text-sm font-medium text-primary">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+                +600 indicadores ativos · 13 mil cadastros/dia
+              </span>
+
+              <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl font-heading">
+                Cadastrou, validou
+                <span className="block text-gradient-valida">é PIX.</span>
+              </h1>
+
+              <p className="mt-5 text-lg text-muted-foreground sm:max-w-xl sm:mx-auto lg:mx-0">
+                Chega de programa de indicação que só paga se a empresa vender. No Valida você{" "}
+                <span className="font-semibold text-foreground">recebe por cada cadastro validado</span>
+                {" "}— mesmo antes da venda acontecer. Converteu?{" "}
+                <span className="font-semibold text-foreground">Ainda ganha um bônus.</span>
+              </p>
+
+              <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start">
+                <Button asChild size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/20">
+                  <Link href={user ? "/new-referral" : "/auth"}>Comece a ganhar</Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                  onClick={() => comoFuncionaRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Como funciona
+                </Button>
+              </div>
+
+              <p className="mt-4 text-sm text-muted-foreground">
+                Cadastro 100% gratuito · Pagamento via PIX
+              </p>
+            </div>
+
+            {/* Coluna visual — cartão de "lead validado", sem imagem raster */}
+            <div className="relative flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-sm">
+                {/* cartão de trás */}
+                <div className="absolute -right-3 -top-3 h-full w-full rounded-2xl border border-border bg-card/60" />
+                {/* cartão principal */}
+                <div className="relative rounded-2xl border border-border bg-card p-6 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <ValidaLogo variant="mark" className="h-10 w-10" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none">
+                        <path d="M20 6.5 9.5 17 4 11.5" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Validado
+                    </span>
                   </div>
-                  <div className="flex-1 sm:flex-initial">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="w-full whitespace-nowrap"
-                      onClick={() => comoFuncionaRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                    >
-                      Como Funciona
-                    </Button>
+
+                  <div className="mt-6 space-y-3">
+                    <div className="h-2.5 w-2/3 rounded-full bg-muted" />
+                    <div className="h-2.5 w-1/2 rounded-full bg-muted" />
+                  </div>
+
+                  <div className="mt-6 rounded-xl bg-secondary p-4">
+                    <p className="text-xs font-medium text-muted-foreground">Comissão liberada</p>
+                    <p className="mt-1 text-3xl font-extrabold tracking-tight text-foreground font-heading">
+                      + R$ 3,00
+                    </p>
+                    <p className="text-xs text-muted-foreground">caiu no seu PIX</p>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="h-2 w-2 rounded-full bg-primary" />
+                    Cadastro → Validação → PIX
                   </div>
                 </div>
               </div>
-            </main>
+            </div>
           </div>
-        </div>
-        <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 flex items-center justify-center">
-          <img
-            className="h-80 w-auto object-contain object-center sm:h-96 md:h-[32rem] lg:h-[28rem] xl:h-[40rem]"
-            src={logoLeadFlow}
-            alt="LeadFlow - Grupo G3PROFIT"
-            style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
-          />
         </div>
       </div>
       {/* How It Works Section */}
