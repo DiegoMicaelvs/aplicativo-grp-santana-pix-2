@@ -128,6 +128,19 @@ export class ConcurrentStatusChangeError extends Error {
   }
 }
 
+/**
+ * Tentativa de excluir fisicamente um usuário que tem histórico financeiro.
+ * Apagar destruiria a trilha de auditoria de dinheiro; o correto é desativar.
+ */
+export class UserHasFinancialHistoryError extends Error {
+  constructor() {
+    super(
+      "Usuário possui histórico financeiro (comissões, saques ou caixa) e não pode ser excluído. Desative a conta em vez de excluir.",
+    );
+    this.name = "UserHasFinancialHistoryError";
+  }
+}
+
 export interface IStorage {
   // User methods
   createUser(user: CreateUserInput): Promise<any>;
@@ -777,55 +790,156 @@ class DatabaseStorage implements IStorage {
     return newPassword; // Return the plain text password for display
   }
 
+  /**
+   * Exclusão FÍSICA de usuário.
+   *
+   * A versão anterior deletava `referrals` do usuário sem tocar em quem os
+   * referencia — `cash_flow.related_referral_id`, `sales_leads.referral_id`,
+   * `referral_conversations` de terceiros — e ignorava os campos de OUTRAS
+   * indicações/usuários que apontam para este (promoterId, supervisorId,
+   * validatedBy...). Com qualquer histórico, o DELETE final batia numa FK e a
+   * operação inteira falhava com 500.
+   *
+   * Regra deste sistema: se o usuário tem HISTÓRICO FINANCEIRO (indicação com
+   * comissão, saque, ou lançamento de caixa), a exclusão física é recusada.
+   * Apagar isso destruiria a trilha de auditoria de dinheiro. Nesse caso o
+   * caminho é desativar (isActive=false), que já bloqueia login e uso.
+   *
+   * Só quando o usuário está "limpo" (sem dinheiro no histórico) a exclusão
+   * prossegue, e mesmo assim tratando todas as dependências em ordem.
+   */
   async deleteUser(userId: number) {
-    // Begin transaction to delete user and related data safely
     await db.transaction(async (tx) => {
-      // First, delete related data in the correct order (respecting foreign key constraints)
-      
-      // Delete support ticket responses
-      await tx.delete(ticketResponses)
-        .where(eq(ticketResponses.userId, userId));
-      
-      // Delete support tickets
-      await tx.delete(supportTickets)
-        .where(eq(supportTickets.userId, userId));
-      
-      // Delete referral conversations
-      await tx.delete(referralConversations)
-        .where(eq(referralConversations.userId, userId));
-      
-      // Delete audit logs
-      await tx.delete(auditLog)
-        .where(eq(auditLog.userId, userId));
-      
-      // Delete cash flow entries (created by user)
-      await tx.delete(cashFlow)
-        .where(eq(cashFlow.createdBy, userId));
-      
-      // Delete withdrawal requests
-      await tx.delete(withdrawalRequests)
-        .where(eq(withdrawalRequests.userId, userId));
-      
-      // Delete referrals (both created by user and assigned to user)
-      await tx.delete(referrals)
-        .where(or(
-          eq(referrals.userId, userId),
-          eq(referrals.createdBy, userId)
-        ));
-      
-      // Update any users that have this user as promoter (set to null)
-      await tx.update(users)
-        .set({ promoterId: null })
-        .where(eq(users.promoterId, userId));
-      
-      // Update any users that were created by this user (set to null)
-      await tx.update(users)
-        .set({ createdBy: null })
-        .where(eq(users.createdBy, userId));
-      
-      // Finally, delete the user
-      await tx.delete(users)
+      /**
+       * Barreira: existe histórico financeiro?
+       *
+       * O sinal MAIS forte é o próprio saldo do usuário. balance e
+       * totalEarnings resumem dinheiro devido e dinheiro já pago — cobrem
+       * inclusive comissão de promotor/supervisor recebida em indicações de
+       * TERCEIROS, que não aparece em referrals.userId. Sem isso, um promotor
+       * com saldo a receber mas sem indicação própria seria apagado e o saldo
+       * sumiria.
+       */
+      const [usuario] = await tx
+        .select({ balance: users.balance, totalEarnings: users.totalEarnings })
+        .from(users)
         .where(eq(users.id, userId));
+
+      const temSaldo =
+        parseFloat(usuario?.balance ?? "0") > 0 || parseFloat(usuario?.totalEarnings ?? "0") > 0;
+
+      // Comissão em QUALQUER parcela (indicador, promotor ou supervisor) numa
+      // indicação onde este usuário participa como dono, promotor ou supervisor.
+      const [comComissao] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(referrals)
+        .where(
+          and(
+            or(
+              eq(referrals.userId, userId),
+              eq(referrals.promoterId, userId),
+              eq(referrals.supervisorId, userId),
+            ),
+            sql`(${referrals.commissionIndicator}::numeric > 0
+              OR ${referrals.commissionPromoter}::numeric > 0
+              OR ${referrals.commissionSupervisor}::numeric > 0)`,
+          ),
+        );
+
+      const [comSaque] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(withdrawalRequests)
+        .where(eq(withdrawalRequests.userId, userId));
+
+      const [comCaixa] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(cashFlow)
+        .where(eq(cashFlow.createdBy, userId));
+
+      if (temSaldo || (comComissao?.n ?? 0) > 0 || (comSaque?.n ?? 0) > 0 || (comCaixa?.n ?? 0) > 0) {
+        throw new UserHasFinancialHistoryError();
+      }
+
+      /**
+       * Indicações a apagar: apenas as que pertencem de fato ao usuário
+       * (userId). Uma indicação que ele apenas CRIOU para outra pessoa
+       * (createdBy=ele, userId=outro) é o registro de comissão de OUTRO
+       * indicador — apagá-la destruiria o histórico que gerou o saldo alheio.
+       * Nessas, o vínculo createdBy é anulado mais abaixo, não deletado.
+       */
+      const indicacoes = await tx
+        .select({ id: referrals.id })
+        .from(referrals)
+        .where(eq(referrals.userId, userId));
+      const referralIds = indicacoes.map((r) => r.id);
+
+      // Leads de venda onde este usuário é o vendedor (para limpar atividades/lembretes)
+      const leads = await tx
+        .select({ id: salesLeads.id })
+        .from(salesLeads)
+        .where(eq(salesLeads.vendedorId, userId));
+      const leadIds = leads.map((l) => l.id);
+
+      // --- Dependentes das indicações do usuário ---
+      if (referralIds.length > 0) {
+        await tx.delete(cashFlow).where(inArray(cashFlow.relatedReferralId, referralIds));
+        await tx.delete(referralConversations).where(inArray(referralConversations.referralId, referralIds));
+        await tx.delete(salesLeads).where(inArray(salesLeads.referralId, referralIds));
+        // referral_plates cai por cascade ao deletar a indicação
+      }
+
+      // --- Dependentes dos leads de venda do usuário ---
+      if (leadIds.length > 0) {
+        await tx.delete(salesActivities).where(inArray(salesActivities.leadId, leadIds));
+        await tx.delete(salesReminders).where(inArray(salesReminders.leadId, leadIds));
+      }
+      await tx.delete(salesLeads).where(eq(salesLeads.vendedorId, userId));
+      await tx.delete(salesActivities).where(eq(salesActivities.vendedorId, userId));
+      await tx.delete(salesReminders).where(eq(salesReminders.vendedorId, userId));
+
+      // --- Histórico direto do usuário ---
+      await tx.delete(ticketResponses).where(eq(ticketResponses.userId, userId));
+      await tx.delete(supportTickets).where(eq(supportTickets.userId, userId));
+      await tx.delete(referralConversations).where(eq(referralConversations.userId, userId));
+      await tx.delete(auditLog).where(eq(auditLog.userId, userId));
+      await tx.delete(referralLinks).where(eq(referralLinks.userId, userId));
+
+      // Sem histórico financeiro, mas ainda pode haver saques recusados/retidos
+      await tx.delete(withdrawalRequests).where(eq(withdrawalRequests.userId, userId));
+
+      // As indicações do usuário
+      if (referralIds.length > 0) {
+        await tx.delete(referrals).where(inArray(referrals.id, referralIds));
+      }
+
+      // --- Referências de OUTRAS indicações a este usuário ---
+      // Indicações que ele criou para terceiros (createdBy=ele, userId=outro)
+      // NÃO foram deletadas acima. createdBy é NOT NULL, então reatribuímos ao
+      // próprio dono da indicação, preservando o registro de comissão alheio.
+      await tx
+        .update(referrals)
+        .set({ createdBy: sql`${referrals.userId}` })
+        .where(and(eq(referrals.createdBy, userId), sql`${referrals.userId} <> ${userId}`));
+
+      // Os demais vínculos são anuláveis
+      await tx.update(referrals).set({ promoterId: null }).where(eq(referrals.promoterId, userId));
+      await tx.update(referrals).set({ supervisorId: null }).where(eq(referrals.supervisorId, userId));
+      await tx.update(referrals).set({ validatedBy: null }).where(eq(referrals.validatedBy, userId));
+      await tx.update(referrals).set({ paymentProofUploadedBy: null }).where(eq(referrals.paymentProofUploadedBy, userId));
+      await tx.update(referrals).set({ contactStatusUpdatedBy: null }).where(eq(referrals.contactStatusUpdatedBy, userId));
+      await tx.update(referrals).set({ indicatorPaymentStatusUpdatedBy: null }).where(eq(referrals.indicatorPaymentStatusUpdatedBy, userId));
+
+      // --- Vínculos hierárquicos em OUTROS usuários ---
+      await tx.update(users).set({ promoterId: null }).where(eq(users.promoterId, userId));
+      await tx.update(users).set({ createdBy: null }).where(eq(users.createdBy, userId));
+      await tx.update(users).set({ analystId: null }).where(eq(users.analystId, userId));
+      await tx.update(users).set({ supervisorId: null }).where(eq(users.supervisorId, userId));
+      await tx.update(users).set({ teamSupervisorId: null }).where(eq(users.teamSupervisorId, userId));
+
+      // Saques processados por este usuário (o registro fica, o processador some)
+      await tx.update(withdrawalRequests).set({ processedBy: null }).where(eq(withdrawalRequests.processedBy, userId));
+
+      await tx.delete(users).where(eq(users.id, userId));
     });
   }
   
@@ -1293,6 +1407,54 @@ class DatabaseStorage implements IStorage {
     });
   }
   
+  /**
+   * Quantas indicações existem num período (ou no total). Usado pela
+   * exportação para recusar antes de montar uma planilha gigante.
+   */
+  async countReferrals(periodo?: { inicio: Date; fim: Date }): Promise<number> {
+    const where = periodo
+      ? and(
+          sql`${referrals.createdAt} >= ${periodo.inicio.toISOString()}`,
+          sql`${referrals.createdAt} <= ${periodo.fim.toISOString()}`,
+        )
+      : undefined;
+    const [row] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(referrals)
+      .where(where);
+    return row?.n ?? 0;
+  }
+
+  /** Indicações de um período, para exportação (com teto de linhas). */
+  async getReferralsForExport(periodo: { inicio: Date; fim: Date } | undefined, limite: number) {
+    const where = periodo
+      ? and(
+          sql`${referrals.createdAt} >= ${periodo.inicio.toISOString()}`,
+          sql`${referrals.createdAt} <= ${periodo.fim.toISOString()}`,
+        )
+      : undefined;
+    return db.query.referrals.findMany({
+      where,
+      orderBy: desc(referrals.createdAt),
+      limit: limite,
+    });
+  }
+
+  /** Nomes de usuários por id, para resolver rótulos sem carregar a base toda. */
+  async getUserNamesByIds(ids: number[]): Promise<Map<number, string>> {
+    const mapa = new Map<number, string>();
+    const unicos = Array.from(new Set(ids.filter((id) => Number.isInteger(id))));
+    if (unicos.length === 0) return mapa;
+
+    const linhas = await db
+      .select({ id: users.id, fullName: users.fullName })
+      .from(users)
+      .where(inArray(users.id, unicos));
+
+    for (const l of linhas) mapa.set(l.id, l.fullName);
+    return mapa;
+  }
+
   async getAllReferrals() {
     // OPTIMIZED: Use explicit JOIN instead of 'with' to avoid N+1 queries
     const userAlias = sql`"user"`.as('user');
@@ -1599,8 +1761,7 @@ class DatabaseStorage implements IStorage {
         changedByName = adminUser?.fullName || adminUser?.username || 'Usuário';
       }
       
-      // Add to status history
-      const currentHistory = referral.statusHistory || [];
+      // Nova entrada de histórico (anexada atomicamente no UPDATE, ver adiante)
       const newHistoryEntry = {
         status,
         changedBy: adminUserId || 0,
@@ -1772,13 +1933,16 @@ class DatabaseStorage implements IStorage {
       
       // Prepare update data - use final commission values (adjusted for indicador_nivel_1)
       const updateData: any = {
-        status, 
+        status,
         notes: updatedNotes,
         commissionIndicator: finalCommissionIndicator.toFixed(2),
         commissionPromoter: finalCommissionPromoter.toFixed(2),
         commissionSupervisor: finalCommissionSupervisor.toFixed(2),
         supervisorId: supervisorUser?.id || (referral as any).supervisorId || null,
-        statusHistory: [...currentHistory, newHistoryEntry],
+        // Append atômico: concatena no banco em vez de reescrever o array lido.
+        // Sem isto, um PATCH de contact-status concorrente (que também anexa ao
+        // statusHistory) teria a entrada dele sobrescrita por este UPDATE.
+        statusHistory: sql`COALESCE(${referrals.statusHistory}, '[]'::jsonb) || ${JSON.stringify([newHistoryEntry])}::jsonb`,
         updatedAt: new Date()
       };
       
@@ -1971,7 +2135,6 @@ class DatabaseStorage implements IStorage {
 
     // If validationNotes is provided, add it to statusHistory
     if (validationData.validationNotes && validationData.validationNotes.trim()) {
-      const currentHistory = (referral.statusHistory as any[]) || [];
       // Get validator user name
       const validator = await this.getUserById(validatorUserId);
       const validatorName = validator?.fullName || validator?.username || 'Usuário';
@@ -1982,7 +2145,8 @@ class DatabaseStorage implements IStorage {
         changedAt: new Date().toISOString(),
         notes: validationData.validationNotes.trim()
       };
-      updateData.statusHistory = [...currentHistory, newHistoryEntry];
+      // Append atômico, como nos outros escritores de statusHistory.
+      updateData.statusHistory = sql`COALESCE(${referrals.statusHistory}, '[]'::jsonb) || ${JSON.stringify([newHistoryEntry])}::jsonb`;
     }
 
     // Update referral with validation data only - DO NOT change status or commissions
@@ -2319,56 +2483,60 @@ class DatabaseStorage implements IStorage {
     });
   }
   
-  async getAllWithdrawalRequests() {
-    // Get withdrawal requests with user info
+  /**
+   * Saques com as placas do usuário anexadas.
+   *
+   * Era N+1: uma consulta de placas POR saque. Com centenas de saques o painel
+   * do financeiro disparava centenas de consultas em sequência. Agora são
+   * DUAS consultas no total — os saques e, com um único inArray, as placas de
+   * todos os usuários envolvidos — e o casamento é feito em memória.
+   *
+   * Aceita paginação (`limite>0`) para quando a rota quiser paginar; hoje o
+   * painel do financeiro chama sem argumentos (`limite=0` = tudo). O ganho
+   * garantido aqui é ter eliminado o N+1, independente de paginar ou não.
+   */
+  async getAllWithdrawalRequests(pagina = 1, limite = 0) {
+    const semPaginacao = limite <= 0;
+    const safeLimit = semPaginacao ? undefined : Math.min(limite, 500);
+    const offset = safeLimit ? (Math.max(1, pagina) - 1) * safeLimit : 0;
+
     const withdrawals = await db.query.withdrawalRequests.findMany({
-      with: {
-        user: true,
-        processedByUser: true
-      },
-      orderBy: desc(withdrawalRequests.requestedAt)
+      with: { user: true, processedByUser: true },
+      orderBy: desc(withdrawalRequests.requestedAt),
+      ...(safeLimit ? { limit: safeLimit, offset } : {}),
     });
 
-    // For each withdrawal, get the license plates from user's referrals
-    // Only show plates that correspond to the withdrawal amount
-    const withdrawalsWithPlates = await Promise.all(
-      withdrawals.map(async (withdrawal) => {
-        // Get license plates from user's validated/converted/paid referrals
-        // Order by date to show the most recent ones first
-        const userReferrals = await db.query.referrals.findMany({
-          where: and(
-            eq(referrals.userId, withdrawal.userId),
-            or(
-              eq(referrals.status, 'validated'),
-              eq(referrals.status, 'converted'),
-              eq(referrals.status, 'paid')
-            )
-          ),
-          columns: {
-            licensePlate: true,
-            createdAt: true
-          },
-          orderBy: desc(referrals.createdAt)
-        });
+    if (withdrawals.length === 0) return [];
 
-        // Calculate how many referrals this withdrawal corresponds to
-        // Commission rate is R$ 3.00 per referral
-        const commissionPerReferral = 3.00;
-        const withdrawalAmount = parseFloat(withdrawal.amount);
-        const referralCount = Math.round(withdrawalAmount / commissionPerReferral);
-        
-        // Get unique plates - limit to the number of referrals in this withdrawal
-        const allPlates = Array.from(new Set(userReferrals.map(r => r.licensePlate).filter(Boolean)));
-        const plates = allPlates.slice(0, Math.max(referralCount, 1));
-        
-        return {
-          ...withdrawal,
-          plates: plates
-        };
-      })
-    );
+    // Placas de TODOS os usuários da página, numa consulta só.
+    const userIds = Array.from(new Set(withdrawals.map((w) => w.userId)));
+    const referralsDosUsuarios = await db.query.referrals.findMany({
+      where: and(
+        inArray(referrals.userId, userIds),
+        inArray(referrals.status, ["validated", "converted", "paid"] as any),
+      ),
+      columns: { userId: true, licensePlate: true, createdAt: true },
+      orderBy: desc(referrals.createdAt),
+    });
 
-    return withdrawalsWithPlates;
+    // Agrupa placas por usuário (já vêm ordenadas por data desc)
+    const placasPorUsuario = new Map<number, string[]>();
+    for (const r of referralsDosUsuarios) {
+      if (!r.licensePlate) continue;
+      const lista = placasPorUsuario.get(r.userId) ?? [];
+      if (!lista.includes(r.licensePlate)) lista.push(r.licensePlate);
+      placasPorUsuario.set(r.userId, lista);
+    }
+
+    const commissionPerReferral = 3.0;
+    return withdrawals.map((withdrawal) => {
+      const referralCount = Math.round(parseFloat(withdrawal.amount) / commissionPerReferral);
+      const todas = placasPorUsuario.get(withdrawal.userId) ?? [];
+      return {
+        ...withdrawal,
+        plates: todas.slice(0, Math.max(referralCount, 1)),
+      };
+    });
   }
   
   async getWithdrawalRequestById(id: number) {

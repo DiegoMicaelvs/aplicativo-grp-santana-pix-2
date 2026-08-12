@@ -27,16 +27,29 @@ const TENANT_CONFIG: Record<string, TenantConfig> = {
 };
 
 /**
- * Resolve o tenant atual baseado em variáveis de ambiente e host
+ * Resolve o tenant atual.
+ *
+ * O tenant define a EMPRESA a que as indicações de não-admins são atribuídas
+ * — ou seja, decide de quem é a comissão. Por isso ele NÃO pode depender de
+ * nada que o cliente controle.
+ *
+ * A versão anterior, quando APP_TENANT não estava definido, caía no header
+ * `Host` da requisição para escolher a empresa. Como o `Host` é enviado pelo
+ * cliente, dava para forçar leads na empresa errada só trocando o cabeçalho.
+ * Esse fallback foi removido.
+ *
+ * Agora vem só de APP_TENANT (ou da heurística por APP_ID/REPL_SLUG do
+ * ambiente, que também não é controlada pelo cliente). Em produção sem tenant
+ * resolvido, o boot falha (ver assertTenantConfigured).
  */
-export function resolveTenant(req?: Request): TenantConfig {
+export function resolveTenant(_req?: Request): TenantConfig {
   // 1. Prioridade: variável de ambiente APP_TENANT
   const envTenant = process.env.APP_TENANT;
   if (envTenant && envTenant in TENANT_CONFIG) {
     return TENANT_CONFIG[envTenant];
   }
 
-  // 2. Fallback: APP_ID ou REPL_SLUG (heurística)
+  // 2. Heurística por identificador do AMBIENTE (não vem do cliente)
   const appId = process.env.APP_ID || process.env.REPL_SLUG || '';
   if (appId.toLowerCase().includes('kong')) {
     return TENANT_CONFIG.kongpix;
@@ -45,19 +58,32 @@ export function resolveTenant(req?: Request): TenantConfig {
     return TENANT_CONFIG.gruposantana;
   }
 
-  // 3. Fallback: headers do host (se request disponível)
-  if (req?.headers.host) {
-    const host = req.headers.host.toLowerCase();
-    if (host.includes('kong')) {
-      return TENANT_CONFIG.kongpix;
-    }
-    if (host.includes('santana') || host.includes('grupo')) {
-      return TENANT_CONFIG.gruposantana;
-    }
-  }
-
-  // 4. Default: Grupo Santana
+  // 3. Default de desenvolvimento (em produção o boot já teria falhado)
   return TENANT_CONFIG.gruposantana;
+}
+
+/**
+ * Chamada no boot: em produção, exige que o tenant venha de configuração
+ * explícita do ambiente. Sem isso, todas as indicações cairiam no default
+ * silenciosamente — e a decisão de qual empresa paga a comissão não pode ser
+ * um acaso de configuração.
+ */
+export function assertTenantConfigured(): void {
+  const isProduction = process.env.NODE_ENV === "production";
+  if (!isProduction) return;
+
+  const envTenant = process.env.APP_TENANT;
+  const appId = process.env.APP_ID || process.env.REPL_SLUG || '';
+  const temTenantExplicito =
+    (envTenant && envTenant in TENANT_CONFIG) ||
+    /kong|santana|grupo/i.test(appId);
+
+  if (!temTenantExplicito) {
+    throw new Error(
+      "APP_TENANT é obrigatório em produção (valores: 'kongpix' ou 'gruposantana'). " +
+        "Sem ele, a empresa das indicações cairia num default silencioso.",
+    );
+  }
 }
 
 /**

@@ -18,8 +18,13 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupSecurity, configureTrustProxy } from "./security";
+import { assertTenantConfigured } from "./tenancy";
 
 const app = express();
+
+// Em produção, exige APP_TENANT explícito: a empresa das indicações não pode
+// depender de um default silencioso nem do header Host do cliente.
+assertTenantConfigured();
 
 // Precisa vir antes de qualquer coisa que leia req.ip (rate limiting).
 configureTrustProxy(app);

@@ -5,7 +5,7 @@ import { setupAuth, hashPassword, sessionMiddleware } from "./auth";
 import { checkPixKeyOwnership } from "./pixValidation";
 import { safeCompare } from "./secrets";
 import { normalizarPlaca } from "@shared/cpf";
-import { storage, InsufficientBalanceError, ConcurrentStatusChangeError } from "./storage";
+import { storage, InsufficientBalanceError, ConcurrentStatusChangeError, UserHasFinancialHistoryError } from "./storage";
 import { db } from "@db";
 import { z } from "zod";
 import { 
@@ -1964,27 +1964,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/export/referrals", requireAdmin, async (req, res) => {
     try {
       const XLSX = await import('xlsx');
-      
-      // Get all referrals with related data
-      const referrals = await storage.getAllReferrals();
-      const users = await storage.getAllUsers();
+
+      /**
+       * Exportação com teto e filtro de período.
+       *
+       * Antes carregava TODAS as indicações e montava/serializava o XLSX de
+       * forma SÍNCRONA no event loop. Com o volume de um dia de evento, o
+       * `XLSX.write` bloqueava o processo inteiro por segundos — nenhuma outra
+       * requisição respondia durante a geração.
+       *
+       * Agora: filtro opcional `from`/`to` (YYYY-MM-DD) e teto de linhas. Se o
+       * período pedido excede o teto, devolve 400 pedindo um recorte menor, em
+       * vez de travar o servidor.
+       */
+      const MAX_LINHAS = Number(process.env.EXPORT_MAX_ROWS ?? 5000);
+
+      let periodo: { inicio: Date; fim: Date } | undefined;
+      const from = req.query.from as string | undefined;
+      const to = req.query.to as string | undefined;
+      if (from && to) {
+        // Ancorado em -03:00 (America/Sao_Paulo): sem o offset, o servidor
+        // interpretaria "T00:00:00" no fuso dele (ex.: UTC) e as bordas do dia
+        // deslocariam 3h, cortando/incluindo indicações perto da meia-noite.
+        const inicio = new Date(`${from}T00:00:00-03:00`);
+        const fim = new Date(`${to}T23:59:59-03:00`);
+        if (!isNaN(inicio.getTime()) && !isNaN(fim.getTime())) {
+          periodo = { inicio, fim };
+        }
+      }
+
+      const total = await storage.countReferrals(periodo);
+      if (total > MAX_LINHAS) {
+        return res.status(400).json({
+          error: "Exportação muito grande",
+          details: `${total} indicações no recorte selecionado (máximo ${MAX_LINHAS}). Filtre por um período menor usando os parâmetros from e to (YYYY-MM-DD).`,
+        });
+      }
+
+      // Get referrals with related data (bounded)
+      const referrals = await storage.getReferralsForExport(periodo, MAX_LINHAS);
+      // Só os usuários citados nas indicações exportadas — não a base inteira.
+      const userMap = await storage.getUserNamesByIds(referrals.map((r) => r.userId));
       const companies = await storage.getAllCompanies();
-      
-      // Map user and company data for quick lookup
-      const userMap = new Map(users.map(u => [u.id, u]));
       const companyMap = new Map(companies.map(c => [c.id, c]));
-      
+
       // Format data for Excel
       const excelData = referrals.map(r => {
-        const user = userMap.get(r.userId);
+        const nomeIndicador = userMap.get(r.userId);
         const company = companyMap.get(r.companyId);
-        
+
         return {
           'ID': r.id,
           'Cliente': r.fullName,
           'Telefone': r.phone,
           'Placa': r.licensePlate,
-          'Indicador': user ? user.fullName : 'N/A',
+          'Indicador': nomeIndicador ?? 'N/A',
           'Empresa': company ? company.name : 'N/A',
           'Status': getStatusLabel(r.status),
           'Comissão Indicador (R$)': parseFloat(r.commissionIndicator || '0').toFixed(2),
@@ -2343,9 +2377,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Import required Drizzle functions
-      const { eq } = await import('drizzle-orm');
+      const { eq, sql } = await import('drizzle-orm');
       const { referrals } = await import('@shared/schema.ts');
-      
+
       // Contact status labels for history
       const contactStatusLabels: Record<string, string> = {
         retornar_contato: "Retornar Contato",
@@ -2354,28 +2388,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aguardando_pagamento: "Aguardando pagamento",
         enviar_cotacao: "Enviar cotação"
       };
-      
+
       // Create status history entry for contact status change
       const statusHistoryEntry = {
         status: 'contact_status',
         changedBy: req.user!.id,
         changedByName: req.user!.fullName || req.user!.username,
         changedAt: new Date().toISOString(),
-        notes: contactStatus 
+        notes: contactStatus
           ? `Status de contato: ${contactStatusLabels[contactStatus] || contactStatus}`
           : `Status de contato removido`
       };
-      
-      const newHistory = [...(existingReferral.statusHistory || []), statusHistoryEntry];
-      
-      // Update contact status and add to history
+
+      /**
+       * Append ATÔMICO do histórico.
+       *
+       * Antes: lia o statusHistory, montava o novo array em memória e regravava
+       * o array inteiro. Uma mudança de status concorrente (que também escreve
+       * statusHistory) sobrescrevia a entrada da outra — auditoria perdida.
+       *
+       * `COALESCE(status_history,'[]') || $entry` concatena no próprio banco,
+       * atômico no nível da linha, sem depender do que a aplicação leu.
+       */
       const result = await db
         .update(referrals)
         .set({
           contactStatus: contactStatus,
           contactStatusUpdatedAt: new Date(),
           contactStatusUpdatedBy: req.user!.id,
-          statusHistory: newHistory as any,
+          statusHistory: sql`COALESCE(${referrals.statusHistory}, '[]'::jsonb) || ${JSON.stringify([statusHistoryEntry])}::jsonb`,
           updatedAt: new Date()
         })
         .where(eq(referrals.id, referralId))
@@ -3424,6 +3465,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deletedUser: userToDelete.fullName
       });
     } catch (error) {
+      if (error instanceof UserHasFinancialHistoryError) {
+        // 409: não é erro de servidor, é regra de negócio — o usuário tem
+        // histórico de dinheiro e deve ser desativado, não excluído.
+        return res.status(409).json({ error: error.message });
+      }
       console.error("Error deleting user:", error);
       return res.status(500).json({ error: "Erro ao deletar usuário" });
     }
