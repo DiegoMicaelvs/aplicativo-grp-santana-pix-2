@@ -1,12 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <circle cx="256" cy="256" r="240" fill="none" stroke="currentColor" stroke-width="20"/>
-  <path d="M256 140 L200 200 L250 200 L250 320 L190 360 L256 380 L322 360 L262 320 L262 200 L312 200 Z" fill="currentColor"/>
-  <circle cx="180" cy="200" r="8" fill="currentColor"/>
-  <circle cx="332" cy="200" r="8" fill="currentColor"/>
-  <circle cx="160" cy="280" r="8" fill="currentColor"/>
-  <circle cx="352" cy="280" r="8" fill="currentColor"/>
-  <line x1="180" y1="200" x2="220" y2="200" stroke="currentColor" stroke-width="3"/>
-  <line x1="292" y1="200" x2="332" y2="200" stroke="currentColor" stroke-width="3"/>
-  <line x1="160" y1="280" x2="200" y2="280" stroke="currentColor" stroke-width="3"/>
-  <line x1="312" y1="280" x2="352" y2="280" stroke="currentColor" stroke-width="3"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!--
+    Ícone de aba fixada do Safari (macOS). O Safari ignora as cores e pinta a
+    silhueta em uma cor só, então aqui não há fundo: só o checkmark, ampliado
+    para ocupar o quadro — sem o selo, o traço sozinho ficaria pequeno demais.
+    Mesma geometria do favicon.svg, escalada 1,55x a partir do centro.
+  -->
+  <path d="M53.7 15.9 25 44.6 10.3 29.9"
+        fill="none"
+        stroke="#000000"
+        stroke-width="10.9"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
 </svg>
