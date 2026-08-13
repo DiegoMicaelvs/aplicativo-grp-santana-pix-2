@@ -2,6 +2,25 @@ import { db } from "@db";
 import { eq, desc, asc, or, count, and, sql, inArray } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { normalizarCpf, cpfEhValido, normalizarTelefone } from "@shared/cpf";
+
+/**
+ * Colunas de `users` seguras para embutir na resposta de outra entidade.
+ *
+ * `with: { user: true }` traz a LINHA INTEIRA — CPF, chave PIX, saldo,
+ * telefone, endereço. Isso é aceitável quando o destinatário é o financeiro
+ * (que precisa da chave para pagar um saque), mas não quando o autor de uma
+ * mensagem ou o dono de um lead viaja junto para um indicador ou vendedor:
+ * ali basta saber quem é a pessoa.
+ *
+ * O interceptor global de server/index.ts já remove `password` de qualquer
+ * resposta; esta projeção cuida do resto, na origem.
+ */
+const USUARIO_PUBLICO = {
+  id: true,
+  fullName: true,
+  username: true,
+  role: true,
+} as const;
 import { 
   users, 
   referrals, 
@@ -1698,7 +1717,9 @@ class DatabaseStorage implements IStorage {
     return await db.query.referrals.findMany({
       where: eq(referrals.status, status),
       with: {
-        user: true,
+        // Alimenta /api/sales/available-referrals: o vendedor precisa saber de
+        // quem é a indicação, não o CPF, a chave PIX e o saldo do indicador.
+        user: { columns: USUARIO_PUBLICO },
         company: true
       },
       orderBy: desc(referrals.createdAt)
@@ -2803,7 +2824,9 @@ class DatabaseStorage implements IStorage {
       with: {
         responses: {
           with: {
-            user: true
+            // Quem respondeu o chamado é um admin: sem projeção, o usuário que
+            // abriu o ticket recebia o cadastro completo dele.
+            user: { columns: USUARIO_PUBLICO }
           }
         }
       },
@@ -3018,7 +3041,10 @@ class DatabaseStorage implements IStorage {
     return await db.query.referralConversations.findMany({
       where: and(...whereConditions),
       with: {
-        user: true
+        // Só quem escreveu. Sem projeção, o indicador dono do lead recebia o
+        // cadastro completo do admin/analista que comentou — CPF, chave PIX e
+        // saldo inclusive.
+        user: { columns: USUARIO_PUBLICO }
       },
       orderBy: asc(referralConversations.createdAt)
     });

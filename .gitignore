@@ -19,3 +19,8 @@ test_cookies.txt
 # api/index.js (o shim) E versionado — ver o comentario la dentro.
 api/_servidor.js
 api/_servidor.js.map
+
+# Exportacoes de dados reais (LGPD): nunca versionar
+scripts/data-export/
+*-export.json
+data-export/

@@ -38,7 +38,7 @@ const isProduction = process.env.NODE_ENV === "production" ||
 3. Monitore os logs com `[AUTH]` para ver o modo de operação
 
 ## Usuários de Teste
-- **Admin**: admin@kongpix.com.br / admin123
+- **Admin**: admin@kongpix.com.br / <senha do ambiente>
 - **Indicador**: diego@gruposantana.com.br / 123456
 - **Teste**: teste@kongpix.com.br / 123456
 

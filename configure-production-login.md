@@ -37,12 +37,16 @@ O login não persiste em https://indique.replit.app porque:
 
 ### 4. Teste o Login
 1. Acesse: https://indique.replit.app/auth
-2. Use as credenciais:
-   - **Email**: `diegomicael58@gmail.com`
-   - **Senha**: `diego123`
-3. Ou use:
-   - **Email**: `admin@kongpix.com.br`
-   - **Senha**: `admin123`
+2. Use as credenciais de administrador do ambiente.
+
+> **Senhas não ficam neste arquivo.** Este documento é versionado num
+> repositório público — as senhas de produção que estavam aqui devem ser
+> consideradas comprometidas e trocadas. Para definir ou redefinir a senha do
+> admin, use a variável de ambiente:
+>
+> ```bash
+> ADMIN_PASSWORD='<senha forte>' npm run db:create-admin
+> ```
 
 ## VERIFICAÇÃO
 Para confirmar que funcionou:

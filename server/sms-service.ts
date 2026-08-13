@@ -1,7 +1,16 @@
-// Configuração do cliente Comtele
-const COMTELE_API_URL = 'https://sms.comtele.com.br/api/v2/send';
-const COMTELE_AUTH_KEY = 'c2e18779-6859-4988-b4c5-aa3521658e3b';
-const COMTELE_SENDER = 'KongPix'; // Sender ID customizado
+/**
+ * Configuração do cliente Comtele (SMS).
+ *
+ * A chave vinha embutida aqui, em texto puro, num repositório público. Com ela
+ * qualquer pessoa dispara SMS pela conta da empresa — queimando os créditos e,
+ * pior, assinando mensagens como a marca para os telefones dos leads, que é
+ * exatamente o canal que o sistema usa para validar indicação. Agora vem só do
+ * ambiente, e sem chave o envio fica desligado (falha fechada) em vez de tentar
+ * autenticar com um valor conhecido.
+ */
+const COMTELE_API_URL = process.env.COMTELE_API_URL ?? 'https://sms.comtele.com.br/api/v2/send';
+const COMTELE_AUTH_KEY = process.env.COMTELE_AUTH_KEY ?? '';
+const COMTELE_SENDER = process.env.COMTELE_SENDER ?? 'Valida'; // Sender ID customizado
 
 // Verificar se as credenciais estão configuradas
 const isComteleConfigured = (): boolean => {

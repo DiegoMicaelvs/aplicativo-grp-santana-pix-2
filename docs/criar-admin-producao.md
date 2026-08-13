@@ -30,7 +30,7 @@ Se o admin for criado com sucesso, você verá:
 ✅ ADMIN CRIADO COM SUCESSO!
 ────────────────────────────────────────
 📧 Email/Username: admin@kongpix.com.br
-🔑 Senha: admin123
+🔑 Senha: <definida em ADMIN_PASSWORD>
 🆔 ID: [número do ID]
 📅 Criado em: [data e hora]
 ────────────────────────────────────────
@@ -49,7 +49,7 @@ Se o admin já existir, você verá:
 1. Vá para: https://indique.replit.app
 2. Faça login com:
    - **Email**: admin@kongpix.com.br
-   - **Senha**: admin123
+   - **Senha**: <definida em ADMIN_PASSWORD>
 
 ## Comandos Úteis Adicionais
 
@@ -75,7 +75,7 @@ tsx create-production-admin.ts
 
 - **Cada ambiente tem seu próprio banco**: Usuários criados no preview não aparecem na produção
 - **Sempre use produção para dados reais**: https://indique.replit.app
-- **Guarde as credenciais com segurança**: admin@kongpix.com.br / admin123
+- **Guarde as credenciais com segurança**: admin@kongpix.com.br / <senha do ambiente>
 
 ## Problemas Comuns
 

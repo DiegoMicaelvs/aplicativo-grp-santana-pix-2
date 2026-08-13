@@ -1739,10 +1739,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const user = await storage.getUserById(id);
             if (!user) return null;
+            /**
+             * Só o necessário para escrever "Fulano alterou o status".
+             * `username` é o e-mail: devolvê-lo aqui deixava qualquer usuário
+             * autenticado montar a lista de e-mails da base inteira, 200 por
+             * requisição, sem nunca sair deste endpoint de apoio.
+             */
             return {
               id: user.id,
               fullName: user.fullName,
-              username: user.username,
               role: user.role,
             };
           } catch {

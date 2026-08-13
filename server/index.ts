@@ -89,8 +89,31 @@ app.use((req, res, next) => {
  * Agora o padrão é pequeno e o limite grande vale só onde comprovante em base64
  * realmente trafega (definido em COMPROVANTE_LIMITE, aplicado nas rotas de
  * status/edição de indicação, depois da autenticação).
+ *
+ * ATENÇÃO ao motivo do desvio abaixo: aplicar o parser pequeno globalmente
+ * ANULAVA o parser grande da rota. O body-parser marca `req._body = true` ao
+ * ler o corpo e o parser seguinte simplesmente não faz nada
+ * (body-parser/lib/types/json.js). Na prática o limite de 8mb nunca valia:
+ * comprovante de foto real passa de 256kb, então a conversão da indicação
+ * respondia 413 — e é justamente a conversão que paga os R$50. O bug era
+ * invisível em teste com payload pequeno.
+ *
+ * Por isso as rotas que recebem comprovante são puladas aqui: elas têm o
+ * próprio express.json com o limite maior, aplicado depois da autenticação.
  */
-app.use(express.json({ limit: process.env.JSON_LIMIT ?? '256kb' }));
+const ROTAS_COM_COMPROVANTE = [
+  /^\/api\/referrals\/\d+\/status\/?$/,
+  /^\/api\/referrals\/\d+\/?$/,
+];
+
+const jsonPadrao = express.json({ limit: process.env.JSON_LIMIT ?? '256kb' });
+
+app.use((req, res, next) => {
+  if (req.method === 'PATCH' && ROTAS_COM_COMPROVANTE.some((r) => r.test(req.path))) {
+    return next(); // quem parseia é o express.json da própria rota
+  }
+  return jsonPadrao(req, res, next);
+});
 app.use(express.urlencoded({ extended: false, limit: process.env.JSON_LIMIT ?? '256kb' }));
 
 // Depois dos parsers: o rate limiting de login precisa ler req.body.username

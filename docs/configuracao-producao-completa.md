@@ -90,7 +90,7 @@
 
 ### Usuário Administrador Principal
 - **Email/Username:** admin@kongpix.com.br
-- **Senha:** admin123
+- **Senha:** <definida em ADMIN_PASSWORD>
 - **Role:** admin
 - **Criado em:** 24/07/2025 21:31:17
 
@@ -153,7 +153,7 @@ tsx nome-do-script.ts
 
 1. **Primeiro Login**
    - Acesse https://indique.replit.app
-   - Faça login com admin@kongpix.com.br / admin123
+   - Faça login com admin@kongpix.com.br / <senha do ambiente>
    - Altere a senha imediatamente
 
 2. **Configuração Inicial**
