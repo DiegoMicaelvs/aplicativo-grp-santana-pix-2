@@ -13,3 +13,8 @@ vite.config.ts.*
 # Artefatos de teste com cookies de sessão
 cookies*.txt
 test_cookies.txt
+.vercel
+
+# Funcao serverless gerada pelo build (npm run build:vercel)
+api/index.js
+api/index.js.map

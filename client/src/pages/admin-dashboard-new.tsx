@@ -130,7 +130,7 @@ export default function AdminDashboard() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Painel Administrativo</h1>
-              <p className="text-gray-600 mt-2">Controle completo do sistema Grp Pix</p>
+              <p className="text-gray-600 mt-2">Controle completo do sistema Valida</p>
             </div>
           </div>
           <Button

@@ -16,7 +16,8 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { serveStatic } from "./static";
+import { log } from "./log";
 import { setupSecurity, configureTrustProxy } from "./security";
 import { assertTenantConfigured } from "./tenancy";
 
@@ -174,7 +175,17 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+/**
+ * Montagem da aplicação.
+ *
+ * Exportada como promise para que a função serverless da Vercel (api/index.ts)
+ * possa aguardar o app ficar pronto antes de atender a primeira requisição —
+ * `registerRoutes` é assíncrono.
+ *
+ * O `listen()` só acontece fora da Vercel: lá quem escuta é a plataforma, e
+ * chamar listen num ambiente serverless mantém o processo preso sem necessidade.
+ */
+export const appPronto = (async () => {
   const server = await registerRoutes(app);
 
   /**
@@ -204,9 +215,28 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
+    /**
+     * Import DINÂMICO: server/vite.ts depende do pacote `vite`, que é
+     * devDependency e não é instalado no runtime serverless. Um import
+     * estático aqui resolveria o módulo no cold start da Vercel e derrubaria
+     * todas as rotas /api com 500 — que foi exatamente o que aconteceu.
+     */
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
-  } else {
+  } else if (!process.env.VERCEL) {
+    /**
+     * Na Vercel o client é servido pelo CDN (ver outputDirectory no
+     * vercel.json), e `dist/public` não é empacotado junto da função.
+     * `serveStatic` LANÇA ERRO quando não encontra esse diretório — chamá-lo
+     * ali derrubaria a função logo no cold start.
+     */
     serveStatic(app);
+  }
+
+  // Na Vercel a plataforma é quem escuta; aqui só montamos o app.
+  if (process.env.VERCEL) {
+    log("modo serverless (Vercel): app montado, sem listen");
+    return app;
   }
 
   // Porta configurável (padrão 5000). Serve tanto a API quanto o client.
@@ -220,4 +250,6 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on http://${host === "0.0.0.0" ? "localhost" : host}:${port}`);
   });
+
+  return app;
 })();

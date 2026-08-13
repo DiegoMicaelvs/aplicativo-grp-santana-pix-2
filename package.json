@@ -22,7 +22,8 @@
     "docker:deps": "docker compose rm -sf app && docker volume rm -f kongpix_node_modules && docker compose up -d --build app",
     "docker:push": "docker compose exec app npm run db:push",
     "docker:seed": "docker compose exec app npm run db:seed",
-    "docker:sh": "docker compose exec app sh"
+    "docker:sh": "docker compose exec app sh",
+    "build:vercel": "vite build && esbuild server/vercelEntry.ts --platform=node --target=node20 --packages=external --external:./vite --bundle --format=esm --outfile=api/index.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

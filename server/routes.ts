@@ -4144,6 +4144,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * broadcast carrega só o identificador do que mudou; o cliente refaz o fetch
    * autenticado, respeitando as permissões dele.
    */
+  /**
+   * Em serverless (Vercel) não existe conexão persistente: cada requisição roda
+   * numa invocação isolada e o processo morre depois. O WebSocket simplesmente
+   * não é montado ali — e `broadcastUpdate` vira no-op, então as rotas que o
+   * chamam continuam funcionando sem precisar saber disso.
+   *
+   * Consequência para o usuário: sem atualização em tempo real. As telas ainda
+   * atualizam pelo refetch do React Query.
+   */
+  const semWebSocket = !!process.env.VERCEL;
+
+  if (semWebSocket) {
+    console.log('[WebSocket] Ambiente serverless — tempo real desabilitado');
+    (app as any).broadcastUpdate = () => {};
+    return server;
+  }
+
   const wss = new WebSocketServer({ noServer: true });
 
   server.on('upgrade', (req, socket, head) => {

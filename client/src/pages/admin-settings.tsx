@@ -41,7 +41,7 @@ export default function AdminSettings() {
 
   // Estado das configurações do sistema
   const [systemSettings, setSystemSettings] = useState({
-    siteName: "Kong Pix - Indique e Ganhe",
+    siteName: "Valida - Indique e Ganhe",
     siteUrl: "https://indique.replit.app",
     maintenanceMode: false,
     registrationEnabled: true,
@@ -476,7 +476,7 @@ export default function AdminSettings() {
                           <div className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                               <p className="font-medium">Sender ID</p>
-                              <p className="text-sm text-gray-600">{smsStatus.sender || 'KongPix'}</p>
+                              <p className="text-sm text-gray-600">{smsStatus.sender || 'não definido'}</p>
                             </div>
                             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                               OK
@@ -521,7 +521,9 @@ export default function AdminSettings() {
                           <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
                             <li>Provider: Comtele SMS</li>
                             <li>Auth Key: Configurada</li>
-                            <li>Sender ID: KongPix</li>
+                            {/* Vem do provedor: antes era o texto fixo "KongPix",
+                                que afirmava um remetente sem saber se era o real. */}
+                            <li>Sender ID: {smsStatus?.sender || 'não definido'}</li>
                             <li>Status: Pronto para uso</li>
                           </ul>
                           
