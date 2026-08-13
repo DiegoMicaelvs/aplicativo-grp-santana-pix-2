@@ -15,6 +15,7 @@ cookies*.txt
 test_cookies.txt
 .vercel
 
-# Funcao serverless gerada pelo build (npm run build:vercel)
-api/index.js
-api/index.js.map
+# Bundle da funcao serverless, gerado por npm run build:vercel.
+# api/index.js (o shim) E versionado — ver o comentario la dentro.
+api/_servidor.js
+api/_servidor.js.map

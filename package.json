@@ -23,7 +23,7 @@
     "docker:push": "docker compose exec app npm run db:push",
     "docker:seed": "docker compose exec app npm run db:seed",
     "docker:sh": "docker compose exec app sh",
-    "build:vercel": "vite build && esbuild server/vercelEntry.ts --platform=node --target=node20 --packages=external --external:./vite --bundle --format=esm --outfile=api/index.js",
+    "build:vercel": "vite build && esbuild server/vercelEntry.ts --platform=node --target=node20 --packages=external --external:./vite --bundle --format=esm --outfile=api/_servidor.js",
     "icons": "node scripts/gerar-favicons.mjs"
   },
   "dependencies": {
