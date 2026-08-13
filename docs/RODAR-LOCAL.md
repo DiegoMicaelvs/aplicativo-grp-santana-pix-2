@@ -122,24 +122,56 @@ docker build --target prod -t kongpix:prod .
 
 ---
 
-## Migrando para Supabase depois
+## Supabase (produção)
 
-O driver de banco agora é `pg` (node-postgres), que funciona igual em Postgres local e
-no Supabase. Para apontar para o Supabase basta trocar a `DATABASE_URL`:
+O projeto **Valida** já existe e **o schema já foi aplicado**: 17 tabelas, 40
+índices, 31 chaves estrangeiras e o índice único parcial de placa.
+
+| | |
+| --- | --- |
+| Projeto | `Valida` |
+| Ref | `cnacpuipffrspllbzwwz` |
+| Região | `sa-east-1` |
+| API | `https://cnacpuipffrspllbzwwz.supabase.co` |
+
+Para apontar a aplicação, só falta a `DATABASE_URL` (a senha está em
+**Project Settings → Database → Connection string**):
 
 ```
-DATABASE_URL=postgresql://postgres.<project-ref>:<senha>@aws-0-<regiao>.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://postgres.cnacpuipffrspllbzwwz:<SENHA>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
 ```
 
-Use o **Session Pooler** (porta 5432) — ele mantém o suporte a sessões e prepared
-statements que a aplicação usa. O SSL é ligado automaticamente para hosts que não são
-locais; para forçar, use `DATABASE_SSL=true`.
+Use o **Session Pooler** (porta 5432), não o Transaction Pooler (6543): a
+aplicação usa prepared statements e mantém sessão de banco por requisição, e o
+transaction pooler recicla a conexão a cada comando, quebrando os dois.
 
-Depois de configurar, aplique o schema:
+O SSL liga sozinho para hosts não-locais; para forçar, `DATABASE_SSL=true`.
 
-```bash
-npm run db:push
-```
+> **Não rode `npm run db:push` contra o Supabase.** O script usa `--force`, que
+> compara o schema declarado com o banco e **remove o que não reconhece**. O
+> schema de lá já está aplicado via migrations versionadas. Use `db:push`
+> apenas no banco de desenvolvimento.
+
+### Sobre o RLS
+
+Todas as 17 tabelas estão com **Row Level Security habilitado e nenhuma
+policy** — de propósito.
+
+O Valida não usa a API do Supabase: fala com o Postgres direto por connection
+string, e a autorização vive no Express. Mas o Supabase expõe o PostgREST
+publicamente, e a chave `anon` é pública por design. Sem RLS, quem tivesse essa
+chave leria e escreveria direto nas tabelas — CPF, chave PIX, saldo — passando
+por fora de toda a autorização da aplicação.
+
+RLS ligado sem policy faz o PostgREST negar tudo. A aplicação não é afetada
+porque conecta como owner do schema, e o owner ignora RLS.
+
+O linter do Supabase vai reportar `rls_enabled_no_policy` como **INFO** nas 17
+tabelas. É o estado esperado, não um problema a corrigir.
+
+> Se um dia o front for falar direto com o Supabase, aí será preciso escrever
+> policies por tabela — e revisar cada uma contra as regras de papel que hoje
+> estão no Express.
 
 ---
 
