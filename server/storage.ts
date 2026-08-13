@@ -3749,7 +3749,18 @@ class DatabaseStorage implements IStorage {
         // segunda conexão do pool com a primeira ainda presa.
         const newUser = await this.createUser(userDataWithAssignment, tx);
 
-        // Log audit trail if referral attribution was made
+        /**
+         * `tx` também aqui — e isto derrubava TODO cadastro por link.
+         *
+         * O usuário é criado dentro da transação, então até o commit ele não
+         * existe para nenhuma outra conexão. Gravando a auditoria por fora, o
+         * INSERT em audit_log referenciava um user_id que o banco ainda não
+         * enxergava e batia na chave estrangeira
+         * (audit_log_user_id_users_id_fk). O erro estourava dentro da
+         * transação, ela era revertida inteira e a rota respondia 500 — quem
+         * clicava no link do promotor preenchia tudo e não conseguia se
+         * cadastrar. Os links tinham cliques e nenhum cadastro.
+         */
         if (referralToken && Object.keys(assignmentData).length > 0) {
           await this.logUserAction({
             userId: newUser.id,
@@ -3757,7 +3768,7 @@ class DatabaseStorage implements IStorage {
             entityType: 'user',
             entityId: newUser.id,
             details: `User registered via referral link: ${referralToken}`
-          });
+          }, tx);
         }
 
         return newUser;
