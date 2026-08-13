@@ -1,6 +1,7 @@
 import { db } from "@db";
 import { eq, desc, asc, or, count, and, sql, inArray } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { normalizarCpf, cpfEhValido, normalizarTelefone } from "@shared/cpf";
 import { 
   users, 
   referrals, 
@@ -291,6 +292,34 @@ class DatabaseStorage implements IStorage {
       
       const normalizedUsername = (userData.username || userData.email).trim().toLowerCase();
       const normalizedEmail = (userData.email || userData.username).trim().toLowerCase();
+
+      /**
+       * Último portão do CPF e do telefone — mesma ideia do clampComissao
+       * abaixo: vale para TODA rota, não só as que lembram de validar.
+       *
+       * `insertUserSchema` normaliza esses campos, mas só três rotas o aplicam
+       * (/api/register, o cadastro por link e /api/users/indicador). Os painéis
+       * internos — /api/admin/users, /api/promoter/indicators,
+       * /api/promoter/supervisors e as rotas de analista — passavam req.body
+       * direto para cá. Resultado observado em produção: um promotor cadastrado
+       * pelo admin ficou com cpf "292.495.128-30" e um indicador cadastrado
+       * pela tela ficou com phone "(11) 97000-0010".
+       *
+       * Isso não é cosmético. O CPF é UNIQUE: "292.495.128-30" e "29249512830"
+       * são a MESMA pessoa e passam como duas contas. E a checagem de indicação
+       * duplicada compara telefone por igualdade exata, então o número
+       * mascarado nunca casa com o mesmo número vindo do formulário público.
+       * Num evento com milhares de cadastros, isso vira comissão paga em
+       * duplicidade.
+       */
+      const cpfNormalizado = normalizarCpf(userData.cpf ?? "");
+      if (!cpfEhValido(cpfNormalizado)) {
+        throw new Error("CPF inválido");
+      }
+      const telefoneNormalizado = normalizarTelefone(userData.phone ?? "");
+      if (telefoneNormalizado.length < 10 || telefoneNormalizado.length > 11) {
+        throw new Error("Telefone inválido");
+      }
       
       console.log(`[STORAGE] Criando usuário com username normalizado: ${normalizedUsername}`);
       console.log(`[STORAGE] Dados recebidos:`, {
@@ -312,8 +341,8 @@ class DatabaseStorage implements IStorage {
         password: hashedPassword,
         fullName: userData.fullName,
         email: normalizedEmail,
-        phone: userData.phone,
-        cpf: userData.cpf,
+        phone: telefoneNormalizado,
+        cpf: cpfNormalizado,
         address: `${userData.city}, ${userData.state} - ${userData.zipCode}`, // Construct address from parts
         city: userData.city,
         state: userData.state,

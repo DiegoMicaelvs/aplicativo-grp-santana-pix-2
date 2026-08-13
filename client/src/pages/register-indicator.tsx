@@ -71,7 +71,14 @@ export default function RegisterIndicator() {
         username: data.email, // Use email as username
         role: "indicador" as const,
       };
-      return await apiRequest('POST', '/api/admin/users', payload);
+      /**
+       * Esta tela é exclusiva de promotor (PromoterRoute + a checagem de role
+       * acima), mas chamava /api/admin/users, que exige admin — todo promotor
+       * levava 403 "Acesso negado" ao cadastrar indicador. A rota certa é a de
+       * promotor: ela força role "indicador" e vincula o novo usuário ao
+       * promotor logado (promoterId), que é justamente o que esta tela quer.
+       */
+      return await apiRequest('POST', '/api/promoter/indicators', payload);
     },
     onSuccess: () => {
       toast({
