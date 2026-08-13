@@ -129,6 +129,9 @@ export default function WithdrawalPage() {
       case 'approved': return 'bg-blue-100 text-blue-800';
       case 'paid': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
+      // Retido não é erro nem aprovação: é uma espera que depende de conversa
+      // com o financeiro. Laranja separa dos dois.
+      case 'retido': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -139,7 +142,26 @@ export default function WithdrawalPage() {
       case 'approved': return 'Aprovado';
       case 'paid': return 'Pago';
       case 'rejected': return 'Rejeitado';
+      /**
+       * "retido" caía no default e aparecia cru, em minúsculo, sem cor e sem
+       * explicação — justamente o status em que o indicador precisa entender o
+       * que houve e o que fazer. O dinheiro já saiu do saldo dele e só volta a
+       * andar depois da conferência.
+       */
+      case 'retido': return 'Em conferência';
       default: return status;
+    }
+  };
+
+  /** Explicação que acompanha o status, quando ele não é autoexplicativo. */
+  const getStatusHelp = (status: string) => {
+    switch (status) {
+      case 'retido':
+        return 'A chave PIX informada não confere com o seu cadastro. Fale com o financeiro para liberar.';
+      case 'rejected':
+        return 'O valor voltou para o seu saldo disponível.';
+      default:
+        return null;
     }
   };
 
@@ -343,10 +365,15 @@ export default function WithdrawalPage() {
                               R$ {parseFloat(request.amount).toFixed(2)}
                             </TableCell>
                             <TableCell>
-                              <Badge className={`flex items-center gap-1 ${getStatusColor(request.status)}`}>
+                              <Badge className={`flex items-center gap-1 w-fit ${getStatusColor(request.status)}`}>
                                 {getStatusIcon(request.status)}
                                 {getStatusLabel(request.status)}
                               </Badge>
+                              {getStatusHelp(request.status) && (
+                                <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                                  {getStatusHelp(request.status)}
+                                </p>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
