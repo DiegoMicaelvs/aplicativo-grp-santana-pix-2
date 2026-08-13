@@ -138,6 +138,22 @@ export class InsufficientBalanceError extends Error {
 }
 
 /**
+ * Transição de status de saque que a máquina de estados não permite.
+ *
+ * Existe porque rejeitar devolve o valor ao saldo: sem a máquina de estados,
+ * alternar rejeitado → aprovado → rejeitado creditava o usuário a cada volta.
+ */
+export class InvalidWithdrawalTransitionError extends Error {
+  constructor(
+    public readonly de: WithdrawalStatus,
+    public readonly para: WithdrawalStatus,
+  ) {
+    super(`Não é possível mudar o saque de "${de}" para "${para}"`);
+    this.name = "InvalidWithdrawalTransitionError";
+  }
+}
+
+/**
  * Outra requisição já mudou o status desta indicação entre a nossa leitura e a
  * nossa escrita. Serve para desfazer a transação sem creditar comissão.
  */
@@ -684,21 +700,17 @@ class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserTotalEarnings(userId: number, amount: number) {
+  /** @param executor transação em curso; ver o motivo em createCashFlowEntry. */
+  async updateUserTotalEarnings(userId: number, amount: number, executor: any = db) {
     try {
       console.log(`[updateUserTotalEarnings] Atualizando total de ganhos do usuário ${userId} com valor: ${amount}`);
-      
-      await db.update(users)
-        .set({ 
+
+      await executor.update(users)
+        .set({
           totalEarnings: sql`total_earnings + ${amount}`,
           updatedAt: new Date()
         })
         .where(eq(users.id, userId));
-      
-      const updatedUser = await this.getUserById(userId);
-      if (updatedUser) {
-        console.log(`[updateUserTotalEarnings] Novo total de ganhos: ${updatedUser.totalEarnings}`);
-      }
     } catch (error) {
       console.error(`[updateUserTotalEarnings] Erro ao atualizar total de ganhos do usuário ${userId}:`, error);
       throw error;
@@ -1536,7 +1548,17 @@ class DatabaseStorage implements IStorage {
         plateCorrect: referrals.plateCorrect,
         phoneCorrect: referrals.phoneCorrect,
         validationNotes: referrals.validationNotes,
-        paymentProof: referrals.paymentProof,
+        /**
+         * O comprovante NÃO viaja na listagem.
+         *
+         * É uma imagem em base64 gravada na própria linha: com o volume do
+         * evento, uma tela que carrega mil indicações puxaria centenas de MB de
+         * imagem que ninguém olha na lista — lento no cliente e caro na memória
+         * da função serverless. Aqui vai só o que a lista usa (tem ou não tem);
+         * a imagem é buscada ao abrir o detalhe, em
+         * GET /api/referrals/:id/payment-proof.
+         */
+        hasPaymentProof: sql<boolean>`(${referrals.paymentProof} IS NOT NULL AND ${referrals.paymentProof} <> '')`,
         promoterId: referrals.promoterId,
         contactStatus: referrals.contactStatus,
         contactStatusUpdatedAt: referrals.contactStatusUpdatedAt,
@@ -1613,7 +1635,17 @@ class DatabaseStorage implements IStorage {
         plateCorrect: referrals.plateCorrect,
         phoneCorrect: referrals.phoneCorrect,
         validationNotes: referrals.validationNotes,
-        paymentProof: referrals.paymentProof,
+        /**
+         * O comprovante NÃO viaja na listagem.
+         *
+         * É uma imagem em base64 gravada na própria linha: com o volume do
+         * evento, uma tela que carrega mil indicações puxaria centenas de MB de
+         * imagem que ninguém olha na lista — lento no cliente e caro na memória
+         * da função serverless. Aqui vai só o que a lista usa (tem ou não tem);
+         * a imagem é buscada ao abrir o detalhe, em
+         * GET /api/referrals/:id/payment-proof.
+         */
+        hasPaymentProof: sql<boolean>`(${referrals.paymentProof} IS NOT NULL AND ${referrals.paymentProof} <> '')`,
         promoterId: referrals.promoterId,
         contactStatus: referrals.contactStatus,
         contactStatusUpdatedAt: referrals.contactStatusUpdatedAt,
@@ -2616,97 +2648,135 @@ class DatabaseStorage implements IStorage {
      * a linha se ela ainda estiver no status anterior. Quem perder a corrida
      * não atualiza linha nenhuma e sai sem tocar em dinheiro.
      */
-    const currentWithdrawal = await db.query.withdrawalRequests.findFirst({
-      where: eq(withdrawalRequests.id, id)
+    return await db.transaction(async (tx) => {
+      const currentWithdrawal = await tx.query.withdrawalRequests.findFirst({
+        where: eq(withdrawalRequests.id, id)
+      });
+
+      if (!currentWithdrawal) {
+        throw new Error(`Withdrawal request #${id} not found`);
+      }
+
+      if (currentWithdrawal.status === status) {
+        console.log(`[updateWithdrawalStatus] Withdrawal #${id} already has status "${status}" - skipping duplicate processing`);
+        return currentWithdrawal;
+      }
+
+      /**
+       * Transições permitidas.
+       *
+       * Antes só se comparava com o status atual: qualquer outro valor da lista
+       * era aceito. Como rejeitar devolve o valor ao saldo, alternar
+       * rejeitado → aprovado → rejeitado creditava o usuário a cada volta e
+       * criava dinheiro sem limite.
+       *
+       * `rejected` e `paid` são finais. Rejeitado já devolveu o dinheiro; pago
+       * já saiu do caixa. Para sacar de novo, o usuário abre outra solicitação
+       * — que passa pela checagem de saldo.
+       */
+      const TRANSICOES: Record<string, WithdrawalStatus[]> = {
+        pending: ['approved', 'rejected', 'retido'],
+        retido: ['approved', 'rejected'], // liberado ou recusado após intermediação
+        approved: ['paid', 'rejected'],   // pagou, ou desistiu antes de pagar
+        rejected: [],                      // final: o valor já voltou ao saldo
+        paid: [],                          // final: o dinheiro já saiu
+      };
+
+      const permitidas = TRANSICOES[currentWithdrawal.status] ?? [];
+      if (!permitidas.includes(status)) {
+        throw new InvalidWithdrawalTransitionError(
+          currentWithdrawal.status as WithdrawalStatus,
+          status,
+        );
+      }
+
+      const updateData: any = {
+        status,
+        processedBy,
+        notes
+      };
+
+      // Set processedAt for approved/rejected
+      if (status === 'approved' || status === 'rejected') {
+        updateData.processedAt = new Date();
+      }
+
+      // Set paidAt only when marking as paid
+      if (status === 'paid') {
+        updateData.paidAt = new Date();
+      }
+
+      const [updated] = await tx.update(withdrawalRequests)
+        .set(updateData)
+        .where(
+          and(
+            eq(withdrawalRequests.id, id),
+            // guarda de estado: a linha precisa ainda estar no status que lemos
+            eq(withdrawalRequests.status, currentWithdrawal.status),
+          ),
+        )
+        .returning();
+
+      // Perdeu a corrida: outra requisição já transicionou este saque.
+      // Sair sem executar nenhum efeito monetário.
+      if (!updated) {
+        console.warn(
+          `[updateWithdrawalStatus] Saque #${id} já foi transicionado por outra requisição concorrente — efeitos ignorados.`,
+        );
+        const atual = await tx.query.withdrawalRequests.findFirst({
+          where: eq(withdrawalRequests.id, id),
+        });
+        return atual ?? currentWithdrawal;
+      }
+
+      /**
+       * Daqui para baixo tudo usa `tx`: o efeito monetário faz parte da mesma
+       * transação da mudança de status. Antes o UPDATE era auto-commit e o
+       * saldo, os ganhos e o lançamento de caixa vinham depois, em conexões
+       * separadas — se qualquer um falhasse, o saque ficava marcado como
+       * processado sem o dinheiro ter se movido.
+       */
+
+      // Se o saque foi rejeitado, devolver o valor ao saldo do usuário
+      if (status === 'rejected') {
+        const amount = parseFloat(updated.amount);
+        // Ao rejeitar saque, devolver o valor ao saldo mas não atualizar totalEarnings
+        await this.updateUserBalance(updated.userId, amount, false, tx);
+
+        // Log audit trail
+        await this.logUserAction({
+          userId: processedBy,
+          action: 'reject_withdrawal',
+          entityType: 'withdrawal_request',
+          entityId: id,
+          newValues: { status: 'rejected', amount },
+          details: `Saque rejeitado. Valor de R$ ${amount} devolvido ao saldo do usuário.`
+        }, tx);
+      }
+
+      // Se o saque foi aprovado mas ainda não pago, não fazer nada com o saldo
+      // O saldo já foi descontado quando a solicitação foi criada
+
+      // Se o pagamento foi realizado, criar entrada no fluxo de caixa e atualizar totalEarnings
+      if (status === 'paid') {
+        const amount = parseFloat(updated.amount);
+
+        // Atualizar totalEarnings do usuário (valor total já pago)
+        await this.updateUserTotalEarnings(updated.userId, amount, tx);
+        console.log(`[updateWithdrawalStatus] Total de ganhos atualizado para usuário ${updated.userId}: +${amount}`);
+
+        // Criar entrada no fluxo de caixa
+        await this.createCashFlowEntry({
+          type: 'outflow',
+          amount,
+          description: `Pagamento de saque #${id}`,
+          relatedWithdrawalId: id,
+          createdBy: processedBy
+        }, tx);
+      }
+
+      return updated;
     });
-
-    if (!currentWithdrawal) {
-      throw new Error(`Withdrawal request #${id} not found`);
-    }
-
-    if (currentWithdrawal.status === status) {
-      console.log(`[updateWithdrawalStatus] Withdrawal #${id} already has status "${status}" - skipping duplicate processing`);
-      return currentWithdrawal;
-    }
-
-    const updateData: any = {
-      status,
-      processedBy,
-      notes
-    };
-
-    // Set processedAt for approved/rejected
-    if (status === 'approved' || status === 'rejected') {
-      updateData.processedAt = new Date();
-    }
-
-    // Set paidAt only when marking as paid
-    if (status === 'paid') {
-      updateData.paidAt = new Date();
-    }
-
-    const [updated] = await db.update(withdrawalRequests)
-      .set(updateData)
-      .where(
-        and(
-          eq(withdrawalRequests.id, id),
-          // guarda de estado: a linha precisa ainda estar no status que lemos
-          eq(withdrawalRequests.status, currentWithdrawal.status),
-        ),
-      )
-      .returning();
-
-    // Perdeu a corrida: outra requisição já transicionou este saque.
-    // Sair sem executar nenhum efeito monetário.
-    if (!updated) {
-      console.warn(
-        `[updateWithdrawalStatus] Saque #${id} já foi transicionado por outra requisição concorrente — efeitos ignorados.`,
-      );
-      const atual = await db.query.withdrawalRequests.findFirst({
-        where: eq(withdrawalRequests.id, id),
-      });
-      return atual ?? currentWithdrawal;
-    }
-
-    // Se o saque foi rejeitado, devolver o valor ao saldo do usuário
-    if (status === 'rejected' && updated) {
-      const amount = parseFloat(updated.amount);
-      // Ao rejeitar saque, devolver o valor ao saldo mas não atualizar totalEarnings
-      await this.updateUserBalance(updated.userId, amount, false);
-      
-      // Log audit trail
-      await this.logUserAction({
-        userId: processedBy,
-        action: 'reject_withdrawal',
-        entityType: 'withdrawal_request',
-        entityId: id,
-        newValues: { status: 'rejected', amount },
-        details: `Saque rejeitado. Valor de R$ ${amount} devolvido ao saldo do usuário.`
-      });
-    }
-    
-    // Se o saque foi aprovado mas ainda não pago, não fazer nada com o saldo
-    // O saldo já foi descontado quando a solicitação foi criada
-    
-    // Se o pagamento foi realizado, criar entrada no fluxo de caixa e atualizar totalEarnings
-    if (status === 'paid' && updated) {
-      const amount = parseFloat(updated.amount);
-      
-      // Atualizar totalEarnings do usuário (valor total já pago)
-      await this.updateUserTotalEarnings(updated.userId, amount);
-      console.log(`[updateWithdrawalStatus] Total de ganhos atualizado para usuário ${updated.userId}: +${amount}`);
-      
-      // Criar entrada no fluxo de caixa
-      await this.createCashFlowEntry({
-        type: 'outflow',
-        amount,
-        description: `Pagamento de saque #${id}`,
-        relatedWithdrawalId: id,
-        createdBy: processedBy
-      });
-    }
-    
-    return updated;
   }
 
   async updateWithdrawalInsurance(id: number, hasInsurance: boolean) {
@@ -2734,8 +2804,17 @@ class DatabaseStorage implements IStorage {
    * lançamento por vez calcula e grava. São operações raras (pagamento de
    * saque), então serializar não custa nada.
    */
-  async createCashFlowEntry(entry: CreateCashFlow & { createdBy: number }) {
-    return await db.transaction(async (tx) => {
+  /**
+   * @param executor transação em curso. Quando o lançamento faz parte de uma
+   *                 operação maior (pagar um saque, por exemplo), ele precisa
+   *                 nascer e morrer junto com ela — senão o caixa registra uma
+   *                 saída que o resto da operação acabou desfazendo.
+   */
+  async createCashFlowEntry(
+    entry: CreateCashFlow & { createdBy: number },
+    executor?: any,
+  ) {
+    const corpo = async (tx: any) => {
       // Trava exclusiva do "livro caixa" enquanto a transação durar.
       await tx.execute(sql`SELECT pg_advisory_xact_lock(${CASH_FLOW_LOCK_KEY})`);
 
@@ -2759,7 +2838,11 @@ class DatabaseStorage implements IStorage {
         .returning();
 
       return cashFlowEntry;
-    });
+    };
+
+    // Já dentro de uma transação: reaproveita. O advisory lock é por transação,
+    // então continua valendo até o commit de quem chamou.
+    return executor ? await corpo(executor) : await db.transaction(corpo);
   }
   
   async getCashFlowEntries() {
@@ -2967,8 +3050,11 @@ class DatabaseStorage implements IStorage {
     ipAddress?: string;
     userAgent?: string;
     details?: string;
-  }) {
-    await db.insert(auditLog).values(action);
+  }, executor: any = db) {
+    // `executor`: quando a ação faz parte de uma transação (rejeitar um saque,
+    // por exemplo), o registro de auditoria tem que ser desfeito junto se a
+    // operação não for adiante — senão o log afirma algo que não aconteceu.
+    await executor.insert(auditLog).values(action);
   }
   
   async getAuditLog(filters?: { userId?: number; entityType?: string; fromDate?: Date; toDate?: Date }) {

@@ -566,7 +566,34 @@ export default function AdminReferralsDetailedPage() {
   const [statusNotes, setStatusNotes] = useState("");
   const [paymentProof, setPaymentProof] = useState<string>("");
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-  
+
+  /**
+   * Abre o detalhe de uma indicação.
+   *
+   * A listagem não traz mais o comprovante — só `hasPaymentProof` —, porque a
+   * imagem em base64 dentro de cada linha tornava a tela pesadíssima com muitas
+   * indicações. Quando existe comprovante, ele é buscado agora, para esta
+   * indicação, e anexado ao objeto selecionado: o resto da tela continua lendo
+   * `selectedReferral.paymentProof` como antes.
+   */
+  const abrirDetalhe = React.useCallback(async (referral: any) => {
+    setSelectedReferral(referral);
+    if (!referral?.hasPaymentProof || referral.paymentProof) return;
+    try {
+      const res = await fetch(`/api/referrals/${referral.id}/payment-proof`, {
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      const { paymentProof: imagem } = await res.json();
+      if (!imagem) return;
+      setSelectedReferral((atual: any) =>
+        atual?.id === referral.id ? { ...atual, paymentProof: imagem } : atual,
+      );
+    } catch {
+      // Sem comprovante a tela ainda funciona; o botão de baixar só não aparece.
+    }
+  }, []);
+
   // Debounce search input to avoid filtering on every keystroke
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -3075,7 +3102,7 @@ export default function AdminReferralsDetailedPage() {
                     <Dialog open={isDialogOpen && selectedReferral?.id === referral.id} onOpenChange={(open) => {
                       setIsDialogOpen(open);
                       if (open) {
-                        setSelectedReferral(referral);
+                        abrirDetalhe(referral);
                         setNewStatus(referral.status);
                         setPaymentProof(""); // Reset payment proof when opening dialog
                         setEditFormData({
@@ -3634,7 +3661,7 @@ export default function AdminReferralsDetailedPage() {
                         <Dialog open={isDialogOpen && selectedReferral?.id === referral.id} onOpenChange={(open) => {
                           setIsDialogOpen(open);
                           if (open) {
-                            setSelectedReferral(referral);
+                            abrirDetalhe(referral);
                             setNewStatus(referral.status);
                             setEditFormData({
                               fullName: referral.fullName,

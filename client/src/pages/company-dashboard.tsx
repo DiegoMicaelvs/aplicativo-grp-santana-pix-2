@@ -296,14 +296,25 @@ export default function CompanyDashboard() {
         return;
       }
       
-      const companyIdentifier = selectedCompany.publicToken || selectedCompanyId;
-      console.log("Compartilhando dashboard:", { 
-        companyId: selectedCompanyId, 
-        companyName: selectedCompany.name,
-        publicToken: selectedCompany.publicToken,
-        identifier: companyIdentifier 
-      });
-      
+      /**
+       * Sem token não há link. Antes o identificador caía para o ID da empresa
+       * quando o token faltava — e como nenhuma empresa tinha token, todo link
+       * gerado era um número sequencial, que qualquer pessoa incrementava para
+       * ver o painel de outra. O servidor agora recusa número; aqui o botão
+       * avisa em vez de montar um link que não abre.
+       */
+      if (!selectedCompany.publicToken) {
+        toast({
+          title: "Link não disponível",
+          description:
+            "Esta empresa ainda não tem link público. Gere os tokens com o script scripts/generate-company-tokens.ts.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const companyIdentifier = selectedCompany.publicToken;
+
       const params = new URLSearchParams();
       if (selectedMonth !== "all_time") {
         params.append('month', selectedMonth);

@@ -139,14 +139,24 @@ export const sendWithdrawalNotification = async (
   return sendSMS(userPhone, message);
 };
 
+/**
+ * Aviso de novo pedido de saque para o financeiro.
+ *
+ * O CPF do indicador ia inteiro na mensagem. SMS trafega e fica armazenado em
+ * texto puro — no aparelho, na operadora e no provedor —, e o aviso serve só
+ * para chamar alguém ao painel. Vão apenas os últimos dígitos, o suficiente
+ * para conferir de quem se trata; o resto está no painel, atrás de login.
+ */
 export const sendAdminWithdrawalNotification = async (
   adminPhone: string,
   userName: string,
   userCPF: string,
   amount: number
 ): Promise<boolean> => {
-  const message = `🚨 Kong Pix - NOVA SOLICITAÇÃO DE SAQUE!\n\nIndicador: ${userName}\nCPF: ${userCPF}\nValor: R$ ${amount.toFixed(2)}\n\nAcesse o painel para processar:\nkongprotecaoveicular.com.br/admin`;
-  
+  const digitos = (userCPF ?? '').replace(/\D/g, '');
+  const cpfParcial = digitos.length >= 4 ? `***${digitos.slice(-4)}` : '***';
+  const message = `🚨 Valida - NOVA SOLICITAÇÃO DE SAQUE!\n\nIndicador: ${userName}\nCPF: ${cpfParcial}\nValor: R$ ${amount.toFixed(2)}\n\nAcesse o painel para processar.`;
+
   return sendSMS(adminPhone, message);
 };
 

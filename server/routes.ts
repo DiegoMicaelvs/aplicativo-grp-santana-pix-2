@@ -5,7 +5,7 @@ import { setupAuth, hashPassword, sessionMiddleware } from "./auth";
 import { checkPixKeyOwnership } from "./pixValidation";
 import { safeCompare } from "./secrets";
 import { normalizarPlaca } from "@shared/cpf";
-import { storage, InsufficientBalanceError, ConcurrentStatusChangeError, UserHasFinancialHistoryError } from "./storage";
+import { storage, InsufficientBalanceError, ConcurrentStatusChangeError, UserHasFinancialHistoryError, InvalidWithdrawalTransitionError } from "./storage";
 import { db } from "@db";
 import { z } from "zod";
 import { 
@@ -816,6 +816,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === REFERRAL CONVERSATION ROUTES ===
   
   // Get conversations for a referral
+  /**
+   * Comprovante de pagamento de UMA indicação.
+   *
+   * Existe porque a imagem saiu das listagens: lá ela pesava centenas de MB
+   * sem que ninguém a olhasse. Aqui vem uma de cada vez, quando alguém abre o
+   * detalhe — e só para quem já pode ver a indicação (a mesma regra das
+   * conversas: admin, analista, o dono do lead, quem o cadastrou ou o promotor
+   * da equipe).
+   */
+  app.get("/api/referrals/:id/payment-proof", requireAuth, async (req, res) => {
+    try {
+      const referralId = parseInt(req.params.id);
+      if (!Number.isInteger(referralId)) {
+        return res.status(400).json({ error: "ID inválido" });
+      }
+
+      const referral = await storage.getReferralById(referralId);
+      if (!referral) {
+        return res.status(404).json({ error: "Indicação não encontrada" });
+      }
+
+      const podeVer =
+        req.user!.role === "admin" ||
+        req.user!.role === "analista" ||
+        referral.userId === req.user!.id ||
+        referral.createdBy === req.user!.id ||
+        (req.user!.role === "promotor" && referral.promoterId === req.user!.id);
+
+      if (!podeVer) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      return res.json({ paymentProof: referral.paymentProof ?? null });
+    } catch (error) {
+      console.error("Erro ao buscar comprovante:", error);
+      return res.status(500).json({ error: "Erro ao buscar comprovante" });
+    }
+  });
+
   app.get("/api/referrals/:id/conversations", requireAuth, async (req, res) => {
     try {
       const referralId = parseInt(req.params.id);
@@ -1148,26 +1187,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokenOrId = req.params.tokenOrId;
       const monthFilter = req.query.month as string;
       
-      // Try to get company by token first (new method), then by ID (backward compatibility)
-      let company = null;
-      let companyId = 0;
-      
-      // Check if it's a FULLY numeric ID (backward compatibility)
-      // Use regex to ensure the ENTIRE string is numeric, not just starts with a number
-      const isFullyNumeric = /^\d+$/.test(tokenOrId);
-      if (isFullyNumeric) {
-        const numericId = parseInt(tokenOrId);
-        company = await storage.getCompanyById(numericId);
-        companyId = numericId;
-      } else {
-        // It's a token, search by token
-        company = await storage.getCompanyByToken(tokenOrId);
-        companyId = company?.id || 0;
+      /**
+       * SÓ por token. O ramo "compatibilidade com ID numérico" transformava o
+       * token em enfeite: como os IDs são sequenciais, bastava pedir /1, /2,
+       * /3 nesta rota — que não tem autenticação — para ler o caixa e os
+       * números de qualquer empresa. Nenhuma empresa chegou a ter token
+       * gerado, então na prática todo o painel "secreto" era público.
+       *
+       * Os tokens foram gerados (scripts/generate-company-tokens.ts) e agora
+       * são a única forma de entrar. Link antigo com número deixa de funcionar
+       * — é exatamente o que se quer.
+       */
+      if (/^\d+$/.test(tokenOrId)) {
+        return res.status(404).json({ error: "Empresa não encontrada" });
       }
-      
+
+      const company = await storage.getCompanyByToken(tokenOrId);
       if (!company) {
         return res.status(404).json({ error: "Empresa não encontrada" });
       }
+      const companyId = company.id;
 
       /**
        * Agregação no BANCO.
@@ -1223,7 +1262,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const metrics = {
         companyId,
         companyName: company.name,
-        publicToken: company.publicToken,
+        // `publicToken` NÃO volta na resposta: é a credencial de acesso desta
+        // própria página. Quem chegou aqui já a tem; ecoá-la só servia para
+        // entregar o segredo a quem entrou pelo antigo atalho por ID.
         cashBalance: parseFloat(settings.cashBalance || '0'),
         totalIndicators,
         totalPromoters,
@@ -1912,7 +1953,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!currentReferral) {
         return res.status(404).json({ error: "Indicação não encontrada" });
       }
-      
+
+      /**
+       * Segregação de funções: quem indicou não valida a própria indicação.
+       *
+       * Validar paga R$3 e converter paga R$50 ao dono do lead. Como cadastrar
+       * indicação só exige estar autenticado, um analista podia cadastrar o
+       * próprio lead e em seguida validá-lo e convertê-lo — creditando o
+       * próprio saldo e sacando por PIX, sem ninguém no meio.
+       *
+       * A regra vale para todos, admin inclusive: a conferência do lead é o que
+       * justifica o pagamento, e ninguém confere o próprio trabalho. Um segundo
+       * usuário com permissão faz a validação.
+       */
+      const PAGAM_COMISSAO: string[] = ["validated", "converted", "paid"];
+      const souODono =
+        currentReferral.userId === req.user!.id ||
+        (currentReferral as any).createdBy === req.user!.id;
+
+      if (PAGAM_COMISSAO.includes(validatedData.status) && souODono) {
+        return res.status(403).json({
+          error: "Você não pode validar a própria indicação",
+          message:
+            "Esta indicação foi cadastrada por você. Peça a outro validador para conferi-la — quem indica não valida.",
+        });
+      }
+
       // Validate payment proof requirement for converted status
       if (validatedData.status === "converted") {
         // If referral is being converted and doesn't have proof yet, require it
@@ -2239,7 +2305,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log("[PATCH /api/referrals/:id] Dados recebidos:", req.body);
+      // Só os NOMES dos campos alterados. Antes o corpo inteiro ia para o log:
+      // nome, telefone e placa do lead — e, quando havia comprovante, a imagem
+      // em base64 inteira, enchendo o log de dado pessoal a cada edição.
+      console.log(
+        "[PATCH /api/referrals/:id] campos recebidos:",
+        Object.keys(req.body ?? {}).join(", ") || "(nenhum)",
+      );
 
       // Check if referral exists
       const existingReferral = await storage.getReferralById(referralId);
@@ -2388,8 +2460,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: "update_referral",
         entityType: "referral",
         entityId: referralId,
-        oldValues: existingReferral,
-        newValues: updatedReferral,
+        /**
+         * Só o que muda de fato, e sem o comprovante.
+         *
+         * Gravar a indicação inteira antes e depois copiava a imagem em base64
+         * para dentro do audit_log a cada edição — a tabela crescia em dezenas
+         * de MB por registro e ainda duplicava dado pessoal do lead num lugar
+         * que ninguém limpa.
+         */
+        oldValues: {
+          status: existingReferral.status,
+          userId: existingReferral.userId,
+          promoterId: existingReferral.promoterId,
+          commissionIndicator: existingReferral.commissionIndicator,
+          commissionPromoter: existingReferral.commissionPromoter,
+        },
+        newValues: {
+          status: updatedReferral.status,
+          userId: updatedReferral.userId,
+          promoterId: updatedReferral.promoterId,
+          commissionIndicator: updatedReferral.commissionIndicator,
+          commissionPromoter: updatedReferral.commissionPromoter,
+        },
         details: `Dados da indicação ${referralId} atualizados por ${req.user!.role}${userId !== undefined ? ` - Usuário alterado de ${existingReferral.userId} para ${userId}` : ''}`
       });
       
@@ -2778,6 +2870,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.json(updated);
     } catch (error) {
+      // Transição inválida é erro de operação, não falha do servidor: o
+      // financeiro precisa ver o motivo na tela, não um 500 genérico.
+      if (error instanceof InvalidWithdrawalTransitionError) {
+        return res.status(409).json({
+          error: error.message,
+          de: error.de,
+          para: error.para,
+        });
+      }
       console.error("Error updating withdrawal:", error);
       return res.status(500).json({ error: "Erro ao atualizar saque" });
     }
@@ -3528,7 +3629,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'delete',
           entityType: 'user',
           entityId: parseInt(id),
-          oldValues: userToDelete,
+          /**
+           * O registro guardava o usuário INTEIRO — hash de senha, CPF, chave
+           * PIX, endereço — e sobrevive à exclusão da conta. Ou seja: apagar o
+           * usuário deixava os dados dele no audit_log para sempre, o oposto do
+           * que a LGPD espera de uma exclusão.
+           *
+           * A auditoria precisa provar QUEM apagou QUEM e QUANDO; para isso
+           * bastam identificação e papel.
+           */
+          oldValues: {
+            id: userToDelete.id,
+            fullName: userToDelete.fullName,
+            username: userToDelete.username,
+            role: userToDelete.role,
+          },
           details: `Usuário ${userToDelete.fullName} (${userToDelete.username}) foi deletado permanentemente`
         });
       } catch (error) {
