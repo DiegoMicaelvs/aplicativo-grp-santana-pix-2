@@ -2318,7 +2318,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingReferral) {
         return res.status(404).json({ error: "Indicação não encontrada" });
       }
-      
+
+      /**
+       * Analista nível 3 edita só a própria equipe.
+       *
+       * Ele é supervisor: em toda leitura o sistema já o restringe aos seus
+       * supervisionados. Na edição só se conferia o papel, então bastava mandar
+       * o id de uma indicação de outra equipe para alterar dono, empresa e
+       * placa dela — inclusive transferindo a comissão para si.
+       */
+      if (req.user!.role === "analista") {
+        const eu = await storage.getUserById(req.user!.id);
+        if (eu?.analystLevel === 3) {
+          const minha = await storage.supervisionaIndicacao(req.user!.id, existingReferral.userId);
+          if (!minha) {
+            return res.status(403).json({
+              error: "Esta indicação não é da sua equipe",
+            });
+          }
+        }
+      }
+
       // For indicador_nivel_1, verify they own this referral
       if (isIndicadorNivel1 && existingReferral.createdBy !== req.user!.id) {
         return res.status(403).json({ error: "Você só pode editar suas próprias indicações" });
@@ -2492,6 +2512,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.json(updatedReferral);
     } catch (error) {
+      // Outra requisição alterou a indicação entre a leitura e a escrita
+      // (duplo clique, retry). Nada foi gravado; o cliente recarrega e refaz.
+      if (error instanceof ConcurrentStatusChangeError) {
+        return res.status(409).json({ error: error.message });
+      }
       console.error("Error updating referral:", error);
       return res.status(500).json({ error: "Erro ao editar indicação" });
     }
@@ -2713,7 +2738,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk update referral company (admin only)
-  app.patch("/api/referrals/bulk-company-update", requireAdmin, async (req, res) => {
+  /**
+   * Atualização em massa da empresa das indicações.
+   *
+   * O caminho era "/api/referrals/bulk-company-update" — um único segmento,
+   * que casava com "/api/referrals/:id" registrada bem antes. O app.param('id')
+   * então fazia Number("bulk-company-update") -> NaN e devolvia 400 "ID
+   * inválido": a rota nunca executou uma vez sequer.
+   *
+   * Com "bulk/company-update" são dois segmentos, então não há colisão
+   * independente da ordem de registro. Como a rota nunca funcionou, não existe
+   * cliente antigo para quebrar.
+   */
+  app.patch("/api/referrals/bulk/company-update", requireAdmin, async (req, res) => {
     try {
       // Define validation schema for bulk update
       const bulkUpdateSchema = z.object({
@@ -3017,7 +3054,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       return res.status(201).json(userWithoutPassword);
-    } catch (error) {
+    } catch (error: any) {
+      /**
+       * storage.createUser traduz violação de unicidade (CPF, telefone,
+       * e-mail, chave PIX) em mensagem legível. Responder 500 genérico
+       * escondia o motivo e quem estava cadastrando não sabia o que corrigir.
+       */
+      if (typeof error?.message === "string" && /já está cadastrad/i.test(error.message)) {
+        return res.status(409).json({ error: error.message });
+      }
       console.error("Error creating user:", error);
       return res.status(500).json({ error: "Erro ao criar usuário" });
     }
@@ -3146,13 +3191,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!supervisor || supervisor.role !== 'supervisor') {
           return res.status(400).json({ error: "Supervisor inválido" });
         }
+
+        /**
+         * O supervisor precisa ser da equipe de quem está cadastrando.
+         *
+         * Só se conferia que o alvo existia e era supervisor. Como os ids são
+         * sequenciais, o promotor A passava o id de um supervisor do promotor B
+         * e o indicador nascia pendurado fora da hierarquia de A — a comissão
+         * de cada lead validado ia para a equipe errada.
+         */
+        if (req.user!.role !== 'admin' && supervisor.promoterId !== req.user!.id) {
+          return res.status(403).json({ error: "Supervisor inválido" });
+        }
+
         const supAllocValidated = parseFloat(supervisor.commissionValidated?.toString() || '0');
         const supAllocConverted = parseFloat(supervisor.commissionConverted?.toString() || '0');
+        // Mensagens sem o valor alocado: o teto do supervisor não é informação
+        // que o cadastro de indicador precise revelar.
         if (validadoNum != null && validadoNum > supAllocValidated) {
-          return res.status(400).json({ error: `Comissão validado do indicador (R$${commissionValidated}) não pode exceder a alocação do supervisor (R$${supAllocValidated})` });
+          return res.status(400).json({ error: "Comissão de validado acima do limite do supervisor" });
         }
         if (convertidoNum != null && convertidoNum > supAllocConverted) {
-          return res.status(400).json({ error: `Comissão convertido do indicador (R$${commissionConverted}) não pode exceder a alocação do supervisor (R$${supAllocConverted})` });
+          return res.status(400).json({ error: "Comissão de convertido acima do limite do supervisor" });
         }
       }
 
@@ -3693,13 +3753,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload file for support ticket
-  app.post("/api/support/upload", requireAuth, async (req, res) => {
+  /**
+   * Anexo de chamado de suporte.
+   *
+   * Antes isto era um stub: lia `req.body.file` (que nunca chegava, porque o
+   * cliente mandava multipart e o corpo nem era parseado), descartava tudo e
+   * devolvia 200 com uma URL inventada em /uploads/support/... — caminho que
+   * nenhum servidor expõe. O usuário anexava o print do problema, via a
+   * confirmação, e o suporte recebia um link quebrado. Mentir que salvou é
+   * pior do que não ter o recurso.
+   *
+   * Sem bucket configurado, a imagem é guardada como data URI no próprio
+   * chamado — a mesma solução já usada no comprovante de pagamento. Funciona,
+   * é honesto, e o dia que houver storage de verdade só esta rota muda.
+   */
+  app.post("/api/support/upload", requireAuth, aceitaComprovante, async (req, res) => {
     try {
-      // In a real application, you would handle file upload to a service like AWS S3
-      // For now, we'll simulate file upload and return a mock URL
-      const { file } = req.body;
-      const mockUrl = `/uploads/support/${Date.now()}-${Math.random()}.jpg`;
-      return res.json({ url: mockUrl });
+      const { file } = req.body ?? {};
+
+      if (typeof file !== "string" || !file) {
+        return res.status(400).json({
+          error: "Envie o arquivo no campo 'file', como data URI (base64).",
+        });
+      }
+
+      // Mesmos tipos que o seletor do cliente aceita, menos os executáveis.
+      if (!/^data:(image\/(png|jpe?g|gif|webp)|application\/pdf);base64,[A-Za-z0-9+/]+=*$/.test(file)) {
+        return res.status(400).json({
+          error: "Formato não aceito. Envie imagem (PNG, JPEG, GIF, WebP) ou PDF.",
+        });
+      }
+
+      const LIMITE = 2_800_000; // ~2 MB de arquivo depois do base64
+      if (file.length > LIMITE) {
+        return res.status(413).json({ error: "Arquivo muito grande (máximo ~2 MB)." });
+      }
+
+      // O data URI é a própria referência guardada em supportTickets.attachments.
+      return res.json({ url: file });
     } catch (error) {
       console.error("Error uploading file:", error);
       return res.status(500).json({ error: "Erro ao fazer upload do arquivo" });
@@ -3817,7 +3908,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { createSalesActivitySchema } = await import("@shared/schema.ts");
       const validatedData = createSalesActivitySchema.parse(req.body);
-      
+
+      /**
+       * O lead precisa ser DESTE vendedor.
+       *
+       * O id vinha do caminho direto para o insert, sem conferir o dono — ao
+       * contrário das rotas irmãs de leitura e edição, que filtram por
+       * vendedorId. Um vendedor gravava atividade no lead de outro, poluindo o
+       * histórico de negociação alheio com texto arbitrário.
+       */
+      const lead = await storage.getSalesLeadById(parseInt(id), req.user!.id);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead não encontrado" });
+      }
+
       const activity = await storage.createSalesActivity({
         ...validatedData,
         leadId: parseInt(id),

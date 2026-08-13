@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:integration": "vitest run tests/integration",
-    "db:push": "drizzle-kit push --force --config=./drizzle.config.ts",
+    "db:push": "node scripts/db-push-seguro.mjs",
     "db:seed": "tsx db/seed.ts",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
@@ -24,7 +24,8 @@
     "docker:seed": "docker compose exec app npm run db:seed",
     "docker:sh": "docker compose exec app sh",
     "build:vercel": "vite build && esbuild server/vercelEntry.ts --platform=node --target=node20 --packages=external --external:./vite --bundle --format=esm --outfile=api/_servidor.js",
-    "icons": "node scripts/gerar-favicons.mjs"
+    "icons": "node scripts/gerar-favicons.mjs",
+    "db:push:bruto": "drizzle-kit push --force --config=./drizzle.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

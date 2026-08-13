@@ -269,19 +269,22 @@ export async function validateReferralDuplicates(referralData: {
     };
   }
   
-  const localReferralByPhone = await db.query.referrals.findFirst({
-    where: eq(referrals.phone, referralData.phone)
-  });
-  
-  if (localReferralByPhone) {
-    return {
-      isValid: false,
-      isDuplicate: true,
-      duplicateType: 'phone',
-      message: 'Este telefone já foi indicado neste sistema'
-    };
-  }
-  
+  /**
+   * Telefone repetido NÃO é duplicidade aqui.
+   *
+   * A regra do negócio é uma indicação por PLACA: a mesma pessoa pode indicar
+   * vários carros, e o telefone se repete legitimamente. A rota de criação diz
+   * isso explicitamente e a checagem local dela só olha placa — mas esta função,
+   * chamada logo em seguida, barrava por telefone e derrubava o cadastro. Na
+   * prática o segundo carro do mesmo dono era recusado com "telefone já
+   * indicado", e a tela ainda oferecia "forçar cadastro", que também não
+   * passava.
+   *
+   * A checagem por telefone contra OUTROS aplicativos continua abaixo: lá ela
+   * serve para evitar pagar duas vezes pelo mesmo lead em sistemas diferentes,
+   * que é outro problema.
+   */
+
   // Depois validar contra outros apps
   return validateAgainstOtherApps({
     phone: referralData.phone,

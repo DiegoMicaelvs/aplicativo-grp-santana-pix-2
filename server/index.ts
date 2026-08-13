@@ -101,15 +101,20 @@ app.use((req, res, next) => {
  * Por isso as rotas que recebem comprovante são puladas aqui: elas têm o
  * próprio express.json com o limite maior, aplicado depois da autenticação.
  */
-const ROTAS_COM_COMPROVANTE = [
-  /^\/api\/referrals\/\d+\/status\/?$/,
-  /^\/api\/referrals\/\d+\/?$/,
+const ROTAS_COM_ARQUIVO: Array<{ metodo: string; caminho: RegExp }> = [
+  { metodo: 'PATCH', caminho: /^\/api\/referrals\/\d+\/status\/?$/ },
+  { metodo: 'PATCH', caminho: /^\/api\/referrals\/\d+\/?$/ },
+  // anexo de chamado de suporte (imagem ou PDF em data URI)
+  { metodo: 'POST', caminho: /^\/api\/support\/upload\/?$/ },
 ];
 
 const jsonPadrao = express.json({ limit: process.env.JSON_LIMIT ?? '256kb' });
 
 app.use((req, res, next) => {
-  if (req.method === 'PATCH' && ROTAS_COM_COMPROVANTE.some((r) => r.test(req.path))) {
+  const temArquivo = ROTAS_COM_ARQUIVO.some(
+    (r) => r.metodo === req.method && r.caminho.test(req.path),
+  );
+  if (temArquivo) {
     return next(); // quem parseia é o express.json da própria rota
   }
   return jsonPadrao(req, res, next);

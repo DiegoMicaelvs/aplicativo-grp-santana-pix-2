@@ -77,21 +77,39 @@ export function SupportButton() {
     mutationFn: async (files: File[]) => {
       const uploadedUrls: string[] = [];
       
+      /**
+       * O arquivo vai como data URI, não como multipart.
+       *
+       * O servidor lia `req.body.file` — que com FormData nunca chegava — e
+       * respondia 200 com uma URL inventada. O anexo era descartado em
+       * silêncio e o suporte recebia um link quebrado.
+       */
+      const lerComoDataUri = (arquivo: File) =>
+        new Promise<string>((resolve, reject) => {
+          const leitor = new FileReader();
+          leitor.onload = () => resolve(String(leitor.result));
+          leitor.onerror = () => reject(new Error(`Falha ao ler ${arquivo.name}`));
+          leitor.readAsDataURL(arquivo);
+        });
+
       for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        
+        const dataUri = await lerComoDataUri(file);
+
         const response = await fetch("/api/support/upload", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file: dataUri }),
         });
-        
-        if (response.ok) {
-          const { url } = await response.json();
-          uploadedUrls.push(url);
+
+        if (!response.ok) {
+          const { error } = await response.json().catch(() => ({ error: "" }));
+          throw new Error(error || `Não foi possível anexar ${file.name}`);
         }
+
+        const { url } = await response.json();
+        uploadedUrls.push(url);
       }
-      
+
       return uploadedUrls;
     }
   });

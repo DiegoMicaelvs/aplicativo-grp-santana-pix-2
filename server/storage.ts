@@ -428,12 +428,28 @@ class DatabaseStorage implements IStorage {
       }
       
       return user;
-    } catch (error) {
+    } catch (error: any) {
+      /**
+       * 23505 = unicidade violada. Os índices de contato
+       * (db/migrations/manual/003-contato-unico.sql) impedem que duas contas
+       * declarem o mesmo telefone, e-mail ou chave PIX — a checagem de
+       * titularidade do saque compara a chave com esses campos, então um
+       * contato repetido faria a conferência responder "confere" para a conta
+       * errada. Aqui isso vira mensagem útil em vez de erro 500.
+       */
+      if (error?.code === '23505') {
+        const alvo = String(error.constraint ?? '');
+        if (alvo.includes('telefone')) throw new Error('Este telefone já está cadastrado em outra conta');
+        if (alvo.includes('email')) throw new Error('Este e-mail já está cadastrado em outra conta');
+        if (alvo.includes('chave_pix')) throw new Error('Esta chave PIX já está cadastrada em outra conta');
+        if (alvo.includes('cpf')) throw new Error('Este CPF já está cadastrado');
+        if (alvo.includes('username')) throw new Error('Este e-mail já está cadastrado');
+      }
       console.error('[STORAGE] Erro ao criar usuário:', error);
       throw error;
     }
   }
-  
+
   async getUserById(id: number) {
     return await db.query.users.findFirst({
       where: eq(users.id, id)
@@ -1719,6 +1735,21 @@ class DatabaseStorage implements IStorage {
     });
   }
 
+  /**
+   * O analista nível 3 pode agir sobre esta indicação?
+   *
+   * Nível 3 é supervisor de equipe: em toda LEITURA ele fica restrito aos
+   * próprios supervisionados (getReferralsBySupervisor). A edição, porém, só
+   * conferia o papel — ele via a lista da equipe dele mas conseguia alterar,
+   * por id, indicação de qualquer outra, inclusive trocar o dono e a empresa.
+   * Aqui a mesma regra da leitura vale para a escrita.
+   */
+  async supervisionaIndicacao(supervisorId: number, referralUserId: number | null): Promise<boolean> {
+    if (referralUserId == null) return false;
+    const supervisionados = await this.getAllUsersBySupervisor(supervisorId);
+    return supervisionados.some((u) => u.id === referralUserId);
+  }
+
   async getReferralsBySupervisor(supervisorId: number) {
     // Get all users currently under supervision
     const allUsers = await this.getAllUsersBySupervisor(supervisorId);
@@ -2346,15 +2377,69 @@ class DatabaseStorage implements IStorage {
      * mexer nele.
      */
     const [updatedReferral] = await db.transaction(async (tx) => {
+      /**
+       * Relê a indicação DENTRO da transação e prende o UPDATE ao estado lido.
+       *
+       * `currentReferral` foi carregado fora e o UPDATE só filtrava por id. Dois
+       * PATCH simultâneos com o mesmo `userId` — duplo clique, ou retry do
+       * cliente após timeout — liam ambos a mesma comissão do dono anterior e
+       * executavam a transferência duas vezes: o antigo era debitado em dobro e
+       * o novo creditado em dobro.
+       *
+       * Com a guarda no WHERE, o segundo não encontra linha e a transação
+       * inteira é desfeita, sem tocar em saldo.
+       */
+      const atual = await tx.query.referrals.findFirst({ where: eq(referrals.id, id) });
+      if (!atual) {
+        throw new Error("Indicação não encontrada");
+      }
+
       if (transferirComissao > 0) {
-        await this.updateUserBalance(currentReferral.userId, -transferirComissao, false, tx);
+        await this.updateUserBalance(atual.userId, -transferirComissao, false, tx);
         await this.updateUserBalance(updates.userId, transferirComissao, false, tx);
       }
 
-      return await tx.update(referrals)
+      /**
+       * Comissão editada à mão move o saldo junto.
+       *
+       * A rota aceita commissionIndicator do admin e este método só gravava o
+       * campo. Como updateReferralStatus credita a DIFERENÇA entre o valor
+       * final e o que está no registro, o número editado virava o novo ponto de
+       * partida: baixar a comissão de uma indicação já paga e reconvertê-la
+       * pagava a diferença de novo, quantas vezes se quisesse. Agora o saldo
+       * acompanha a edição, na mesma transação.
+       *
+       * Quando há reatribuição, a comissão já migrou inteira acima — o delta
+       * aqui vale para o novo dono.
+       */
+      if (updateData.commissionIndicator !== undefined) {
+        const anterior = parseFloat(atual.commissionIndicator?.toString() || '0');
+        const novo = parseFloat(updateData.commissionIndicator);
+        const delta = novo - anterior;
+        const donoFinal = updates.userId !== undefined ? updates.userId : atual.userId;
+        if (Number.isFinite(delta) && Math.abs(delta) >= 0.01) {
+          await this.updateUserBalance(donoFinal, delta, false, tx);
+          console.log(`[updateReferral] Comissão do indicador ajustada em ${delta.toFixed(2)} para o usuário ${donoFinal}`);
+        }
+      }
+
+      const linhas = await tx.update(referrals)
         .set(updateData)
-        .where(eq(referrals.id, id))
+        .where(
+          and(
+            eq(referrals.id, id),
+            // estado que acabamos de ler: quem perder a corrida não altera nada
+            eq(referrals.userId, atual.userId),
+            eq(referrals.status, atual.status),
+          ),
+        )
         .returning();
+
+      if (linhas.length === 0) {
+        throw new ConcurrentStatusChangeError(id);
+      }
+
+      return linhas;
     });
 
     // Log audit trail
@@ -2511,17 +2596,32 @@ class DatabaseStorage implements IStorage {
      * linha: o segundo só enxerga o saldo já debitado e não encontra linha
      * para atualizar.
      */
+    /**
+     * Um único valor, com duas casas, usado em TODOS os lugares.
+     *
+     * O débito usava `amount.toFixed(2)` e o INSERT usava `amount.toString()`,
+     * numa coluna numeric(10,2). Para 1.005 isso dava 1.00 saindo do saldo e
+     * 1.01 gravado no saque — o Postgres arredonda meio para cima, o toFixed do
+     * JS depende da representação binária. A diferença aparecia de novo no
+     * estorno, que devolve o valor gravado: o usuário terminava com mais
+     * dinheiro do que tinha antes de pedir o saque.
+     *
+     * Arredondar em centavos inteiros evita o erro de ponto flutuante que
+     * `toFixed` sozinho não evita.
+     */
+    const valor = (Math.round(request.amount * 100) / 100).toFixed(2);
+
     return await db.transaction(async (tx) => {
       const debited = await tx
         .update(users)
         .set({
-          balance: sql`${users.balance} - ${request.amount.toFixed(2)}::numeric`,
+          balance: sql`${users.balance} - ${valor}::numeric`,
           updatedAt: new Date(),
         })
         .where(
           and(
             eq(users.id, request.userId),
-            sql`${users.balance} >= ${request.amount.toFixed(2)}::numeric`,
+            sql`${users.balance} >= ${valor}::numeric`,
           ),
         )
         .returning({ balance: users.balance });
@@ -2535,7 +2635,7 @@ class DatabaseStorage implements IStorage {
       const [withdrawal] = await tx.insert(withdrawalRequests)
         .values({
           userId: request.userId,
-          amount: request.amount.toString(),
+          amount: valor, // mesmo literal do débito — ver o comentário acima
           pixKey: request.pixKey,
           cpfKey: request.cpfKey,
           requestType: request.requestType,
@@ -2550,9 +2650,16 @@ class DatabaseStorage implements IStorage {
         action: 'create',
         entityType: 'withdrawal_request',
         entityId: withdrawal.id,
-        newValues: withdrawal,
-        details: `Solicitação de saque criada: R$ ${request.amount}`
-      });
+        // Sem pixKey nem cpfKey: o registro precisa provar que o saque foi
+        // pedido, não arquivar a chave de recebimento em texto para sempre.
+        newValues: {
+          id: withdrawal.id,
+          amount: withdrawal.amount,
+          status: withdrawal.status,
+          requestType: withdrawal.requestType,
+        },
+        details: `Solicitação de saque criada: R$ ${valor}`
+      }, tx);
 
       return withdrawal;
     });

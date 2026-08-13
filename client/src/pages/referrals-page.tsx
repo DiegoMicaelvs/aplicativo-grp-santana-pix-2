@@ -304,7 +304,7 @@ export default function ReferralsPage() {
   // Bulk edit mutation
   const bulkEditMutation = useMutation({
     mutationFn: async (data: { ids: number[], companyId: number }) => {
-      const response = await fetch("/api/referrals/bulk-company-update", {
+      const response = await fetch("/api/referrals/bulk/company-update", {
         method: "PATCH",
         body: JSON.stringify(data),
         headers: { "Content-Type": "application/json" },
