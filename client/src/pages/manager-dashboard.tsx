@@ -20,14 +20,25 @@ import {
 } from "lucide-react";
 import type { User } from "@shared/schema";
 
+/**
+ * Formato real devolvido por GET /api/admin/stats (storage.getAdminStats).
+ *
+ * A tela consultava "/api/admin/dashboard/stats", rota que nunca existiu no
+ * servidor, e lia campos que ela também não devolve (totalUsers, activeUsers,
+ * pendingWithdrawals...). O resultado eram quatro cartões sempre zerados.
+ */
 interface DashboardStats {
-  totalUsers: number;
-  activeUsers: number;
+  totalIndicadores: number;
   totalReferrals: number;
   pendingReferrals: number;
-  pendingWithdrawals: number;
-  pendingWithdrawalsAmount: string;
-  conversionRate: number;
+  convertedReferrals: number;
+  conversionRate: string;
+}
+
+interface WithdrawalResumo {
+  id: number;
+  status: string;
+  amount: string;
 }
 
 export default function ManagerDashboard() {
@@ -38,9 +49,37 @@ export default function ManagerDashboard() {
   });
 
   const { data: dashboardStats } = useQuery<DashboardStats>({
-    queryKey: ["/api/admin/dashboard/stats"],
+    queryKey: ["/api/admin/stats"],
   });
 
+  /**
+   * O gerente só enxerga o que as permissões do cadastro dele permitem — as
+   * mesmas que o servidor exige (ver requirePermissao em server/routes.ts).
+   * Sem isso o menu oferecia telas que respondiam 403 ao serem abertas.
+   */
+  const permissoes: string[] = (user as any)?.permissions ?? [];
+  const ehAdmin = user?.role === "admin";
+  const pode = (...necessarias: string[]) =>
+    ehAdmin || necessarias.some((p) => permissoes.includes(p));
+
+  // Saques pendentes: só busca se houver permissão, senão a chamada daria 403.
+  const podeVerSaques = pode("manage_withdrawals", "view_financial_reports");
+  const { data: saques } = useQuery<WithdrawalResumo[]>({
+    queryKey: ["/api/admin/withdrawals"],
+    enabled: podeVerSaques,
+  });
+
+  const saquesPendentes = (saques ?? []).filter((s) => s.status === "pending");
+  const totalPendente = saquesPendentes.reduce(
+    (soma, s) => soma + (parseFloat(s.amount) || 0),
+    0,
+  );
+
+  /**
+   * `requer` lista as permissões que abrem cada atalho — as MESMAS que o
+   * servidor cobra na rota correspondente. Item sem `requer` aparece sempre.
+   * O menu é filtrado logo abaixo: nada de oferecer porta que responde 403.
+   */
   const menuItems = [
     {
       title: "Visão Geral",
@@ -57,6 +96,7 @@ export default function ManagerDashboard() {
       path: "/admin/referrals-detailed",
       color: "text-green-600",
       bgColor: "bg-green-50",
+      requer: ["view_all_referrals", "edit_all_referrals"],
     },
     {
       title: "Usuários",
@@ -65,6 +105,7 @@ export default function ManagerDashboard() {
       path: "/admin/profiles",
       color: "text-purple-600",
       bgColor: "bg-purple-50",
+      requer: ["view_all_users", "manage_all_users"],
     },
     {
       title: "Analistas",
@@ -73,6 +114,7 @@ export default function ManagerDashboard() {
       path: "/admin/analysts",
       color: "text-orange-600",
       bgColor: "bg-orange-50",
+      requer: ["manage_analysts"],
     },
     {
       title: "Promotores",
@@ -81,6 +123,7 @@ export default function ManagerDashboard() {
       path: "/admin/indicators",
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
+      requer: ["manage_promoters", "view_all_users"],
     },
     {
       title: "Financeiro",
@@ -89,6 +132,7 @@ export default function ManagerDashboard() {
       path: "/admin/withdrawals",
       color: "text-green-600",
       bgColor: "bg-green-50",
+      requer: ["manage_withdrawals", "view_financial_reports"],
     },
     {
       title: "Relatórios",
@@ -97,6 +141,7 @@ export default function ManagerDashboard() {
       path: "/admin/analytics",
       color: "text-blue-600",
       bgColor: "bg-blue-50",
+      requer: ["view_all_reports", "view_financial_reports"],
     },
     {
       title: "Auditoria",
@@ -105,6 +150,7 @@ export default function ManagerDashboard() {
       path: "/admin/audit-log",
       color: "text-gray-600",
       bgColor: "bg-gray-50",
+      requer: ["audit_access"],
     },
     {
       title: "Configurações",
@@ -113,8 +159,16 @@ export default function ManagerDashboard() {
       path: "/admin/settings",
       color: "text-gray-600",
       bgColor: "bg-gray-50",
+      // Não há permissão de gerente para configurações: só admin.
+      somenteAdmin: true,
     },
   ];
+
+  const itensVisiveis = menuItems.filter((item) => {
+    if ((item as any).somenteAdmin) return ehAdmin;
+    const requer = (item as any).requer as string[] | undefined;
+    return !requer || pode(...requer);
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,15 +190,15 @@ export default function ManagerDashboard() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total de Usuários
+                  Indicadores
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardStats?.totalUsers || 0}</div>
+              <div className="text-2xl font-bold">{dashboardStats?.totalIndicadores ?? 0}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {dashboardStats?.activeUsers || 0} ativos
+                cadastrados no sistema
               </p>
             </CardContent>
           </Card>
@@ -159,9 +213,9 @@ export default function ManagerDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardStats?.totalReferrals || 0}</div>
+              <div className="text-2xl font-bold">{dashboardStats?.totalReferrals ?? 0}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {dashboardStats?.pendingReferrals || 0} pendentes
+                {dashboardStats?.pendingReferrals ?? 0} pendentes
               </p>
             </CardContent>
           </Card>
@@ -176,10 +230,21 @@ export default function ManagerDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardStats?.pendingWithdrawals || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                R$ {dashboardStats?.pendingWithdrawalsAmount || "0,00"}
-              </p>
+              {/* Só quem tem permissão financeira busca os saques; para os
+                  demais o cartão informa isso em vez de mostrar zero falso. */}
+              {podeVerSaques ? (
+                <>
+                  <div className="text-2xl font-bold">{saquesPendentes.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    R$ {totalPendente.toFixed(2).replace(".", ",")} a processar
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-muted-foreground">—</div>
+                  <p className="text-xs text-muted-foreground mt-1">sem permissão financeira</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -194,10 +259,10 @@ export default function ManagerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {dashboardStats?.conversionRate || 0}%
+                {dashboardStats?.conversionRate ?? 0}%
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Últimos 30 dias
+                convertidas sobre validadas
               </p>
             </CardContent>
           </Card>
@@ -205,7 +270,7 @@ export default function ManagerDashboard() {
 
         {/* Menu Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {menuItems.map((item) => {
+          {itensVisiveis.map((item) => {
             const Icon = item.icon;
             return (
               <Card 

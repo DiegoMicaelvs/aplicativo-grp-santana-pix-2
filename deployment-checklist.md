@@ -50,9 +50,24 @@
 
 ## 🔒 Informações Sensíveis
 
-### Credenciais Temporárias:
-- **Admin Kong Pix**: admin@kongpix.com.br / admin123
-- **Senha Master Atual**: Diego91425751 (MUDAR IMEDIATAMENTE!)
+### Credenciais
+
+Nenhuma credencial fica neste arquivo — ele é versionado num repositório
+público. Este bloco já trouxe a senha do admin e a senha master em texto claro;
+elas devem ser consideradas comprometidas e trocadas (continuam no histórico do
+git, que não se apaga com um commit novo).
+
+Onde cada uma vive agora:
+
+| Credencial            | Origem                                            |
+|-----------------------|---------------------------------------------------|
+| Senha do admin        | `ADMIN_PASSWORD` ao rodar `npm run db:create-admin` |
+| Senha master          | `MASTER_PASSWORD` (variável de ambiente)           |
+| Master do desenvolvedor | `DEVELOPER_MASTER_PASSWORD`                      |
+| Banco de dados        | `DATABASE_URL`                                     |
+| Sessão                | `SESSION_SECRET`                                   |
+
+Em produção, todas ficam nas *Environment Variables* do projeto na Vercel.
 
 ### ⚠️ Problema de Login em Produção:
 Se o login não funcionar no link publicado (https://indique.replit.app):

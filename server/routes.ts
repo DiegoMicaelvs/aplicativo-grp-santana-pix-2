@@ -26,6 +26,7 @@ import {
   insertUserSchema,
   type AnalystPermission,
   type ManagerPermission,
+  type UserPermission,
   type WithdrawalStatus
 } from "@shared/schema";
 import { 
@@ -172,6 +173,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ error: "Acesso negado" });
     }
     next();
+  };
+
+  /**
+   * Permissão de gerente, no mesmo modelo já usado para analistas.
+   *
+   * O papel "gerente" existia só no schema: ManagerPermission listava dez
+   * permissões e nenhuma rota as consultava. Na prática o painel do gerente era
+   * um menu para telas que respondiam 403, porque tudo exigia `requireAdmin`.
+   *
+   * Aqui o gerente passa apenas nas permissões que estão gravadas NO CADASTRO
+   * dele — não basta ter o papel. Admin continua passando em tudo.
+   *
+   * Aceita mais de uma permissão: a rota libera se o gerente tiver qualquer
+   * uma delas (por exemplo, uma listagem serve tanto para quem só visualiza
+   * quanto para quem gerencia).
+   */
+  const requireManagerPermission = (...permissions: ManagerPermission[]) => {
+    return (req: any, res: any, next: any) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Não autorizado" });
+      }
+
+      if (req.user.role === "admin") {
+        return next();
+      }
+
+      if (req.user.role === "gerente") {
+        const doUsuario: string[] = req.user.permissions ?? [];
+        if (permissions.some((p) => doUsuario.includes(p))) {
+          return next();
+        }
+      }
+
+      return res.status(403).json({ error: "Permissão insuficiente" });
+    };
+  };
+
+  /**
+   * Combina os dois papéis não-admin que trabalham por permissão.
+   *
+   * Várias rotas administrativas de LEITURA servem ao analista e ao gerente com
+   * a mesma consulta; sem isso seria preciso duplicar cada rota.
+   */
+  const requirePermissao = (...permissions: UserPermission[]) => {
+    return (req: any, res: any, next: any) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Não autorizado" });
+      }
+
+      if (req.user.role === "admin") {
+        return next();
+      }
+
+      if (req.user.role === "gerente" || req.user.role === "analista") {
+        const doUsuario: string[] = req.user.permissions ?? [];
+        if (permissions.some((p) => doUsuario.includes(p))) {
+          return next();
+        }
+      }
+
+      return res.status(403).json({ error: "Permissão insuficiente" });
+    };
   };
 
   // Middleware to forbid specific roles from accessing endpoints
@@ -1491,7 +1554,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === ADMIN ROUTES ===
   
   // Get all users
-  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+  // Leitura administrativa: admin sempre; gerente/analista só com a permissão.
+  app.get("/api/admin/users", requirePermissao("view_all_users", "manage_all_users"), async (req, res) => {
     try {
       // getAllUsers() já não seleciona a coluna password no banco
       const users = await storage.getAllUsers();
@@ -1503,7 +1567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all referrals (with optional pagination)
-  app.get("/api/admin/referrals", requireAdmin, async (req, res) => {
+  app.get("/api/admin/referrals", requirePermissao("view_all_referrals", "edit_all_referrals", "view_referrals"), async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50;
@@ -1806,8 +1870,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get basic stats (accessible by admin and analyst) - OPTIMIZED with aggregations
   app.get("/api/admin/stats", requireAuth, async (req, res) => {
     try {
-      // Only admin and analyst can access
-      if (req.user!.role !== "admin" && req.user!.role !== "analista") {
+      // Admin e analista sempre; gerente depende da permissão de relatórios.
+      const papel = req.user!.role;
+      const permissoes: string[] = (req.user as any)!.permissions ?? [];
+      const gerenteAutorizado =
+        papel === "gerente" &&
+        (permissoes.includes("view_all_reports") || permissoes.includes("view_financial_reports"));
+
+      if (papel !== "admin" && papel !== "analista" && !gerenteAutorizado) {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
@@ -2641,7 +2711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all withdrawal requests
-  app.get("/api/admin/withdrawals", requireAdmin, async (req, res) => {
+  app.get("/api/admin/withdrawals", requirePermissao("manage_withdrawals", "view_financial_reports"), async (req, res) => {
     try {
       const withdrawals = await storage.getAllWithdrawalRequests();
       return res.json(withdrawals);
@@ -2802,7 +2872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all promoters
-  app.get("/api/admin/promoters", requireAdmin, async (req, res) => {
+  app.get("/api/admin/promoters", requirePermissao("manage_promoters", "view_all_users"), async (req, res) => {
     try {
       const promoters = await storage.getUsersByRole("promotor");
       return res.json(promoters.map(u => {
@@ -3319,7 +3389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === AUDIT TRAIL ROUTES ===
   
   // Get audit log
-  app.get("/api/admin/audit-log", requireAdmin, async (req, res) => {
+  app.get("/api/admin/audit-log", requirePermissao("audit_access"), async (req, res) => {
     try {
       const { userId, entityType, fromDate, toDate } = req.query;
       

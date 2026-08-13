@@ -45,7 +45,7 @@ import AnalystAnalytics from "@/pages/analyst-analytics";
 import PlateSearchPage from "@/pages/plate-search";
 import { ReferralLinksPage } from "@/pages/referral-links-page";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AdminRoute, PromoterRoute, SupervisorRoute, VendedorRoute, ManagerRoute, AnalystRoute, ReferralLinkRoute, HomePageRoute } from "./lib/protected-route";
+import { AdminRoute, PermissionRoute, PromoterRoute, SupervisorRoute, VendedorRoute, ManagerRoute, AnalystRoute, ReferralLinkRoute, HomePageRoute } from "./lib/protected-route";
 import { SupportButton } from "@/components/ui/support-button";
 
 function Router() {
@@ -68,19 +68,29 @@ function Router() {
       <ProtectedRoute path="/plate-search" component={PlateSearchPage} />
       <ReferralLinkRoute path="/referral-links" component={ReferralLinksPage} />
       <AdminRoute path="/admin" component={AdminDashboard} />
-      <AdminRoute path="/admin/analysts" component={AdminAnalysts} />
-      <AdminRoute path="/admin/profiles" component={AdminProfiles} />
-      <AdminRoute path="/admin/audit-log" component={AdminAuditLog} />
-      <AdminRoute path="/admin/withdrawals" component={AdminWithdrawals} />
-      <AdminRoute path="/admin/indicators" component={AdminIndicators} />
-      <AdminRoute path="/admin/referrals-detailed" component={AdminReferralsDetailed} />
+      {/*
+        Telas administrativas que o GERENTE também usa: liberadas por permissão,
+        com a mesma lista que o servidor exige em requirePermissao. As demais
+        seguem restritas ao admin.
+      */}
+      <PermissionRoute path="/admin/analysts" component={AdminAnalysts} permissions={["manage_analysts"]} />
+      <PermissionRoute path="/admin/profiles" component={AdminProfiles} permissions={["view_all_users", "manage_all_users"]} />
+      <PermissionRoute path="/admin/audit-log" component={AdminAuditLog} permissions={["audit_access"]} />
+      <PermissionRoute path="/admin/withdrawals" component={AdminWithdrawals} permissions={["manage_withdrawals", "view_financial_reports"]} />
+      <PermissionRoute path="/admin/indicators" component={AdminIndicators} permissions={["manage_promoters", "view_all_users"]} />
+      <PermissionRoute path="/admin/referrals-detailed" component={AdminReferralsDetailed} permissions={["view_all_referrals", "edit_all_referrals"]} />
+      <PermissionRoute path="/admin/analytics" component={AdminAnalytics} permissions={["view_all_reports", "view_financial_reports"]} />
       <AdminRoute path="/admin/user-details/:id" component={AdminUserDetails} />
       <AdminRoute path="/admin/payments" component={AdminPayments} />
-      <AdminRoute path="/admin/analytics" component={AdminAnalytics} />
       <AdminRoute path="/admin/support-tickets" component={AdminSupportTickets} />
       <AdminRoute path="/admin/companies" component={AdminCompanies} />
       <AdminRoute path="/admin/company-dashboard" component={CompanyDashboard} />
-      <Route path="/company-dashboard" component={CompanyDashboard} />
+      {/*
+        A rota /company-dashboard existia SEM guarda nenhuma: qualquer visitante
+        anônimo abria o painel interno da empresa. A API barrava os dados, mas a
+        tela aparecia. Quem é admin usa /admin/company-dashboard; a empresa
+        parceira usa /public-dashboard/:token, que foi feito para isso.
+      */}
       <AdminRoute path="/admin/settings" component={AdminSettings} />
       <PromoterRoute path="/promoter" component={PromoterDashboard} />
       <PromoterRoute path="/promoter-dashboard" component={PromoterDashboard} />

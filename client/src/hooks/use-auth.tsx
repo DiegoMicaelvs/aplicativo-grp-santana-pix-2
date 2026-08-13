@@ -39,6 +39,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: User) => {
+      /**
+       * Zera o cache ANTES de marcar o novo usuário.
+       *
+       * O React Query guarda as respostas por 5 min de staleTime e 10 min de
+       * gcTime (ver lib/queryClient.ts). Sem limpar, quem logasse logo depois
+       * de outra pessoa no MESMO navegador via as telas montarem com os dados
+       * da conta anterior — sem nem chamar a API, porque o cache ainda estava
+       * "fresco". Os dados só sumiam quando ficavam obsoletos e o refetch
+       * trazia os corretos.
+       *
+       * Era assim que leads de outra conta apareciam e depois sumiam. Com
+       * nome, telefone e CPF de terceiros na tela, isso é incidente de dado
+       * pessoal — e num computador compartilhado (evento, escritório) acontece
+       * a cada troca de usuário.
+       */
+      queryClient.clear();
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Login realizado com sucesso!",
@@ -73,6 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: User) => {
+      // Mesmo motivo do login: o cadastro também troca de identidade.
+      queryClient.clear();
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Cadastro realizado com sucesso!",
@@ -93,6 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Sair tem que levar os dados junto: antes só a query "/api/user" era
+      // zerada e todo o resto (indicações, saques, usuários) continuava no
+      // cache do navegador, visível para o próximo que logasse.
+      queryClient.clear();
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Logout realizado com sucesso",

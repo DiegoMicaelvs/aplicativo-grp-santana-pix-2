@@ -84,6 +84,56 @@ export function AdminRoute({
   return <Route path={path} component={Component} />;
 }
 
+/**
+ * Rota liberada por PERMISSÃO, não por papel.
+ *
+ * Admin entra sempre. Gerente e analista entram se o cadastro deles tiver
+ * alguma das permissões exigidas — exatamente o que `requirePermissao` cobra no
+ * servidor (server/routes.ts). As duas listas precisam andar juntas: liberar só
+ * aqui abriria uma tela que o servidor recusa; liberar só lá esconderia uma
+ * tela que o usuário pode usar.
+ *
+ * Este guard é conveniência de navegação, não a barreira de segurança — quem
+ * decide continua sendo o servidor, a cada requisição.
+ */
+export function PermissionRoute({
+  path,
+  component: Component,
+  permissions,
+}: {
+  path: string;
+  component: () => React.JSX.Element;
+  permissions: string[];
+}) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Route path={path}>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Route>
+    );
+  }
+
+  const doUsuario: string[] = (user as any)?.permissions ?? [];
+  const liberado =
+    user?.role === "admin" ||
+    ((user?.role === "gerente" || user?.role === "analista") &&
+      permissions.some((p) => doUsuario.includes(p)));
+
+  if (!liberado) {
+    return (
+      <Route path={path}>
+        <Redirect to="/auth" />
+      </Route>
+    );
+  }
+
+  return <Route path={path} component={Component} />;
+}
+
 export function PromoterRoute({
   path,
   component: Component,
