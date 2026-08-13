@@ -173,6 +173,33 @@ tabelas. É o estado esperado, não um problema a corrigir.
 > policies por tabela — e revisar cada uma contra as regras de papel que hoje
 > estão no Express.
 
+### Por que NÃO usamos o Supabase CLI
+
+Decisão consciente: o schema é gerenciado pelo **Drizzle** (`shared/schema.ts`
++ `db/migrations/`), e ele é a única fonte da verdade.
+
+Instalar o Supabase CLI criaria um **segundo** sistema de migrations em
+`supabase/migrations/`. Com os dois no mesmo repositório, alguém roda
+`supabase db push` achando que está aplicando o schema e sobrescreve o que o
+Drizzle definiu — ou, pior, um `supabase db reset` apaga tudo.
+
+Mudanças de schema em produção são aplicadas como migrations versionadas
+direto no Supabase (pelo painel ou via MCP), espelhando o que o Drizzle
+definiu localmente.
+
+### A API do Supabase não é usada
+
+A aplicação fala com o Postgres direto pela `DATABASE_URL` e tem autenticação
+própria (passport + sessão em `connect-pg-simple`). Não há cliente
+`@supabase/supabase-js` no projeto.
+
+`SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` estão no `.env` apenas como
+reserva, caso o front um dia use Storage ou Realtime.
+
+> A chave **secreta** (`service_role` / `sb_secret_`) ignora RLS e dá acesso
+> total ao banco. Ela **nunca** deve entrar no repositório nem no `.env`
+> versionado — e não é necessária para nada que o Valida faz hoje.
+
 ---
 
 ## Variáveis de segurança que você PRECISA definir antes de produção
