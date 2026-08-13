@@ -598,7 +598,9 @@ export default function DashboardPage() {
                                         <FormItem>
                                           <FormLabel>Chave PIX</FormLabel>
                                           <FormControl>
-                                            <Input placeholder="CPF, email, telefone ou chave aleatória" {...field} />
+                                            {/* Só CPF, celular ou e-mail: no saque a chave é
+                                                conferida contra o cadastro do titular. */}
+                                            <Input placeholder="CPF, celular ou e-mail do indicador" {...field} />
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>

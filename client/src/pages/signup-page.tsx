@@ -13,6 +13,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -290,8 +291,12 @@ export default function SignupPage() {
                         <FormItem>
                           <FormLabel>Chave PIX *</FormLabel>
                           <FormControl>
-                            <Input placeholder="CPF, e-mail ou telefone" {...field} />
+                            <Input placeholder="CPF, celular ou e-mail — os seus" {...field} />
                           </FormControl>
+                          <FormDescription>
+                            Precisa ser uma chave sua: no saque ela é conferida contra
+                            o seu cadastro. Chave aleatória não é aceita.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

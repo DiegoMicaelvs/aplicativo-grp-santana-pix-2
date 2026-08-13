@@ -546,8 +546,12 @@ export default function AuthPage() {
                             <FormItem>
                               <FormLabel>Chave PIX</FormLabel>
                               <FormControl>
-                                <Input placeholder="CPF, email ou telefone" {...field} />
+                                <Input placeholder="CPF, celular ou e-mail — os seus" {...field} />
                               </FormControl>
+                              <FormDescription>
+                                Precisa ser uma chave sua: no saque ela é conferida
+                                contra o seu cadastro. Chave aleatória não é aceita.
+                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}

@@ -509,7 +509,7 @@ export default function PromoterDashboard() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Chave PIX</Label>
-                      <Input value={supervisorFormData.pixKey} onChange={e => setSupervisorFormData(p => ({ ...p, pixKey: e.target.value }))} />
+                      <Input placeholder="CPF, celular ou e-mail do supervisor" value={supervisorFormData.pixKey} onChange={e => setSupervisorFormData(p => ({ ...p, pixKey: e.target.value }))} />
                     </div>
                     <div>
                       <Label>Senha</Label>
@@ -715,7 +715,7 @@ export default function PromoterDashboard() {
                         <FormItem>
                           <FormLabel>Chave PIX</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input placeholder="CPF, celular ou e-mail do indicador" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

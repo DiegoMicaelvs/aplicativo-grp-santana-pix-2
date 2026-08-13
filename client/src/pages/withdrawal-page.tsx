@@ -252,12 +252,14 @@ export default function WithdrawalPage() {
                             <FormLabel>Chave PIX</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Digite sua chave PIX"
+                                placeholder="CPF, celular ou e-mail do seu cadastro"
                                 {...field}
                               />
                             </FormControl>
                             <FormDescription>
-                              Informe qualquer chave PIX válida para recebimento (CPF, telefone, e-mail ou chave aleatória)
+                              Use o CPF, o celular ou o e-mail do seu cadastro. Chave
+                              aleatória não é aceita, e chave de outra pessoa deixa o
+                              saque retido até a conferência do financeiro.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

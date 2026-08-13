@@ -1135,7 +1135,7 @@ export default function AdminProfiles() {
               <Input
                 id="pixKey"
                 {...form.register("pixKey")}
-                placeholder="Chave PIX para pagamentos"
+                placeholder="CPF, celular ou e-mail do titular"
               />
               {form.formState.errors.pixKey && (
                 <p className="text-sm text-destructive mt-1">

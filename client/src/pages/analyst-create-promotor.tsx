@@ -242,10 +242,12 @@ export default function AnalystCreatePromotorPage() {
 
             <div>
               <Label htmlFor="pixKey">Chave PIX *</Label>
+              {/* Só CPF, celular ou e-mail: no saque a chave é conferida
+                  contra o cadastro do titular. */}
               <Input
                 id="pixKey"
                 {...register("pixKey")}
-                placeholder="CPF, email, telefone ou chave aleatória"
+                placeholder="CPF, celular ou e-mail do promotor"
               />
               {errors.pixKey && (
                 <p className="text-sm text-red-600">{errors.pixKey.message}</p>
