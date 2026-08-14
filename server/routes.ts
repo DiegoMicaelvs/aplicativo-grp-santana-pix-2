@@ -253,6 +253,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
   };
 
+  /**
+   * Resposta de erro para as rotas que criam usuário.
+   *
+   * Todas terminavam com um 500 "Erro ao criar usuário" genérico, mesmo quando
+   * o motivo era conhecido e culpa do preenchimento — storage.createUser lança
+   * "Telefone inválido", "CPF inválido" ou "já está cadastrado". Quem estava
+   * cadastrando via a mensagem genérica e não tinha como saber qual campo
+   * corrigir; nos logs de produção isso apareceu como POST /api/admin/users 500
+   * com "Error: Telefone inválido" atrás.
+   *
+   * Agora o motivo conhecido volta com o status certo (400 para dado inválido,
+   * 409 para duplicado) e a mensagem que a pessoa precisa ler. Só o que é
+   * realmente inesperado continua 500 genérico, com o detalhe no log.
+   */
+  const responderErroDeCadastro = (res: any, error: any, contexto: string) => {
+    const msg = typeof error?.message === "string" ? error.message : "";
+
+    if (/já está cadastrad/i.test(msg)) {
+      return res.status(409).json({ error: msg });
+    }
+    if (/inválid|obrigatóri|deve ter|precisa/i.test(msg)) {
+      return res.status(400).json({ error: msg });
+    }
+    // 23505 que não passou pela tradução do storage (índice novo, por exemplo)
+    if (error?.code === "23505") {
+      return res.status(409).json({ error: "Já existe um cadastro com esses dados" });
+    }
+
+    console.error(`${contexto}:`, error);
+    return res.status(500).json({ error: contexto });
+  };
+
   // Middleware to check analyst permissions
   const requireAnalystPermission = (permission: AnalystPermission) => {
     return (req: any, res: any, next: any) => {
@@ -1556,7 +1588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Error creating indicador:", error);
-      return res.status(500).json({ error: "Erro ao criar indicador" });
+      return responderErroDeCadastro(res, error, "Erro ao criar indicador");
     }
   });
 
@@ -3064,7 +3096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ error: error.message });
       }
       console.error("Error creating user:", error);
-      return res.status(500).json({ error: "Erro ao criar usuário" });
+      return responderErroDeCadastro(res, error, "Erro ao criar usuário");
     }
   });
 
@@ -3111,7 +3143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Error creating indicador:", error);
-      return res.status(500).json({ error: "Erro ao criar indicador" });
+      return responderErroDeCadastro(res, error, "Erro ao criar indicador");
     }
   });
 
@@ -3158,7 +3190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Error creating promotor:", error);
-      return res.status(500).json({ error: "Erro ao criar promotor" });
+      return responderErroDeCadastro(res, error, "Erro ao criar promotor");
     }
   });
 
@@ -3247,7 +3279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Error creating indicador:", error);
-      return res.status(500).json({ error: "Erro ao criar indicador" });
+      return responderErroDeCadastro(res, error, "Erro ao criar indicador");
     }
   });
 
@@ -3304,7 +3336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Error creating supervisor:", error);
-      return res.status(500).json({ error: "Erro ao criar supervisor" });
+      return responderErroDeCadastro(res, error, "Erro ao criar supervisor");
     }
   });
 
@@ -3487,7 +3519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("Error creating indicador by supervisor:", error);
-      return res.status(500).json({ error: "Erro ao criar indicador" });
+      return responderErroDeCadastro(res, error, "Erro ao criar indicador");
     }
   });
 
@@ -4418,7 +4450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      return res.status(500).json({ error: "Erro ao cadastrar usuário" });
+      return responderErroDeCadastro(res, error, "Erro ao cadastrar usuário");
     }
   });
 
