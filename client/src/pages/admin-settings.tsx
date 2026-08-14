@@ -42,7 +42,7 @@ export default function AdminSettings() {
   // Estado das configurações do sistema
   const [systemSettings, setSystemSettings] = useState({
     siteName: "Valida - Indique e Ganhe",
-    siteUrl: "https://indique.replit.app",
+    siteUrl: "https://www.valida.app.br",
     maintenanceMode: false,
     registrationEnabled: true,
     emailNotifications: true,

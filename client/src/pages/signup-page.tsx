@@ -124,9 +124,20 @@ export default function SignupPage() {
         title: "Cadastro realizado com sucesso!",
         description: "Aguarde a validação do seu cadastro para começar a indicar.",
       });
-      // Redirect to main domain after a few seconds
+      /**
+       * Fica no MESMO site.
+       *
+       * Aqui havia um endereço fixo de outro domínio
+       * (grp.souindicador.com.br), que hoje responde "This app isn't live yet".
+       * O cadastro dava certo, o indicador era jogado numa página morta e
+       * concluía que tinha falhado — o promotor recebia a queixa de "erro ao
+       * cadastrar" mesmo com a conta criada.
+       *
+       * Caminho relativo: funciona em qualquer domínio onde o app estiver, sem
+       * precisar lembrar de trocar isto de novo.
+       */
       setTimeout(() => {
-        window.location.href = "https://grp.souindicador.com.br/auth";
+        window.location.href = "/auth";
       }, 3000);
     },
     onError: (error: any) => {

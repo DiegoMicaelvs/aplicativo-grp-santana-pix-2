@@ -160,12 +160,22 @@ export const sendAdminWithdrawalNotification = async (
   return sendSMS(adminPhone, message);
 };
 
+/**
+ * Boas-vindas ao novo indicador.
+ *
+ * O texto trazia a marca antiga e mandava a pessoa para
+ * kongprotecaoveicular.com.br — endereço que não é o desta aplicação. Quem
+ * acabou de se cadastrar recebia um SMS apontando para outro lugar.
+ *
+ * O endereço vem de APP_URL para não voltar a envelhecer dentro do código.
+ */
 export const sendWelcomeSMS = async (
   userPhone: string,
   userName: string
 ): Promise<boolean> => {
-  const message = `🎉 Bem-vindo à Kong Pix!\n\nOlá ${userName}, seu cadastro foi aprovado!\n\nComece a indicar e ganhe R$ 3,00 por indicação validada.\n\nAcesse: kongprotecaoveicular.com.br`;
-  
+  const site = (process.env.APP_URL ?? 'www.valida.app.br').replace(/^https?:\/\//, '');
+  const message = `🎉 Bem-vindo ao Valida!\n\nOlá ${userName}, seu cadastro foi criado!\n\nComece a indicar e ganhe por cada indicação validada.\n\nAcesse: ${site}`;
+
   return sendSMS(userPhone, message);
 };
 

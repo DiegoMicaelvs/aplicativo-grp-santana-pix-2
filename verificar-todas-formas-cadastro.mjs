@@ -222,6 +222,29 @@ await checar('e-mail com MAIÚSCULAS entra e permite login', async () => {
   return s.status === 200 || `login com o e-mail em minúscula falhou (${s.status})`;
 });
 
+console.log('\n--- depois de cadastrar, a pessoa continua no site ---');
+
+await checar('a tela de cadastro não manda para outro domínio', async () => {
+  // Sem depender do navegador: o bundle publicado não pode conter um
+  // redirecionamento absoluto para fora. Havia um fixo para
+  // grp.souindicador.com.br, que responde "This app isn't live yet" — o
+  // cadastro funcionava e a pessoa caía numa página morta, concluindo que
+  // tinha falhado.
+  const html = await (await fetch(`${BASE}/`)).text();
+  const arquivos = [...html.matchAll(/\/assets\/[A-Za-z0-9._-]+\.js/g)].map((m) => m[0]);
+  if (!arquivos.length) return 'não achei o bundle do site';
+
+  const suspeitos = [];
+  for (const a of arquivos) {
+    const js = await (await fetch(`${BASE}${a}`)).text();
+    for (const m of js.matchAll(/location\.href\s*=\s*["'`](https?:\/\/[^"'`]+)["'`]/g)) {
+      const destino = m[1];
+      if (!/valida\.app\.br/.test(destino)) suspeitos.push(destino);
+    }
+  }
+  return suspeitos.length === 0 || `redireciona para fora: ${[...new Set(suspeitos)].join(', ')}`;
+});
+
 console.log('\n--- quando o dado está errado, a mensagem diz o motivo ---');
 
 await checar('telefone curto: recusa com 400 e explica', async () => {
